@@ -23,6 +23,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleTrace" :loading="loading">开始追溯</el-button>
+          <el-button icon="Download" @click="handleExportReport" :disabled="!traceData && !fallbackData" v-hasPermi="['qms:trace:report']">导出追溯报告</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -544,7 +545,13 @@ function shipmentStatusLabel(status) {
   return { '0': '待发货', '1': '已发货', '2': '已签收', '3': '已取消' }[status] || '-'
 }
 
-function resetQuery() { queryParams.batchNo = ''; traceData.value = null }
+function resetQuery() { queryParams.batchNo = ''; traceData.value = null; fallbackData.value = null }
+
+/** 导出追溯报告：起点批次+上游原料层+下游成品层（含检验/NCR摘要），Excel留档 */
+function handleExportReport() {
+  if (!queryParams.batchNo) { proxy.$modal.msgWarning('请输入批次号'); return }
+  proxy.download(`/qms/trace/report/${encodeURIComponent(queryParams.batchNo)}`, {}, `trace_report_${queryParams.batchNo}_${new Date().getTime()}.xlsx`)
+}
 
 function countNodes(node) {
   let count = 0

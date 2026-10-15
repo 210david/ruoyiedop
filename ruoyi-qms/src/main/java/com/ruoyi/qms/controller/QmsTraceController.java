@@ -14,6 +14,7 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
 import com.ruoyi.qms.domain.QmsTraceSn;
+import com.ruoyi.qms.domain.vo.QmsTraceReportRow;
 import com.ruoyi.qms.service.IQmsTraceService;
 import com.ruoyi.qms.service.IQmsTraceSnService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -127,6 +128,19 @@ public class QmsTraceController extends BaseController
             @RequestParam(value = "direction", defaultValue = "backward") String direction)
     {
         return AjaxResult.success(qmsTraceService.fallbackTrace(batchNo, direction));
+    }
+
+    /**
+     * 追溯报告导出：起点批次 + 上游原料层 + 下游成品层（含检验/NCR摘要），Excel留档
+     */
+    @Log(title = "追溯报告", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('qms:trace:report')")
+    @PostMapping("/report/{batchNo}")
+    public void exportReport(HttpServletResponse response, @PathVariable String batchNo)
+    {
+        List<QmsTraceReportRow> rows = qmsTraceService.buildTraceReport(batchNo);
+        ExcelUtil<QmsTraceReportRow> util = new ExcelUtil<>(QmsTraceReportRow.class);
+        util.exportExcel(response, rows, "批次" + batchNo + "追溯报告");
     }
 
     // ==================== 完整度看板 ====================

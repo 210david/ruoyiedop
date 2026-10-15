@@ -19,6 +19,7 @@ import com.ruoyi.mms.service.IMmsReturnMaterialService;
 import com.ruoyi.mms.domain.MmsIssueDetail;
 import com.ruoyi.mms.domain.MmsIssue;
 import com.ruoyi.mms.service.IMmsIssueService;
+import com.ruoyi.food.service.IFoodBatchStockService;
 
 /**
  * 退料 Service实现
@@ -36,6 +37,9 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
 
     @Autowired
     private IMmsIssueService mmsIssueService;
+
+    @Autowired
+    private IFoodBatchStockService batchStockService;
 
     @Override
     @DataScope(deptAlias = "mms_return_material")
@@ -163,10 +167,18 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
             {
                 throw new ServiceException("第" + (i + 1) + "行退料数量必须大于0");
             }
+            // 批次必填：退料批次回归，效期不重算（沿用原批次）
+            if (StringUtils.isEmpty(d.getBatchNo()))
+            {
+                throw new ServiceException("第" + (i + 1) + "行（" + d.getMaterialName() + "）退料批次必填，请选择退料批次后重新提交");
+            }
         }
 
         // 校验退料数量不超过可退数量（多次退料场景）
         validateReturnQty(returnMaterial);
+
+        // 校验退料批次与领料单明细批次一致（同物料）：保证批次身份不漂移，谱系闭环
+        validateReturnBatch(returnMaterial, existing);
 
         // 同步明细数量到主表
         syncFirstDetailToMain(returnMaterial);
@@ -204,7 +216,46 @@ public class MmsReturnMaterialServiceImpl implements IMmsReturnMaterialService
         returnMaterial.setCreateTime(existing.getCreateTime());
         returnMaterial.setUpdateBy(SecurityUtils.getUsername());
         returnMaterial.setUpdateTime(DateUtils.getNowDate());
-        return returnMaterialMapper.updateReturnMaterial(returnMaterial);
+        int rows = returnMaterialMapper.updateReturnMaterial(returnMaterial);
+
+        // ===== 批次库存联动：退料批次回归仓库（沿用原批次，效期不重算），失败回滚确认 =====
+        for (MmsReturnDetail d : returnMaterial.getDetailList())
+        {
+            batchStockService.addAcrossWarehouse(d.getMaterialId(), d.getBatchNo(), d.getReturnQty(),
+                    SecurityUtils.getUsername(), null, null, null, null);
+        }
+        return rows;
+    }
+
+    /**
+     * 校验退料批次与领料单明细批次一致（同物料）：批次必须来自领料投入，防止批次身份漂移
+     */
+    private void validateReturnBatch(MmsReturnMaterial returnMaterial, MmsReturnMaterial existing)
+    {
+        MmsIssue issue = mmsIssueService.selectIssueById(existing.getIssueId());
+        if (issue == null || issue.getDetailList() == null)
+        {
+            return;
+        }
+        java.util.Map<Long, java.util.Set<String>> issueBatches = new java.util.HashMap<>();
+        for (MmsIssueDetail id : issue.getDetailList())
+        {
+            if (id.getMaterialId() == null || StringUtils.isEmpty(id.getBatchNo()))
+            {
+                continue;
+            }
+            issueBatches.computeIfAbsent(id.getMaterialId(), k -> new java.util.HashSet<>()).add(id.getBatchNo());
+        }
+        for (int i = 0; i < returnMaterial.getDetailList().size(); i++)
+        {
+            MmsReturnDetail d = returnMaterial.getDetailList().get(i);
+            java.util.Set<String> allowed = issueBatches.get(d.getMaterialId());
+            if (allowed == null || !allowed.contains(d.getBatchNo()))
+            {
+                throw new ServiceException("第" + (i + 1) + "行（" + d.getMaterialName() + "）退料批次【" + d.getBatchNo()
+                        + "】与领料批次不一致，请从领料批次中选择");
+            }
+        }
     }
 
     /**

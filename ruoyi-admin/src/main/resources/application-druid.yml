@@ -8,7 +8,8 @@ spring:
             master:
                 url: jdbc:mysql://localhost:3306/RUOYI_CFSP?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
                 username: root
-                password: 123456
+                # Druid 加密密码（明文 ZBrj@2026，与生产一致；更换方式: java -cp druid-1.2.28.jar com.alibaba.druid.filter.config.ConfigTools 新密码）
+                password: fBCDoozBjsSnNKAVF5kdOPGdIVn23UESJuY4uFsiiP5ETlKHBaxTC6itcV3Vjo9BRToDYfHFGp7KFwvZE1n2kw==
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
@@ -48,7 +49,8 @@ spring:
                 url-pattern: /druid/*
                 # 控制台管理用户名和密码
                 login-username: ruoyi
-                login-password: 123456
+                # Druid 控制台独立密码（与数据库密码不同，控制台不支持加密存储）
+                login-password: RSFC8cfmnmfdI5i42nkn
             filter:
                 stat:
                     enabled: true
@@ -59,5 +61,5 @@ spring:
                 wall:
                     config:
                         multi-statement-allow: true
-            # 连接属性配置（不需要加密则关闭解密）
-            connection-properties: config.decrypt=false
+            # Druid 密码解密（由框架 DruidProperties 显式挂 ConfigFilter；更换公钥须与 master.password 的加密串配对）
+            connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJK2bmc59PYLpRURKa5WFlV7DOx+uJhywChPt2LpJVTWxYkqE7jWc3QsamD8A0ISz+BIepBLXV7CGUtyhmwDWFsCAwEAAQ==

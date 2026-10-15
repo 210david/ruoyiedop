@@ -11,8 +11,8 @@ rem --- 配置区域 ---
 set DB_HOST=localhost
 set DB_PORT=3306
 set DB_USER=root
-set DB_PASS=123456
-set DB_NAME=ry-vue
+set DB_PASS=ZBrj@2026
+set DB_NAME=RUOYI_CFSP
 
 rem 获取脚本所在目录的上级目录作为项目根目录
 set SCRIPT_DIR=%~dp0

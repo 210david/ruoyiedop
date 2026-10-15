@@ -164,6 +164,8 @@
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
         <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
         <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
+        <el-table-column label="到期日期" prop="expireDate" :width="colWidth('expireDate', 110)" resizable align="center"><template #default="scope">{{ scope.row.expireDate ? String(scope.row.expireDate).slice(0, 10) : '-' }}</template></el-table-column>
+        <el-table-column label="剩余天数" prop="daysRemain" :width="colWidth('daysRemain', 90)" resizable align="center"><template #default="scope"><span :class="{ 'expiry-warn': scope.row.daysRemain != null && scope.row.daysRemain <= 30 }">{{ scope.row.daysRemain != null ? scope.row.daysRemain + ' 天' : '-' }}</span></template></el-table-column>
         <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="center" />
         <el-table-column label="已拣货数量" prop="pickQty" :width="colWidth('pickQty', 100)" resizable align="center" />
         <el-table-column label="拣货库位" prop="locationName" :width="colWidth('locationName', 100)" resizable show-overflow-tooltip />
@@ -287,6 +289,20 @@
             <div class="highlight-card highlight-danger">
               <div class="highlight-card-title">库存扣减时机</div>
               <div class="highlight-card-body">拣货阶段不扣减库存，<strong>复核完成后才正式扣减库存</strong>。拣货仅记录拣货数量</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 12px;">
+          <el-col :span="12">
+            <div class="highlight-card highlight-danger">
+              <div class="highlight-card-title">批次放行拦截</div>
+              <div class="highlight-card-body">只有<strong>「合格」状态的批次</strong>才能分配发运：<strong>待检、冻结、报废批次一律禁止发运</strong>，过期批次同样禁发。来料入库后批次默认「待检」，需在质量管理完成 IQC 检验合格放行后才能出库。若分配提示"批次【xx】待检，禁止发运"或"可发批次量不足"，请先到质量管理完成该批次的检验放行</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">FEFO 先到期先出</div>
+              <div class="highlight-card-body">出库时系统按<strong>「先到期先出」</strong>自动分配合格批次；剩余效期低于效期策略「最小可发运剩余天数」的批次会被自动跳过，不参与分配</div>
             </div>
           </el-col>
         </el-row>
@@ -445,6 +461,7 @@ onActivated(() => {
 
 <style scoped>
 /* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
+.expiry-warn { color: #f56c6c; font-weight: 600; }
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
 .status-help-content h4:first-child { margin-top: 0; }

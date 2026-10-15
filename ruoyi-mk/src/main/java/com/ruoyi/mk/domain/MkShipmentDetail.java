@@ -34,6 +34,10 @@ public class MkShipmentDetail extends BaseEntity
     @Excel(name = "单位", dictType = "wms_unit")
     private String unit;
 
+    /** 批次号 */
+    @Excel(name = "批次号")
+    private String batchNo;
+
     /** 发货数量 */
     @Excel(name = "发货数量")
     private BigDecimal shipQty;
@@ -70,6 +74,8 @@ public class MkShipmentDetail extends BaseEntity
     public void setProductSpec(String productSpec) { this.productSpec = productSpec; }
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public BigDecimal getShipQty() { return shipQty; }
     public void setShipQty(BigDecimal shipQty) { this.shipQty = shipQty; }
     public BigDecimal getUnitPrice() { return unitPrice; }

@@ -35,7 +35,7 @@
           </div>
         </div>
         <div class="field">
-          <label>批次号</label>
+          <label>内部批次</label>
           <div class="control">
             <el-input v-model="queryParams.batchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -66,6 +66,12 @@
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         </div>
       </div>
+      <div class="field" v-show="showAdvanced" style="margin-top: 12px;">
+        <label>零库存</label>
+        <div class="control">
+          <el-switch v-model="showZero" active-text="显示零库存记录" inactive-text="默认隐藏" @change="handleQuery" />
+        </div>
+      </div>
     </div>
 
     <!-- ===== Table Section ===== -->
@@ -73,15 +79,19 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="left">
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:inventory:remove']">
+          <el-radio-group v-model="viewMode" size="default" @change="handleViewChange">
+            <el-radio-button value="detail">批次明细</el-radio-button>
+            <el-radio-button value="summary">物料汇总</el-radio-button>
+          </el-radio-group>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['wms:inventory:remove']" v-if="viewMode === 'detail'">
             <el-icon><Delete /></el-icon> 删除
           </button>
-          <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['wms:inventory:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
-          <AiAssistButton button-text="AI库存分析" button-type="success" :button-plain="false" :api="aiStockAnalysis" @result="d => onAiText(d, '库存分析报告')" />
-          <AiAssistButton button-text="呆滞识别" button-type="warning" :button-plain="false" :api="aiStaleInventory" @result="onStaleList" />
+          <AiAssistButton button-text="AI库存分析" button-type="success" :button-plain="false" :api="aiStockAnalysis" @result="d => onAiText(d, '库存分析报告')" v-if="viewMode === 'detail'" />
+          <AiAssistButton button-text="呆滞识别" button-type="warning" :button-plain="false" :api="aiStaleInventory" @result="onStaleList" v-if="viewMode === 'detail'" />
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="wms_inventory_columns" />
@@ -93,7 +103,8 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="tableRef" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+        <!-- 明细视图：批次明细 -->
+        <el-table ref="tableRef" v-if="viewMode === 'detail'" v-loading="loading" :data="list" border @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
           <el-table-column label="物料编码" prop="materialCode" key="materialCode" :width="colWidth('materialCode', 180)" resizable sortable="custom" v-if="columns.materialCode.visible">
@@ -109,7 +120,16 @@
               {{ scope.row.warehouseName || '' }}<span v-if="scope.row.areaName">/{{ scope.row.areaName }}</span><span v-if="scope.row.locationName">/{{ scope.row.locationName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable v-if="columns.batchNo.visible" />
+          <el-table-column label="内部批次" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 130)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
+          <el-table-column label="供应商批次" prop="extBatchNo" key="extBatchNo" :width="colWidth('extBatchNo', 130)" resizable show-overflow-tooltip v-if="columns.extBatchNo.visible">
+            <template #default="scope">{{ scope.row.extBatchNo || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="批次状态" prop="batchStatus" key="batchStatus" :width="colWidth('batchStatus', 100)" resizable align="center" v-if="columns.batchStatus.visible">
+            <template #default="scope">
+              <span v-if="scope.row.batchStatus" class="badge" :class="batchStatusClass(scope.row.batchStatus)"><span class="dot"></span>{{ dictLabel(food_batch_status, scope.row.batchStatus) }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="生产日期" prop="productionDate" key="productionDate" :width="colWidth('productionDate', 130)" resizable align="center" v-if="columns.productionDate.visible" />
           <el-table-column label="有效期" prop="expiryDate" key="expiryDate" :width="colWidth('expiryDate', 130)" resizable align="center" v-if="columns.expiryDate.visible" />
           <el-table-column label="可用数量" prop="qty" key="qty" :width="colWidth('qty', 110)" resizable align="center" class-name="col-num" v-if="columns.qty.visible" />
@@ -121,6 +141,51 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- 汇总视图：物料+仓库汇总，展开看批次明细 -->
+        <el-table v-else ref="tableRefS" v-loading="loading" :data="summaryList" border class="app-table" row-key="summaryKey" @expand-change="handleSummaryExpand" @header-dragend="onHeaderDragEndS">
+          <el-table-column type="expand" width="55" align="center">
+            <template #default="scope">
+              <div style="padding: 8px 16px 12px;">
+                <el-table :data="scope.row.detailList || []" size="small" border v-loading="scope.row.detailLoading" @header-dragend="onHeaderDragEndD">
+                  <el-table-column label="内部批次" prop="batchNo" :min-width="colWidthD('batchNo', 140)" resizable />
+                  <el-table-column label="供应商批次" prop="extBatchNo" :min-width="colWidthD('extBatchNo', 130)" resizable>
+                    <template #default="s">{{ s.row.extBatchNo || '-' }}</template>
+                  </el-table-column>
+                  <el-table-column label="批次状态" prop="batchStatus" :width="colWidthD('batchStatus', 100)" resizable align="center">
+                    <template #default="s">
+                      <span v-if="s.row.batchStatus" class="badge" :class="batchStatusClass(s.row.batchStatus)"><span class="dot"></span>{{ dictLabel(food_batch_status, s.row.batchStatus) }}</span>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="仓库/库区/库位" prop="warehouseFullName" :min-width="colWidthD('warehouseFullName', 210)" resizable>
+                    <template #default="s">{{ s.row.warehouseName || '' }}<span v-if="s.row.areaName">/{{ s.row.areaName }}</span><span v-if="s.row.locationName">/{{ s.row.locationName }}</span></template>
+                  </el-table-column>
+                  <el-table-column label="可用数量" prop="qty" :width="colWidthD('qty', 100)" resizable align="center" />
+                  <el-table-column label="锁定数量" prop="lockQty" :width="colWidthD('lockQty', 100)" resizable align="center" />
+                  <el-table-column label="有效期" prop="expiryDate" :width="colWidthD('expiryDate', 120)" resizable align="center" />
+                  <el-table-column label="更新时间" prop="updateTime" :min-width="colWidthD('updateTime', 170)" resizable align="center" />
+                </el-table>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="序号" type="index" :width="colWidthS('序号', 70)" resizable align="center" />
+          <el-table-column label="物料编码" prop="materialCode" :width="colWidthS('materialCode', 200)" resizable>
+            <template #default="scope"><span class="col-mono">{{ scope.row.materialCode }}</span></template>
+          </el-table-column>
+          <el-table-column label="物料名称" prop="materialName" :min-width="colWidthS('materialName', 260)" resizable show-overflow-tooltip />
+          <el-table-column label="规格型号" prop="specModel" :min-width="colWidthS('specModel', 220)" resizable show-overflow-tooltip />
+          <el-table-column label="单位" :width="colWidthS('unit', 90)" resizable align="center">
+            <template #default="scope"><span class="badge blue">{{ unitLabel(scope.row.unit) }}</span></template>
+          </el-table-column>
+          <el-table-column label="仓库" prop="warehouseName" :min-width="colWidthS('warehouseName', 200)" resizable show-overflow-tooltip />
+          <el-table-column label="可用数量合计" prop="totalQty" :width="colWidthS('totalQty', 140)" resizable align="center" class-name="col-num" />
+          <el-table-column label="锁定数量合计" prop="totalLockQty" :width="colWidthS('totalLockQty', 140)" resizable align="center" class-name="col-num" />
+          <el-table-column label="批次数" prop="batchCount" :width="colWidthS('batchCount', 100)" resizable align="center" class-name="col-num" />
+          <el-table-column label="最早有效期" prop="minExpiryDate" :width="colWidthS('minExpiryDate', 130)" resizable align="center">
+            <template #default="scope"><span v-if="scope.row.minExpiryDate">{{ scope.row.minExpiryDate }}</span><span v-else>-</span></template>
+          </el-table-column>
+        </el-table>
       </div>
 
       <!-- Pagination -->
@@ -130,7 +195,7 @@
 </template>
 
 <script setup name="WmsInventory">
-import { listInventory, delInventory } from '@/api/wms/inventory'
+import { listInventory, listInventorySummary, delInventory } from '@/api/wms/inventory'
 import { aiStockAnalysis, aiStaleInventory } from '@/api/ai/manage'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
@@ -139,9 +204,15 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { ArrowDown, Delete, Download, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inventory_index')
-const { wms_unit } = proxy.useDict('wms_unit')
+const { colWidth: colWidthS, onHeaderDragEnd: onHeaderDragEndS, tableRef: tableRefS, applySavedWidths: applySavedWidthsS } = useColumnResize('wms_inventory_summary')
+// 汇总展开的下钻批次明细小表：独立持久化（多行展开共享同一组列宽，不绑 ref 仅存取宽度）
+const { colWidth: colWidthD, onHeaderDragEnd: onHeaderDragEndD } = useColumnResize('wms_inventory_summary_detail')
+const { wms_unit, food_batch_status } = proxy.useDict('wms_unit', 'food_batch_status')
 const list = ref([]); const loading = ref(true); const showSearch = ref(true); const showAdvanced = ref(false); const total = ref(0); const ids = ref([]); const multiple = ref(true)
 const dateRange = ref([])
+const viewMode = ref('detail')
+const showZero = ref(false)
+const summaryList = ref([])
 
 const defaultColumns = {
   materialCode: { label: '物料编码', visible: true },
@@ -149,7 +220,9 @@ const defaultColumns = {
   specModel: { label: '规格型号', visible: true },
   unit: { label: '单位', visible: true },
   warehouseName: { label: '仓库/库区/库位', visible: true },
-  batchNo: { label: '批次号', visible: true },
+  batchNo: { label: '内部批次', visible: true },
+  extBatchNo: { label: '供应商批次', visible: true },
+  batchStatus: { label: '批次状态', visible: true },
   productionDate: { label: '生产日期', visible: true },
   expiryDate: { label: '有效期', visible: true },
   qty: { label: '可用数量', visible: true },
@@ -175,6 +248,17 @@ const columns = ref(loadColumnVisibility())
 const data = reactive({ queryParams: { pageNum: 1, pageSize: 10, materialCode: undefined, materialName: undefined, locationKeyword: undefined, batchNo: undefined, specModel: undefined, params: {} } })
 const { queryParams } = toRefs(data)
 
+/** 字典标签 */
+function dictLabel(options, v) {
+  if (v == null || v === '') return '-'
+  const item = (options || []).find(d => d.value == v)
+  return item ? item.label : v
+}
+/** 批次状态徽章样式 */
+function batchStatusClass(v) {
+  return { '0': 'amber', '1': 'green', '2': 'blue', '3': 'red' }[v] || 'gray'
+}
+
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.materialCode) count++
@@ -188,9 +272,38 @@ const activeFilterCount = computed(() => {
 
 function getList() {
   loading.value = true
-  listInventory(proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime')).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
+  const query = proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime')
+  // 零库存策略：默认隐藏零库存批次行，仅流水与批次台账保留痕迹（食品行业追溯要求：不删数据，只收视图）
+  if (!showZero.value) query.params.hideZero = 'true'
+  listInventory(query).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; applySavedWidths() })
 }
-function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
+
+/** 汇总视图：按物料+仓库聚合 */
+function getSummary() {
+  loading.value = true
+  const query = proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime')
+  if (!showZero.value) query.params.hideZero = 'true'
+  listInventorySummary(query).then(res => {
+    summaryList.value = (res.rows || []).map(r => ({ ...r, summaryKey: r.materialId + '-' + r.warehouseId, detailList: undefined, detailLoading: false }))
+    total.value = res.total; loading.value = false; applySavedWidthsS()
+  })
+}
+
+/** 汇总行展开：加载该物料+仓库下的批次明细 */
+function handleSummaryExpand(row, expanded) {
+  if (!expanded.includes(row)) return
+  if (row.detailList) return
+  row.detailLoading = true
+  listInventory({ pageNum: 1, pageSize: 200, materialId: row.materialId, warehouseId: row.warehouseId, params: {} }).then(res => {
+    row.detailList = res.rows || []
+    row.detailLoading = false
+  }).catch(() => { row.detailLoading = false })
+}
+
+function handleViewChange() {
+  if (viewMode.value === 'summary') getSummary(); else getList()
+}
+function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; viewMode.value === 'summary' ? getSummary() : getList() }
 function resetQuery() { dateRange.value = []; queryParams.value.materialCode = undefined; queryParams.value.materialName = undefined; queryParams.value.locationKeyword = undefined; queryParams.value.batchNo = undefined; queryParams.value.specModel = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) {
   if (column.prop && column.order) {
@@ -205,14 +318,26 @@ function handleSortChange(column) {
 function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
 /** 导出库存（与列表口径一致：含筛选条件，导出全部页数据；仓库/库区/库位为合并列） */
 async function handleExport() {
-  let rows = await fetchAllPages(listInventory, proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime'))
+  const query = proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime')
+  if (!showZero.value) query.params.hideZero = 'true'
+  if (viewMode.value === 'summary') {
+    const rows = await fetchAllPages(listInventorySummary, query)
+    if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
+    const headers = ['物料编码', '物料名称', '规格型号', '单位', '仓库', '可用数量合计', '锁定数量合计', '批次数', '最早有效期']
+    downloadXlsx(`inventory_summary_${new Date().getTime()}`, headers, rows.map(i => [
+      i.materialCode || '', i.materialName || '', i.specModel || '', unitLabel(i.unit), i.warehouseName || '',
+      i.totalQty != null ? i.totalQty : '', i.totalLockQty != null ? i.totalLockQty : '', i.batchCount != null ? i.batchCount : '', i.minExpiryDate || ''
+    ]))
+    return
+  }
+  let rows = await fetchAllPages(listInventory, query)
   if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.inventoryId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
-  const headers = ['物料编码', '物料名称', '规格型号', '单位', '仓库/库区/库位', '批次号', '生产日期', '有效期', '可用数量', '锁定数量', '更新时间']
+  const headers = ['物料编码', '物料名称', '规格型号', '单位', '仓库/库区/库位', '内部批次', '供应商批次', '批次状态', '生产日期', '有效期', '可用数量', '锁定数量', '更新时间']
   downloadXlsx(`inventory_${new Date().getTime()}`, headers, rows.map(i => [
     i.materialCode || '', i.materialName || '', i.specModel || '', unitLabel(i.unit),
     [i.warehouseName, i.areaName, i.locationName].filter(Boolean).join('/'),
-    i.batchNo || '', i.productionDate || '', i.expiryDate || '',
+    i.batchNo || '', i.extBatchNo || '', dictLabel(food_batch_status, i.batchStatus) || '', i.productionDate || '', i.expiryDate || '',
     i.qty != null ? i.qty : '', i.lockQty != null ? i.lockQty : '', i.updateTime || ''
   ]))
 }

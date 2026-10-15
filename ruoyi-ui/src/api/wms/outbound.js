@@ -60,3 +60,21 @@ export function checkOutbound(orderId, detailId, qty) {
     params: { qty }
   })
 }
+
+/** FEFO批次分配预览（三重拦截：分配明细 + 被拦截批次原因） */
+export function fefoPreview(materialId, warehouseId, qty) {
+  return request({
+    url: '/wms/outbound/fefoPreview',
+    method: 'get',
+    params: { materialId, warehouseId, qty }
+  })
+}
+
+/** 仓库内可发批次列表（FEFO排序，已过三重拦截） */
+export function shippableBatches(materialId, warehouseId) {
+  return request({
+    url: '/wms/outbound/shippableBatches',
+    method: 'get',
+    params: { materialId, warehouseId }
+  })
+}

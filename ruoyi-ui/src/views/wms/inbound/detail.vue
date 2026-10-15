@@ -173,7 +173,8 @@
         <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
         <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
-        <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable />
+        <el-table-column label="供应商批次" :width="colWidth('extBatchNo', 130)" resizable show-overflow-tooltip><template #default="scope">{{ (scope.row.receivedQty || 0) > 0 ? (scope.row.extBatchNo || '-') : (scope.row.batchNo || '-') }}</template></el-table-column>
+        <el-table-column label="内部批次" :width="colWidth('batchNo', 130)" resizable show-overflow-tooltip><template #default="scope">{{ (scope.row.receivedQty || 0) > 0 ? (scope.row.batchNo || '-') : '-' }}</template></el-table-column>
         <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="center" />
         <el-table-column label="已收数量" prop="receivedQty" :width="colWidth('receivedQty', 100)" resizable align="center" />
         <el-table-column label="已上架数量" prop="putawayQty" :width="colWidth('putawayQty', 100)" resizable align="center" />
@@ -215,7 +216,7 @@
               <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ receiveForm.materialCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="receiveForm.unit" /></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">物料名称</span><div class="rd-value">{{ receiveForm.materialName }}</div></div>
-              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ receiveForm.batchNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">供应商批次</span><div class="rd-value">{{ receiveForm.batchNo || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -234,6 +235,20 @@
               <el-input-number v-model="receiveForm.qty" :precision="2" :min="0" :max="receiveForm.planQty - receiveForm.receivedQty" style="width: 100%" />
               <div style="margin-top: 6px; color: #909399; font-size: 12px">最大可收数量：{{ (receiveForm.planQty - receiveForm.receivedQty).toFixed(2) }}</div>
             </el-form-item>
+            <template v-if="receiveForm.isExpiryManage">
+              <el-form-item label="生产日期">
+                <el-date-picker v-model="receiveForm.productionDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择生产日期" style="width: 100%" />
+                <div style="margin-top: 6px; color: #909399; font-size: 12px">效期管理物料：生产日期与到期日期至少填写一项，收货后系统自动生成待检批次</div>
+              </el-form-item>
+              <el-form-item label="到期日期">
+                <el-date-picker v-model="receiveForm.expiryDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择到期日期" style="width: 100%" />
+              </el-form-item>
+              <el-form-item label="供应商批次">
+                <el-input v-if="receiveForm.batchNo" :model-value="receiveForm.batchNo" readonly />
+                <el-input v-else v-model="receiveForm.extBatchNo" placeholder="选填，录入供应商外部批次号（如箱号）" maxlength="64" />
+                <div style="margin-top: 6px; color: #909399; font-size: 12px">{{ receiveForm.batchNo ? '已在入库单填写供应商批次，收货后将映射为批次的外部批次号' : '收货后系统自动生成内部批次，此处可补充供应商外部批次号' }}</div>
+              </el-form-item>
+            </template>
           </div>
         </section>
       </el-form>
@@ -266,7 +281,7 @@
               <div class="rd-item"><span class="rd-label">物料编码</span><div class="rd-value">{{ putawayForm.materialCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">单位</span><div class="rd-value"><dict-tag :options="wms_unit" :value="putawayForm.unit" /></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">物料名称</span><div class="rd-value">{{ putawayForm.materialName }}</div></div>
-              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ putawayForm.batchNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">内部批次</span><div class="rd-value">{{ putawayForm.batchNo || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -347,6 +362,12 @@
             </div>
           </el-col>
           <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">批次自动生成与供应商批次</div>
+              <div class="highlight-card-body">效期管理物料收货后，系统按批次规则<strong>自动生成内部批次（待检）</strong>；入库单/收货时填写的供应商批次号仅作为<strong>外部批次号</strong>记录，用于与供应商对账追溯。内部批次后续随检验放行、出库、召回流转</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
             <div class="highlight-card highlight-danger">
               <div class="highlight-card-title">收货与上架区别</div>
               <div class="highlight-card-body">收货仅记录到货数量，不更新库存；<strong>上架才会绑定库位并更新库存</strong>。收货和上架是两个独立环节</div>
@@ -357,7 +378,7 @@
         <h4>四、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true">
-            <strong>收货操作：</strong>在「待收货」页签中选择入库单，点击「收货」按钮，输入本次收货数量并确认
+            <strong>收货操作：</strong>在「待收货」页签中选择入库单，点击「收货」按钮，输入本次收货数量并确认。效期管理物料需填写生产日期或到期日期，收货后系统自动生成待检批次
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
             <strong>上架操作：</strong>在「待上架」页签中选择入库单，点击「上架」按钮，选择目标库位并输入上架数量
@@ -377,6 +398,7 @@
 <script setup name="WmsInboundDetail">
 import { listInbound, getInbound, receiveInbound, putawayInbound } from '@/api/wms/inbound'
 import { listLocation, listWarehouse } from '@/api/wms/warehouse'
+import { getMaterial } from '@/api/wms/material'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search } from '@element-plus/icons-vue'
@@ -478,13 +500,37 @@ function openReceive(row) {
     batchNo: row.batchNo,
     planQty: row.planQty,
     receivedQty: row.receivedQty,
-    qty: row.planQty - row.receivedQty
+    qty: row.planQty - row.receivedQty,
+    isExpiryManage: false,
+    productionDate: undefined,
+    expiryDate: undefined,
+    extBatchNo: undefined
   }
   receiveOpen.value = true
+  // 效期管理物料：收货时必须填写生产日期或到期日期，支持录入供应商批次号
+  getMaterial(row.materialId).then(res => {
+    const material = res.data || {}
+    receiveForm.value.isExpiryManage = material.isExpiryManage === '1'
+    if (material.isExpiryManage === '1' && material.shelfLifeDays && !receiveForm.value.expiryDate) {
+      const d = new Date()
+      d.setDate(d.getDate() + Number(material.shelfLifeDays))
+      receiveForm.value.expiryDate = d.toISOString().slice(0, 10)
+    }
+  }).catch(() => {})
 }
 function submitReceive() {
-  receiveInbound(receiveForm.value.orderId, receiveForm.value.detailId, receiveForm.value.qty).then(() => {
-    proxy.$modal.msgSuccess('收货成功')
+  if (receiveForm.value.isExpiryManage && !receiveForm.value.productionDate && !receiveForm.value.expiryDate) {
+    proxy.$modal.msgWarning('该物料启用效期管理，请填写生产日期或到期日期')
+    return
+  }
+  const extra = {}
+  if (receiveForm.value.isExpiryManage) {
+    if (receiveForm.value.productionDate) extra.productionDate = receiveForm.value.productionDate
+    if (receiveForm.value.expiryDate) extra.expiryDate = receiveForm.value.expiryDate
+    if (receiveForm.value.extBatchNo) extra.extBatchNo = receiveForm.value.extBatchNo
+  }
+  receiveInbound(receiveForm.value.orderId, receiveForm.value.detailId, receiveForm.value.qty, extra).then(() => {
+    proxy.$modal.msgSuccess('收货成功，系统已自动生成批次（待检）')
     receiveOpen.value = false
     getInbound(currentOrder.value.orderId).then(res => { currentOrder.value = res.data })
     getList()

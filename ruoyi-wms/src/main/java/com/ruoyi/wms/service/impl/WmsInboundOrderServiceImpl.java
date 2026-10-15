@@ -16,7 +16,11 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsInboundOrder;
 import com.ruoyi.wms.domain.WmsInboundOrderDetail;
+import com.ruoyi.wms.domain.WmsMaterial;
+import com.ruoyi.food.domain.FoodBatch;
+import com.ruoyi.food.service.IFoodBatchService;
 import com.ruoyi.wms.mapper.WmsInboundOrderMapper;
+import com.ruoyi.wms.mapper.WmsMaterialMapper;
 import com.ruoyi.wms.service.IWmsInboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -36,6 +40,12 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private WmsMaterialMapper wmsMaterialMapper;
+
+    @Autowired
+    private IFoodBatchService foodBatchService;
 
     @Override
     @DataScope(deptAlias = "wms_inbound_order")
@@ -144,7 +154,8 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int doReceive(Long orderId, Long detailId, BigDecimal receivedQty)
+    public int doReceive(Long orderId, Long detailId, BigDecimal receivedQty,
+                         Date productionDate, Date expiryDate, String extBatchNo)
     {
         WmsInboundOrder order = wmsInboundOrderMapper.selectInboundOrderById(orderId);
         if (order == null || !"1".equals(order.getStatus()))
@@ -178,6 +189,21 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
                     + "，已收：" + alreadyReceived.stripTrailingZeros().toPlainString()
                     + "，本次：" + receivedQty.stripTrailingZeros().toPlainString());
         }
+        // 效期管理物料：收货确认批次必填且自动生成（采购手填批次映射为供应商外部批次），批次进待检
+        // 收货弹框填写的效期信息优先于单据明细默认值
+        if (productionDate != null)
+        {
+            target.setProductionDate(productionDate);
+        }
+        if (expiryDate != null)
+        {
+            target.setExpiryDate(expiryDate);
+        }
+        if (StringUtils.isNotEmpty(extBatchNo) && StringUtils.isEmpty(target.getBatchNo()))
+        {
+            target.setBatchNo(extBatchNo);
+        }
+        ensureInboundBatch(order, target);
         target.setReceivedQty(alreadyReceived.add(receivedQty));
         wmsInboundOrderMapper.updateInboundDetail(target);
 
@@ -379,6 +405,57 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             }
         }
         return 1;
+    }
+
+    /**
+     * 效期管理物料收货批次处理：
+     * 采购入库(0)/生产入库(1)/退货入库(2) → 自动生成内部批次（规则引擎），手填批次映射为外部批次号，状态待检；
+     * 调拨入库(3) → 沿用原批次号；多次部分收货复用首次生成的批次
+     */
+    private void ensureInboundBatch(WmsInboundOrder order, WmsInboundOrderDetail target)
+    {
+        WmsMaterial material = wmsMaterialMapper.selectMaterialById(target.getMaterialId());
+        boolean expiryManage = material != null && "1".equals(material.getIsExpiryManage());
+        if (!expiryManage)
+        {
+            return;
+        }
+        if (target.getProductionDate() == null && target.getExpiryDate() == null)
+        {
+            throw new ServiceException("物料【" + (target.getMaterialName() != null ? target.getMaterialName() : "") + "】启用效期管理，收货必须填写生产日期或到期日期");
+        }
+        if ("3".equals(order.getOrderType()))
+        {
+            if (StringUtils.isEmpty(target.getBatchNo()))
+            {
+                throw new ServiceException("调拨入库必须携带原批次号");
+            }
+            return;
+        }
+        if (target.getBatchId() != null)
+        {
+            return;
+        }
+        String manualBatchNo = target.getBatchNo();
+        FoodBatch batch = new FoodBatch();
+        batch.setMaterialId(target.getMaterialId());
+        batch.setMaterialCode(target.getMaterialCode());
+        batch.setMaterialName(target.getMaterialName());
+        batch.setSourceType("0".equals(order.getOrderType()) ? "1" : ("1".equals(order.getOrderType()) ? "2" : "5"));
+        batch.setSourceBillType("inbound");
+        batch.setSourceBillId(order.getOrderId());
+        batch.setProduceDate(target.getProductionDate());
+        batch.setReceiveDate(new Date());
+        batch.setShelfLifeDays(material.getShelfLifeDays());
+        batch.setExpireDate(target.getExpiryDate());
+        batch.setQtyUnit(target.getUnit());
+        batch.setExtBatchCode(StringUtils.isEmpty(manualBatchNo) ? null : manualBatchNo);
+        batch.setBatchStatus("0");
+        batch.setCreateBy(SecurityUtils.getUsername());
+        foodBatchService.insertBatch(batch);
+        target.setBatchId(batch.getBatchId());
+        target.setBatchNo(batch.getBatchCode());
+        target.setExtBatchNo(StringUtils.isEmpty(manualBatchNo) ? null : manualBatchNo);
     }
 
     /**

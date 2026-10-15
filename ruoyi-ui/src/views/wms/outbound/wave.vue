@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="批次号" prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item label="波次号" prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
       <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_wave_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
       <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
@@ -13,8 +13,8 @@
     <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-      <el-table-column label="批次号" prop="waveNo" :width="colWidth('waveNo', 160)" resizable />
-      <el-table-column label="批次名称" prop="waveName" show-overflow-tooltip />
+      <el-table-column label="波次号" prop="waveNo" :width="colWidth('waveNo', 160)" resizable />
+      <el-table-column label="波次名称" prop="waveName" show-overflow-tooltip />
       <el-table-column label="仓库" prop="warehouseName" :width="colWidth('warehouseName', 120)" resizable />
       <el-table-column label="状态" prop="status" :width="colWidth('status', 100)" resizable align="center"><template #default="scope"><dict-tag :options="wms_wave_status" :value="scope.row.status" /></template></el-table-column>
       <el-table-column label="总数量" prop="totalQty" :width="colWidth('totalQty', 100)" resizable align="center" />

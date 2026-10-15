@@ -82,6 +82,10 @@ public class WmsStatisticsVO extends BaseEntity
     @Excel(name = "预警类型", readConverterExp = "low_stock=库存不足,overstock=库存积压,near_expiry=临期预警,expired=过期预警")
     private String alertType;
 
+    /** 批次号（效期预警用） */
+    @Excel(name = "批次号")
+    private String batchNo;
+
     /** 生产日期（效期预警用） */
     @Excel(name = "生产日期", dateFormat = "yyyy-MM-dd")
     private Date productionDate;
@@ -144,6 +148,8 @@ public class WmsStatisticsVO extends BaseEntity
     public void setOrderType(String orderType) { this.orderType = orderType; }
     public String getAlertType() { return alertType; }
     public void setAlertType(String alertType) { this.alertType = alertType; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public Date getProductionDate() { return productionDate; }
     public void setProductionDate(Date productionDate) { this.productionDate = productionDate; }
     public Date getExpiryDate() { return expiryDate; }

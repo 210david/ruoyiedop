@@ -42,6 +42,25 @@ public class WmsOutboundOrderDetail extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
+    /** 批次ID（food_batch） */
+    private Long batchId;
+
+    /** FEFO推荐批次号 */
+    private String fefoBatchNo;
+
+    /** 换批原因（与FEFO推荐不一致时必填） */
+    private String changeReason;
+
+    /** 到期日期（FEFO关联查询） */
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd")
+    private java.util.Date expireDate;
+
+    /** 批次剩余天数（FEFO关联查询） */
+    private Long daysRemain;
+
+    /** 批次状态（FEFO关联查询：0待检 1合格 2冻结 3报废） */
+    private String batchStatus;
+
     /** 计划数量 */
     @Excel(name = "计划数量")
     private BigDecimal planQty;
@@ -83,6 +102,18 @@ public class WmsOutboundOrderDetail extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+    public Long getBatchId() { return batchId; }
+    public void setBatchId(Long batchId) { this.batchId = batchId; }
+    public String getFefoBatchNo() { return fefoBatchNo; }
+    public void setFefoBatchNo(String fefoBatchNo) { this.fefoBatchNo = fefoBatchNo; }
+    public String getChangeReason() { return changeReason; }
+    public void setChangeReason(String changeReason) { this.changeReason = changeReason; }
+    public java.util.Date getExpireDate() { return expireDate; }
+    public void setExpireDate(java.util.Date expireDate) { this.expireDate = expireDate; }
+    public Long getDaysRemain() { return daysRemain; }
+    public void setDaysRemain(Long daysRemain) { this.daysRemain = daysRemain; }
+    public String getBatchStatus() { return batchStatus; }
+    public void setBatchStatus(String batchStatus) { this.batchStatus = batchStatus; }
     public BigDecimal getPlanQty() { return planQty; }
     public void setPlanQty(BigDecimal planQty) { this.planQty = planQty; }
     public BigDecimal getActualQty() { return actualQty; }

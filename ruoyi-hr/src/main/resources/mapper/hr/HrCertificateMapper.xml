@@ -107,4 +107,27 @@
         <foreach item="certId" collection="array" open="(" separator="," close=")">#{certId}</foreach>
     </delete>
 
+    <!-- 刷新健康证预警状态：取有效期至/复审日期较早者判断（口径同 calcRemindStatus，60天临期） -->
+    <update id="refreshHealthCertRemindStatus">
+        UPDATE biz_hr_certificate
+        SET remind_status = CASE
+                WHEN LEAST(IFNULL(valid_to, '9999-12-31'), IFNULL(review_date, '9999-12-31')) &lt; CURDATE() THEN '2'
+                WHEN LEAST(IFNULL(valid_to, '9999-12-31'), IFNULL(review_date, '9999-12-31')) &lt; DATE_ADD(CURDATE(), INTERVAL 60 DAY) THEN '1'
+                ELSE '0'
+            END
+        WHERE cert_type = '1'
+          AND (del_flag IS NULL OR del_flag = '0')
+          AND (status IS NULL OR status = '0')
+    </update>
+
+    <!-- 查询临期/过期的健康证（健康从业人员监管必备） -->
+    <select id="selectExpiringHealthCerts" resultMap="HrCertificateResult">
+        <include refid="selectVo"/>
+        WHERE cert_type = '1'
+          AND remind_status IN ('1', '2')
+          AND (del_flag IS NULL OR del_flag = '0')
+          AND (status IS NULL OR status = '0')
+        ORDER BY valid_to ASC
+    </select>
+
 </mapper>

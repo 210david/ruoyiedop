@@ -25,6 +25,7 @@
         <result property="date"            column="date"/>
         <result property="orderType"       column="order_type"/>
         <result property="alertType"       column="alert_type"/>
+        <result property="batchNo"         column="batch_no"/>
         <result property="productionDate"  column="production_date"/>
         <result property="expiryDate"      column="expiry_date"/>
         <result property="daysUntilExpiry" column="days_until_expiry"/>
@@ -228,6 +229,7 @@
                 NULL              AS expiry_date,
                 NULL              AS days_until_expiry,
                 NULL              AS expiry_alert_days,
+                NULL              AS batch_no,
                 m.is_expiry_manage AS is_expiry_manage
             FROM wms_material m
             INNER JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
@@ -258,6 +260,7 @@
                 NULL              AS expiry_date,
                 NULL              AS days_until_expiry,
                 NULL              AS expiry_alert_days,
+                NULL              AS batch_no,
                 m.is_expiry_manage AS is_expiry_manage
             FROM wms_material m
             INNER JOIN wms_inventory i ON m.material_id = i.material_id AND i.del_flag = '0'
@@ -288,6 +291,7 @@
                 i.expiry_date     AS expiry_date,
                 DATEDIFF(i.expiry_date, NOW()) AS days_until_expiry,
                 m.expiry_alert_days AS expiry_alert_days,
+                i.batch_no        AS batch_no,
                 m.is_expiry_manage AS is_expiry_manage
             FROM wms_inventory i
             INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'
@@ -319,6 +323,7 @@
                 i.expiry_date     AS expiry_date,
                 DATEDIFF(i.expiry_date, NOW()) AS days_until_expiry,
                 m.expiry_alert_days AS expiry_alert_days,
+                i.batch_no        AS batch_no,
                 m.is_expiry_manage AS is_expiry_manage
             FROM wms_inventory i
             INNER JOIN wms_material m ON i.material_id = m.material_id AND m.del_flag = '0'

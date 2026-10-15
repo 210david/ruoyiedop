@@ -484,6 +484,11 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
      */
     private void validateExpiryManage(WmsMaterial material)
     {
+        // 批次管理是效期管理的父开关：启用效期管理必须同时启用批次管理（服务端兜底联动）
+        if ("1".equals(material.getIsExpiryManage()) && !"1".equals(material.getIsBatchManage()))
+        {
+            material.setIsBatchManage("1");
+        }
         if ("1".equals(material.getIsExpiryManage()))
         {
             if (material.getShelfLifeDays() == null)

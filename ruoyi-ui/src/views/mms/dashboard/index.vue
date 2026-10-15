@@ -71,6 +71,37 @@
         </el-col>
       </el-row>
 
+      <!-- 在制品 WIP 汇总（仅在存在 WIP 数据时显示） -->
+      <el-row :gutter="16" class="kpi-row" v-if="wipDash.summary.totalWip > 0 || (wipDash.stepDistribution && wipDash.stepDistribution.length > 0)">
+        <el-col :xs="12" :sm="8" :md="6" :lg="6">
+          <div class="amount-card amount-card--blue">
+            <div class="amount-card__label">在制垛数</div>
+            <div class="amount-card__value">{{ wipDash.summary.totalWip || 0 }}</div>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="8" :md="6" :lg="6">
+          <div class="amount-card amount-card--cyan">
+            <div class="amount-card__label">平均在制天数</div>
+            <div class="amount-card__value">{{ wipDash.summary.avgDays || 0 }}</div>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="8" :md="6" :lg="6">
+          <div class="amount-card amount-card--orange">
+            <div class="amount-card__label">超期垛数</div>
+            <div class="amount-card__value">{{ wipDash.summary.overdueCnt || 0 }}</div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="8" :md="6" :lg="6">
+          <div class="amount-card amount-card--green">
+            <div class="amount-card__label">WIP 工序分布（垛）</div>
+            <div class="wip-steps">
+              <span v-for="s in wipDash.stepDistribution" :key="s.stepSeq" class="badge blue">{{ s.stepSeq }} {{ s.processName }} · {{ s.cnt }}</span>
+              <span v-if="!wipDash.stepDistribution || wipDash.stepDistribution.length === 0" class="text-muted">—</span>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+
       <!-- 产量统计卡片 -->
       <el-row :gutter="16" class="kpi-row">
         <el-col :xs="12" :sm="8" :md="6" :lg="6">
@@ -231,6 +262,7 @@ import * as echarts from 'echarts'
 import { Document, Calendar, Warning, Tickets, TrendCharts, WarningFilled } from '@element-plus/icons-vue'
 import { getOverview, getWorkOrderStatusDist, getWorkOrderTrend, getProductTop10, getAbnormalTypeDist, getAbnormalSeverityDist, getReportTrend, getWorkOrderSourceDist, getResourceLoad, getWorkOrderTypeDist } from '@/api/mms/dashboard'
 import { listWorkOrder } from '@/api/mms/workorder'
+import { wipDashboard } from '@/api/food/wip'
 
 const { proxy } = getCurrentInstance()
 const { mms_workorder_status } = proxy.useDict('mms_workorder_status')
@@ -239,6 +271,7 @@ const loading = ref(true)
 const lastUpdate = ref('')
 const overview = ref({})
 const latestOrders = ref([])
+const wipDash = ref({ summary: {}, stepDistribution: [] })
 
 // 图表引用
 const woStatusChart = ref(null)
@@ -546,6 +579,15 @@ function loadData() {
   listWorkOrder({ pageNum: 1, pageSize: 5 }).then(response => {
     latestOrders.value = response.rows || []
   }).catch(() => {})
+  loadWip()
+}
+
+/** 加载在制品 WIP 汇总 */
+function loadWip() {
+  wipDashboard().then(res => {
+    const d = res.data || {}
+    wipDash.value = { summary: d.summary || {}, stepDistribution: d.stepDistribution || [] }
+  }).catch(() => {})
 }
 
 /** 监听暗色模式切换 */
@@ -656,6 +698,8 @@ onBeforeUnmount(() => {
 .amount-card--green { border-left-color: #67c23a; }
 .amount-card--orange { border-left-color: #e6a23c; }
 .amount-card--cyan { border-left-color: #13c2c2; }
+.wip-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.wip-steps .badge { white-space: nowrap; }
 .amount-card__label {
   font-size: 14px;
   color: #909399;

@@ -51,12 +51,44 @@ public class DruidProperties
     @Value("${spring.datasource.druid.testOnReturn}")
     private boolean testOnReturn;
 
+    /** Druid 连接属性（支持 config.decrypt 密码解密），格式: k1=v1;k2=v2 */
+    @Value("${spring.datasource.druid.connection-properties:}")
+    private String connectionProperties;
+
     public DruidDataSource dataSource(DruidDataSource datasource)
     {
         /** 配置初始化大小、最小、最大 */
         datasource.setInitialSize(initialSize);
         datasource.setMaxActive(maxActive);
         datasource.setMinIdle(minIdle);
+
+        /** Druid 密码解密：显式挂 ConfigFilter 并设置连接属性（不依赖 Spring 绑定） */
+        if (connectionProperties != null && !connectionProperties.trim().isEmpty())
+        {
+            java.util.Properties props = new java.util.Properties();
+            for (String pair : connectionProperties.split(";"))
+            {
+                String kv = pair.trim();
+                if (kv.isEmpty())
+                {
+                    continue;
+                }
+                int idx = kv.indexOf('=');
+                if (idx > 0)
+                {
+                    props.setProperty(kv.substring(0, idx).trim(), kv.substring(idx + 1).trim());
+                }
+            }
+            datasource.setConnectProperties(props);
+            try
+            {
+                datasource.setFilters("config");
+            }
+            catch (java.sql.SQLException e)
+            {
+                throw new RuntimeException("Failed to register druid config filter", e);
+            }
+        }
 
         /** 配置获取连接等待超时的时间 */
         datasource.setMaxWait(maxWait);

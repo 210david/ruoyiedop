@@ -3,6 +3,7 @@ package com.ruoyi.wms.controller;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -86,9 +87,12 @@ public class WmsInboundOrderController extends BaseController
     @PreAuthorize("@ss.hasPermi('wms:inbound:edit')")
     @PutMapping("/receive/{orderId}/{detailId}")
     public AjaxResult receive(@PathVariable Long orderId, @PathVariable Long detailId,
-                              @RequestParam BigDecimal receivedQty)
+                              @RequestParam BigDecimal receivedQty,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.util.Date productionDate,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.util.Date expiryDate,
+                              @RequestParam(required = false) String extBatchNo)
     {
-        return toAjax(wmsInboundOrderService.doReceive(orderId, detailId, receivedQty));
+        return toAjax(wmsInboundOrderService.doReceive(orderId, detailId, receivedQty, productionDate, expiryDate, extBatchNo));
     }
 
     @Log(title = "入库上架", businessType = BusinessType.UPDATE)

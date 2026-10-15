@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.entity.SysMenu;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.dms.domain.DmsEquipment;
@@ -38,6 +39,7 @@ import com.ruoyi.qms.domain.QmsNcr;
 import com.ruoyi.qms.mapper.QmsNcrMapper;
 import com.ruoyi.safety.domain.SafetyHazard;
 import com.ruoyi.safety.mapper.SafetyHazardMapper;
+import com.ruoyi.system.mapper.SysMenuMapper;
 import com.ruoyi.system.mapper.SysUserHomeLayoutMapper;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.wms.domain.vo.WmsStatisticsVO;
@@ -87,6 +89,45 @@ public class HomeController extends BaseController
     private HrEmployeeMapper hrEmployeeMapper;
     @Autowired
     private SysUserHomeLayoutMapper homeLayoutMapper;
+
+    @Autowired
+    private SysMenuMapper menuMapper;
+
+    /** 业务模块编码 → 顶层菜单ID（用于按菜单停用状态过滤首页模块） */
+    private static final Map<String, Long> MODULE_MENU_IDS = new HashMap<>();
+    static
+    {
+        MODULE_MENU_IDS.put("wms", 2000L);
+        MODULE_MENU_IDS.put("dms", 3000L);
+        MODULE_MENU_IDS.put("mk", 4000L);
+        MODULE_MENU_IDS.put("pms", 4197L);
+        MODULE_MENU_IDS.put("safety", 4638L);
+        MODULE_MENU_IDS.put("qms", 4727L);
+        MODULE_MENU_IDS.put("fin", 905938L);
+        MODULE_MENU_IDS.put("hr", 905538L);
+        MODULE_MENU_IDS.put("mms", 5000L);
+    }
+
+    /**
+     * 判断模块对应菜单是否启用（status=0 正常；停用或查询异常时返回 false/true 策略：异常时放行）
+     */
+    private boolean isModuleEnabled(String code)
+    {
+        Long menuId = MODULE_MENU_IDS.get(code);
+        if (menuId == null)
+        {
+            return true;
+        }
+        try
+        {
+            SysMenu menu = menuMapper.selectMenuById(menuId);
+            return menu != null && !"1".equals(menu.getStatus());
+        }
+        catch (Exception e)
+        {
+            return true;
+        }
+    }
 
     /**
      * 首页聚合数据
@@ -326,14 +367,15 @@ public class HomeController extends BaseController
     {
         List<Map<String, Object>> modules = new ArrayList<>();
 
-        modules.add(buildWmsModule());
-        modules.add(buildDmsModule());
-        modules.add(buildPmsModule());
-        modules.add(buildMkModule());
-        modules.add(buildMmsModule());
-        modules.add(buildQmsModule());
-        modules.add(buildSafetyModule());
-        modules.add(buildHrModule());
+        // 仅返回菜单处于启用状态的模块（临时关闭的模块不再出现在首页）
+        if (isModuleEnabled("wms")) modules.add(buildWmsModule());
+        if (isModuleEnabled("dms")) modules.add(buildDmsModule());
+        if (isModuleEnabled("pms")) modules.add(buildPmsModule());
+        if (isModuleEnabled("mk")) modules.add(buildMkModule());
+        if (isModuleEnabled("mms")) modules.add(buildMmsModule());
+        if (isModuleEnabled("qms")) modules.add(buildQmsModule());
+        if (isModuleEnabled("safety")) modules.add(buildSafetyModule());
+        if (isModuleEnabled("hr")) modules.add(buildHrModule());
 
         return modules;
     }

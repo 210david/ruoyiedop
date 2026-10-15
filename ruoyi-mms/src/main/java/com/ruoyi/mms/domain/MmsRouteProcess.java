@@ -47,6 +47,40 @@ public class MmsRouteProcess extends BaseEntity
     /** 工序类型（从工序定义表带出，仅展示用） */
     private String processType;
 
+    /** 标准时长(天)——食品行业长周期工序 */
+    @Excel(name = "标准时长(天)")
+    private BigDecimal stdDays;
+
+    /** 最短时长(天) */
+    private BigDecimal minDays;
+
+    /** 最长时长(天) */
+    private BigDecimal maxDays;
+
+    /** 温度下限(℃) */
+    @Excel(name = "温度下限(℃)")
+    private BigDecimal tempMin;
+
+    /** 温度上限(℃) */
+    @Excel(name = "温度上限(℃)")
+    private BigDecimal tempMax;
+
+    /** 湿度下限(%) */
+    private BigDecimal humidityMin;
+
+    /** 湿度上限(%) */
+    private BigDecimal humidityMax;
+
+    /** CCP检验点(0否1是) */
+    @Excel(name = "CCP检验点", readConverterExp = "0=否,1=是")
+    private String ccpFlag;
+
+    /** 主要损耗类型(字典food_loss_type) */
+    private String lossType;
+
+    /** 该工序最大损耗率(%) */
+    private BigDecimal lossRateMax;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getRouteId() { return routeId; }
@@ -75,4 +109,24 @@ public class MmsRouteProcess extends BaseEntity
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getProcessType() { return processType; }
     public void setProcessType(String processType) { this.processType = processType; }
+    public BigDecimal getStdDays() { return stdDays; }
+    public void setStdDays(BigDecimal stdDays) { this.stdDays = stdDays; }
+    public BigDecimal getMinDays() { return minDays; }
+    public void setMinDays(BigDecimal minDays) { this.minDays = minDays; }
+    public BigDecimal getMaxDays() { return maxDays; }
+    public void setMaxDays(BigDecimal maxDays) { this.maxDays = maxDays; }
+    public BigDecimal getTempMin() { return tempMin; }
+    public void setTempMin(BigDecimal tempMin) { this.tempMin = tempMin; }
+    public BigDecimal getTempMax() { return tempMax; }
+    public void setTempMax(BigDecimal tempMax) { this.tempMax = tempMax; }
+    public BigDecimal getHumidityMin() { return humidityMin; }
+    public void setHumidityMin(BigDecimal humidityMin) { this.humidityMin = humidityMin; }
+    public BigDecimal getHumidityMax() { return humidityMax; }
+    public void setHumidityMax(BigDecimal humidityMax) { this.humidityMax = humidityMax; }
+    public String getCcpFlag() { return ccpFlag; }
+    public void setCcpFlag(String ccpFlag) { this.ccpFlag = ccpFlag; }
+    public String getLossType() { return lossType; }
+    public void setLossType(String lossType) { this.lossType = lossType; }
+    public BigDecimal getLossRateMax() { return lossRateMax; }
+    public void setLossRateMax(BigDecimal lossRateMax) { this.lossRateMax = lossRateMax; }
 }

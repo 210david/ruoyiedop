@@ -34,4 +34,4 @@ if not defined JAVA_EXE (
 )
 echo [INFO] java: %JAVA_EXE%
 
-"%JAVA_EXE%" -Xmx512m -jar target\%JARFILE% 1> backend-run.log 2>&1
+"%JAVA_EXE%" -Xmx512m -jar target\%JARFILE% --server.port=8082 1> backend-run.log 2>&1

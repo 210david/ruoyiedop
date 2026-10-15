@@ -44,6 +44,7 @@
             <result property="specModel" column="d_spec_model"/>
             <result property="unit" column="d_unit"/>
             <result property="returnQty" column="d_return_qty"/>
+            <result property="batchNo" column="d_batch_no"/>
             <result property="issueQty" column="d_issue_qty"/>
             <result property="delFlag" column="d_del_flag"/>
             <result property="createBy" column="d_create_by"/>
@@ -98,7 +99,7 @@
                d.detail_id AS d_detail_id, d.return_id AS d_return_id, d.seq AS d_seq,
                d.material_id AS d_material_id, d.material_code AS d_material_code,
                d.material_name AS d_material_name, d.spec_model AS d_spec_model, d.unit AS d_unit,
-               d.return_qty AS d_return_qty, d.issue_qty AS d_issue_qty,
+               d.return_qty AS d_return_qty, d.batch_no AS d_batch_no, d.issue_qty AS d_issue_qty,
                d.del_flag AS d_del_flag, d.create_by AS d_create_by,
                d.create_time AS d_create_time, d.remark AS d_remark
         FROM mms_return_material r
@@ -187,7 +188,7 @@
     <!-- ===== 退料明细操作 ===== -->
     <select id="selectReturnDetailByReturnId" parameterType="Long" resultType="com.ruoyi.mms.domain.MmsReturnDetail">
         SELECT detail_id, return_id, seq, material_id, material_code, material_name, spec_model,
-               unit, return_qty, issue_qty, del_flag, create_by, create_time, remark
+               unit, return_qty, batch_no, issue_qty, del_flag, create_by, create_time, remark
         FROM mms_return_detail
         WHERE return_id = #{returnId} AND del_flag = '0'
         ORDER BY seq ASC
@@ -196,10 +197,10 @@
     <insert id="insertReturnDetail" parameterType="com.ruoyi.mms.domain.MmsReturnDetail">
         INSERT INTO mms_return_detail (
             return_id, seq, material_id, material_code, material_name, spec_model,
-            unit, return_qty, issue_qty, del_flag, create_by, create_time, remark
+            unit, return_qty, batch_no, issue_qty, del_flag, create_by, create_time, remark
         ) VALUES (
             #{returnId}, #{seq}, #{materialId}, #{materialCode}, #{materialName}, #{specModel},
-            #{unit}, #{returnQty}, #{issueQty}, '0', #{createBy}, #{createTime}, #{remark}
+            #{unit}, #{returnQty}, #{batchNo}, #{issueQty}, '0', #{createBy}, #{createTime}, #{remark}
         )
     </insert>
 

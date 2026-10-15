@@ -158,11 +158,12 @@
             </template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wms:material:edit']">修改</el-button>
+                <el-button link type="warning" icon="Setting" @click="handleParam(scope.row)" v-hasPermi="['food:param:query']">行业参数</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wms:material:remove']">删除</el-button>
               </div>
             </template>
@@ -260,18 +261,20 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="效期管理" prop="isExpiryManage">
-              <el-radio-group v-model="form.isExpiryManage">
+              <el-radio-group v-model="form.isExpiryManage" @change="onExpiryManageChange">
                 <el-radio value="0">否</el-radio>
                 <el-radio value="1">是</el-radio>
               </el-radio-group>
+              <div class="form-tip">勾选后收货时自动生成内部批次并管控保质期，需同时启用批次管理</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="批次管理" prop="isBatchManage">
-              <el-radio-group v-model="form.isBatchManage">
+              <el-radio-group v-model="form.isBatchManage" @change="onBatchManageChange">
                 <el-radio value="0">否</el-radio>
                 <el-radio value="1">是</el-radio>
               </el-radio-group>
+              <div class="form-tip">批次生成的总开关：关闭将同时关闭效期管理</div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -401,6 +404,27 @@
             </div>
           </div>
         </section>
+        <!-- 食品行业参数 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vp')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>食品行业参数</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vp }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vp">
+            <div class="rd-grid" v-if="viewParam">
+              <div class="rd-item"><span class="rd-label">产出率模型</span><div class="rd-value"><dict-tag :options="food_yield_model" :value="viewParam.yieldModel" /></div></div>
+              <div class="rd-item"><span class="rd-label">排产模式</span><div class="rd-value"><dict-tag :options="food_schedule_mode" :value="viewParam.scheduleMode" /></div></div>
+              <template v-if="viewParam.yieldModel === '1'">
+                <div class="rd-item"><span class="rd-label">基准产出率</span><div class="rd-value">{{ viewParam.stdYieldRate != null ? viewParam.stdYieldRate + ' %' : '-' }}</div></div>
+                <div class="rd-item"><span class="rd-label">告警下限</span><div class="rd-value">{{ viewParam.yieldAlarmRate != null ? viewParam.yieldAlarmRate + ' %' : '-' }}</div></div>
+              </template>
+              <div class="rd-item rd-item--full"><span class="rd-label">参数备注</span><div class="rd-value">{{ viewParam.remark || '-' }}</div></div>
+            </div>
+            <div class="rd-grid" v-else>
+              <div class="rd-item rd-item--full"><span class="rd-label">行业参数</span><div class="rd-value">未配置（可在列表"行业参数"按钮中设置）</div></div>
+            </div>
+          </div>
+        </section>
         <!-- 其他信息 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('v0')">
@@ -420,26 +444,110 @@
         <el-button @click="viewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 物料行业参数对话框（食品行业：产出率模型/排产模式） -->
+    <el-dialog v-model="paramOpen" width="560px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          <span class="rd-detail-header-title">物料行业参数{{ paramForm.materialName ? ' - ' + paramForm.materialName : '' }}</span>
+        </div>
+      </template>
+      <el-form ref="paramRef" :model="paramForm" :rules="paramRules" label-width="100px" v-loading="paramLoading">
+        <el-form-item label="物料">
+          <el-input :model-value="[paramForm.materialCode, paramForm.materialName].filter(Boolean).join(' - ')" readonly />
+        </el-form-item>
+        <el-form-item label="产出率模型" prop="yieldModel">
+          <el-radio-group v-model="paramForm.yieldModel">
+            <el-radio v-for="d in food_yield_model" :key="d.value" :value="d.value">{{ d.label }}</el-radio>
+          </el-radio-group>
+          <div class="param-tip">产出率模型：按基准产出率核算投入产出；配比模型：按BOM配比核算（暂不参与产出率核算报表）</div>
+        </el-form-item>
+        <template v-if="paramForm.yieldModel === '1'">
+          <el-form-item label="基准产出率" prop="stdYieldRate">
+            <el-input-number v-model="paramForm.stdYieldRate" :min="0.01" :max="100" :precision="2" :step="1" controls-position="right" style="width: 200px" />
+            <span class="param-unit">%</span>
+            <div class="param-tip">如干腌火腿出成76%：100kg鲜腿产出76kg成品，此处填76</div>
+          </el-form-item>
+          <el-form-item label="告警下限" prop="yieldAlarmRate">
+            <el-input-number v-model="paramForm.yieldAlarmRate" :min="0" :max="100" :precision="2" :step="1" controls-position="right" style="width: 200px" />
+            <span class="param-unit">%</span>
+            <div class="param-tip">实际产出率低于该值时在产出率核算报表中标记告警</div>
+          </el-form-item>
+        </template>
+        <el-form-item label="排产模式" prop="scheduleMode">
+          <el-radio-group v-model="paramForm.scheduleMode">
+            <el-radio v-for="d in food_schedule_mode" :key="d.value" :value="d.value">{{ d.label }}</el-radio>
+          </el-radio-group>
+          <div class="param-tip">批次计划：按工单批次整批排产；离散日排产：按日拆分产能排产</div>
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="paramForm.remark" type="textarea" :rows="2" placeholder="请输入内容" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" @click="submitParam" v-hasPermi="['food:param:edit']">保 存</el-button>
+        <el-button @click="paramOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="WmsMaterial">
 import { listMaterial, getMaterial, addMaterial, updateMaterial, delMaterial } from '@/api/wms/material'
+import { getParamByMaterial, addParam, updateParam } from '@/api/food/materialParam'
 import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { ArrowDown, Plus, Edit, Delete, Download, Upload, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
-const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v3","v2","v1","v0"])
+const { collapsedCards, toggleCard } = useDetailCard(["c3","c2","c1","c0","v3","v2","v1","vp","v0"])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_material_index')
-const { wms_material_type, wms_unit } = proxy.useDict('wms_material_type', 'wms_unit')
+const { wms_material_type, wms_unit, food_yield_model, food_schedule_mode } = proxy.useDict('wms_material_type', 'wms_unit', 'food_yield_model', 'food_schedule_mode')
+
+/** 物料行业参数（食品：产出率模型/排产模式） */
+const paramOpen = ref(false)
+const paramLoading = ref(false)
+const paramForm = reactive({ paramId: null, materialId: null, materialCode: undefined, materialName: undefined, yieldModel: '1', stdYieldRate: undefined, yieldAlarmRate: undefined, scheduleMode: '1', remark: undefined })
+const paramRules = {
+  yieldModel: [{ required: true, message: '产出率模型不能为空', trigger: 'change' }],
+  scheduleMode: [{ required: true, message: '排产模式不能为空', trigger: 'change' }]
+}
+function handleParam(row) {
+  paramOpen.value = true
+  paramLoading.value = true
+  Object.assign(paramForm, { paramId: null, materialId: row.materialId, materialCode: row.materialCode, materialName: row.materialName, yieldModel: '1', stdYieldRate: undefined, yieldAlarmRate: undefined, scheduleMode: '1', remark: undefined })
+  getParamByMaterial(row.materialId).then(res => {
+    if (res.data) {
+      Object.assign(paramForm, res.data)
+    }
+    paramLoading.value = false
+  }).catch(() => { paramLoading.value = false })
+}
+function submitParam() {
+  proxy.$refs['paramRef'].validate(valid => {
+    if (!valid) return
+    if (paramForm.yieldModel === '1') {
+      if (paramForm.stdYieldRate == null || paramForm.stdYieldRate <= 0 || paramForm.stdYieldRate > 100) {
+        proxy.$modal.msgWarning('基准产出率必须在(0,100]之间')
+        return
+      }
+    }
+    const req = paramForm.paramId != null ? updateParam({ ...paramForm }) : addParam({ ...paramForm })
+    req.then(() => {
+      proxy.$modal.msgSuccess(paramForm.paramId != null ? '行业参数已更新' : '行业参数已保存')
+      paramOpen.value = false
+    })
+  })
+}
 
 const materialList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
+const viewParam = ref(null)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
@@ -602,7 +710,14 @@ function getList() {
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params = queryParams.value.params || {}; queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params = queryParams.value.params || {}; queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function materialTypeLabel(type) { const item = wms_material_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
+function unitLabel(unit) {
+  if (!unit) return '-'
+  const item = wms_unit.value.find(d => d.value == unit)
+  if (item) return item.label
+  // 兼容存量数据：unit 存的是 label 文本时按 label 反查，仍无匹配回退原值
+  const byLabel = wms_unit.value.find(d => d.label == unit)
+  return byLabel ? byLabel.label : unit
+}
 
 function handleQuery() {
   queryParams.value.pageNum = 1
@@ -650,6 +765,10 @@ function reset() {
   proxy.resetForm('materialRef')
 }
 
+// 批次管理/效期管理联动：批次管理是效期管理的父开关
+function onBatchManageChange(v) { if (v !== '1') { form.value.isExpiryManage = '0' } }
+function onExpiryManageChange(v) { if (v === '1') { form.value.isBatchManage = '1' } }
+
 function handleAdd() {
   reset()
   open.value = true
@@ -667,9 +786,14 @@ function handleUpdate(row) {
 }
 
 function handleView(row) {
+  viewParam.value = null
   getMaterial(row.materialId).then(response => {
     viewData.value = response.data
     viewOpen.value = true
+  })
+  // 同步加载食品行业参数
+  getParamByMaterial(row.materialId).then(res => {
+    viewParam.value = res.data || null
   })
 }
 
@@ -732,6 +856,9 @@ loadTypeCounts()
 </script>
 
 <style scoped>
+.param-tip { font-size: 12px; color: #909399; line-height: 1.6; width: 100%; }
+.param-unit { margin-left: 8px; color: #606266; }
+.form-tip { font-size: 12px; color: #909399; line-height: 1.5; width: 100%; margin-top: 2px; }
 /* ===== Design Tokens ===== */
 .wms-material-page {
   padding-top: 10px;

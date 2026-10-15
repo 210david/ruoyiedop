@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodCcpRecordMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodCcpRecord" id="FoodCcpRecordResult">
+        <id property="recordId" column="record_id"/>
+        <result property="recordNo" column="record_no"/>
+        <result property="templateId" column="template_id"/>
+        <result property="ccpName" column="ccp_name"/>
+        <result property="monitorType" column="monitor_type"/>
+        <result property="routeId" column="route_id"/>
+        <result property="processName" column="process_name"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="wipId" column="wip_id"/>
+        <result property="wipNo" column="wip_no"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchCode" column="batch_code"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="recordTime" column="record_time"/>
+        <result property="tempValue" column="temp_value"/>
+        <result property="humidityValue" column="humidity_value"/>
+        <result property="saltRate" column="salt_rate"/>
+        <result property="moldStatus" column="mold_status"/>
+        <result property="monitorValue" column="monitor_value"/>
+        <result property="limitSnapshot" column="limit_snapshot"/>
+        <result property="judgeResult" column="judge_result"/>
+        <result property="overNote" column="over_note"/>
+        <result property="corrective" column="corrective"/>
+        <result property="ncrId" column="ncr_id"/>
+        <result property="ncrNo" column="ncr_no"/>
+        <result property="recorder" column="recorder"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectCcpRecordVo">
+        SELECT record_id, record_no, template_id, ccp_name, monitor_type, route_id, process_name,
+               work_order_no, wip_id, wip_no, batch_id, batch_code, material_id, material_code, material_name,
+               record_time, temp_value, humidity_value, salt_rate, mold_status, monitor_value,
+               limit_snapshot, judge_result, over_note, corrective, ncr_id, ncr_no, recorder, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM food_ccp_record
+    </sql>
+
+    <select id="selectCcpRecordList" parameterType="com.ruoyi.food.domain.FoodCcpRecord" resultMap="FoodCcpRecordResult">
+        <include refid="selectCcpRecordVo"/>
+        <where>
+            del_flag = '0'
+            <if test="ccpName != null and ccpName != ''"> AND ccp_name LIKE CONCAT('%', #{ccpName}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="batchCode != null and batchCode != ''"> AND batch_code LIKE CONCAT('%', #{batchCode}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="wipNo != null and wipNo != ''"> AND wip_no LIKE CONCAT('%', #{wipNo}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="judgeResult != null and judgeResult != ''"> AND judge_result = #{judgeResult}</if>
+            <if test="monitorType != null and monitorType != ''"> AND monitor_type = #{monitorType}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(record_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(record_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY record_time DESC, record_id DESC
+    </select>
+
+    <select id="selectCcpRecordById" parameterType="Long" resultMap="FoodCcpRecordResult">
+        <include refid="selectCcpRecordVo"/>
+        WHERE record_id = #{recordId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertCcpRecord" parameterType="com.ruoyi.food.domain.FoodCcpRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO food_ccp_record (
+            record_no, template_id, ccp_name, monitor_type, route_id, process_name,
+            work_order_no, wip_id, wip_no, batch_id, batch_code, material_id, material_code, material_name,
+            record_time, temp_value, humidity_value, salt_rate, mold_status, monitor_value,
+            limit_snapshot, judge_result, over_note, corrective, recorder, del_flag,
+            create_by, create_time, remark
+        )VALUES(
+            #{recordNo}, #{templateId}, #{ccpName}, #{monitorType}, #{routeId}, #{processName},
+            #{workOrderNo}, #{wipId}, #{wipNo}, #{batchId}, #{batchCode}, #{materialId}, #{materialCode}, #{materialName},
+            #{recordTime}, #{tempValue}, #{humidityValue}, #{saltRate}, #{moldStatus}, #{monitorValue},
+            #{limitSnapshot}, #{judgeResult}, #{overNote}, #{corrective}, #{recorder}, '0',
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateCcpRecord" parameterType="com.ruoyi.food.domain.FoodCcpRecord">
+        UPDATE food_ccp_record
+        <set>
+            <if test="overNote != null">over_note = #{overNote},</if>
+            <if test="corrective != null">corrective = #{corrective},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <update id="updateOverLink">
+        UPDATE food_ccp_record SET ncr_id = #{ncrId}, ncr_no = #{ncrNo}, update_time = NOW()
+        WHERE record_id = #{recordId}
+    </update>
+
+    <!-- 记录取号：CCP+yyyyMMdd+4位（同日递增） -->
+    <select id="selectNextRecordNo" resultType="String">
+        SELECT CONCAT('CCP', DATE_FORMAT(NOW(), '%Y%m%d'),
+               LPAD(IFNULL(MAX(CAST(RIGHT(r.record_no, 4) AS UNSIGNED)), 0) + 1, 4, '0'))
+        FROM food_ccp_record r
+        WHERE r.record_no LIKE CONCAT('CCP', DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+    </select>
+</mapper>

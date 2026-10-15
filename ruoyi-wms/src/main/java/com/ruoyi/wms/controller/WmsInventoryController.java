@@ -30,6 +30,16 @@ public class WmsInventoryController extends BaseController
         return getDataTable(list);
     }
 
+    /** 按物料+仓库汇总查询（管理视角，展开可看批次明细） */
+    @PreAuthorize("@ss.hasPermi('wms:inventory:list')")
+    @GetMapping("/summary")
+    public TableDataInfo summary(WmsInventory inventory)
+    {
+        startPage();
+        List<com.ruoyi.wms.domain.WmsInventorySummary> list = wmsInventoryService.selectInventorySummaryList(inventory);
+        return getDataTable(list);
+    }
+
     @Log(title = "库存查询", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('wms:inventory:export')")
     @PostMapping("/export")

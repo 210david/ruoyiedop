@@ -5,10 +5,13 @@ import java.util.Date;
 import java.util.List;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsInventoryLog;
+import com.ruoyi.wms.domain.WmsInventorySummary;
 
 public interface IWmsInventoryService
 {
     public List<WmsInventory> selectInventoryList(WmsInventory inventory);
+    /** 按物料+仓库汇总查询（管理视角） */
+    public List<WmsInventorySummary> selectInventorySummaryList(WmsInventory inventory);
     public WmsInventory selectInventoryById(Long inventoryId);
     public int addInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
                             BigDecimal qty, String changeType, String refOrderType, String refOrderNo, 

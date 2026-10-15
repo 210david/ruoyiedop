@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkBidArchiveMapper">
+
+    <resultMap type="MkBidArchive" id="MkBidArchiveResult">
+        <id     property="bidId"        column="bid_id"/>
+        <result property="bidNo"        column="bid_no"/>
+        <result property="bidName"      column="bid_name"/>
+        <result property="tenderNo"     column="tender_no"/>
+        <result property="tenderOrg"    column="tender_org"/>
+        <result property="customerId"   column="customer_id"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="bidDate"      column="bid_date"/>
+        <result property="openDate"     column="open_date"/>
+        <result property="bidAmount"    column="bid_amount"/>
+        <result property="deposit"      column="deposit"/>
+        <result property="bidStatus"    column="bid_status"/>
+        <result property="winAmount"    column="win_amount"/>
+        <result property="contractId"   column="contract_id"/>
+        <result property="contractNo"   column="contract_no"/>
+        <result property="resultDate"   column="result_date"/>
+        <result property="attachment"   column="attachment"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <resultMap type="MkBidItem" id="MkBidItemResult">
+        <id     property="itemId"        column="item_id"/>
+        <result property="bidId"         column="bid_id"/>
+        <result property="lineNo"        column="line_no"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="productName"   column="product_name"/>
+        <result property="productSpec"   column="product_spec"/>
+        <result property="unit"          column="unit"/>
+        <result property="quantity"      column="quantity"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="subtotal"      column="subtotal"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectBidVo">
+        SELECT b.bid_id, b.bid_no, b.bid_name, b.tender_no, b.tender_org, b.customer_id, b.customer_name,
+               b.bid_date, b.open_date, b.bid_amount, b.deposit, b.bid_status, b.win_amount,
+               b.contract_id, b.contract_no, b.result_date, b.attachment,
+               b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM mk_bid_archive b
+    </sql>
+
+    <select id="selectBidList" parameterType="MkBidArchive" resultMap="MkBidArchiveResult">
+        <include refid="selectBidVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="bidNo != null and bidNo != ''"> AND b.bid_no LIKE CONCAT('%', #{bidNo}, '%')</if>
+            <if test="bidName != null and bidName != ''"> AND b.bid_name LIKE CONCAT('%', #{bidName}, '%')</if>
+            <if test="tenderNo != null and tenderNo != ''"> AND b.tender_no LIKE CONCAT('%', #{tenderNo}, '%')</if>
+            <if test="tenderOrg != null and tenderOrg != ''"> AND b.tender_org LIKE CONCAT('%', #{tenderOrg}, '%')</if>
+            <if test="customerId != null"> AND b.customer_id = #{customerId}</if>
+            <if test="bidStatus != null and bidStatus != ''"> AND b.bid_status = #{bidStatus}</if>
+            <if test="params.beginBidDate != null and params.beginBidDate != ''"> AND b.bid_date &gt;= #{params.beginBidDate}</if>
+            <if test="params.endBidDate != null and params.endBidDate != ''"> AND b.bid_date &lt;= #{params.endBidDate}</if>
+        </where>
+        ORDER BY b.bid_id DESC
+    </select>
+
+    <select id="selectBidById" parameterType="Long" resultMap="MkBidArchiveResult">
+        <include refid="selectBidVo"/> WHERE b.bid_id = #{bidId} AND b.del_flag = '0'
+    </select>
+
+    <select id="selectBidItems" parameterType="Long" resultMap="MkBidItemResult">
+        SELECT item_id, bid_id, line_no, material_id, material_code, product_name, product_spec,
+               unit, quantity, unit_price, subtotal, remark
+        FROM mk_bid_item WHERE bid_id = #{bidId} ORDER BY line_no, item_id
+    </select>
+
+    <insert id="insertBid" parameterType="MkBidArchive" useGeneratedKeys="true" keyProperty="bidId">
+        INSERT INTO mk_bid_archive (bid_no, bid_name, tender_no, tender_org, customer_id, customer_name,
+            bid_date, open_date, bid_amount, deposit, bid_status, win_amount, contract_id, contract_no,
+            result_date, attachment, create_by, create_time, remark)
+        VALUES (#{bidNo}, #{bidName}, #{tenderNo}, #{tenderOrg}, #{customerId}, #{customerName},
+            #{bidDate}, #{openDate}, #{bidAmount}, #{deposit}, #{bidStatus}, #{winAmount}, #{contractId}, #{contractNo},
+            #{resultDate}, #{attachment}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <insert id="insertBidItem" parameterType="MkBidItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO mk_bid_item (bid_id, line_no, material_id, material_code, product_name, product_spec,
+            unit, quantity, unit_price, subtotal, remark)
+        VALUES (#{bidId}, #{lineNo}, #{materialId}, #{materialCode}, #{productName}, #{productSpec},
+            #{unit}, #{quantity}, #{unitPrice}, #{subtotal}, #{remark})
+    </insert>
+
+    <update id="updateBid" parameterType="MkBidArchive">
+        UPDATE mk_bid_archive
+        <set>
+            <if test="bidName != null and bidName != ''">bid_name = #{bidName},</if>
+            <if test="tenderNo != null">tender_no = #{tenderNo},</if>
+            <if test="tenderOrg != null">tender_org = #{tenderOrg},</if>
+            <if test="customerId != null">customer_id = #{customerId}, customer_name = #{customerName},</if>
+            <if test="bidDate != null">bid_date = #{bidDate},</if>
+            <if test="openDate != null">open_date = #{openDate},</if>
+            <if test="bidAmount != null">bid_amount = #{bidAmount},</if>
+            <if test="deposit != null">deposit = #{deposit},</if>
+            <if test="bidStatus != null and bidStatus != ''">bid_status = #{bidStatus},</if>
+            <if test="winAmount != null">win_amount = #{winAmount},</if>
+            <if test="contractId != null">contract_id = #{contractId},</if>
+            <if test="contractNo != null">contract_no = #{contractNo},</if>
+            <if test="resultDate != null">result_date = #{resultDate},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE bid_id = #{bidId}
+    </update>
+
+    <delete id="deleteBidByIds" parameterType="Long">
+        UPDATE mk_bid_archive SET del_flag = '1' WHERE bid_id IN
+        <foreach collection="array" item="bidId" open="(" separator="," close=")">
+            #{bidId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteBidItemsByBidId" parameterType="Long">
+        DELETE FROM mk_bid_item WHERE bid_id = #{bidId}
+    </delete>
+</mapper>

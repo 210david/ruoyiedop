@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodYieldMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodYieldRow" id="FoodYieldRowResult">
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="yieldModel" column="yield_model"/>
+        <result property="scheduleMode" column="schedule_mode"/>
+        <result property="stdYieldRate" column="std_yield_rate"/>
+        <result property="yieldAlarmRate" column="yield_alarm_rate"/>
+        <result property="planQty" column="plan_qty"/>
+        <result property="inputQty" column="input_qty"/>
+        <result property="actualQty" column="actual_qty"/>
+        <result property="lossCut" column="loss_cut"/>
+        <result property="lossSalt" column="loss_salt"/>
+        <result property="lossFerment" column="loss_ferment"/>
+        <result property="lossOther" column="loss_other"/>
+        <result property="lossTotal" column="loss_total"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <!-- 产出率核算：投入=工单领料明细合计；实际产出=工单合格数；分环节损耗=工序转移单按损耗类型汇总 -->
+    <select id="selectYieldAnalysis" parameterType="com.ruoyi.food.domain.FoodYieldRow" resultMap="FoodYieldRowResult">
+        SELECT wo.work_order_id, wo.work_order_no, wo.product_id, wo.product_code, wo.product_name,
+               wo.plan_qty, wo.status,
+               IFNULL(p.yield_model, '2') AS yield_model,
+               p.schedule_mode, p.std_yield_rate, p.yield_alarm_rate,
+               wo.qualified_qty AS actual_qty,
+               (SELECT IFNULL(SUM(d.issue_qty), 0)
+                  FROM mms_issue_detail d
+                  JOIN mms_issue i ON d.issue_id = i.issue_id AND i.del_flag = '0'
+                 WHERE i.work_order_id = wo.work_order_id AND d.del_flag = '0') AS input_qty,
+               (SELECT IFNULL(SUM(t.loss_qty), 0) FROM food_wip_transfer t
+                 WHERE t.work_order_id = wo.work_order_id AND t.del_flag = '0' AND t.loss_type = '1') AS loss_cut,
+               (SELECT IFNULL(SUM(t.loss_qty), 0) FROM food_wip_transfer t
+                 WHERE t.work_order_id = wo.work_order_id AND t.del_flag = '0' AND t.loss_type = '2') AS loss_salt,
+               (SELECT IFNULL(SUM(t.loss_qty), 0) FROM food_wip_transfer t
+                 WHERE t.work_order_id = wo.work_order_id AND t.del_flag = '0' AND t.loss_type = '3') AS loss_ferment,
+               (SELECT IFNULL(SUM(t.loss_qty), 0) FROM food_wip_transfer t
+                 WHERE t.work_order_id = wo.work_order_id AND t.del_flag = '0' AND t.loss_type = '4') AS loss_other,
+               (SELECT IFNULL(SUM(t.loss_qty), 0) FROM food_wip_transfer t
+                 WHERE t.work_order_id = wo.work_order_id AND t.del_flag = '0') AS loss_total
+        FROM mms_work_order wo
+        LEFT JOIN food_material_param p ON p.material_id = wo.product_id AND p.del_flag = '0'
+        <where>
+            wo.del_flag = '0'
+            <if test="workOrderNo != null and workOrderNo != ''"> AND wo.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND wo.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND wo.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="yieldModel != null and yieldModel != ''"> AND p.yield_model = #{yieldModel}</if>
+            <if test="status != null and status != ''"> AND wo.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(wo.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(wo.create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY wo.work_order_id DESC
+    </select>
+</mapper>

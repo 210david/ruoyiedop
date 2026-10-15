@@ -2,6 +2,7 @@ package com.ruoyi.mk.mapper;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.apache.ibatis.annotations.Param;
 import com.ruoyi.mk.domain.MkShipment;
 import com.ruoyi.mk.domain.MkShipmentDetail;
@@ -41,4 +42,10 @@ public interface MkShipmentMapper
 
     /** 查询存在进行中发货单的订单ID列表 */
     public List<Long> selectInProgressShipmentOrderIds();
+
+    /** 按出库单号查询出库单状态（跨模块SQL查询，零Java依赖） */
+    public String selectOutboundStatusByNo(@Param("orderNo") String orderNo);
+
+    /** 按出库单号查询出库明细批次信息（跨模块SQL查询，零Java依赖） */
+    public List<Map<String, Object>> selectOutboundBatchesByNo(@Param("orderNo") String orderNo);
 }

@@ -233,6 +233,8 @@ function submitForm() {
         if (!d.materialCode) { proxy.$modal.msgError('第' + (i + 1) + '行：物料编码不能为空'); return; }
         if (!d.returnQty || d.returnQty <= 0) { proxy.$modal.msgError('第' + (i + 1) + '行：退料数量必须大于0'); return; }
         if (d.issueQty && d.returnQty > d.issueQty) { proxy.$modal.msgError('第' + (i + 1) + '行：退料数量不能超过领料数量'); return; }
+        // 批次号必填：退料批次必须回归原领料批次（防批次身份漂移），由后端校验一致性
+        if (!d.batchNo || !String(d.batchNo).trim()) { proxy.$modal.msgError('第' + (i + 1) + '行（' + (d.materialCode || '') + '）批次号缺失，请确认该领料明细已登记批次'); return; }
       }
       form.value.returnBy = form.value.returnByName;
       if (form.value.returnId != null) { updateReturnMaterial(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); open.value = false; getList(); loadStatusCounts(); }); }
@@ -305,6 +307,7 @@ function submitConfirm() {
   for (let i = 0; i < confirmData.value.detailList.length; i++) {
     const d = confirmData.value.detailList[i];
     if (!d.returnQty || d.returnQty <= 0) { proxy.$modal.msgError('第' + (i + 1) + '行退料数量必须大于0'); return; }
+    if (!d.batchNo || !String(d.batchNo).trim()) { proxy.$modal.msgError('第' + (i + 1) + '行批次号缺失，请确认该领料明细已登记批次'); return; }
   }
   confirmLoading.value = true;
   confirmReturnMaterial(confirmData.value).then(() => {

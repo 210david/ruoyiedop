@@ -29,6 +29,9 @@ public class MkCustomerController extends BaseController
     @Autowired
     private IMkCustomerService mkCustomerService;
 
+    @Autowired
+    private com.ruoyi.mk.service.IMkCreditService mkCreditService;
+
     @PreAuthorize("@ss.hasPermi('marketing:customer:list')")
     @GetMapping("/list")
     public TableDataInfo list(MkCustomer customer)
@@ -176,6 +179,16 @@ public class MkCustomerController extends BaseController
     public AjaxResult batchAssign(@RequestBody BatchAssignRequest request)
     {
         return toAjax(mkCustomerService.batchAssign(request.getCustomerIds(), request.getUserId(), request.getDeptId(), request.getUserName(), request.getDeptName()));
+    }
+
+    // ====== 第四阶段：信用额度与欠款占用 ======
+
+    /** 客户信用占用视图（额度/欠款占用/可用） */
+    @PreAuthorize("@ss.hasPermi('marketing:customer:query')")
+    @GetMapping("/creditUsage/{customerId}")
+    public AjaxResult creditUsage(@PathVariable Long customerId)
+    {
+        return AjaxResult.success(mkCreditService.selectCreditUsage(customerId));
     }
 
     // ====== 请求体内部类 ======

@@ -31,6 +31,12 @@
         <result property="specModel"     column="spec_model"/>
         <result property="unit"          column="unit"/>
         <result property="batchNo"       column="batch_no"/>
+        <result property="batchId"       column="batch_id"/>
+        <result property="fefoBatchNo"   column="fefo_batch_no"/>
+        <result property="changeReason"  column="change_reason"/>
+        <result property="expireDate"    column="expire_date"/>
+        <result property="daysRemain"    column="days_remain"/>
+        <result property="batchStatus"   column="batch_status"/>
         <result property="planQty"       column="plan_qty"/>
         <result property="actualQty"     column="actual_qty"/>
         <result property="locationId"    column="location_id"/>
@@ -109,23 +115,26 @@
 
     <select id="selectOutboundDetailByOrderId" parameterType="Long" resultMap="WmsOutboundOrderDetailResult">
         SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
-               d.batch_no, d.plan_qty, d.actual_qty, d.location_id, l.warehouse_code as location_code,
+               d.batch_no, d.batch_id, d.fefo_batch_no, d.change_reason, d.plan_qty, d.actual_qty, d.location_id, l.warehouse_code as location_code,
                CONCAT_WS(' / ',
                  (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', ''))),
                  l.warehouse_name
                ) as location_name,
                d.pick_qty,
+               fb.expire_date, fb.batch_status,
+               CASE WHEN fb.expire_date IS NULL THEN NULL ELSE DATEDIFF(fb.expire_date, NOW()) END AS days_remain,
                d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark
         FROM wms_outbound_order_detail d
         LEFT JOIN wms_material m ON d.material_id = m.material_id
         LEFT JOIN wms_warehouse l ON d.location_id = l.warehouse_id
+        LEFT JOIN food_batch fb ON d.batch_no != '' AND fb.batch_code = d.batch_no AND fb.del_flag = '0'
         WHERE d.order_id = #{orderId} AND d.del_flag = '0'
     </select>
 
     <insert id="insertOutboundDetail" parameterType="WmsOutboundOrderDetail">
-        INSERT INTO wms_outbound_order_detail (order_id, material_id, batch_no, plan_qty, actual_qty,
+        INSERT INTO wms_outbound_order_detail (order_id, material_id, batch_no, batch_id, fefo_batch_no, change_reason, plan_qty, actual_qty,
             location_id, pick_qty, create_by, create_time, remark)
-        VALUES (#{orderId}, #{materialId}, #{batchNo}, #{planQty}, #{actualQty},
+        VALUES (#{orderId}, #{materialId}, #{batchNo}, #{batchId}, #{fefoBatchNo}, #{changeReason}, #{planQty}, #{actualQty},
             #{locationId}, #{pickQty}, #{createBy}, sysdate(), #{remark})
     </insert>
 
@@ -134,6 +143,9 @@
         <set>
             <if test="materialId != null">material_id = #{materialId},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="fefoBatchNo != null">fefo_batch_no = #{fefoBatchNo},</if>
+            <if test="changeReason != null">change_reason = #{changeReason},</if>
             <if test="planQty != null">plan_qty = #{planQty},</if>
             <if test="actualQty != null">actual_qty = #{actualQty},</if>
             <if test="locationId != null">location_id = #{locationId},</if>

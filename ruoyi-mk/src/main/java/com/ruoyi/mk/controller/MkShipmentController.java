@@ -1,6 +1,7 @@
 package com.ruoyi.mk.controller;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -12,6 +13,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mk.domain.MkShipment;
+import com.ruoyi.mk.mapper.MkShipmentMapper;
 import com.ruoyi.mk.service.IMkShipmentService;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -26,6 +28,19 @@ public class MkShipmentController extends BaseController
 {
     @Autowired
     private IMkShipmentService mkShipmentService;
+
+    @Autowired
+    private MkShipmentMapper mkShipmentMapper;
+
+    /**
+     * 按出库单号查询出库明细批次信息（物料+批次号+数量+到期日+批次状态）
+     */
+    @PreAuthorize("@ss.hasPermi('marketing:shipment:list')")
+    @GetMapping("/outboundBatches")
+    public AjaxResult outboundBatches(String orderNo)
+    {
+        return AjaxResult.success(mkShipmentMapper.selectOutboundBatchesByNo(orderNo));
+    }
 
     @PreAuthorize("@ss.hasPermi('marketing:shipment:list')")
     @GetMapping("/list")

@@ -65,6 +65,17 @@
         <result property="prepTime"       column="prep_time"/>
         <result property="isKeyProcess"   column="is_key_process"/>
         <result property="isOutsource"    column="is_outsource"/>
+        <result property="processType"    column="process_type"/>
+        <result property="stdDays"        column="std_days"/>
+        <result property="minDays"        column="min_days"/>
+        <result property="maxDays"        column="max_days"/>
+        <result property="tempMin"        column="temp_min"/>
+        <result property="tempMax"        column="temp_max"/>
+        <result property="humidityMin"    column="humidity_min"/>
+        <result property="humidityMax"    column="humidity_max"/>
+        <result property="ccpFlag"        column="ccp_flag"/>
+        <result property="lossType"       column="loss_type"/>
+        <result property="lossRateMax"    column="loss_rate_max"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -76,6 +87,8 @@
     <sql id="selectRouteProcessVo">
         SELECT rp.id, rp.route_id, rp.process_id, rp.process_code, rp.process_name, rp.resource_id, rp.resource_name, rp.step_seq,
                rp.std_time, rp.prep_time, rp.is_key_process, rp.is_outsource,
+               rp.process_type, rp.std_days, rp.min_days, rp.max_days, rp.temp_min, rp.temp_max,
+               rp.humidity_min, rp.humidity_max, rp.ccp_flag, rp.loss_type, rp.loss_rate_max,
                rp.del_flag, rp.create_by, rp.create_time,
                rp.update_by, rp.update_time, rp.remark
         FROM mms_route_process rp
@@ -145,10 +158,12 @@
         INSERT INTO mms_route_process (
             route_id, process_id, process_code, process_name, resource_id, resource_name, step_seq,
             std_time, prep_time, is_key_process, is_outsource,
+            std_days, min_days, max_days, temp_min, temp_max, humidity_min, humidity_max, ccp_flag, loss_type, loss_rate_max,
             del_flag, create_by, create_time, update_by, update_time, remark
         )VALUES(
             #{routeId}, #{processId}, #{processCode}, #{processName}, #{resourceId}, #{resourceName}, #{stepSeq},
             #{stdTime}, #{prepTime}, #{isKeyProcess}, #{isOutsource},
+            #{stdDays}, #{minDays}, #{maxDays}, #{tempMin}, #{tempMax}, #{humidityMin}, #{humidityMax}, #{ccpFlag}, #{lossType}, #{lossRateMax},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
         )
     </insert>

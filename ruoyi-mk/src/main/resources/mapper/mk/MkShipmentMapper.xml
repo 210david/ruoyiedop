@@ -137,7 +137,7 @@
 
     <!-- 明细 -->
     <select id="selectShipmentDetailByShipmentId" parameterType="Long" resultMap="MkShipmentDetailResult">
-        SELECT detail_id, shipment_id, order_item_id, product_name, product_spec, unit,
+        SELECT detail_id, shipment_id, order_item_id, product_name, product_spec, unit, batch_no,
                ship_qty, unit_price, amount,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM mk_shipment_detail
@@ -147,15 +147,34 @@
 
     <insert id="insertShipmentDetail" parameterType="MkShipmentDetail" useGeneratedKeys="true" keyProperty="detailId">
         INSERT INTO mk_shipment_detail (
-            shipment_id, order_item_id, product_name, product_spec, unit,
+            shipment_id, order_item_id, product_name, product_spec, unit, batch_no,
             ship_qty, unit_price, amount,
             del_flag, create_by, create_time, remark
         ) VALUES (
-            #{shipmentId}, #{orderItemId}, #{productName}, #{productSpec}, #{unit},
+            #{shipmentId}, #{orderItemId}, #{productName}, #{productSpec}, #{unit}, #{batchNo},
             #{shipQty}, #{unitPrice}, #{amount},
             #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
+
+    <!-- 出库单状态（跨模块数据级查询，按出库单号） -->
+    <select id="selectOutboundStatusByNo" parameterType="String" resultType="String">
+        SELECT status FROM wms_outbound_order
+        WHERE order_no = #{orderNo} AND del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <!-- 出库单批次明细（跨模块数据级查询，用于发货批次显示与最小剩余效期复核） -->
+    <select id="selectOutboundBatchesByNo" parameterType="String" resultType="map">
+        SELECT d.material_id, m.material_code, m.material_name, d.batch_no, d.plan_qty,
+               b.expire_date, b.batch_status
+        FROM wms_outbound_order o
+        JOIN wms_outbound_order_detail d ON d.order_id = o.order_id AND d.del_flag = '0'
+        LEFT JOIN wms_material m ON m.material_id = d.material_id
+        LEFT JOIN food_batch b ON b.batch_code = d.batch_no AND b.material_id = d.material_id AND b.del_flag = '0'
+        WHERE o.order_no = #{orderNo} AND o.del_flag = '0'
+        ORDER BY d.detail_id ASC
+    </select>
 
     <delete id="deleteShipmentDetailByShipmentId" parameterType="Long">
         UPDATE mk_shipment_detail SET del_flag = '2' WHERE shipment_id = #{shipmentId}

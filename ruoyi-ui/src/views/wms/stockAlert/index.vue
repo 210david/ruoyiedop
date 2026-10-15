@@ -92,6 +92,9 @@
       </el-table-column>
       <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 100)" resizable align="center" />
       <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 100)" resizable align="center" />
+      <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 130)" resizable align="center">
+        <template #default="scope">{{ scope.row.batchNo || '—' }}</template>
+      </el-table-column>
       <el-table-column label="生产日期" prop="productionDate" :width="colWidth('productionDate', 110)" resizable align="center">
         <template #default="scope">{{ scope.row.productionDate || '—' }}</template>
       </el-table-column>

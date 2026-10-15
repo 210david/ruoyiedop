@@ -76,7 +76,7 @@
               <el-table-column type="index" label="序号" width="85" align="center" />
               <el-table-column key="accountCode" prop="accountCode" label="账户编码" :width="accCol.colWidth('accountCode', 130)" resizable align="center" v-if="accColumns.accountCode.visible" />
               <el-table-column key="accountName" prop="accountName" label="账户名称" :min-width="accCol.colWidth('accountName', 180)" resizable align="center" show-overflow-tooltip v-if="accColumns.accountName.visible" />
-              <el-table-column key="accountType" label="账户类型" :width="accCol.colWidth('accountType', 120)" resizable align="center" v-if="accColumns.accountType.visible">
+              <el-table-column key="accountType" prop="accountType" label="账户类型" :width="accCol.colWidth('accountType', 120)" resizable align="center" v-if="accColumns.accountType.visible">
                 <template #default="{ row }">
                   <span class="badge violet">{{ accTypeLabel(row.accountType) }}</span>
                 </template>
@@ -84,23 +84,23 @@
               <el-table-column key="bankName" prop="bankName" label="开户行" :min-width="accCol.colWidth('bankName', 160)" resizable align="center" show-overflow-tooltip v-if="accColumns.bankName.visible">
                 <template #default="{ row }">{{ row.bankName || '—' }}</template>
               </el-table-column>
-              <el-table-column key="accountTail" label="账号" :width="accCol.colWidth('accountTail', 130)" resizable align="center" v-if="accColumns.accountTail.visible">
+              <el-table-column key="accountTail" prop="accountTail" label="账号" :width="accCol.colWidth('accountTail', 130)" resizable align="center" v-if="accColumns.accountTail.visible">
                 <template #default="{ row }">
                   <span class="account-no" v-if="row.accountTail">****{{ row.accountTail }}</span>
                   <span v-else class="text-muted">—</span>
                 </template>
               </el-table-column>
-              <el-table-column key="openingBalance" label="期初余额" :width="accCol.colWidth('openingBalance', 140)" resizable align="center" v-if="accColumns.openingBalance.visible">
+              <el-table-column key="openingBalance" prop="openingBalance" label="期初余额" :width="accCol.colWidth('openingBalance', 140)" resizable align="center" v-if="accColumns.openingBalance.visible">
                 <template #default="{ row }">{{ formatAmount(row.openingBalance) }}</template>
               </el-table-column>
-              <el-table-column key="balance" label="当前余额" :width="accCol.colWidth('balance', 150)" resizable align="center" v-if="accColumns.balance.visible">
+              <el-table-column key="balance" prop="balance" label="当前余额" :width="accCol.colWidth('balance', 150)" resizable align="center" v-if="accColumns.balance.visible">
                 <template #default="{ row }">
                   <span class="amount-cell strong" :class="Number(row.currentBalance) < 0 ? 'text-out' : ''">
                     {{ formatAmount(row.currentBalance) }}
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column key="status" label="状态" :width="accCol.colWidth('status', 90)" resizable align="center" v-if="accColumns.status.visible">
+              <el-table-column key="status" prop="status" label="状态" :width="accCol.colWidth('status', 90)" resizable align="center" v-if="accColumns.status.visible">
                 <template #default="{ row }">
                   <span class="badge" :class="row.status === '0' ? 'green' : 'gray'">
                     <span class="dot"></span>{{ row.status === '0' ? '启用' : '停用' }}
@@ -201,24 +201,24 @@
               <el-table-column key="flowNo" prop="flowNo" label="流水单号" :width="flowCol.colWidth('flowNo', 180)" resizable align="center" v-if="flowColumns.flowNo.visible" />
               <el-table-column key="flowDate" prop="flowDate" label="流水日期" :width="flowCol.colWidth('flowDate', 110)" resizable align="center" v-if="flowColumns.flowDate.visible" />
               <el-table-column key="accountId" prop="accountName" label="资金账户" :min-width="flowCol.colWidth('accountId', 150)" resizable align="center" show-overflow-tooltip v-if="flowColumns.accountId.visible" />
-              <el-table-column key="direction" label="收支方向" :width="flowCol.colWidth('direction', 90)" resizable align="center" v-if="flowColumns.direction.visible">
+              <el-table-column key="direction" prop="direction" label="收支方向" :width="flowCol.colWidth('direction', 90)" resizable align="center" v-if="flowColumns.direction.visible">
                 <template #default="{ row }">
                   <span class="badge" :class="row.direction === 'IN' ? 'green' : 'red'">{{ row.direction === 'IN' ? '收' : '付' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column key="bizType" label="业务类型" :width="flowCol.colWidth('bizType', 110)" resizable align="center" v-if="flowColumns.bizType.visible">
+              <el-table-column key="bizType" prop="bizType" label="业务类型" :width="flowCol.colWidth('bizType', 110)" resizable align="center" v-if="flowColumns.bizType.visible">
                 <template #default="{ row }">
                   <span class="badge violet">{{ bizTypeLabel(row.bizType) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column key="amount" label="金额" :width="flowCol.colWidth('amount', 140)" resizable align="center" v-if="flowColumns.amount.visible">
+              <el-table-column key="amount" prop="amount" label="金额" :width="flowCol.colWidth('amount', 140)" resizable align="center" v-if="flowColumns.amount.visible">
                 <template #default="{ row }">
                   <span class="amount-cell strong" :class="row.direction === 'IN' ? 'text-in' : 'text-out'">
                     {{ row.direction === 'IN' ? '+' : '-' }}{{ formatAmount(row.amount) }}
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column key="balanceAfter" label="交易后余额" :width="flowCol.colWidth('balanceAfter', 150)" resizable align="center" v-if="flowColumns.balanceAfter.visible">
+              <el-table-column key="balanceAfter" prop="balanceAfter" label="交易后余额" :width="flowCol.colWidth('balanceAfter', 150)" resizable align="center" v-if="flowColumns.balanceAfter.visible">
                 <template #default="{ row }">
                   <span class="amount-cell">{{ formatAmount(row.balanceAfter) }}</span>
                 </template>
@@ -226,10 +226,10 @@
               <el-table-column key="counterparty" prop="counterparty" label="对方单位" :min-width="flowCol.colWidth('counterparty', 140)" resizable align="center" show-overflow-tooltip v-if="flowColumns.counterparty.visible">
                 <template #default="{ row }">{{ row.counterparty || '—' }}</template>
               </el-table-column>
-              <el-table-column key="summary" label="流水摘要" :min-width="flowCol.colWidth('summary', 150)" resizable align="center" show-overflow-tooltip v-if="flowColumns.summary.visible">
+              <el-table-column key="summary" prop="summary" label="流水摘要" :min-width="flowCol.colWidth('summary', 150)" resizable align="center" show-overflow-tooltip v-if="flowColumns.summary.visible">
                 <template #default="{ row }">{{ row.sourceKey || row.remark || '—' }}</template>
               </el-table-column>
-              <el-table-column key="reconcileStatus" label="对账状态" :width="flowCol.colWidth('reconcileStatus', 100)" resizable align="center" v-if="flowColumns.reconcileStatus.visible">
+              <el-table-column key="reconcileStatus" prop="reconcileStatus" label="对账状态" :width="flowCol.colWidth('reconcileStatus', 100)" resizable align="center" v-if="flowColumns.reconcileStatus.visible">
                 <template #default="{ row }">
                   <span class="badge" :class="row.reconcileStatus === '1' ? 'green' : 'amber'">
                     <span class="dot"></span>{{ row.reconcileStatus === '1' ? '已对账' : '未对账' }}
@@ -277,22 +277,22 @@
               <el-table-column type="index" label="序号" width="85" align="center" />
               <el-table-column key="statementDate" prop="statementDate" label="对账日期" :width="reconCol.colWidth('statementDate', 120)" resizable align="center" v-if="reconColumns.statementDate.visible" />
               <el-table-column key="accountId" prop="accountName" label="账户名称" :min-width="reconCol.colWidth('accountId', 180)" resizable align="center" show-overflow-tooltip v-if="reconColumns.accountId.visible" />
-              <el-table-column key="bankBeginBalance" label="银行期初余额" :width="reconCol.colWidth('bankBeginBalance', 140)" resizable align="center" v-if="reconColumns.bankBeginBalance.visible">
+              <el-table-column key="bankBeginBalance" prop="bankBeginBalance" label="银行期初余额" :width="reconCol.colWidth('bankBeginBalance', 140)" resizable align="center" v-if="reconColumns.bankBeginBalance.visible">
                 <template #default="{ row }">
                   <span class="amount-cell">{{ fmt(row.bankBeginBalance) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column key="bankEndBalance" label="银行期末余额" :width="reconCol.colWidth('bankEndBalance', 140)" resizable align="center" v-if="reconColumns.bankEndBalance.visible">
+              <el-table-column key="bankEndBalance" prop="bankEndBalance" label="银行期末余额" :width="reconCol.colWidth('bankEndBalance', 140)" resizable align="center" v-if="reconColumns.bankEndBalance.visible">
                 <template #default="{ row }">
                   <span class="amount-cell">{{ fmt(row.bankEndBalance) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column key="bookEndBalance" label="账面期末余额" :width="reconCol.colWidth('bookEndBalance', 140)" resizable align="center" v-if="reconColumns.bookEndBalance.visible">
+              <el-table-column key="bookEndBalance" prop="bookEndBalance" label="账面期末余额" :width="reconCol.colWidth('bookEndBalance', 140)" resizable align="center" v-if="reconColumns.bookEndBalance.visible">
                 <template #default="{ row }">
                   <span class="amount-cell">{{ fmt(row.bookEndBalance) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column key="diffAmount" label="差异" :width="reconCol.colWidth('diffAmount', 130)" resizable align="center" v-if="reconColumns.diffAmount.visible">
+              <el-table-column key="diffAmount" prop="diffAmount" label="差异" :width="reconCol.colWidth('diffAmount', 130)" resizable align="center" v-if="reconColumns.diffAmount.visible">
                 <template #default="{ row }">
                   <span class="amount-cell strong"
                         :class="Number(row.diffAmount) === 0 ? 'text-success' : 'text-danger'">
@@ -300,7 +300,7 @@
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column key="status" label="状态" :width="reconCol.colWidth('status', 100)" resizable align="center" v-if="reconColumns.status.visible">
+              <el-table-column key="status" prop="status" label="状态" :width="reconCol.colWidth('status', 100)" resizable align="center" v-if="reconColumns.status.visible">
                 <template #default="{ row }">
                   <span class="badge" :class="row.status === 'RECONCILED' ? 'green' : (row.status === 'DIFF' ? 'red' : 'blue')">
                     <span class="dot"></span>{{ statusLabel(row.status) }}

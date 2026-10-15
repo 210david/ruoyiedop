@@ -189,6 +189,8 @@ function handleConfirm() {
     specModel: inv.specModel,
     unit: inv.unit,
     batchNo: inv.batchNo || '',
+    expiryDate: inv.expiryDate,
+    batchStatus: inv.batchStatus,
     locationId: inv.locationId,
     locationCode: inv.locationCode,
     locationName: inv.locationName,

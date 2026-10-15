@@ -20,6 +20,8 @@
         <result property="shiftId"     column="shift_id"/>
         <result property="shiftName"     column="shift_name"/>
         <result property="isFirstPiece"     column="is_first_piece"/>
+        <result property="batchId"     column="batch_id"/>
+        <result property="batchCode"     column="batch_code"/>
         <result property="status"     column="status"/>
         <result property="source"     column="source"/>
         <result property="auditBy"     column="audit_by"/>
@@ -34,7 +36,7 @@
     </resultMap>
 
     <sql id="selectWorkReportVo">
-        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, report_time, report_by, team_id, team_name, shift_id, shift_name, is_first_piece, status, source, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT report_id, report_no, work_order_id, work_order_no, process_id, process_name, resource_id, resource_name, good_qty, defect_qty, report_time, report_by, team_id, team_name, shift_id, shift_name, is_first_piece, batch_id, batch_code, status, source, audit_by, audit_time, audit_remark, del_flag, create_by, create_time, update_by, update_time, remark
         FROM mms_work_report
     </sql>
 
@@ -78,6 +80,8 @@
             shift_id,
             shift_name,
             is_first_piece,
+            batch_id,
+            batch_code,
             status,
             source,
             audit_by,
@@ -106,6 +110,8 @@
             #{shiftId},
             #{shiftName},
             #{isFirstPiece},
+            #{batchId},
+            #{batchCode},
             #{status},
             #{source},
             #{auditBy},
@@ -138,6 +144,8 @@
             shift_id = #{shiftId},
             shift_name = #{shiftName},
             is_first_piece = #{isFirstPiece},
+            batch_id = #{batchId},
+            batch_code = #{batchCode},
             status = #{status},
             source = #{source},
             audit_by = #{auditBy},

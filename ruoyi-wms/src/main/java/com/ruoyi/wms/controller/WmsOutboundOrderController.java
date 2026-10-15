@@ -12,6 +12,8 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.food.domain.FoodFefoPlan;
+import com.ruoyi.food.service.IFoodBatchStockService;
 import com.ruoyi.wms.domain.WmsOutboundOrder;
 import com.ruoyi.wms.service.IWmsOutboundOrderService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +24,30 @@ public class WmsOutboundOrderController extends BaseController
 {
     @Autowired
     private IWmsOutboundOrderService wmsOutboundOrderService;
+
+    @Autowired
+    private IFoodBatchStockService foodBatchStockService;
+
+    /**
+     * FEFO批次分配预览（三重拦截：分配明细 + 被拦截批次原因）
+     */
+    @PreAuthorize("@ss.hasPermi('wms:outbound:list')")
+    @GetMapping("/fefoPreview")
+    public AjaxResult fefoPreview(Long materialId, Long warehouseId, java.math.BigDecimal qty)
+    {
+        FoodFefoPlan plan = foodBatchStockService.planFefo(materialId, warehouseId, qty);
+        return AjaxResult.success(plan);
+    }
+
+    /**
+     * 仓库内可发批次列表（FEFO排序，已过三重拦截）
+     */
+    @PreAuthorize("@ss.hasPermi('wms:outbound:list')")
+    @GetMapping("/shippableBatches")
+    public AjaxResult shippableBatches(Long materialId, Long warehouseId)
+    {
+        return AjaxResult.success(foodBatchStockService.listShippableBatches(materialId, warehouseId));
+    }
 
     @PreAuthorize("@ss.hasPermi('wms:outbound:list')")
     @GetMapping("/list")

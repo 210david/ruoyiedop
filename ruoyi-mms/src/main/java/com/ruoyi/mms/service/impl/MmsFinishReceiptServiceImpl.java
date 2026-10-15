@@ -14,6 +14,9 @@ import com.ruoyi.mms.domain.MmsFinishReceipt;
 import com.ruoyi.mms.mapper.MmsFinishReceiptMapper;
 import com.ruoyi.mms.service.IMmsFinishReceiptService;
 import com.ruoyi.mms.service.IMmsGenealogySyncService;
+import com.ruoyi.food.domain.FoodBatch;
+import com.ruoyi.food.service.IFoodBatchService;
+import com.ruoyi.food.service.IFoodBatchStockService;
 
 /**
  * 完工入库 Service实现
@@ -31,6 +34,12 @@ public class MmsFinishReceiptServiceImpl implements IMmsFinishReceiptService
 
     @Autowired
     private IMmsGenealogySyncService genealogySyncService;
+
+    @Autowired
+    private IFoodBatchService foodBatchService;
+
+    @Autowired
+    private IFoodBatchStockService batchStockService;
 
     @Override
     @DataScope(deptAlias = "mms_finish_receipt")
@@ -101,6 +110,15 @@ public class MmsFinishReceiptServiceImpl implements IMmsFinishReceiptService
         MmsFinishReceipt merged = finishReceiptMapper.selectFinishReceiptById(finishReceipt.getFinishId());
         if (merged != null)
         {
+            // 批次库存联动：成品批次登记（不存在则创建，来源=生产完工，效期按产品保质期自完工日起推算）
+            registerProductBatch(merged);
+            // 生产投入谱系桥接：原料批次（领料明细）→ 成品批次 写入 food 谱系（多对多，幂等）
+            FoodBatch productBatch = foodBatchService.selectBatchByCode(merged.getBatchNo());
+            if (productBatch != null)
+            {
+                foodBatchService.bridgeProductionEdges(merged.getWorkOrderNo(), productBatch.getBatchId(),
+                        merged.getFinishId(), merged.getFinishNo(), SecurityUtils.getUsername());
+            }
             genealogySyncService.syncComplete(
                     merged.getFinishNo(), merged.getWorkOrderNo(),
                     merged.getProductId(), merged.getProductCode(), merged.getProductName(),
@@ -108,6 +126,46 @@ public class MmsFinishReceiptServiceImpl implements IMmsFinishReceiptService
                     merged.getFinishBy(), merged.getFinishTime() != null ? merged.getFinishTime() : merged.getInboundTime());
         }
         return rows;
+    }
+
+    /**
+     * 完工成品批次登记：批次已存在则直接同步批次库存；不存在则按生产完工来源创建
+     * （批次状态=待检，待检放行走检验任务；效期=完工日期+产品保质期，保质期缺失则效期留空人工补录）
+     */
+    private void registerProductBatch(MmsFinishReceipt merged)
+    {
+        if (StringUtils.isEmpty(merged.getBatchNo()) || merged.getProductId() == null
+                || merged.getFinishQty() == null || merged.getFinishQty().compareTo(java.math.BigDecimal.ZERO) <= 0)
+        {
+            return;
+        }
+        FoodBatch exist = foodBatchService.selectBatchByCode(merged.getBatchNo());
+        if (exist != null && !merged.getProductId().equals(exist.getMaterialId()))
+        {
+            throw new ServiceException("完工批次【" + merged.getBatchNo() + "】归属物料与完工产品不一致，请核对");
+        }
+        if (exist == null)
+        {
+            FoodBatch batch = new FoodBatch();
+            batch.setBatchCode(merged.getBatchNo());
+            batch.setMaterialId(merged.getProductId());
+            batch.setMaterialCode(merged.getProductCode());
+            batch.setMaterialName(merged.getProductName());
+            batch.setSourceType("2"); // 生产完工
+            batch.setSourceBillType("finish");
+            batch.setSourceBillId(merged.getFinishId());
+            batch.setProduceDate(merged.getFinishTime() != null ? merged.getFinishTime() : merged.getInboundTime());
+            batch.setReceiveDate(DateUtils.getNowDate());
+            batch.setQtyUnit(merged.getUnit());
+            // 保质期天数供 insertBatch 推算效期（完工日+保质期），未配置则效期留空人工补录
+            batch.setShelfLifeDays(foodBatchService.selectShelfLifeDays(merged.getProductId()));
+            batch.setCreateBy(SecurityUtils.getUsername());
+            foodBatchService.insertBatch(batch);
+        }
+        // 批次库存同步（无仓库上下文，跨仓登记：优先复用该批次现有库存行仓库）
+        batchStockService.addAcrossWarehouse(merged.getProductId(), merged.getBatchNo(), merged.getFinishQty(),
+                SecurityUtils.getUsername(), null, null,
+                merged.getFinishTime() != null ? merged.getFinishTime() : merged.getInboundTime(), null);
     }
 
     @Override

@@ -25,6 +25,8 @@ public class MmsWorkReport extends BaseEntity {
     private Long shiftId;
     @Excel(name = "班次") private String shiftName;
     @Excel(name = "首件") private String isFirstPiece;
+    private Long batchId;
+    @Excel(name = "批次号") private String batchCode;
     @Excel(name = "状态", readConverterExp = "0=待审核,1=已审核,2=已驳回") private String status;
     @Excel(name = "来源", readConverterExp = "1=手动报工,2=派工完工") private String source;
     private String auditBy;
@@ -66,6 +68,10 @@ public class MmsWorkReport extends BaseEntity {
     public void setShiftName(String shiftName) { this.shiftName = shiftName; }
     public String getIsFirstPiece() { return isFirstPiece; }
     public void setIsFirstPiece(String isFirstPiece) { this.isFirstPiece = isFirstPiece; }
+    public Long getBatchId() { return batchId; }
+    public void setBatchId(Long batchId) { this.batchId = batchId; }
+    public String getBatchCode() { return batchCode; }
+    public void setBatchCode(String batchCode) { this.batchCode = batchCode; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getSource() { return source; }

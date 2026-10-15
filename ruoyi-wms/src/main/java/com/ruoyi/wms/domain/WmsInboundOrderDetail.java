@@ -56,6 +56,13 @@ public class WmsInboundOrderDetail extends BaseEntity
     @Excel(name = "批次号")
     private String batchNo;
 
+    /** 批次ID（food_batch） */
+    private Long batchId;
+
+    /** 外部批次号（供应商批次） */
+    @Excel(name = "外部批次号")
+    private String extBatchNo;
+
     /** 生产日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date productionDate;
@@ -102,6 +109,10 @@ public class WmsInboundOrderDetail extends BaseEntity
     public void setPutawayQty(BigDecimal putawayQty) { this.putawayQty = putawayQty; }
     public String getBatchNo() { return batchNo; }
     public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+    public Long getBatchId() { return batchId; }
+    public void setBatchId(Long batchId) { this.batchId = batchId; }
+    public String getExtBatchNo() { return extBatchNo; }
+    public void setExtBatchNo(String extBatchNo) { this.extBatchNo = extBatchNo; }
     public Date getProductionDate() { return productionDate; }
     public void setProductionDate(Date productionDate) { this.productionDate = productionDate; }
     public Date getExpiryDate() { return expiryDate; }

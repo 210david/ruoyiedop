@@ -69,8 +69,8 @@ spring:
       host: localhost
       port: 6379
       database: 1
-      # Redis密码（生产环境强烈建议设置密码）
-      password:
+      # Redis密码（与 deploy/config/redis.windows.conf 的 requirepass 一致，务必保持同步）
+      password: cc99de507fc3934eb8f84b5c4f76e11d
       timeout: 10s
       lettuce:
         pool:
@@ -82,8 +82,8 @@ spring:
 # token配置
 token:
   header: Authorization
-  # 生产环境请修改此密钥！！！
-  secret: abcdefghijklmnopqrstuvwxyz
+  # 令牌密钥（随机生成，严禁改回默认值；泄露或更换会使所有登录态失效）
+  secret: 2DOVQuux9LM6r3euwcG6Zzp89nR778hYNIQuOd0n26sn8HkZDeJ0d/XSXvuRCDHC
   expireTime: 30
 
 # MyBatis配置

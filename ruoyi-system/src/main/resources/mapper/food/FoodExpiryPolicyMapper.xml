@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodExpiryPolicyMapper">
+
+    <resultMap type="FoodExpiryPolicy" id="FoodExpiryPolicyResult">
+        <id     property="policyId"     column="policy_id"     />
+        <result property="policyName"   column="policy_name"   />
+        <result property="materialId"   column="material_id"   />
+        <result property="materialType" column="material_type" />
+        <result property="warnDays"     column="warn_days"     />
+        <result property="freezeDays"   column="freeze_days"   />
+        <result property="minShipDays"  column="min_ship_days" />
+        <result property="fefoEnabled"  column="fefo_enabled"  />
+        <result property="status"       column="status"        />
+        <result property="delFlag"      column="del_flag"      />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+        <result property="materialName" column="material_name" />
+    </resultMap>
+
+    <sql id="selectPolicyVo">
+        select p.policy_id, p.policy_name, p.material_id, p.material_type, p.warn_days, p.freeze_days,
+               p.min_ship_days, p.fefo_enabled, p.status, p.del_flag,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark,
+               mm.material_name
+        from food_expiry_policy p
+        left join wms_material mm on mm.material_id = p.material_id
+    </sql>
+
+    <select id="selectPolicyById" parameterType="Long" resultMap="FoodExpiryPolicyResult">
+        <include refid="selectPolicyVo"/>
+        where p.policy_id = #{policyId} and p.del_flag = '0'
+    </select>
+
+    <select id="selectPolicyList" parameterType="FoodExpiryPolicy" resultMap="FoodExpiryPolicyResult">
+        <include refid="selectPolicyVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="policyName != null and policyName != ''">
+                AND p.policy_name like concat('%', #{policyName}, '%')
+            </if>
+            <if test="materialId != null">
+                AND p.material_id = #{materialId}
+            </if>
+            <if test="materialType != null and materialType != ''">
+                AND p.material_type = #{materialType}
+            </if>
+            <if test="fefoEnabled != null and fefoEnabled != ''">
+                AND p.fefo_enabled = #{fefoEnabled}
+            </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+        </where>
+        order by p.material_id, p.policy_id
+    </select>
+
+    <select id="selectPolicyByMaterial" parameterType="Long" resultMap="FoodExpiryPolicyResult">
+        <include refid="selectPolicyVo"/>
+        where p.material_id = #{materialId} and p.status = '0' and p.del_flag = '0'
+        order by p.policy_id limit 1
+    </select>
+
+    <select id="selectPolicyByMaterialType" parameterType="String" resultMap="FoodExpiryPolicyResult">
+        <include refid="selectPolicyVo"/>
+        where p.material_id = 0 and p.material_type = #{materialType} and p.status = '0' and p.del_flag = '0'
+        order by p.policy_id limit 1
+    </select>
+
+    <select id="selectDefaultPolicy" resultMap="FoodExpiryPolicyResult">
+        <include refid="selectPolicyVo"/>
+        where p.material_id = 0 and p.material_type = '' and p.status = '0' and p.del_flag = '0'
+        order by p.policy_id limit 1
+    </select>
+
+    <insert id="insertPolicy" parameterType="FoodExpiryPolicy" useGeneratedKeys="true" keyProperty="policyId">
+        insert into food_expiry_policy (policy_name, material_id, material_type, warn_days, freeze_days,
+            min_ship_days, fefo_enabled, status, create_by, create_time, remark)
+        values (#{policyName}, #{materialId}, #{materialType}, #{warnDays}, #{freezeDays},
+            #{minShipDays}, #{fefoEnabled}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updatePolicy" parameterType="FoodExpiryPolicy">
+        update food_expiry_policy
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="policyName != null and policyName != ''">policy_name = #{policyName},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialType != null">material_type = #{materialType},</if>
+            <if test="warnDays != null">warn_days = #{warnDays},</if>
+            <if test="freezeDays != null">freeze_days = #{freezeDays},</if>
+            <if test="minShipDays != null">min_ship_days = #{minShipDays},</if>
+            <if test="fefoEnabled != null and fefoEnabled != ''">fefo_enabled = #{fefoEnabled},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where policy_id = #{policyId}
+    </update>
+
+    <update id="deletePolicyByIds" parameterType="Long">
+        update food_expiry_policy set del_flag = '2', update_time = sysdate() where policy_id in
+        <foreach collection="array" item="policyId" open="(" separator="," close=")">
+            #{policyId}
+        </foreach>
+    </update>
+
+</mapper>

@@ -36,6 +36,12 @@ public class PmsSupplierEvalServiceImpl implements IPmsSupplierEvalService
     }
 
     @Override
+    public java.util.List<java.util.Map<String, Object>> selectReevalDueList()
+    {
+        return pmsSupplierEvalMapper.selectReevalDueList();
+    }
+
+    @Override
     public PmsSupplierEval selectEvalById(Long evalId)
     {
         PmsSupplierEval eval = pmsSupplierEvalMapper.selectEvalById(evalId);

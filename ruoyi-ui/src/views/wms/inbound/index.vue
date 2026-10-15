@@ -201,7 +201,7 @@
               <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
                 <el-table-column label="物料" min-width="280"><template #default="scope"><el-input :model-value="scope.row.materialCode ? scope.row.materialCode + ' - ' + scope.row.materialName : ''" readonly size="small" placeholder="选择物料" @click="openMaterialPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearMaterial(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openMaterialPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="计划数量" width="120"><template #default="scope"><el-input-number v-model="scope.row.planQty" :precision="2" :min="0" controls-position="right" style="width:100%" /></template></el-table-column>
-                <el-table-column label="批次号" width="130"><template #default="scope"><el-input v-model="scope.row.batchNo" :placeholder="scope.row.isBatchManage === '1' ? '批次号（必填）' : '批次号'" /></template></el-table-column>
+                <el-table-column label="供应商批次" width="160"><template #default="scope"><el-input v-model="scope.row.batchNo" maxlength="64" :placeholder="scope.row.isExpiryManage === '1' ? '供应商批次（选填，收货自动生成内部批次）' : '供应商批次（选填）'" /></template></el-table-column>
                 <el-table-column label="生产日期" width="150"><template #default="scope"><el-date-picker v-model="scope.row.productionDate" type="date" value-format="YYYY-MM-DD" style="width:100%" :placeholder="scope.row.isExpiryManage === '1' ? '生产日期（必填）' : '生产日期'" /></template></el-table-column>
                 <el-table-column label="单位" width="80" align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
                 <el-table-column label="单价" width="120"><template #default="scope"><el-input-number v-model="scope.row.unitPrice" :precision="2" :min="0" controls-position="right" style="width:100%" /></template></el-table-column>
@@ -282,7 +282,7 @@
               <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 100)" resizable align="center" />
               <el-table-column label="已收数量" prop="receivedQty" :width="colWidth('receivedQty', 100)" resizable align="center" />
               <el-table-column label="已上架数量" prop="putawayQty" :width="colWidth('putawayQty', 100)" resizable align="center" />
-              <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 120)" resizable align="center" />
+              <el-table-column label="供应商批次" prop="batchNo" :width="colWidth('batchNo', 140)" resizable align="center" />
               <el-table-column label="上架库位" prop="locationName" :width="colWidth('locationName', 100)" resizable show-overflow-tooltip align="center" />
             </el-table>
           </div>
@@ -350,7 +350,7 @@
           <el-col :span="12">
             <div class="highlight-card highlight-primary">
               <div class="highlight-card-title">明细物料自动带出</div>
-              <div class="highlight-card-body">选择物料后自动带出<strong>单位、批次管理标识、效期管理标识</strong>，批次管理物料需填写批次号，效期管理物料需填写生产日期</div>
+              <div class="highlight-card-body">选择物料后自动带出<strong>单位、批次管理标识、效期管理标识</strong>，供应商批次号为选填项；效期管理物料收货后系统自动生成内部批次，需填写生产日期</div>
             </div>
           </el-col>
           <el-col :span="12">
@@ -370,7 +370,7 @@
           <el-col :span="12">
             <div class="highlight-card highlight-danger">
               <div class="highlight-card-title">明细校验规则</div>
-              <div class="highlight-card-body">至少添加一条明细；计划数量必须大于0；启用批次管理的物料<strong>批次号必填</strong>；启用效期管理的物料<strong>生产日期必填</strong></div>
+              <div class="highlight-card-body">至少添加一条明细；计划数量必须大于0；启用效期管理的物料<strong>生产日期必填</strong>；供应商批次号选填，留空则收货时自动生成内部批次</div>
             </div>
           </el-col>
         </el-row>
@@ -378,7 +378,7 @@
         <h4>四、业务操作流程</h4>
         <el-timeline>
           <el-timeline-item type="primary" :hollow="true">
-            <strong>新建入库单：</strong>选择入库类型、供应商、目标仓库、入库日期，添加入库明细（物料、计划数量、批次号、单价等）
+            <strong>新建入库单：</strong>选择入库类型、供应商、目标仓库、入库日期，添加入库明细（物料、计划数量、供应商批次号（选填）、单价等）
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
             <strong>提交入库单：</strong>确认无误后点击「提交」按钮，单据进入「待收货」状态，提交后无法修改
@@ -458,7 +458,7 @@ function validateDetailList() {
     const detail = form.value.detailList[i]
     if (!detail.materialId) { proxy.$modal.msgError(`第${i + 1}行明细：请选择物料`); return false }
     if (!detail.planQty || detail.planQty <= 0) { proxy.$modal.msgError(`第${i + 1}行明细：计划数量必须大于0`); return false }
-    if (detail.isBatchManage === '1' && (!detail.batchNo || detail.batchNo.trim() === '')) { proxy.$modal.msgError(`第${i + 1}行明细：该物料启用批次管理，批次号必填`); return false }
+    if (detail.isBatchManage === '1' && detail.isExpiryManage !== '1' && (!detail.batchNo || detail.batchNo.trim() === '')) { proxy.$modal.msgError(`第${i + 1}行明细：该物料启用批次管理（非效期管理），批次号必填`); return false }
     if (detail.isExpiryManage === '1' && !detail.productionDate) { proxy.$modal.msgError(`第${i + 1}行明细：该物料启用效期管理，生产日期必填`); return false }
   }
   return true
@@ -498,14 +498,39 @@ function onWarehousePickerConfirm(warehouse) { form.value.warehouseId = warehous
 function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
 function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
 function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
+/* ===== 路由参数预填（从库存流水"关联单据"跳转）：预填单号查询并自动打开详情弹框 ===== */
+const route = useRoute()
+let appliedOrderNo = null
+let pendingDetail = false
+function applyRoutePrefill() {
+  const no = route.query.orderNo || null
+  if (no === appliedOrderNo) return false
+  appliedOrderNo = no
+  pendingDetail = !!no
+  if (no) queryParams.value.orderNo = no
+  return !!no
+}
+function openDetailFromRoute() {
+  if (!pendingDetail) return
+  pendingDetail = false
+  const no = appliedOrderNo
+  listInbound({ pageNum: 1, pageSize: 1, orderNo: no }).then(res => {
+    const row = (res.rows || []).find(r => r.orderNo === no)
+    if (row) handleDetail(row)
+  }).catch(() => {})
+}
+
 loadOptions()
-getList()
+if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+else getList()
 loadStatusCounts()
 
 onActivated(() => {
-  getList()
+  if (applyRoutePrefill()) { handleQuery(); openDetailFromRoute() }
+  else getList()
   loadStatusCounts()
 })
+onDeactivated(() => { appliedOrderNo = null })
 </script>
 
 <style scoped>

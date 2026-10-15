@@ -536,6 +536,24 @@
       <div style="margin-bottom: 12px; padding: 12px 16px; background: var(--el-fill-color-light); border-radius: 6px; font-size: 14px; color: var(--el-text-color-secondary);">
         任务编号：<b>{{ inspectForm.taskNo }}</b> &nbsp;|&nbsp; 物料：<b>{{ inspectForm.materialName }}</b> &nbsp;|&nbsp; 批次：<b>{{ inspectForm.batchNo }}</b> &nbsp;|&nbsp; 样本量(n)：<b>{{ inspectForm.sampleSize }}</b> &nbsp;|&nbsp; Ac：<b>{{ inspectForm.acVal }}</b> &nbsp;|&nbsp; Re：<b>{{ inspectForm.reVal }}</b>
       </div>
+      <div v-if="inspectForm.taskType === 'IQC' && certRequired" style="margin-bottom: 12px; padding: 12px 16px; border: 1px solid var(--el-color-warning-light-5); background: var(--el-color-warning-light-9); border-radius: 6px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <b style="font-size: 14px;">索证索票（放行前置）</b>
+          <span v-if="missingCertTypes.length" class="badge red"><span class="dot"></span>缺少：{{ missingCertTypes.map(t => t.label).join('、') }}</span>
+          <span v-else class="badge green"><span class="dot"></span>索证齐全</span>
+        </div>
+        <div v-for="t in certTypes" :key="t.certType" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+          <span style="min-width: 140px; font-weight: 600; font-size: 13px;">{{ t.label }}</span>
+          <span v-for="c in certFiles(t.certType)" :key="c.certId" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--el-bg-color); border: 1px solid var(--el-border-color); border-radius: 4px; font-size: 12px;">
+            <el-icon><Document /></el-icon>{{ c.fileName }}
+            <el-icon style="cursor: pointer; color: var(--el-color-danger);" @click="handleDelCert(c)"><Close /></el-icon>
+          </span>
+          <el-upload :show-file-list="false" :action="uploadUrl" :headers="uploadHeaders" :on-success="(res, file) => onCertUploaded(res, file, t)" style="display: inline-block;">
+            <el-button size="small" icon="Upload" plain>上传</el-button>
+          </el-upload>
+        </div>
+        <div style="font-size: 12px; color: var(--el-text-color-secondary);">来料检验判定放行前必须上传必传证件；判定合格将自动放行关联批次，复检任务自动沿用原任务证件</div>
+      </div>
       <div class="inspect-toolbar">
         <el-button type="primary" plain icon="Plus" size="small" @click="handleAddInspectRow">添加检验项</el-button>
         <el-button type="danger" plain icon="Delete" size="small" :disabled="!inspectSelectedRows.length" @click="handleDeleteSelectedRows">删除选中行</el-button>
@@ -610,6 +628,8 @@
 
 <script setup name="QmsTask">
 import { listTask, getTask, addTask, updateTask, delTask, saveInspectResult, saveInspectDraft, createRecheckTask, voidTask, startInspect, getStatusCounts } from '@/api/qms/task'
+import { listInspCert, requiredCertTypes, addInspCert, delInspCert } from '@/api/food/inspcert'
+import { getToken } from '@/utils/auth'
 import { listGauge, getGauge } from '@/api/qms/gauge'
 import { listDefect } from '@/api/qms/defect'
 import { listStd } from '@/api/qms/std'
@@ -903,6 +923,42 @@ watch(() => form.value.taskType, (val) => {
   }
 })
 
+// ================= 索证索票（食品行业放行前置） =================
+const uploadUrl = import.meta.env.VITE_APP_BASE_API + '/common/upload'
+const uploadHeaders = computed(() => ({ Authorization: 'Bearer ' + getToken() }))
+const certRequired = ref(false)
+const certTypes = ref([])
+const certList = ref([])
+const missingCertTypes = computed(() => certTypes.value.filter(t => !certList.value.some(c => c.certType === t.certType)))
+function certFiles(certType) { return certList.value.filter(c => c.certType === certType) }
+function loadCerts(taskId) {
+  certList.value = []
+  requiredCertTypes().then(res => {
+    certRequired.value = !!res.data.required
+    certTypes.value = res.data.types || []
+  })
+  listInspCert(taskId).then(res => { certList.value = res.data || [] })
+}
+function onCertUploaded(response, file, type) {
+  if (response.code !== 200) { proxy.$modal.msgError(response.msg || '上传失败'); return }
+  addInspCert({
+    taskId: inspectForm.value.taskId,
+    taskNo: inspectForm.value.taskNo,
+    batchNo: inspectForm.value.batchNo,
+    certType: type.certType,
+    fileName: (file && file.name) || response.newFileName,
+    fileUrl: response.fileName
+  }).then(() => {
+    proxy.$modal.msgSuccess('证件已登记')
+    listInspCert(inspectForm.value.taskId).then(res => { certList.value = res.data || [] })
+  })
+}
+function handleDelCert(cert) {
+  proxy.$modal.confirm('是否确认删除证件[' + cert.fileName + ']？').then(() => delInspCert(cert.certId)).then(() => {
+    listInspCert(inspectForm.value.taskId).then(res => { certList.value = res.data || [] })
+  }).catch(() => {})
+}
+
 function handleAdd() { reset(); open.value = true; title.value = '添加检验任务' }
 function handleUpdate(row) { reset(); getTask(row.taskId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改检验任务' }) }
 function handleView(row) { getTask(row.taskId).then(res => { viewData.value = res.data; syncViewGaugeInfo(); viewOpen.value = true }) }
@@ -924,6 +980,7 @@ function handleInspect(row) {
       if (i.itemResult !== '2' && !i.defectCode) { i.defectCode = ''; i.defectName = ''; i.defectLevel = ''; i.defectQty = 0 }
     })
     inspectPageNum.value = 1
+    loadCerts(row.taskId)
     inspectOpen.value = true
   })
 }
@@ -948,6 +1005,11 @@ function submitForm() {
   })
 }
 function submitInspectResult() {
+  // 索证索票放行前置（食品行业IQC）：证件不齐前端先行拦截
+  if (inspectForm.value.taskType === 'IQC' && certRequired.value && missingCertTypes.value.length) {
+    proxy.$modal.msgWarning('索证索票不完整，缺少：' + missingCertTypes.value.map(t => t.label).join('、') + '，请先上传证件附件后再判定放行')
+    return
+  }
   const list = inspectForm.value.itemList || []
   for (let i = 0; i < list.length; i++) {
     const item = list[i]

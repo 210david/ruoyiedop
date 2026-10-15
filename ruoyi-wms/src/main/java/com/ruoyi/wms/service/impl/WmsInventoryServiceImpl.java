@@ -10,6 +10,7 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsInventoryLog;
 import com.ruoyi.wms.domain.WmsMaterial;
+import com.ruoyi.food.service.IFoodBatchStockService;
 import com.ruoyi.wms.mapper.WmsInventoryLogMapper;
 import com.ruoyi.wms.mapper.WmsInventoryMapper;
 import com.ruoyi.wms.mapper.WmsMaterialMapper;
@@ -27,10 +28,19 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
     @Autowired
     private WmsMaterialMapper wmsMaterialMapper;
 
+    @Autowired
+    private IFoodBatchStockService foodBatchStockService;
+
     @Override
     public List<WmsInventory> selectInventoryList(WmsInventory inventory)
     {
         return wmsInventoryMapper.selectInventoryList(inventory);
+    }
+
+    @Override
+    public List<com.ruoyi.wms.domain.WmsInventorySummary> selectInventorySummaryList(WmsInventory inventory)
+    {
+        return wmsInventoryMapper.selectInventorySummaryList(inventory);
     }
 
     @Override
@@ -104,6 +114,9 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
 
+        // 批次库存双写同步（food_batch_stock，仅效期管理物料且批次可定位时生效）
+        foodBatchStockService.syncAdd(materialId, batchNo, warehouseId, locationId, qty, createBy, productionDate, expiryDate);
+
         return 1;
     }
 
@@ -159,6 +172,8 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
             log.setRefOrderNo(refOrderNo);
             log.setCreateBy(createBy);
             wmsInventoryLogMapper.insertInventoryLog(log);
+            // 批次库存双写同步（按实际扣减的批次逐行同步）
+            foodBatchStockService.syncDeduct(materialId, inv.getBatchNo(), warehouseId, inv.getLocationId(), deductQty, createBy);
             remaining = remaining.subtract(deductQty);
         }
         return 1;
@@ -199,6 +214,9 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setRefOrderNo(refOrderNo);
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
+
+        // 批次库存双写同步（精确库位扣减）
+        foodBatchStockService.syncDeduct(materialId, batchNo, warehouseId, locationId, qty, createBy);
 
         return 1;
     }
@@ -254,6 +272,8 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
             log.setRefOrderNo(refOrderNo);
             log.setCreateBy(createBy);
             wmsInventoryLogMapper.insertInventoryLog(log);
+            // 批次库存双写同步（锁定：qty → qtyLocked）
+            foodBatchStockService.syncLock(materialId, inv.getBatchNo(), warehouseId, inv.getLocationId(), lockQty, createBy);
             remaining = remaining.subtract(lockQty);
         }
         return 1;
@@ -293,6 +313,9 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
 
+        // 批次库存双写同步（精确库位锁定）
+        foodBatchStockService.syncLock(materialId, batchNo, warehouseId, locationId, qty, createBy);
+
         return 1;
     }
 
@@ -330,6 +353,9 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setRefOrderNo(refOrderNo);
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
+
+        // 批次库存双写同步（解锁：qtyLocked → qty）
+        foodBatchStockService.syncUnlock(materialId, batchNo, warehouseId, locationId, qty, createBy);
 
         return 1;
     }
@@ -371,6 +397,9 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
         log.setRefOrderNo(refOrderNo);
         log.setCreateBy(createBy);
         wmsInventoryLogMapper.insertInventoryLog(log);
+
+        // 批次库存双写同步（锁定释放并真正扣减，出库拣货完成）
+        foodBatchStockService.syncDeductLocked(materialId, batchNo, warehouseId, locationId, releaseQty, createBy);
 
         return 1;
     }

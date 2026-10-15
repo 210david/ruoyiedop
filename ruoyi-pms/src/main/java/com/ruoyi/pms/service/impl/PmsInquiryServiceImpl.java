@@ -23,6 +23,7 @@ import com.ruoyi.pms.domain.PmsQuotationDetail;
 import com.ruoyi.pms.mapper.PmsInquiryMapper;
 import com.ruoyi.pms.mapper.PmsInquiryAuditLogMapper;
 import com.ruoyi.pms.mapper.PmsQuotationMapper;
+import com.ruoyi.pms.mapper.PmsSupplierEvalMapper;
 import com.ruoyi.pms.service.IPmsInquiryService;
 import com.ruoyi.wms.domain.WmsMaterial;
 import com.ruoyi.wms.service.IWmsMaterialService;
@@ -43,6 +44,9 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
 
     @Autowired
     private PmsQuotationMapper pmsQuotationMapper;
+
+    @Autowired
+    private PmsSupplierEvalMapper pmsSupplierEvalMapper;
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
@@ -243,6 +247,8 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
         {
             throw new ServiceException("只有已比价状态的询价单才能定标");
         }
+        // 供应商复评校验：最近评估不合格 或 复评逾期 → 禁止定标
+        checkSupplierReeval(supplierId);
         inquiry.setStatus("4"); // 已定标
         inquiry.setAwardSupplierId(supplierId);
         inquiry.setAwardSupplierName(supplierName);
@@ -250,6 +256,37 @@ public class PmsInquiryServiceImpl implements IPmsInquiryService
         inquiry.setUpdateTime(DateUtils.getNowDate());
         inquiry.setUpdateBy(SecurityUtils.getUsername());
         return pmsInquiryMapper.updatePmsInquiry(inquiry);
+    }
+
+    /**
+     * 定标前供应商复评校验：
+     * 1) 最近已审核评估等级为 D（不合格）→ 拦截
+     * 2) 最近已审核评估日期 + 复评周期(月) < 今天（复评逾期）→ 拦截
+     */
+    private void checkSupplierReeval(Long supplierId)
+    {
+        Map<String, Object> latest = pmsSupplierEvalMapper.selectLatestAuditedEval(supplierId);
+        if (latest == null)
+        {
+            return; // 从未评估过的供应商不拦截，由准入流程管控
+        }
+        if ("D".equals(String.valueOf(latest.get("evalLevel"))))
+        {
+            throw new ServiceException("中标供应商最近评估等级为不合格（D），禁止定标，请先完成整改复评");
+        }
+        Object evalDateObj = latest.get("evalDate");
+        Integer cycle = pmsSupplierEvalMapper.selectSupplierReevalCycle(supplierId);
+        if (evalDateObj instanceof Date && cycle != null && cycle > 0)
+        {
+            java.util.Calendar due = java.util.Calendar.getInstance();
+            due.setTime((Date) evalDateObj);
+            due.add(java.util.Calendar.MONTH, cycle);
+            if (due.getTime().before(new Date()))
+            {
+                long overdueDays = (new Date().getTime() - due.getTime().getTime()) / (24L * 3600 * 1000);
+                throw new ServiceException("中标供应商复评已逾期" + overdueDays + "天（复评周期" + cycle + "个月），请先完成复评再定标");
+            }
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

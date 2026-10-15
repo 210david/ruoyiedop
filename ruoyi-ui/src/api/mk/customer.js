@@ -109,3 +109,11 @@ export function batchAssignCustomer(data) {
     data: data
   })
 }
+
+// 客户信用占用情况
+export function getCreditUsage(customerId) {
+  return request({
+    url: '/mk/customer/creditUsage/' + customerId,
+    method: 'get'
+  })
+}

@@ -12,7 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.DictUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.food.domain.FoodBatch;
+import com.ruoyi.food.service.IFoodBatchService;
+import com.ruoyi.food.service.IFoodInspCertService;
+import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.qms.domain.QmsInspTask;
 import com.ruoyi.qms.domain.QmsInspItem;
 import com.ruoyi.qms.domain.QmsMaterialAttr;
@@ -54,6 +60,15 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private IFoodInspCertService foodInspCertService;
+
+    @Autowired
+    private IFoodBatchService foodBatchService;
+
+    @Autowired
+    private ISysConfigService sysConfigService;
 
     @Override
     @DataScope(deptAlias = "qms_insp_task")
@@ -175,6 +190,8 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         {
             throw new ServiceException("该检验任务已判定，不可修改");
         }
+        // 索证索票放行前置（食品行业）：来料检验判定前必须上传必传证件附件
+        checkCertRequired(existing);
         // 先删除旧明细
         qmsInspItemMapper.deleteInspItemByTaskId(inspTask.getTaskId());
         // 批量保存检验明细
@@ -251,6 +268,8 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
             createNcrFromInspection(existing, inspTask, items, highestDefectLevel);
             log.info("检验任务 {} 判定不合格，已自动创建NCR", inspTask.getTaskNo());
         }
+        // 检验结果联动批次状态（食品行业）：合格放行/不合格冻结
+        linkInspectionBatch(existing, batchResult);
         return updateResult;
     }
 
@@ -297,6 +316,8 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         }
         recheck.setTaskNo(mkNumberRuleService.generateNumber("qms_insp_task", recheckParams));
         qmsInspTaskMapper.insertInspTask(recheck);
+        // 复检任务复制原任务证件附件（同批次同物料，证件沿用）
+        foodInspCertService.copyFromTask(taskId, recheck.getTaskId(), recheck.getTaskNo(), SecurityUtils.getUsername());
         return recheck;
     }
 
@@ -515,6 +536,82 @@ public class QmsInspTaskServiceImpl implements IQmsInspTaskService
         }
         result.put("all", total);
         return result;
+    }
+
+    /**
+     * 索证索票放行前置（食品行业，配置驱动）：
+     * 系统参数 food.insp.cert.required=true 且任务类型为IQC时，
+     * 按 food.insp.cert.required.types 逐类型校验附件数，缺失则拦截判定放行
+     */
+    private void checkCertRequired(QmsInspTask existing)
+    {
+        if (!"IQC".equals(existing.getTaskType()))
+        {
+            return;
+        }
+        String required = sysConfigService.selectConfigByKey("food.insp.cert.required");
+        if (!"true".equals(required))
+        {
+            return;
+        }
+        String types = sysConfigService.selectConfigByKey("food.insp.cert.required.types");
+        if (StringUtils.isEmpty(types))
+        {
+            return;
+        }
+        StringBuilder missing = new StringBuilder();
+        for (String type : types.split(","))
+        {
+            String t = type.trim();
+            if (StringUtils.isEmpty(t))
+            {
+                continue;
+            }
+            if (foodInspCertService.countByTaskAndType(existing.getTaskId(), t) == 0)
+            {
+                if (missing.length() > 0)
+                {
+                    missing.append("、");
+                }
+                String label = DictUtils.getDictLabel("food_cert_type", t);
+                missing.append(StringUtils.isNotEmpty(label) ? label : t);
+            }
+        }
+        if (missing.length() > 0)
+        {
+            throw new ServiceException("索证索票不完整，缺少：" + missing + "，请先上传证件附件后再判定放行");
+        }
+    }
+
+    /**
+     * 检验结果联动批次状态（食品行业）：
+     * 合格 → 批次待检(0)提升为合格(1)；不合格 → 批次待检/合格(0/1)冻结(2)，待NCR处置
+     */
+    private void linkInspectionBatch(QmsInspTask existing, boolean batchResult)
+    {
+        if (StringUtils.isEmpty(existing.getBatchNo()))
+        {
+            return;
+        }
+        FoodBatch batch = foodBatchService.selectBatchByCode(existing.getBatchNo());
+        if (batch == null)
+        {
+            return;
+        }
+        if (batchResult)
+        {
+            if ("0".equals(batch.getBatchStatus()))
+            {
+                foodBatchService.qualifyBatch(batch.getBatchId(), "检验任务" + existing.getTaskNo() + "合格放行");
+            }
+        }
+        else
+        {
+            if ("0".equals(batch.getBatchStatus()) || "1".equals(batch.getBatchStatus()))
+            {
+                foodBatchService.freezeBatch(batch.getBatchId(), "检验任务" + existing.getTaskNo() + "判定不合格，NCR处置中");
+            }
+        }
     }
 
     /**

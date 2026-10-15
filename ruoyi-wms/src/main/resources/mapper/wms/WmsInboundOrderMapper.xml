@@ -35,6 +35,8 @@
         <result property="receivedQty"    column="received_qty"/>
         <result property="putawayQty"     column="putaway_qty"/>
         <result property="batchNo"        column="batch_no"/>
+        <result property="batchId"        column="batch_id"/>
+        <result property="extBatchNo"     column="ext_batch_no"/>
         <result property="productionDate" column="production_date"/>
         <result property="expiryDate"     column="expiry_date"/>
         <result property="locationId"     column="location_id"/>
@@ -122,7 +124,7 @@
 
     <select id="selectInboundDetailByOrderId" parameterType="Long" resultMap="WmsInboundOrderDetailResult">
         SELECT d.detail_id, d.order_id, d.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
-               d.plan_qty, d.received_qty, d.putaway_qty, d.batch_no, d.production_date, d.expiry_date,
+               d.plan_qty, d.received_qty, d.putaway_qty, d.batch_no, d.batch_id, d.ext_batch_no, d.production_date, d.expiry_date,
                d.location_id, l.warehouse_code as location_code,
                CONCAT_WS(' / ',
                  (SELECT GROUP_CONCAT(p.warehouse_name SEPARATOR ' / ') FROM wms_warehouse p WHERE FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', '')) AND p.warehouse_id != 0 ORDER BY FIND_IN_SET(p.warehouse_id, REPLACE(l.ancestors, ' ', ''))),
@@ -138,9 +140,9 @@
 
     <insert id="insertInboundDetail" parameterType="WmsInboundOrderDetail">
         INSERT INTO wms_inbound_order_detail (order_id, material_id, plan_qty, received_qty, putaway_qty,
-            batch_no, production_date, expiry_date, location_id, unit_price, create_by, create_time, remark)
+            batch_no, batch_id, ext_batch_no, production_date, expiry_date, location_id, unit_price, create_by, create_time, remark)
         VALUES (#{orderId}, #{materialId}, #{planQty}, #{receivedQty}, #{putawayQty},
-            #{batchNo}, #{productionDate}, #{expiryDate}, #{locationId}, #{unitPrice}, #{createBy}, sysdate(), #{remark})
+            #{batchNo}, #{batchId}, #{extBatchNo}, #{productionDate}, #{expiryDate}, #{locationId}, #{unitPrice}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateInboundDetail" parameterType="WmsInboundOrderDetail">
@@ -151,6 +153,8 @@
             <if test="receivedQty != null">received_qty = #{receivedQty},</if>
             <if test="putawayQty != null">putaway_qty = #{putawayQty},</if>
             <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="extBatchNo != null">ext_batch_no = #{extBatchNo},</if>
             <if test="productionDate != null">production_date = #{productionDate},</if>
             <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
             <if test="locationId != null">location_id = #{locationId},</if>

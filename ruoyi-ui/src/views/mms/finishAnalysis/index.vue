@@ -2,14 +2,14 @@
   <div class="app-container mms-finish-analysis-page">
     <!-- ===== 筛选条件 ===== -->
     <div class="surface filter-card" v-show="showSearch">
-      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div><a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a></div>
+      <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div><a class="adv-link" v-show="activeTab === 'finish'" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a></div>
       <div class="filter-bar">
         <div class="field"><label>工单编号</label><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div></div>
         <div class="field"><label>产品编码</label><div class="control"><el-input v-model="queryParams.productCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
         <div class="field"><label>产品名称</label><div class="control"><el-input v-model="queryParams.productName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>是否准时</label><div class="control is-select"><el-select v-model="queryParams.isOnTime" placeholder="全部" clearable @change="handleQuery"><el-option label="准时完工" value="1" /><el-option label="逾期完工" value="0" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>完工日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
+        <div class="field" v-show="showAdvanced && activeTab === 'finish'"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced && activeTab === 'finish'"><label>是否准时</label><div class="control is-select"><el-select v-model="queryParams.isOnTime" placeholder="全部" clearable @change="handleQuery"><el-option label="准时完工" value="1" /><el-option label="逾期完工" value="0" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced && activeTab === 'finish'"><label>完工日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
       </div>
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>
@@ -57,10 +57,15 @@
     <div class="surface">
       <div class="status-tabs">
         <div class="tabs-track">
-          <button class="status-tab is-active">
+          <button class="status-tab" :class="{ 'is-active': activeTab === 'finish' }" @click="switchTab('finish')">
             <span class="dot"></span>
-            <span>全部</span>
+            <span>完工分析</span>
             <span class="count">{{ total }}</span>
+          </button>
+          <button class="status-tab" :class="{ 'is-active': activeTab === 'yield' }" @click="switchTab('yield')" v-hasPermi="['food:yield:list']">
+            <span class="dot"></span>
+            <span>产出率核算</span>
+            <span class="count">{{ yieldTotal }}</span>
           </button>
         </div>
         <button class="tip-pill" @click="showHelp = true">
@@ -70,11 +75,13 @@
       </div>
       <div class="toolbar">
         <div class="left">
-          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:finishAnalysis:export']">导出</el-button>
+          <el-button v-if="activeTab === 'finish'" type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mms:finishAnalysis:export']">导出</el-button>
+          <el-button v-if="activeTab === 'yield'" type="warning" plain icon="Download" @click="handleYieldExport" v-hasPermi="['food:yield:export']">导出</el-button>
+          <el-button type="success" plain icon="MagicStick" @click="handleLossInterpret" v-hasPermi="['mms:workorder:list']">AI损耗解读</el-button>
         </div>
-        <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mms_finish_analysis_columns" /></div>
+        <div class="right"><right-toolbar v-model:showSearch="showSearch" @queryTable="activeTab === 'finish' ? getList() : getYieldList()" :columns="activeTab === 'finish' ? columns : yieldColumns" :storageKey="activeTab === 'finish' ? 'mms_finish_analysis_columns' : 'food_yield_columns'" /></div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" v-show="activeTab === 'finish'">
         <el-table ref="tableRef" v-loading="loading" :data="dataList" border @header-dragend="onHeaderDragEnd" class="app-table" show-summary :summary-method="getSummaryRow">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="colWidth('workOrderNo', 140)" resizable v-if="columns.workOrderNo.visible" />
@@ -94,7 +101,32 @@
           <el-table-column label="实际完工" prop="actualFinish" key="actualFinish" :width="colWidth('actualFinish', 150)" resizable align="center" v-if="columns.actualFinish.visible"><template #default="scope"><span>{{ parseTime(scope.row.actualFinish, '{y}-{m}-{d} {h}:{i}') }}</span></template></el-table-column>
         </el-table>
       </div>
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <div class="table-wrap" v-show="activeTab === 'yield'">
+        <el-table ref="yieldTableRef" v-loading="yieldLoading" :data="yieldList" border @header-dragend="onYieldHeaderDragEnd" class="app-table">
+          <el-table-column type="index" label="序号" key="序号" :width="yColWidth('序号', 70)" align="center" resizable />
+          <el-table-column label="工单号" prop="workOrderNo" key="workOrderNo" :width="yColWidth('workOrderNo', 140)" resizable v-if="yieldColumns.workOrderNo.visible" />
+          <el-table-column label="产品编码" prop="productCode" key="productCode" :width="yColWidth('productCode', 120)" resizable v-if="yieldColumns.productCode.visible" />
+          <el-table-column label="产品名称" prop="productName" key="productName" :min-width="yColWidth('productName', 160)" resizable show-overflow-tooltip v-if="yieldColumns.productName.visible" />
+          <el-table-column label="产出率模型" key="yieldModel" :width="yColWidth('yieldModel', 100)" resizable align="center" v-if="yieldColumns.yieldModel.visible"><template #default="scope"><span class="badge" :class="scope.row.yieldModel === '1' ? 'blue' : 'gray'"><span class="dot"></span>{{ dictLabel(food_yield_model, scope.row.yieldModel) }}</span></template></el-table-column>
+          <el-table-column label="排产模式" key="scheduleMode" :width="yColWidth('scheduleMode', 100)" resizable align="center" v-if="yieldColumns.scheduleMode.visible"><template #default="scope"><span v-if="scope.row.scheduleMode" class="badge violet"><span class="dot"></span>{{ dictLabel(food_schedule_mode, scope.row.scheduleMode) }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="基准产出率" prop="stdYieldRate" key="stdYieldRate" :width="yColWidth('stdYieldRate', 95)" resizable align="center" v-if="yieldColumns.stdYieldRate.visible"><template #default="scope"><span v-if="scope.row.stdYieldRate != null">{{ scope.row.stdYieldRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="告警下限" prop="yieldAlarmRate" key="yieldAlarmRate" :width="yColWidth('yieldAlarmRate', 90)" resizable align="center" v-if="yieldColumns.yieldAlarmRate.visible"><template #default="scope"><span v-if="scope.row.yieldAlarmRate != null">{{ scope.row.yieldAlarmRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="计划数量" prop="planQty" key="planQty" :width="yColWidth('planQty', 95)" resizable align="right" v-if="yieldColumns.planQty.visible" />
+          <el-table-column label="领料投入" prop="inputQty" key="inputQty" :width="yColWidth('inputQty', 100)" resizable align="right" v-if="yieldColumns.inputQty.visible"><template #default="scope"><span v-if="scope.row.inputQty != null" class="num-text">{{ scope.row.inputQty }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="理论产出" prop="theoryQty" key="theoryQty" :width="yColWidth('theoryQty', 100)" resizable align="right" v-if="yieldColumns.theoryQty.visible"><template #default="scope"><span v-if="scope.row.theoryQty != null">{{ scope.row.theoryQty }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="实际完工" prop="actualQty" key="actualQty" :width="yColWidth('actualQty', 100)" resizable align="right" v-if="yieldColumns.actualQty.visible"><template #default="scope"><span v-if="scope.row.actualQty != null" class="num-text">{{ scope.row.actualQty }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="产出率" prop="yieldRate" key="yieldRate" :width="yColWidth('yieldRate', 100)" resizable align="center" v-if="yieldColumns.yieldRate.visible"><template #default="scope"><span v-if="scope.row.yieldRate != null" class="badge" :class="yRateBadge(scope.row)"><span class="dot"></span>{{ scope.row.yieldRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="损耗率" prop="lossRate" key="lossRate" :width="yColWidth('lossRate', 90)" resizable align="center" v-if="yieldColumns.lossRate.visible"><template #default="scope"><span v-if="scope.row.lossRate != null" :class="scope.row.lossRate > 0 ? 'text-danger' : 'text-muted'">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="修割" prop="lossCut" key="lossCut" :width="yColWidth('lossCut', 85)" resizable align="right" v-if="yieldColumns.lossCut.visible"><template #default="scope"><span v-if="scope.row.lossCut > 0">{{ scope.row.lossCut }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="盐渍" prop="lossSalt" key="lossSalt" :width="yColWidth('lossSalt', 85)" resizable align="right" v-if="yieldColumns.lossSalt.visible"><template #default="scope"><span v-if="scope.row.lossSalt > 0">{{ scope.row.lossSalt }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="发酵失重" prop="lossFerment" key="lossFerment" :width="yColWidth('lossFerment', 90)" resizable align="right" v-if="yieldColumns.lossFerment.visible"><template #default="scope"><span v-if="scope.row.lossFerment > 0">{{ scope.row.lossFerment }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="其他损耗" prop="lossOther" key="lossOther" :width="yColWidth('lossOther', 90)" resizable align="right" v-if="yieldColumns.lossOther.visible"><template #default="scope"><span v-if="scope.row.lossOther > 0">{{ scope.row.lossOther }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="损耗合计" prop="lossTotal" key="lossTotal" :width="yColWidth('lossTotal', 95)" resizable align="right" v-if="yieldColumns.lossTotal.visible"><template #default="scope"><span v-if="scope.row.lossTotal > 0" class="badge red"><span class="dot"></span>{{ scope.row.lossTotal }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="告警" prop="alarmFlag" key="alarmFlag" :width="yColWidth('alarmFlag', 80)" resizable align="center" v-if="yieldColumns.alarmFlag.visible"><template #default="scope"><span v-if="scope.row.alarmFlag === '1'" class="badge red"><span class="dot"></span>低于下限</span><span v-else-if="scope.row.alarmFlag === '0'" class="badge green"><span class="dot"></span>正常</span><span v-else class="text-muted">—</span></template></el-table-column>
+          <el-table-column label="状态" prop="status" key="status" :width="yColWidth('status', 90)" resizable align="center" v-if="yieldColumns.status.visible"><template #default="scope"><span v-if="scope.row.status" class="badge" :class="woStatusBadge(scope.row.status)"><span class="dot"></span>{{ dictLabel(mms_workorder_status, scope.row.status) }}</span></template></el-table-column>
+        </el-table>
+      </div>
+      <pagination v-show="(activeTab === 'finish' ? total : yieldTotal) > 0" :total="activeTab === 'finish' ? total : yieldTotal" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="activeTab === 'finish' ? getList() : getYieldList()" />
     </div>
 
     <!-- ===== 业务操作说明对话框 ===== -->
@@ -168,17 +200,142 @@
       </div>
       <template #footer><el-button type="primary" @click="showHelp = false">我知道了</el-button></template>
     </el-dialog>
+
+    <!-- AI损耗解读 -->
+    <el-dialog title="AI产出率/损耗异常解读" v-model="lossOpen" width="860px" append-to-body>
+      <el-alert v-if="lossData.summary" type="warning" :closable="false" show-icon style="margin-bottom: 12px;">
+        <template #title>
+          <span style="white-space: pre-wrap;">{{ lossData.summary }}</span>
+        </template>
+      </el-alert>
+      <el-alert v-else-if="lossLoaded && lossData.total > 0" type="info" :closable="false" show-icon style="margin-bottom: 12px;">
+        <template #title>
+          <span>共 {{ lossData.total }} 个工单损耗率超过 {{ lossData.threshold }}%，平均损耗率 {{ lossData.avgLossRate }}%；AI 解读暂不可用（大模型额度或开关未就绪），数据仅供参考</span>
+        </template>
+      </el-alert>
+      <el-alert v-else-if="lossLoaded && lossData.total === 0" type="success" :closable="false" show-icon
+        title="当前损耗率超过阈值的工单为 0，产出表现正常" />
+      <el-table v-if="lossData.rows && lossData.rows.length" v-loading="!lossLoaded" element-loading-text="AI 分析中..." :data="lossData.rows" size="small" max-height="380">
+        <el-table-column label="工单号" prop="工单号" width="170" />
+        <el-table-column label="产品" prop="产品" min-width="120" show-overflow-tooltip />
+        <el-table-column label="计划量" prop="计划量" width="90" align="right" />
+        <el-table-column label="合格量" prop="合格量" width="90" align="right" />
+        <el-table-column label="不良量" prop="不良量" width="90" align="right" />
+        <el-table-column label="损耗率%" width="90" align="center">
+          <template #default="scope">
+            <el-tag type="danger">{{ scope.row['损耗率'] }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="工单状态" width="90" align="center">
+          <template #default="scope">{{ mms_workorder_status[scope.row['工单状态']]?.label || scope.row['工单状态'] }}</template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="lossOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="FinishAnalysis">
 import { listFinishAnalysis, getFinishAnalysisSummary } from "@/api/mms/finishAnalysis"
+import { analysisYield } from "@/api/food/yield"
+import request from '@/utils/request'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled, QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
-const { mms_workorder_status, wms_unit } = proxy.useDict("mms_workorder_status", "wms_unit")
+const { mms_workorder_status, wms_unit, food_yield_model, food_schedule_mode } = proxy.useDict("mms_workorder_status", "wms_unit", "food_yield_model", "food_schedule_mode")
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_finish_analysis')
+
+/** ===== 产出率核算页签（food:yield） ===== */
+const activeTab = ref('finish')
+const yieldList = ref([])
+const yieldTotal = ref(0)
+const yieldLoading = ref(false)
+const { colWidth: yColWidth, onHeaderDragEnd: onYieldHeaderDragEnd, tableRef: yieldTableRef, applySavedWidths: applyYieldSavedWidths } = useColumnResize('food_yield_analysis')
+const yieldColumns = reactive({
+  workOrderNo: { label: '工单号', visible: true },
+  productCode: { label: '产品编码', visible: true },
+  productName: { label: '产品名称', visible: true },
+  yieldModel: { label: '产出率模型', visible: true },
+  scheduleMode: { label: '排产模式', visible: true },
+  stdYieldRate: { label: '基准产出率', visible: true },
+  yieldAlarmRate: { label: '告警下限', visible: true },
+  planQty: { label: '计划数量', visible: true },
+  inputQty: { label: '领料投入', visible: true },
+  theoryQty: { label: '理论产出', visible: true },
+  actualQty: { label: '实际完工', visible: true },
+  yieldRate: { label: '产出率', visible: true },
+  lossRate: { label: '损耗率', visible: true },
+  lossCut: { label: '修割', visible: true },
+  lossSalt: { label: '盐渍', visible: true },
+  lossFerment: { label: '发酵失重', visible: true },
+  lossOther: { label: '其他损耗', visible: true },
+  lossTotal: { label: '损耗合计', visible: true },
+  alarmFlag: { label: '告警', visible: true },
+  status: { label: '状态', visible: true }
+})
+
+function switchTab(tab) {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  if (tab === 'yield') {
+    queryParams.value.pageNum = 1
+    getYieldList()
+  } else {
+    queryParams.value.pageNum = 1
+    getList()
+  }
+}
+
+function getYieldList() {
+  yieldLoading.value = true
+  analysisYield({
+    pageNum: queryParams.value.pageNum,
+    pageSize: queryParams.value.pageSize,
+    workOrderNo: queryParams.value.workOrderNo,
+    productCode: queryParams.value.productCode,
+    productName: queryParams.value.productName
+  }).then(res => {
+    yieldList.value = res.rows
+    yieldTotal.value = res.total
+    yieldLoading.value = false
+    applyYieldSavedWidths()
+  }).catch(() => { yieldLoading.value = false })
+}
+
+function handleYieldExport() {
+  proxy.download("food/yield/export", {
+    workOrderNo: queryParams.value.workOrderNo,
+    productCode: queryParams.value.productCode,
+    productName: queryParams.value.productName
+  }, `yield_analysis_${new Date().getTime()}.xlsx`)
+}
+
+// ---------------- AI损耗解读 ----------------
+
+const lossOpen = ref(false)
+const lossLoaded = ref(false)
+const lossData = ref({})
+
+function handleLossInterpret() {
+  lossOpen.value = true
+  lossLoaded.value = false
+  lossData.value = {}
+  request({ url: '/ai/bizAlert/lossInterpret', method: 'get', params: { threshold: 10 } }).then(res => {
+    lossData.value = res.data || {}
+    lossLoaded.value = true
+  })
+}
+
+/** 产出率徽章：低于告警下限红、低于基准琥珀、达标绿 */
+function yRateBadge(row) {
+  if (row.alarmFlag === '1') return 'red'
+  if (row.stdYieldRate != null && row.yieldRate != null && Number(row.yieldRate) < Number(row.stdYieldRate)) return 'amber'
+  return 'green'
+}
+
 const columns = reactive({
   workOrderNo: { label: '工单号', visible: true },
   productCode: { label: '产品编码', visible: true },
@@ -253,7 +410,7 @@ function loadSummary() {
 function handleQuery() {
   showAdvanced.value = false
   queryParams.value.pageNum = 1
-  getList()
+  if (activeTab.value === 'yield') { getYieldList() } else { getList() }
 }
 
 function resetQuery() {

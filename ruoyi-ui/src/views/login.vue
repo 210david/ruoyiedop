@@ -227,10 +227,14 @@ function getCookie() {
     // 如果存在密码，解密后填充
     if (password) {
       try {
-        loginForm.value.password = decrypt(password)
+        const decrypted = decrypt(password)
+        loginForm.value.password = decrypted || ''
       } catch (e) {
         console.error('密码解密失败', e)
-        // 解密失败时清除密码
+        // 解密失败时清除记住密码的cookie并置空
+        Cookies.remove("username")
+        Cookies.remove("password")
+        Cookies.remove("rememberMe")
         loginForm.value.password = ''
       }
     }
@@ -256,9 +260,14 @@ function handleLogin() {
       // 记住密码逻辑
       if (loginForm.value.rememberMe) {
         localStorage.setItem('rememberedUsername', loginForm.value.username)
-        Cookies.set("username", loginForm.value.username, { expires: 30 })
-        Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 })
-        Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 })
+        try {
+          Cookies.set("username", loginForm.value.username, { expires: 30 })
+          Cookies.set("password", encrypt(loginForm.value.password), { expires: 30 })
+          Cookies.set("rememberMe", loginForm.value.rememberMe, { expires: 30 })
+        } catch (e) {
+          // cookie加密失败不阻断登录
+          console.error('记住密码加密失败', e)
+        }
       } else {
         localStorage.removeItem('rememberedUsername')
         Cookies.remove("username")

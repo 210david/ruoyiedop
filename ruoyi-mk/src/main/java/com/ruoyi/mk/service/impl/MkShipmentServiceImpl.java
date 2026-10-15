@@ -3,12 +3,14 @@ package com.ruoyi.mk.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.food.service.IFoodBatchStockService;
 import com.ruoyi.mk.domain.MkShipment;
 import com.ruoyi.mk.domain.MkShipmentDetail;
 import com.ruoyi.mk.domain.MkOrder;
@@ -38,6 +40,9 @@ public class MkShipmentServiceImpl implements IMkShipmentService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private IFoodBatchStockService foodBatchStockService;
 
     @Override
     public List<MkShipment> selectShipmentList(MkShipment shipment)
@@ -359,6 +364,41 @@ public class MkShipmentServiceImpl implements IMkShipmentService
         if (StringUtils.isEmpty(shipment.getOutboundOrderNo()))
         {
             throw new ServiceException("请填写出库单号，必须先在仓库管理完成出库后才能发货");
+        }
+        // 校验：出库单必须已完成出库（状态3）
+        String outboundStatus = mkShipmentMapper.selectOutboundStatusByNo(shipment.getOutboundOrderNo());
+        if (outboundStatus == null)
+        {
+            throw new ServiceException("出库单「" + shipment.getOutboundOrderNo() + "」不存在，请核对出库单号");
+        }
+        if (!"3".equals(outboundStatus))
+        {
+            throw new ServiceException("出库单「" + shipment.getOutboundOrderNo() + "」尚未完成出库，不能确认发货");
+        }
+        // 校验：出库明细批次三重拦截复核（非合格批次/剩余效期不足/可分配量不足均禁止发货）
+        List<Map<String, Object>> outboundBatches = mkShipmentMapper.selectOutboundBatchesByNo(shipment.getOutboundOrderNo());
+        if (outboundBatches != null)
+        {
+            for (Map<String, Object> b : outboundBatches)
+            {
+                Object batchNoObj = b.get("batch_no");
+                Object materialIdObj = b.get("material_id");
+                if (batchNoObj == null || StringUtils.isEmpty(batchNoObj.toString()) || materialIdObj == null)
+                {
+                    continue;
+                }
+                Long materialId = Long.valueOf(materialIdObj.toString());
+                String batchNo = batchNoObj.toString();
+                String materialName = b.get("material_name") != null ? b.get("material_name").toString() : batchNo;
+                try
+                {
+                    foodBatchStockService.validateBatchShippable(materialId, batchNo);
+                }
+                catch (ServiceException e)
+                {
+                    throw new ServiceException("商品「" + materialName + "」批次「" + batchNo + "」" + e.getMessage());
+                }
+            }
         }
         // 设置发货信息
         existing.setStatus("1"); // 已发货

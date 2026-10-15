@@ -34,6 +34,14 @@
                      </div>
                   </div>
                   <div class="field">
+                     <label>所属模块</label>
+                     <div class="control is-select">
+                        <el-select v-model="queryParams.moduleKey" placeholder="全部" clearable @change="handleQuery">
+                           <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName" :value="m.moduleKey" />
+                        </el-select>
+                     </div>
+                  </div>
+                  <div class="field">
                      <label>创建时间</label>
                      <div class="control">
                         <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" />
@@ -43,6 +51,7 @@
                <div class="filter-actions">
                   <div class="filter-info">
                      <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+                     <el-checkbox v-model="showDisabledModule" style="margin-left: 16px;">显示已停用模块角色</el-checkbox>
                   </div>
                   <div class="filter-buttons">
                      <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
@@ -84,6 +93,12 @@
                            <div class="category-tags">
                               <el-tag v-for="cat in parseCategoryList(scope.row.roleCategory)" :key="cat" :type="getCategoryTagType(cat)" size="small" style="margin: 2px;">{{ getCategoryLabel(cat) }}</el-tag>
                            </div>
+                        </template>
+                     </el-table-column>
+                     <el-table-column label="所属模块" prop="moduleKey" align="center" key="moduleKey" :width="colWidth('moduleKey', 120)" v-if="columns.moduleKey.visible">
+                        <template #default="scope">
+                           <el-tag v-if="scope.row.moduleKey" size="small" :type="moduleMap[scope.row.moduleKey]?.status === '1' ? 'info' : 'success'">{{ moduleMap[scope.row.moduleKey]?.moduleName || scope.row.moduleKey }}</el-tag>
+                           <el-tag v-else size="small" type="primary" effect="plain">平台</el-tag>
                         </template>
                      </el-table-column>
                      <el-table-column label="权限字符" prop="roleKey" key="roleKey" :show-overflow-tooltip="true" :width="colWidth('roleKey', 150)" v-if="columns.roleKey.visible" />
@@ -179,6 +194,11 @@
                      <el-form-item label="角色分类" prop="roleCategoryList">
                         <el-select v-model="form.roleCategoryList" placeholder="请选择角色分类" multiple collapse-tags collapse-tags-tooltip style="width: 100%">
                            <el-option v-for="dict in sys_role_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+                        </el-select>
+                     </el-form-item>
+                     <el-form-item label="所属模块" prop="moduleKey">
+                        <el-select v-model="form.moduleKey" placeholder="平台级（默认）" clearable style="width: 100%">
+                           <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName + (m.status === '1' ? '（已停用）' : '')" :value="m.moduleKey" />
                         </el-select>
                      </el-form-item>
                      <el-form-item prop="roleKey">
@@ -360,6 +380,7 @@
 <script setup name="Role">
 import TreePanel from "@/components/TreePanel"
 import { addRole, changeRoleStatus, dataScope, delRole, getRole, listRole, updateRole, deptTreeSelect } from "@/api/system/role"
+import { listModule } from "@/api/system/module"
 import { roleMenuTreeselect, treeselect as menuTreeselect } from "@/api/system/menu"
 import { Search, Key, Filter, Edit, Delete, Download, RefreshLeft, ArrowDown, ArrowRight, Check, Minus, Connection } from "@element-plus/icons-vue"
 import { pinyin } from 'pinyin-pro'
@@ -393,12 +414,21 @@ const deptRef = ref(null)
 const categoryOptions = ref([])
 const menuFilterText = ref("")
 const roleKeyAutoGen = ref(true)
+// 模块开关选项与显示已停用模块角色
+const moduleOptions = ref([])
+const showDisabledModule = ref(false)
+const moduleMap = computed(() => {
+  const map = {}
+  moduleOptions.value.forEach(m => { map[m.moduleKey] = m })
+  return map
+})
 
 // 列显隐信息
 const columns = ref({
   roleId: { label: '角色编号', visible: true },
   roleName: { label: '角色名称', visible: true },
   roleCategory: { label: '角色分类', visible: true },
+  moduleKey: { label: '所属模块', visible: true },
   roleKey: { label: '权限字符', visible: true },
   roleSort: { label: '显示顺序', visible: true },
   status: { label: '状态', visible: true },
@@ -433,7 +463,8 @@ const data = reactive({
     roleName: undefined,
     roleKey: undefined,
     status: undefined,
-    roleCategory: undefined
+    roleCategory: undefined,
+    moduleKey: undefined
   },
   rules: {
     roleName: [{ required: true, message: "角色名称不能为空", trigger: "blur" }],
@@ -450,9 +481,17 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.roleName) count++
   if (queryParams.value.roleKey) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.moduleKey) count++
   if (dateRange.value && dateRange.value.length > 0) count++
   return count
 })
+
+/** 获取模块开关选项 */
+function getModuleOptions() {
+  listModule({ pageNum: 1, pageSize: 100 }).then(response => {
+    moduleOptions.value = response.rows
+  })
+}
 
 /** 获取分类标签类型 */
 function getCategoryTagType(category) {
@@ -483,7 +522,7 @@ function getCategoryTree() {
 /** 查询角色列表 */
 function getList() {
   loading.value = true
-  listRole(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
+  listRole({ ...proxy.addDateRange(queryParams.value, dateRange.value), showDisabledModule: showDisabledModule.value ? 'true' : undefined }).then(response => {
     roleList.value = response.rows
     total.value = response.total
     loading.value = false
@@ -510,6 +549,8 @@ function resetQuery() {
   queryParams.value.roleKey = undefined
   queryParams.value.status = undefined
   queryParams.value.roleCategory = undefined
+  queryParams.value.moduleKey = undefined
+  showDisabledModule.value = false
   proxy.$refs.categoryTreeRef.setCurrentKey(null)
   handleQuery()
 }
@@ -646,6 +687,7 @@ roleKey: undefined,
 roleSort: 0,
 roleCategory: "system",
 roleCategoryList: ["system"],
+moduleKey: undefined,
 status: "0",
 menuIds: [],
 deptIds: [],
@@ -767,6 +809,10 @@ form.value.roleCategory = form.value.roleCategoryList.join(',')
 } else {
 form.value.roleCategory = 'system'
 }
+// 所属模块空值统一为 null（平台级）
+if (!form.value.moduleKey) {
+form.value.moduleKey = null
+}
 if (form.value.roleId != undefined) {
 form.value.menuIds = getMenuAllCheckedKeys()
 updateRole(form.value).then(() => {
@@ -839,6 +885,12 @@ function cancelDataScope() {
 
 onMounted(() => {
   getList()
+  getModuleOptions()
+})
+
+// 勾选显示已停用模块角色时重新加载
+watch(showDisabledModule, () => {
+  handleQuery()
 })
 
 // 字典数据加载完成后构建分类树

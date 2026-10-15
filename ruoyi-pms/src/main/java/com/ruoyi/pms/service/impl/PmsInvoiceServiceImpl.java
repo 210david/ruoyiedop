@@ -303,6 +303,16 @@ public class PmsInvoiceServiceImpl implements IPmsInvoiceService
             throw new ServiceException("本次付款金额不能超过未付金额（" + unpaid.toPlainString() + "元）");
         }
 
+        // 付款前置：三单匹配拦截（关联采购订单的发票必须匹配成功才能付款）
+        if (invoice.getOrderId() != null)
+        {
+            Map<String, Object> match = threeWayMatch(dto.getInvoiceId());
+            if (!"匹配成功".equals(match.get("matchResult")))
+            {
+                throw new ServiceException("三单匹配未通过（" + match.get("matchResult") + "），禁止付款，请先核对订单/收货/发票差异");
+            }
+        }
+
         // 1. 插入付款记录
         PmsInvoicePayment payment = new PmsInvoicePayment();
         payment.setPaymentNo(mkNumberRuleService.generateNumber("pms_payment"));

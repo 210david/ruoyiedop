@@ -3,6 +3,7 @@ package com.ruoyi.qms.service;
 import java.util.List;
 import java.util.Map;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
+import com.ruoyi.qms.domain.vo.QmsTraceReportRow;
 import com.ruoyi.qms.domain.vo.TraceFallbackVO;
 
 /**
@@ -55,6 +56,14 @@ public interface IQmsTraceService
      * @return 降级追溯结果（检验记录/NCR/仓库流转/采购收货/客诉等）
      */
     TraceFallbackVO fallbackTrace(String batchNo, String direction);
+
+    /**
+     * 构建批次追溯报告（正反向合一）：起点批次 + 上游原料层 + 下游成品层，
+     * 每个谱系节点一行，汇总检验记录与NCR摘要，供 Excel 导出留档。
+     * @param batchNo 批次号
+     * @return 报告行列表（已按 方向+层级 排序）
+     */
+    List<QmsTraceReportRow> buildTraceReport(String batchNo);
 
     // ==================== 谱系事件写入（业务模块联动，幂等） ====================
 

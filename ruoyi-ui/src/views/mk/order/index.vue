@@ -289,10 +289,11 @@
                     </el-form-item>
                   </template>
                 </el-table-column>
-                <el-table-column label="单价" width="120" align="center">
+                <el-table-column label="单价" width="150" align="center">
                   <template #default="scope">
                     <el-form-item :prop="'itemList.' + scope.$index + '.unitPrice'" :rules="[{ required: true, message: '请输入单价', trigger: 'blur' }]" style="margin-bottom: 0" label-width="0">
                       <el-input-number v-model="scope.row.unitPrice" :min="0" :precision="2" :controls="false" size="small" placeholder="请输入" style="width: 100%" @change="calcSubtotal(scope.$index)" />
+                      <el-tag v-if="scope.row.priceSource" size="small" effect="plain" type="success" style="margin-top:2px">{{ scope.row.priceSource }}</el-tag>
                     </el-form-item>
                   </template>
                 </el-table-column>
@@ -878,6 +879,7 @@
 <script setup name="MkOrder">
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { listOrder, getOrder, addOrder, updateOrder, delOrder, submitOrder, voidOrder, auditOrder } from '@/api/mk/order'
+import { applyPrice } from '@/api/mk/pricePolicy'
 import { aiSalesWeeklyReport } from '@/api/ai/manage'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
@@ -1097,6 +1099,18 @@ function onMaterialPickerConfirm(material) {
     item.productName = material.materialName
     item.productSpec = material.specModel
     item.unit = material.unit
+    item.priceSource = undefined
+    // 政策取价：客户专价→等级价自动填充单价
+    if (item.materialId && form.value.customerId) {
+      applyPrice({ materialId: item.materialId, customerId: form.value.customerId }).then(res => {
+        if (res.data && res.data.unitPrice != null) {
+          item.unitPrice = Number(res.data.unitPrice)
+          item.priceSource = res.data.source || '政策价'
+          calcSubtotal(index)
+          proxy.$modal.msgSuccess('已按【' + item.priceSource + '】自动取价')
+        }
+      }).catch(() => {})
+    }
   }
 }
 /** 清除商品 */
@@ -1108,6 +1122,7 @@ function clearMaterial(index) {
     item.productName = undefined
     item.productSpec = undefined
     item.unit = undefined
+    item.priceSource = undefined
   }
 }
 function calcSubtotal(index) { const item = form.value.itemList[index]; if (item && item.quantity != null && item.unitPrice != null) { item.subtotal = (item.quantity * item.unitPrice).toFixed(2) } else { item.subtotal = undefined }; const total = form.value.itemList.reduce((sum, i) => sum + (parseFloat(i.subtotal) || 0), 0); form.value.orderAmount = total.toFixed(2) }

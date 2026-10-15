@@ -31,6 +31,14 @@
           </div>
         </div>
         <div class="field">
+          <label>所属模块</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.moduleKey" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName" :value="m.moduleKey" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
           <label>调用目标</label>
           <div class="control">
             <el-input v-model="queryParams.invokeTarget" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -42,6 +50,7 @@
       <div class="filter-actions">
         <div class="filter-info">
           <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+          <el-checkbox v-model="showDisabledModule" style="margin-left: 16px;">显示已停用模块任务</el-checkbox>
         </div>
         <div class="filter-buttons">
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
@@ -89,6 +98,12 @@
           <el-table-column label="任务组名" prop="jobGroup" key="jobGroup" :width="colWidth('jobGroup', 120)" resizable align="center" v-if="columns.jobGroup.visible">
             <template #default="scope">
               <span class="badge violet">{{ jobGroupLabel(scope.row.jobGroup) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="所属模块" prop="moduleKey" key="moduleKey" :width="colWidth('moduleKey', 120)" resizable align="center" v-if="columns.moduleKey.visible">
+            <template #default="scope">
+              <el-tag v-if="scope.row.moduleKey" size="small" :type="moduleMap[scope.row.moduleKey]?.status === '1' ? 'info' : 'success'">{{ moduleMap[scope.row.moduleKey]?.moduleName || scope.row.moduleKey }}</el-tag>
+              <el-tag v-else size="small" type="primary" effect="plain">平台</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="调用目标字符串" prop="invokeTarget" key="invokeTarget" :width="colWidth('invokeTarget', 220)" resizable align="center" show-overflow-tooltip v-if="columns.invokeTarget.visible" />
@@ -213,8 +228,15 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row :gutter="20" v-if="form.jobId !== undefined">
-                <el-col :span="24">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="所属模块" prop="moduleKey">
+                    <el-select v-model="form.moduleKey" placeholder="平台级（默认）" clearable style="width: 100%">
+                      <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName + (m.status === '1' ? '（已停用）' : '')" :value="m.moduleKey" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12" v-if="form.jobId !== undefined">
                   <el-form-item label="状态">
                     <el-radio-group v-model="form.status">
                       <el-radio
@@ -315,6 +337,7 @@
 import Crontab from '@/components/Crontab'
 import JobDetail from './detail'
 import { listJob, getJob, delJob, addJob, updateJob, runJob, changeJobStatus } from "@/api/monitor/job"
+import { listModule } from "@/api/system/module"
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const router = useRouter()
@@ -334,6 +357,14 @@ const title = ref("")
 const openView = ref(false)
 const openCron = ref(false)
 const expression = ref("")
+// 模块开关选项与显示已停用模块任务
+const moduleOptions = ref([])
+const showDisabledModule = ref(false)
+const moduleMap = computed(() => {
+  const map = {}
+  moduleOptions.value.forEach(m => { map[m.moduleKey] = m })
+  return map
+})
 
 /** cron常用表达式预设 */
 const cronPresets = [
@@ -457,6 +488,7 @@ const defaultColumns = {
   jobId: { label: '任务编号', visible: true },
   jobName: { label: '任务名称', visible: true },
   jobGroup: { label: '任务组名', visible: true },
+  moduleKey: { label: '所属模块', visible: true },
   invokeTarget: { label: '调用目标字符串', visible: true },
   cronExpression: { label: 'cron执行表达式', visible: true },
   status: { label: '状态', visible: true },
@@ -488,9 +520,17 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.jobName) count++
   if (queryParams.value.jobGroup) count++
   if (queryParams.value.status) count++
+  if (queryParams.value.moduleKey) count++
   if (queryParams.value.invokeTarget) count++
   return count
 })
+
+/** 获取模块开关选项 */
+function getModuleOptions() {
+  listModule({ pageNum: 1, pageSize: 100 }).then(response => {
+    moduleOptions.value = response.rows
+  })
+}
 
 /** 任务组名字典标签 */
 function jobGroupLabel(value) {
@@ -506,6 +546,7 @@ const data = reactive({
     jobName: undefined,
     jobGroup: undefined,
     status: undefined,
+    moduleKey: undefined,
     invokeTarget: undefined
   },
   rules: {
@@ -520,7 +561,7 @@ const { queryParams, form, rules } = toRefs(data)
 /** 查询定时任务列表 */
 function getList() {
   loading.value = true
-  listJob(queryParams.value).then(response => {
+  listJob({ ...queryParams.value, showDisabledModule: showDisabledModule.value ? 'true' : undefined }).then(response => {
     jobList.value = response.rows
     total.value = response.total
     loading.value = false
@@ -542,6 +583,7 @@ function reset() {
     jobId: undefined,
     jobName: undefined,
     jobGroup: undefined,
+    moduleKey: undefined,
     invokeTarget: undefined,
     cronExpression: undefined,
     misfirePolicy: '1',
@@ -559,7 +601,12 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
+  queryParams.value.jobName = undefined
+  queryParams.value.jobGroup = undefined
+  queryParams.value.status = undefined
+  queryParams.value.moduleKey = undefined
+  queryParams.value.invokeTarget = undefined
+  showDisabledModule.value = false
   handleQuery()
 }
 
@@ -638,6 +685,10 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["jobRef"].validate(valid => {
     if (valid) {
+      // 所属模块空值统一为 null（平台级）
+      if (!form.value.moduleKey) {
+        form.value.moduleKey = null
+      }
       if (form.value.jobId != undefined) {
         updateJob(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -674,6 +725,12 @@ function handleExport() {
 }
 
 getList()
+getModuleOptions()
+
+// 勾选显示已停用模块任务时重新加载
+watch(showDisabledModule, () => {
+  handleQuery()
+})
 </script>
 
 <style scoped>

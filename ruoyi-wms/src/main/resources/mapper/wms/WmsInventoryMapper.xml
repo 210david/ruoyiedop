@@ -16,8 +16,10 @@
         <result property="locationName"  column="location_name"/>
         <result property="areaName"      column="area_name"/>
         <result property="batchNo"       column="batch_no"/>
+        <result property="extBatchNo"    column="ext_batch_no"/>
         <result property="productionDate" column="production_date"/>
         <result property="expiryDate"    column="expiry_date"/>
+        <result property="batchStatus"   column="batch_status"/>
         <result property="qty"           column="qty"/>
         <result property="lockQty"       column="lock_qty"/>
         <result property="version"       column="version"/>
@@ -33,7 +35,7 @@
         SELECT i.inventory_id, i.material_id, m.material_code, m.material_name, m.spec_model, m.unit,
                i.warehouse_id, w.warehouse_name, i.location_id, l.warehouse_code as location_code,
                l.warehouse_name as location_name, a.warehouse_name as area_name,
-               i.batch_no, i.production_date, i.expiry_date,
+               i.batch_no, i.production_date, i.expiry_date, fb.batch_status, fb.ext_batch_code as ext_batch_no,
                i.qty, i.lock_qty, i.version, i.del_flag,
                i.create_by, i.create_time, i.update_by, i.update_time, i.remark
         FROM wms_inventory i
@@ -41,6 +43,7 @@
         LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id
         LEFT JOIN wms_warehouse l ON i.location_id = l.warehouse_id
         LEFT JOIN wms_warehouse a ON l.parent_id = a.warehouse_id
+        LEFT JOIN food_batch fb ON i.batch_no != '' AND fb.batch_code = i.batch_no AND fb.del_flag = '0'
     </sql>
 
     <select id="selectInventoryList" parameterType="WmsInventory" resultMap="WmsInventoryResult">
@@ -56,6 +59,7 @@
             <if test="locationId != null"> AND i.location_id = #{locationId}</if>
             <if test="locationKeyword != null and locationKeyword != ''"> AND (w.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%') OR a.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%') OR l.warehouse_name LIKE CONCAT('%', #{locationKeyword}, '%'))</if>
             <if test="batchNo != null and batchNo != ''"> AND i.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="params.hideZero != null and params.hideZero == 'true'"> AND (i.qty > 0 OR i.lock_qty > 0)</if>
             <if test="params.beginUpdateTime != null and params.beginUpdateTime != ''"> AND DATE(i.update_time) &gt;= #{params.beginUpdateTime}</if>
             <if test="params.endUpdateTime != null and params.endUpdateTime != ''"> AND DATE(i.update_time) &lt;= #{params.endUpdateTime}</if>
         </where>
@@ -66,6 +70,44 @@
             <when test="params.orderByColumn == 'updateTime' and params.isAsc == 'desc'">ORDER BY i.update_time DESC</when>
             <otherwise>ORDER BY i.inventory_id DESC</otherwise>
         </choose>
+    </select>
+
+    <resultMap type="com.ruoyi.wms.domain.WmsInventorySummary" id="WmsInventorySummaryResult">
+        <result property="materialId"    column="material_id"/>
+        <result property="warehouseId"   column="warehouse_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="totalQty"      column="total_qty"/>
+        <result property="totalLockQty"  column="total_lock_qty"/>
+        <result property="batchCount"    column="batch_count"/>
+        <result property="minExpiryDate" column="min_expiry_date"/>
+    </resultMap>
+
+    <select id="selectInventorySummaryList" parameterType="WmsInventory" resultMap="WmsInventorySummaryResult">
+        SELECT i.material_id, i.warehouse_id, m.material_code, m.material_name, m.spec_model, m.unit,
+               w.warehouse_name,
+               SUM(i.qty) AS total_qty, SUM(i.lock_qty) AS total_lock_qty,
+               COUNT(*) AS batch_count, MIN(CASE WHEN i.expiry_date IS NOT NULL AND i.qty > 0 THEN i.expiry_date END) AS min_expiry_date
+        FROM wms_inventory i
+        LEFT JOIN wms_material m ON i.material_id = m.material_id
+        LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id
+        <where>
+            i.del_flag = '0'
+            <if test="materialId != null"> AND i.material_id = #{materialId}</if>
+            <if test="materialCode != null and materialCode != ''"> AND m.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND m.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="specModel != null and specModel != ''"> AND m.spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
+            <if test="warehouseId != null"> AND i.warehouse_id = #{warehouseId}</if>
+            <if test="batchNo != null and batchNo != ''"> AND i.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="params.hideZero == null or params.hideZero != 'true'"> AND (i.qty > 0 OR i.lock_qty > 0)</if>
+            <if test="params.beginUpdateTime != null and params.beginUpdateTime != ''"> AND DATE(i.update_time) &gt;= #{params.beginUpdateTime}</if>
+            <if test="params.endUpdateTime != null and params.endUpdateTime != ''"> AND DATE(i.update_time) &lt;= #{params.endUpdateTime}</if>
+        </where>
+        GROUP BY i.material_id, i.warehouse_id, m.material_code, m.material_name, m.spec_model, m.unit, w.warehouse_name
+        ORDER BY m.material_code ASC, i.warehouse_id ASC
     </select>
 
     <select id="selectInventoryById" parameterType="Long" resultMap="WmsInventoryResult">

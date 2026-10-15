@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="roleKey"            column="role_key"              />
 		<result property="roleSort"            column="role_sort"             />
 		<result property="roleCategory"       column="role_category"         />
+		<result property="moduleKey"          column="module_key"            />
 		<result property="dataScope"          column="data_scope"            />
 		<result property="menuCheckStrictly"  column="menu_check_strictly"   />
 		<result property="deptCheckStrictly"  column="dept_check_strictly"   />
@@ -23,8 +24,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 	
 	<sql id="selectRoleVo">
-	    select distinct r.role_id, r.role_name, r.role_key, r.role_sort, r.role_category, r.data_scope, r.menu_check_strictly, r.dept_check_strictly,
-            r.status, r.del_flag, r.create_time, r.remark 
+	    select distinct r.role_id, r.role_name, r.role_key, r.role_sort, r.role_category, r.module_key, r.data_scope, r.menu_check_strictly, r.dept_check_strictly,
+            r.status, r.del_flag, r.create_time, r.remark
         from sys_role r
 	        left join sys_user_role ur on ur.role_id = r.role_id
 	        left join sys_user u on u.user_id = ur.user_id
@@ -48,6 +49,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		</if>
 		<if test="roleCategory != null and roleCategory != ''">
 			AND FIND_IN_SET(#{roleCategory}, r.role_category)
+		</if>
+		<if test="moduleKey != null and moduleKey != ''">
+			AND r.module_key = #{moduleKey}
+		</if>
+		<if test="showDisabledModule == null or showDisabledModule == ''"><!-- 默认过滤掉已停用模块的角色 -->
+			AND (r.module_key IS NULL OR EXISTS (select 1 from sys_module m where m.module_key = r.module_key and m.status = '0'))
 		</if>
 		<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
 			and date_format(r.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
@@ -104,6 +111,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="roleKey != null and roleKey != ''">role_key,</if>
  			<if test="roleSort != null">role_sort,</if>
  			<if test="roleCategory != null and roleCategory != ''">role_category,</if>
+ 			<if test="moduleKey != null and moduleKey != ''">module_key,</if>
  			<if test="dataScope != null and dataScope != ''">data_scope,</if>
  			<if test="menuCheckStrictly != null">menu_check_strictly,</if>
  			<if test="deptCheckStrictly != null">dept_check_strictly,</if>
@@ -117,6 +125,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="roleKey != null and roleKey != ''">#{roleKey},</if>
  			<if test="roleSort != null">#{roleSort},</if>
  			<if test="roleCategory != null and roleCategory != ''">#{roleCategory},</if>
+ 			<if test="moduleKey != null and moduleKey != ''">#{moduleKey},</if>
  			<if test="dataScope != null and dataScope != ''">#{dataScope},</if>
  			<if test="menuCheckStrictly != null">#{menuCheckStrictly},</if>
  			<if test="deptCheckStrictly != null">#{deptCheckStrictly},</if>
@@ -134,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="roleKey != null and roleKey != ''">role_key = #{roleKey},</if>
  			<if test="roleSort != null">role_sort = #{roleSort},</if>
  			<if test="roleCategory != null and roleCategory != ''">role_category = #{roleCategory},</if>
+ 			<if test="moduleKey != null">module_key = #{moduleKey},</if>
  			<if test="dataScope != null and dataScope != ''">data_scope = #{dataScope},</if>
  			<if test="menuCheckStrictly != null">menu_check_strictly = #{menuCheckStrictly},</if>
  			<if test="deptCheckStrictly != null">dept_check_strictly = #{deptCheckStrictly},</if>

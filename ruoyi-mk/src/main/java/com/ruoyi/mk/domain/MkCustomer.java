@@ -76,6 +76,18 @@ public class MkCustomer extends BaseEntity
     @Excel(name = "累计交易额")
     private BigDecimal totalAmount;
 
+    /** 信用额度上限（0=不启用信用控制） */
+    @Excel(name = "信用额度")
+    private BigDecimal creditLimit;
+
+    /** 账期天数 */
+    @Excel(name = "账期天数")
+    private Integer creditDays;
+
+    /** 信用状态（0正常 1冻结） */
+    @Excel(name = "信用状态", dictType = "mk_credit_status")
+    private String creditStatus;
+
     /** 负责人ID */
     private Long userId;
 
@@ -133,6 +145,12 @@ public class MkCustomer extends BaseEntity
     public void setCooperationDate(Date cooperationDate) { this.cooperationDate = cooperationDate; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+    public BigDecimal getCreditLimit() { return creditLimit; }
+    public void setCreditLimit(BigDecimal creditLimit) { this.creditLimit = creditLimit; }
+    public Integer getCreditDays() { return creditDays; }
+    public void setCreditDays(Integer creditDays) { this.creditDays = creditDays; }
+    public String getCreditStatus() { return creditStatus; }
+    public void setCreditStatus(String creditStatus) { this.creditStatus = creditStatus; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public String getUserName() { return userName; }

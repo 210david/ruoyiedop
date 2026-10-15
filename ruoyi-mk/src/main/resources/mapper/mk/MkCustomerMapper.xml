@@ -20,6 +20,9 @@
         <result property="firstContactDate" column="first_contact_date"/>
         <result property="cooperationDate"  column="cooperation_date"/>
         <result property="totalAmount"      column="total_amount"/>
+        <result property="creditLimit"      column="credit_limit"/>
+        <result property="creditDays"       column="credit_days"/>
+        <result property="creditStatus"     column="credit_status"/>
         <result property="userId"           column="user_id"/>
         <result property="userName"         column="user_name"/>
         <result property="deptId"           column="dept_id"/>
@@ -37,7 +40,8 @@
         SELECT c.customer_id, c.customer_no, c.customer_name, c.credit_code, c.customer_level,
                c.customer_source, c.industry, c.company_size, c.province, c.city, c.district,
                c.address, c.website, c.customer_status, c.first_contact_date, c.cooperation_date,
-               c.total_amount, c.user_id, c.dept_id, c.del_flag, c.create_by, c.create_time,
+               c.total_amount, c.credit_limit, c.credit_days, c.credit_status,
+               c.user_id, c.dept_id, c.del_flag, c.create_by, c.create_time,
                c.update_by, c.update_time, c.remark,
                u.nick_name as user_name, d.dept_name,
                (SELECT GROUP_CONCAT(t.tag_name SEPARATOR ',') FROM mk_customer_tag_rel r 
@@ -87,10 +91,12 @@
     <insert id="insertCustomer" parameterType="MkCustomer" useGeneratedKeys="true" keyProperty="customerId">
         INSERT INTO mk_customer (customer_no, customer_name, credit_code, customer_level, customer_source,
             industry, company_size, province, city, district, address, website, customer_status,
-            first_contact_date, cooperation_date, total_amount, user_id, dept_id, create_by, create_time, remark)
+            first_contact_date, cooperation_date, total_amount, credit_limit, credit_days, credit_status,
+            user_id, dept_id, create_by, create_time, remark)
         VALUES (#{customerNo}, #{customerName}, #{creditCode}, #{customerLevel}, #{customerSource},
             #{industry}, #{companySize}, #{province}, #{city}, #{district}, #{address}, #{website}, #{customerStatus},
-            #{firstContactDate}, #{cooperationDate}, #{totalAmount}, #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
+            #{firstContactDate}, #{cooperationDate}, #{totalAmount}, #{creditLimit}, #{creditDays}, #{creditStatus},
+            #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateCustomer" parameterType="MkCustomer">
@@ -112,6 +118,9 @@
             <if test="firstContactDate != null">first_contact_date = #{firstContactDate},</if>
             <if test="cooperationDate != null">cooperation_date = #{cooperationDate},</if>
             <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="creditLimit != null">credit_limit = #{creditLimit},</if>
+            <if test="creditDays != null">credit_days = #{creditDays},</if>
+            <if test="creditStatus != null and creditStatus != ''">credit_status = #{creditStatus},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="deptId != null">dept_id = #{deptId},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>

@@ -11,7 +11,8 @@ public interface IWmsInboundOrderService
     public int updateInboundOrder(WmsInboundOrder order);
     public int deleteInboundOrderByIds(Long[] orderIds);
     public String generateOrderNo();
-    public int doReceive(Long orderId, Long detailId, java.math.BigDecimal receivedQty);
+    public int doReceive(Long orderId, Long detailId, java.math.BigDecimal receivedQty,
+                         java.util.Date productionDate, java.util.Date expiryDate, String extBatchNo);
     public int doPutaway(Long orderId, Long detailId, Long locationId, java.math.BigDecimal putawayQty);
     public int submitInboundOrder(Long orderId);
 }

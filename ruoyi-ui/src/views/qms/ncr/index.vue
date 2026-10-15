@@ -473,6 +473,13 @@
                     <el-select v-model="dispositionForm.disposition" style="width: 100%" placeholder="请选择处置方式"><el-option v-for="d in qms_disposition" :key="d.value" :label="d.label" :value="d.value" /></el-select>
                   </el-form-item>
                 </el-col>
+                <el-col :span="24" v-if="dispositionForm.batchNo && ['1', '4'].includes(dispositionForm.disposition)">
+                  <el-alert type="warning" :closable="false" show-icon style="margin-bottom: 12px;">
+                    <template #title>
+                      食品批次联动：处置提交后批次 [{{ dispositionForm.batchNo }}] 将{{ dispositionForm.disposition === '4' ? '自动置为「报废」，不可恢复' : '先自动置为「冻结」，待退货执行完成' }}
+                    </template>
+                  </el-alert>
+                </el-col>
                 <el-col :span="12">
                   <el-form-item label="处置数量" prop="disposeQty">
                     <el-input-number v-model="dispositionForm.disposeQty" :min="0" :precision="0" style="width: 100%" placeholder="处置数量" />

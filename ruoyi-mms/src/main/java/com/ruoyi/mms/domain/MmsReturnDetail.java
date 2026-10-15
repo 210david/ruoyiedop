@@ -38,6 +38,10 @@ public class MmsReturnDetail extends BaseEntity
     @Excel(name = "退料数量")
     private BigDecimal returnQty;
 
+    /** 批次号（须与领料批次一致，效期不重算=沿用原批次） */
+    @Excel(name = "批次号")
+    private String batchNo;
+
     /** 领料数量（来源领料明细，只读参考） */
     @Excel(name = "领料数量")
     private BigDecimal issueQty;
@@ -70,6 +74,8 @@ public class MmsReturnDetail extends BaseEntity
     public void setUnit(String unit) { this.unit = unit; }
     public BigDecimal getReturnQty() { return returnQty; }
     public void setReturnQty(BigDecimal returnQty) { this.returnQty = returnQty; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public BigDecimal getIssueQty() { return issueQty; }
     public void setIssueQty(BigDecimal issueQty) { this.issueQty = issueQty; }
     public BigDecimal getReturnedQty() { return returnedQty; }

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodWipMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodWip" id="FoodWipResult">
+        <id property="wipId" column="wip_id"/>
+        <result property="wipNo" column="wip_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="routeId" column="route_id"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchCode" column="batch_code"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="qty" column="qty"/>
+        <result property="qtyUnit" column="qty_unit"/>
+        <result property="wipLocation" column="wip_location"/>
+        <result property="currentStepSeq" column="current_step_seq"/>
+        <result property="currentProcessName" column="current_process_name"/>
+        <result property="stepStartTime" column="step_start_time"/>
+        <result property="planStepEnd" column="plan_step_end"/>
+        <result property="wipStatus" column="wip_status"/>
+        <result property="finishTime" column="finish_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <result property="wipDays" column="wip_days"/>
+    </resultMap>
+
+    <sql id="selectWipVo">
+        SELECT w.wip_id, w.wip_no, w.work_order_id, w.work_order_no, w.route_id, w.batch_id, w.batch_code,
+               w.material_id, w.material_code, w.material_name, w.qty, w.qty_unit, w.wip_location,
+               w.current_step_seq, w.current_process_name, w.step_start_time, w.plan_step_end,
+               w.wip_status, w.finish_time, w.del_flag, w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
+               CASE WHEN w.wip_status = '0' AND w.step_start_time IS NOT NULL
+                    THEN ROUND(TIMESTAMPDIFF(HOUR, w.step_start_time, NOW()) / 24, 1) END AS wip_days
+        FROM food_wip w
+    </sql>
+
+    <select id="selectWipList" parameterType="com.ruoyi.food.domain.FoodWip" resultMap="FoodWipResult">
+        <include refid="selectWipVo"/>
+        <where>
+            w.del_flag = '0'
+            <if test="wipNo != null and wipNo != ''"> AND w.wip_no LIKE CONCAT('%', #{wipNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND w.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="batchCode != null and batchCode != ''"> AND w.batch_code LIKE CONCAT('%', #{batchCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND w.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="wipStatus != null and wipStatus != ''"> AND w.wip_status = #{wipStatus}</if>
+            <if test="currentProcessName != null and currentProcessName != ''"> AND w.current_process_name LIKE CONCAT('%', #{currentProcessName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(w.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(w.create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY w.wip_id DESC
+    </select>
+
+    <select id="selectWipById" parameterType="Long" resultMap="FoodWipResult">
+        <include refid="selectWipVo"/>
+        WHERE w.wip_id = #{wipId} AND w.del_flag = '0'
+    </select>
+
+    <insert id="insertWip" parameterType="com.ruoyi.food.domain.FoodWip" useGeneratedKeys="true" keyProperty="wipId">
+        INSERT INTO food_wip (
+            wip_no, work_order_id, work_order_no, route_id, batch_id, batch_code,
+            material_id, material_code, material_name, qty, qty_unit, wip_location,
+            current_step_seq, current_process_name, step_start_time, plan_step_end,
+            wip_status, finish_time, del_flag, create_by, create_time, update_by, update_time, remark
+        )VALUES(
+            #{wipNo}, #{workOrderId}, #{workOrderNo}, #{routeId}, #{batchId}, #{batchCode},
+            #{materialId}, #{materialCode}, #{materialName}, #{qty}, #{qtyUnit}, #{wipLocation},
+            #{currentStepSeq}, #{currentProcessName}, #{stepStartTime}, #{planStepEnd},
+            #{wipStatus}, #{finishTime}, '0', #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateWip" parameterType="com.ruoyi.food.domain.FoodWip">
+        UPDATE food_wip
+        <set>
+            <if test="wipLocation != null">wip_location = #{wipLocation},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="batchCode != null">batch_code = #{batchCode},</if>
+            <if test="currentStepSeq != null">current_step_seq = #{currentStepSeq},</if>
+            <if test="currentProcessName != null">current_process_name = #{currentProcessName},</if>
+            <if test="stepStartTime != null">step_start_time = #{stepStartTime},</if>
+            <if test="planStepEnd != null">plan_step_end = #{planStepEnd},</if>
+            <if test="wipStatus != null">wip_status = #{wipStatus},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        </set>
+        WHERE wip_id = #{wipId}
+    </update>
+
+    <delete id="deleteWipByIds" parameterType="Long">
+        UPDATE food_wip SET del_flag = '2' WHERE wip_id IN
+        <foreach collection="array" item="wipId" open="(" separator="," close=")">
+            #{wipId}
+        </foreach>
+    </delete>
+
+    <!-- ============ 温湿度/上霉记录 ============ -->
+
+    <resultMap type="com.ruoyi.food.domain.FoodWipEnv" id="FoodWipEnvResult">
+        <id property="envId" column="env_id"/>
+        <result property="wipId" column="wip_id"/>
+        <result property="wipNo" column="wip_no"/>
+        <result property="stepSeq" column="step_seq"/>
+        <result property="processName" column="process_name"/>
+        <result property="recordTime" column="record_time"/>
+        <result property="temp" column="temp"/>
+        <result property="humidity" column="humidity"/>
+        <result property="moldStatus" column="mold_status"/>
+        <result property="recorder" column="recorder"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectEnvList" parameterType="Long" resultMap="FoodWipEnvResult">
+        SELECT env_id, wip_id, wip_no, step_seq, process_name, record_time, temp, humidity, mold_status,
+               recorder, del_flag, create_by, create_time, remark
+        FROM food_wip_env
+        WHERE wip_id = #{wipId} AND del_flag = '0'
+        ORDER BY env_id DESC
+    </select>
+
+    <insert id="insertEnv" parameterType="com.ruoyi.food.domain.FoodWipEnv" useGeneratedKeys="true" keyProperty="envId">
+        INSERT INTO food_wip_env (
+            wip_id, wip_no, step_seq, process_name, record_time, temp, humidity, mold_status,
+            recorder, del_flag, create_by, create_time, remark
+        )VALUES(
+            #{wipId}, #{wipNo}, #{stepSeq}, #{processName}, #{recordTime}, #{temp}, #{humidity}, #{moldStatus},
+            #{recorder}, '0', #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <delete id="deleteEnvById" parameterType="Long">
+        UPDATE food_wip_env SET del_flag = '2' WHERE env_id = #{envId}
+    </delete>
+
+    <!-- ============ 取号 / 工序参数 / 看板 ============ -->
+
+    <select id="selectNextWipNo" resultType="String">
+        SELECT CONCAT('DP', DATE_FORMAT(NOW(), '%Y%m%d'),
+               LPAD(IFNULL(MAX(CAST(RIGHT(w.wip_no, 4) AS UNSIGNED)), 0) + 1, 4, '0'))
+        FROM food_wip w
+        WHERE w.wip_no LIKE CONCAT('DP', DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+    </select>
+
+    <!-- 工单基本信息（mms_work_order，food 包以 map 承载避免模块反向依赖） -->
+    <select id="selectWorkOrderInfo" resultType="java.util.HashMap">
+        SELECT wo.work_order_no AS work_order_no, wo.product_id AS product_id, wo.product_code AS product_code,
+               wo.product_name AS product_name, wo.route_id AS route_id, wo.unit AS unit
+        FROM mms_work_order wo
+        WHERE wo.work_order_id = #{workOrderId} AND wo.del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <!-- 工序参数信息：ruoyi-system 不得反向依赖 ruoyi-mms，故用 map 承载 mms_route_process 数据 -->
+    <select id="selectStepInfo" resultType="java.util.HashMap">
+        SELECT rp.process_name       AS process_name,
+               rp.std_days           AS std_days,
+               rp.min_days           AS min_days,
+               rp.max_days           AS max_days,
+               rp.temp_min           AS temp_min,
+               rp.temp_max           AS temp_max,
+               rp.humidity_min       AS humidity_min,
+               rp.humidity_max       AS humidity_max,
+               rp.loss_type          AS loss_type,
+               rp.loss_rate_max      AS loss_rate_max,
+               (SELECT MAX(rp2.step_seq) FROM mms_route_process rp2
+                 WHERE rp2.route_id = #{routeId} AND rp2.del_flag = '0') AS max_seq
+        FROM mms_route_process rp
+        WHERE rp.route_id = #{routeId} AND rp.step_seq = #{stepSeq} AND rp.del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <select id="selectStepDistribution" resultType="java.util.HashMap">
+        SELECT w.current_step_seq AS stepSeq, w.current_process_name AS processName, COUNT(*) AS cnt
+        FROM food_wip w
+        WHERE w.del_flag = '0' AND w.wip_status = '0' AND w.current_step_seq IS NOT NULL
+        GROUP BY w.current_step_seq, w.current_process_name
+        ORDER BY w.current_step_seq
+    </select>
+
+    <select id="selectWipSummary" resultType="java.util.HashMap">
+        SELECT COUNT(*) AS totalWip,
+               IFNULL(AVG(CASE WHEN step_start_time IS NOT NULL
+                          THEN TIMESTAMPDIFF(HOUR, step_start_time, NOW()) / 24 END), 0) AS avgDays,
+               IFNULL(SUM(CASE WHEN plan_step_end IS NOT NULL AND plan_step_end &lt; NOW()
+                          THEN 1 ELSE 0 END), 0) AS overdueCnt
+        FROM food_wip
+        WHERE del_flag = '0' AND wip_status = '0'
+    </select>
+</mapper>

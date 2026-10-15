@@ -69,7 +69,7 @@
           <el-table-column label="归因码" prop="channelCode" key="channelCode" :width="colWidth('channelCode', 130)" resizable align="center" v-if="columns.channelCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.channelCode || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="报名链接" key="registerUrl" :min-width="colWidth('registerUrl', 200)" resizable align="center" v-if="columns.registerUrl.visible">
+          <el-table-column label="报名链接" prop="registerUrl" key="registerUrl" :min-width="colWidth('registerUrl', 200)" resizable align="center" v-if="columns.registerUrl.visible">
             <template #default="scope">
               <div class="link-cell">
                 <span class="col-mono">{{ scope.row.channelCode }}</span>

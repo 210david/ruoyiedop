@@ -39,3 +39,8 @@ export function receiveShipment(shipmentId) {
 export function getInProgressOrderIds() {
   return request({ url: '/mk/shipment/inProgressOrderIds', method: 'get' })
 }
+
+// 按出库单号查询出库明细批次信息（物料+批次号+数量+到期日+批次状态）
+export function getOutboundBatches(orderNo) {
+  return request({ url: '/mk/shipment/outboundBatches', method: 'get', params: { orderNo } })
+}

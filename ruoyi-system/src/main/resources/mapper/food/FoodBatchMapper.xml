@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodBatchMapper">
+
+    <resultMap type="FoodBatch" id="FoodBatchResult">
+        <id     property="batchId"        column="batch_id"        />
+        <result property="batchCode"      column="batch_code"      />
+        <result property="extBatchCode"   column="ext_batch_code"  />
+        <result property="materialId"     column="material_id"     />
+        <result property="materialCode"   column="material_code"   />
+        <result property="materialName"   column="material_name"   />
+        <result property="sourceType"     column="source_type"     />
+        <result property="sourceBillType" column="source_bill_type"/>
+        <result property="sourceBillId"   column="source_bill_id"  />
+        <result property="produceDate"    column="produce_date"    />
+        <result property="receiveDate"    column="receive_date"    />
+        <result property="shelfLifeDays"  column="shelf_life_days" />
+        <result property="expireDate"     column="expire_date"     />
+        <result property="qty"            column="qty"             />
+        <result property="qtyUnit"        column="qty_unit"        />
+        <result property="batchStatus"    column="batch_status"    />
+        <result property="expireStatus"   column="expire_status"   />
+        <result property="freezeReason"   column="freeze_reason"   />
+        <result property="freezeTime"     column="freeze_time"     />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectBatchVo">
+        select b.batch_id, b.batch_code, b.ext_batch_code, b.material_id, b.material_code, mm.material_name,
+               b.source_type, b.source_bill_type, b.source_bill_id, b.produce_date, b.receive_date,
+               b.shelf_life_days, b.expire_date, b.qty, b.qty_unit, b.batch_status, b.expire_status,
+               b.freeze_reason, b.freeze_time, b.del_flag,
+               b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        from food_batch b
+        left join wms_material mm on mm.material_id = b.material_id
+    </sql>
+
+    <select id="selectBatchById" parameterType="Long" resultMap="FoodBatchResult">
+        <include refid="selectBatchVo"/>
+        where b.batch_id = #{batchId} and b.del_flag = '0'
+    </select>
+
+    <select id="selectBatchByCode" parameterType="String" resultMap="FoodBatchResult">
+        <include refid="selectBatchVo"/>
+        where b.batch_code = #{batchCode} and b.del_flag = '0'
+    </select>
+
+    <!-- 临期批次（效期状态=临期，未冻结/报废，有库存） -->
+    <select id="selectNearExpiryBatches" resultMap="FoodBatchResult">
+        <include refid="selectBatchVo"/>
+        where b.del_flag = '0' and b.batch_status in ('0','1')
+          and b.expire_status = '1' and b.qty > 0
+        order by b.expire_date asc
+    </select>
+
+    <!-- 已过期未冻结批次（效期状态=过期，待检/合格，有库存） -->
+    <select id="selectExpiredNotFrozenBatches" resultMap="FoodBatchResult">
+        <include refid="selectBatchVo"/>
+        where b.del_flag = '0' and b.batch_status in ('0','1')
+          and b.expire_status = '2' and b.qty > 0
+        order by b.expire_date asc
+    </select>
+
+    <select id="selectBatchList" parameterType="FoodBatch" resultMap="FoodBatchResult">
+        <include refid="selectBatchVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="batchCode != null and batchCode != ''">
+                AND b.batch_code like concat('%', #{batchCode}, '%')
+            </if>
+            <if test="extBatchCode != null and extBatchCode != ''">
+                AND b.ext_batch_code like concat('%', #{extBatchCode}, '%')
+            </if>
+            <if test="materialId != null">
+                AND b.material_id = #{materialId}
+            </if>
+            <if test="materialCode != null and materialCode != ''">
+                AND b.material_code = #{materialCode}
+            </if>
+            <if test="materialName != null and materialName != ''">
+                AND mm.material_name like concat('%', #{materialName}, '%')
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND b.source_type = #{sourceType}
+            </if>
+            <if test="batchStatus != null and batchStatus != ''">
+                AND b.batch_status = #{batchStatus}
+            </if>
+            <if test="expireStatus != null and expireStatus != ''">
+                AND b.expire_status = #{expireStatus}
+            </if>
+            <if test="params.beginProduceDate != null and params.beginProduceDate != ''">
+                AND b.produce_date &gt;= #{params.beginProduceDate}
+            </if>
+            <if test="params.endProduceDate != null and params.endProduceDate != ''">
+                AND b.produce_date &lt;= #{params.endProduceDate}
+            </if>
+            <if test="params.beginExpireDate != null and params.beginExpireDate != ''">
+                AND b.expire_date &gt;= #{params.beginExpireDate}
+            </if>
+            <if test="params.endExpireDate != null and params.endExpireDate != ''">
+                AND b.expire_date &lt;= #{params.endExpireDate}
+            </if>
+        </where>
+        order by b.expire_date asc, b.batch_id desc
+    </select>
+
+    <insert id="insertBatch" parameterType="FoodBatch" useGeneratedKeys="true" keyProperty="batchId">
+        insert into food_batch
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="batchCode != null and batchCode != ''">batch_code,</if>
+            <if test="extBatchCode != null">ext_batch_code,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="materialCode != null">material_code,</if>
+            <if test="sourceType != null">source_type,</if>
+            <if test="sourceBillType != null">source_bill_type,</if>
+            <if test="sourceBillId != null">source_bill_id,</if>
+            <if test="produceDate != null">produce_date,</if>
+            <if test="receiveDate != null">receive_date,</if>
+            <if test="shelfLifeDays != null">shelf_life_days,</if>
+            <if test="expireDate != null">expire_date,</if>
+            <if test="qty != null">qty,</if>
+            <if test="qtyUnit != null">qty_unit,</if>
+            <if test="batchStatus != null">batch_status,</if>
+            <if test="expireStatus != null">expire_status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="batchCode != null and batchCode != ''">#{batchCode},</if>
+            <if test="extBatchCode != null">#{extBatchCode},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="materialCode != null">#{materialCode},</if>
+            <if test="sourceType != null">#{sourceType},</if>
+            <if test="sourceBillType != null">#{sourceBillType},</if>
+            <if test="sourceBillId != null">#{sourceBillId},</if>
+            <if test="produceDate != null">#{produceDate},</if>
+            <if test="receiveDate != null">#{receiveDate},</if>
+            <if test="shelfLifeDays != null">#{shelfLifeDays},</if>
+            <if test="expireDate != null">#{expireDate},</if>
+            <if test="qty != null">#{qty},</if>
+            <if test="qtyUnit != null">#{qtyUnit},</if>
+            <if test="batchStatus != null">#{batchStatus},</if>
+            <if test="expireStatus != null">#{expireStatus},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBatch" parameterType="FoodBatch">
+        update food_batch
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="extBatchCode != null">ext_batch_code = #{extBatchCode},</if>
+            <if test="produceDate != null">produce_date = #{produceDate},</if>
+            <if test="receiveDate != null">receive_date = #{receiveDate},</if>
+            <if test="shelfLifeDays != null">shelf_life_days = #{shelfLifeDays},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="qtyUnit != null">qty_unit = #{qtyUnit},</if>
+            <if test="batchStatus != null">batch_status = #{batchStatus},</if>
+            <if test="expireStatus != null">expire_status = #{expireStatus},</if>
+            <if test="freezeReason != null">freeze_reason = #{freezeReason},</if>
+            <if test="freezeTime != null">freeze_time = #{freezeTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where batch_id = #{batchId}
+    </update>
+
+    <update id="deleteBatchByIds" parameterType="Long">
+        update food_batch set del_flag = '2', update_time = sysdate() where batch_id in
+        <foreach collection="array" item="batchId" open="(" separator="," close=")">
+            #{batchId}
+        </foreach>
+    </update>
+
+    <update id="updateBatchQty">
+        update food_batch set qty = #{qty}, update_time = sysdate() where batch_id = #{batchId}
+    </update>
+
+    <update id="updateBatchStatus">
+        update food_batch
+           set batch_status = #{toStatus},
+               freeze_reason = #{freezeReason},
+               <choose>
+                   <when test="toStatus == '2'">freeze_time = sysdate(),</when>
+                   <otherwise>freeze_time = null,</otherwise>
+               </choose>
+               update_time = sysdate()
+         where batch_id = #{batchId}
+        <if test="fromStatus != null and fromStatus != ''">
+           and batch_status = #{fromStatus}
+        </if>
+    </update>
+
+    <!-- 批量刷新效期状态：三级匹配策略（物料→类别→默认），只改效期状态不动批次状态 -->
+    <update id="refreshExpireStatus">
+        update food_batch b
+        join wms_material m on m.material_id = b.material_id
+        left join food_expiry_policy p1 on p1.material_id = b.material_id and p1.status = '0' and p1.del_flag = '0'
+        left join food_expiry_policy p2 on p2.material_id = 0 and p2.material_type = m.material_type and p2.status = '0' and p2.del_flag = '0'
+        left join food_expiry_policy p3 on p3.material_id = 0 and p3.material_type = '' and p3.status = '0' and p3.del_flag = '0'
+        set b.expire_status = case
+                when b.expire_date is null then '0'
+                when b.expire_date &lt; curdate() then '2'
+                when b.expire_date &lt; date_add(curdate(), interval coalesce(p1.warn_days, p2.warn_days, p3.warn_days, 30) day) then '1'
+                else '0' end,
+            b.update_time = sysdate()
+        where b.del_flag = '0' and b.batch_status != '3'
+    </update>
+
+    <update id="refreshBatchExpireStatus" parameterType="Long">
+        update food_batch b
+        left join wms_material m on m.material_id = b.material_id
+        left join food_expiry_policy p1 on p1.material_id = b.material_id and p1.status = '0' and p1.del_flag = '0'
+        left join food_expiry_policy p2 on p2.material_id = 0 and p2.material_type = m.material_type and p2.status = '0' and p2.del_flag = '0'
+        left join food_expiry_policy p3 on p3.material_id = 0 and p3.material_type = '' and p3.status = '0' and p3.del_flag = '0'
+        set b.expire_status = case
+                when b.expire_date is null then '0'
+                when b.expire_date &lt; curdate() then '2'
+                when b.expire_date &lt; date_add(curdate(), interval coalesce(p1.warn_days, p2.warn_days, p3.warn_days, 30) day) then '1'
+                else '0' end,
+            b.update_time = sysdate()
+        where b.batch_id = #{batchId}
+    </update>
+
+    <!-- 谱系 -->
+
+    <resultMap type="FoodBatchGenealogy" id="GenealogyResult">
+        <id     property="genealogyId"    column="genealogy_id"    />
+        <result property="parentBatchId"  column="parent_batch_id" />
+        <result property="childBatchId"   column="child_batch_id"  />
+        <result property="relationType"   column="relation_type"   />
+        <result property="qty"            column="qty"             />
+        <result property="qtyUnit"        column="qty_unit"        />
+        <result property="refBillType"    column="ref_bill_type"   />
+        <result property="refBillId"      column="ref_bill_id"     />
+        <result property="refBillCode"    column="ref_bill_code"   />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="remark"         column="remark"          />
+        <result property="parentBatchCode" column="parent_batch_code" />
+        <result property="childBatchCode"  column="child_batch_code"  />
+    </resultMap>
+
+    <sql id="selectGenealogyVo">
+        select g.genealogy_id, g.parent_batch_id, g.child_batch_id, g.relation_type, g.qty, g.qty_unit,
+               g.ref_bill_type, g.ref_bill_id, g.ref_bill_code, g.create_by, g.create_time, g.remark,
+               pb.batch_code as parent_batch_code, cb.batch_code as child_batch_code
+        from food_batch_genealogy g
+        left join food_batch pb on pb.batch_id = g.parent_batch_id
+        left join food_batch cb on cb.batch_id = g.child_batch_id
+    </sql>
+
+    <insert id="insertGenealogy" parameterType="FoodBatchGenealogy" useGeneratedKeys="true" keyProperty="genealogyId">
+        insert into food_batch_genealogy (parent_batch_id, child_batch_id, relation_type, qty, qty_unit,
+            ref_bill_type, ref_bill_id, ref_bill_code, create_by, create_time, remark)
+        values (#{parentBatchId}, #{childBatchId}, #{relationType}, #{qty}, #{qtyUnit},
+            #{refBillType}, #{refBillId}, #{refBillCode}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <select id="selectGenealogyByChild" parameterType="Long" resultMap="GenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        where g.child_batch_id = #{childBatchId}
+        order by g.genealogy_id
+    </select>
+
+    <select id="selectGenealogyByParent" parameterType="Long" resultMap="GenealogyResult">
+        <include refid="selectGenealogyVo"/>
+        where g.parent_batch_id = #{parentBatchId}
+        order by g.genealogy_id
+    </select>
+
+    <!-- 批次库存 -->
+
+    <resultMap type="FoodBatchStock" id="BatchStockResult">
+        <id     property="bsId"          column="bs_id"          />
+        <result property="materialId"    column="material_id"    />
+        <result property="warehouseId"   column="warehouse_id"   />
+        <result property="locationId"    column="location_id"    />
+        <result property="batchId"       column="batch_id"       />
+        <result property="qty"           column="qty"            />
+        <result property="qtyLocked"     column="qty_locked"     />
+        <result property="version"       column="version"        />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="batchCode"     column="batch_code"     />
+        <result property="warehouseName" column="warehouse_name" />
+        <result property="locationName"  column="location_name"  />
+        <result property="materialCode"  column="stock_material_code" />
+        <result property="expireDate"    column="expire_date"    />
+        <result property="batchStatus"   column="batch_status"   />
+        <result property="expireStatus"  column="expire_status"  />
+    </resultMap>
+
+    <select id="selectBatchStockList" parameterType="FoodBatchStock" resultMap="BatchStockResult">
+        select s.bs_id, s.material_id, s.warehouse_id, s.location_id, s.batch_id, s.qty, s.qty_locked, s.version,
+               s.create_by, s.create_time, s.update_by, s.update_time,
+               b.batch_code, wh.warehouse_name, loc.warehouse_name as location_name,
+               mm.material_code as stock_material_code
+        from food_batch_stock s
+        left join food_batch b on b.batch_id = s.batch_id
+        left join wms_warehouse wh on wh.warehouse_id = s.warehouse_id
+        left join wms_warehouse loc on loc.warehouse_id = s.location_id
+        left join wms_material mm on mm.material_id = s.material_id
+        <where>
+            <if test="materialId != null">AND s.material_id = #{materialId}</if>
+            <if test="warehouseId != null">AND s.warehouse_id = #{warehouseId}</if>
+            <if test="locationId != null">AND s.location_id = #{locationId}</if>
+            <if test="batchId != null">AND s.batch_id = #{batchId}</if>
+        </where>
+        order by s.bs_id
+    </select>
+
+    <select id="selectBatchStock" resultMap="BatchStockResult">
+        select s.*, b.batch_code from food_batch_stock s
+        left join food_batch b on b.batch_id = s.batch_id
+        where s.batch_id = #{batchId} and s.warehouse_id = #{warehouseId} and s.location_id = #{locationId}
+    </select>
+
+    <!-- 按物料查全部批次库存行（领退料批次选择，含批次状态/效期） -->
+    <select id="selectBatchStocksWithBatch" resultMap="BatchStockResult">
+        select s.bs_id, s.material_id, s.warehouse_id, s.location_id, s.batch_id, s.qty, s.qty_locked, s.version,
+               b.batch_code, b.batch_status, b.expire_date, b.expire_status, b.qty_unit,
+               wh.warehouse_name, loc.warehouse_name as location_name,
+               mm.material_code as stock_material_code
+        from food_batch_stock s
+        inner join food_batch b on b.batch_id = s.batch_id and b.del_flag = '0'
+        left join wms_warehouse wh on wh.warehouse_id = s.warehouse_id
+        left join wms_warehouse loc on loc.warehouse_id = s.location_id
+        left join wms_material mm on mm.material_id = s.material_id
+        where s.material_id = #{materialId}
+        order by b.expire_date asc, s.bs_id asc
+    </select>
+
+    <!-- 系统默认仓库：启用中的第一个仓库节点 -->
+    <select id="selectDefaultWarehouse" resultType="java.util.HashMap">
+        select warehouse_id, warehouse_code, warehouse_name
+        from wms_warehouse
+        where status = '0' and del_flag = '0' and (node_type = '1' or node_type is null)
+        order by warehouse_id asc
+        limit 1
+    </select>
+
+    <!-- 物料保质期天数（效期管理物料，未配置返回 null） -->
+    <select id="selectMaterialShelfLife" resultType="java.lang.Integer">
+        select shelf_life_days
+        from wms_material
+        where material_id = #{materialId} and del_flag = '0'
+    </select>
+
+    <!-- 存量库存清单（qty>0 未删除，含物料效期信息） -->
+    <select id="selectLegacyInventoryList" resultType="java.util.HashMap">
+        select i.inventory_id, i.material_id, i.warehouse_id, i.location_id, i.batch_no,
+               i.production_date, i.expiry_date, i.qty,
+               mm.material_code, mm.material_name, mm.is_expiry_manage, mm.shelf_life_days, mm.unit
+        from wms_inventory i
+        left join wms_material mm on mm.material_id = i.material_id
+        where i.qty > 0 and i.del_flag = '0'
+        order by i.inventory_id
+    </select>
+
+    <!-- 回填存量库存批次号 -->
+    <update id="updateLegacyInventoryBatchNo">
+        update wms_inventory set batch_no = #{batchNo}, update_by = 'migration', update_time = now()
+        where inventory_id = #{inventoryId}
+    </update>
+
+    <!-- 工单已确认领料的投入批次（生产谱系桥接数据源） -->
+    <select id="selectFeedingBatchesByWorkOrder" resultType="java.util.HashMap">
+        select d.material_id, d.batch_no, d.issue_qty, d.unit
+        from mms_issue i
+        inner join mms_issue_detail d on d.issue_id = i.issue_id and d.del_flag = '0'
+        where i.work_order_no = #{workOrderNo} and i.status = '1' and i.del_flag = '0'
+          and d.batch_no is not null and d.batch_no != ''
+    </select>
+
+    <!-- FEFO候选：仓库内某物料有可用量的批次库存（按到期日升序、批次ID次序） -->
+    <select id="selectFefoStockCandidates" resultMap="BatchStockResult">
+        select s.bs_id, s.material_id, s.warehouse_id, s.location_id, s.batch_id, s.qty, s.qty_locked, s.version,
+               b.batch_code, b.expire_date, b.batch_status, b.expire_status,
+               wh.warehouse_name, loc.warehouse_name as location_name,
+               mm.material_code as stock_material_code
+        from food_batch_stock s
+        inner join food_batch b on b.batch_id = s.batch_id and b.del_flag = '0'
+        left join wms_warehouse wh on wh.warehouse_id = s.warehouse_id
+        left join wms_warehouse loc on loc.warehouse_id = s.location_id
+        left join wms_material mm on mm.material_id = s.material_id
+        where s.material_id = #{materialId}
+          and s.warehouse_id = #{warehouseId}
+          and s.qty - s.qty_locked > 0
+        order by (b.expire_date is null) asc, b.expire_date asc, b.batch_id asc
+    </select>
+
+    <!-- 物料效期信息（轻量跨模块查询） -->
+    <select id="selectMaterialInfo" parameterType="Long" resultType="map">
+        select material_id, material_code, material_name, material_type,
+               is_expiry_manage, shelf_life_days, unit
+        from wms_material
+        where material_id = #{materialId} and del_flag = '0'
+    </select>
+
+    <insert id="insertBatchStock" parameterType="FoodBatchStock" useGeneratedKeys="true" keyProperty="bsId">
+        insert into food_batch_stock (material_id, warehouse_id, location_id, batch_id, qty, qty_locked, version, create_by, create_time)
+        values (#{materialId}, #{warehouseId}, #{locationId}, #{batchId}, #{qty}, #{qtyLocked}, 0, #{createBy}, sysdate())
+    </insert>
+
+    <!-- 乐观锁更新 -->
+    <update id="updateBatchStockQty" parameterType="FoodBatchStock">
+        update food_batch_stock
+           set qty = #{qty}, qty_locked = #{qtyLocked}, version = version + 1,
+               update_by = #{updateBy}, update_time = sysdate()
+         where bs_id = #{bsId} and version = #{version}
+    </update>
+
+    <!-- 状态日志（只增查） -->
+
+    <resultMap type="FoodBatchStatusLog" id="StatusLogResult">
+        <id     property="logId"       column="log_id"       />
+        <result property="batchId"     column="batch_id"     />
+        <result property="batchCode"   column="batch_code"   />
+        <result property="fromStatus"  column="from_status"  />
+        <result property="toStatus"    column="to_status"    />
+        <result property="operateType" column="operate_type" />
+        <result property="reason"      column="reason"       />
+        <result property="refBillType" column="ref_bill_type"/>
+        <result property="refBillId"   column="ref_bill_id"  />
+        <result property="operateBy"   column="operate_by"   />
+        <result property="operateTime" column="operate_time" />
+    </resultMap>
+
+    <insert id="insertStatusLog" parameterType="FoodBatchStatusLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into food_batch_status_log (batch_id, batch_code, from_status, to_status, operate_type,
+            reason, ref_bill_type, ref_bill_id, operate_by, operate_time)
+        values (#{batchId}, #{batchCode}, #{fromStatus}, #{toStatus}, #{operateType},
+            #{reason}, #{refBillType}, #{refBillId}, #{operateBy}, sysdate())
+    </insert>
+
+    <select id="selectStatusLogList" parameterType="Long" resultMap="StatusLogResult">
+        select log_id, batch_id, batch_code, from_status, to_status, operate_type,
+               reason, ref_bill_type, ref_bill_id, operate_by, operate_time
+        from food_batch_status_log
+        where batch_id = #{batchId}
+        order by log_id desc
+    </select>
+
+</mapper>

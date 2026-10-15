@@ -11,6 +11,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.qms.domain.QmsLotGenealogy;
 import com.ruoyi.qms.domain.QmsInspTask;
 import com.ruoyi.qms.domain.QmsNcr;
+import com.ruoyi.qms.domain.vo.QmsTraceReportRow;
 import com.ruoyi.qms.domain.vo.TraceFallbackVO;
 import com.ruoyi.qms.mapper.QmsLotGenealogyMapper;
 import com.ruoyi.qms.mapper.QmsInspTaskMapper;
@@ -416,6 +417,160 @@ public class QmsTraceServiceImpl implements IQmsTraceService
     }
 
     // ==================== 谱系事件写入（业务模块联动，幂等） ====================
+
+    /**
+     * 批次追溯报告（正反向合一）：起点批次 + 上游原料层 + 下游成品层。
+     * 复用 backwardTrace/forwardTrace 树（节点已关联检验/NCR），拍平为报告行。
+     */
+    @Override
+    public List<QmsTraceReportRow> buildTraceReport(String batchNo)
+    {
+        if (StringUtils.isEmpty(batchNo))
+        {
+            throw new ServiceException("批次号不能为空");
+        }
+        List<QmsTraceReportRow> rows = new ArrayList<>();
+
+        // 1. 起点批次行（物料信息取该批次参与的谱系边，检验/NCR直接查）
+        QmsTraceReportRow rootRow = new QmsTraceReportRow();
+        rootRow.setDirection("root");
+        rootRow.setLevel(0);
+        rootRow.setBatchNo(batchNo);
+        QmsLotGenealogy edgeQuery = new QmsLotGenealogy();
+        edgeQuery.setParentBatchNo(batchNo);
+        List<QmsLotGenealogy> selfEdges = qmsLotGenealogyMapper.selectGenealogyList(edgeQuery);
+        if ((selfEdges == null || selfEdges.isEmpty()))
+        {
+            edgeQuery = new QmsLotGenealogy();
+            edgeQuery.setChildBatchNo(batchNo);
+            selfEdges = qmsLotGenealogyMapper.selectGenealogyList(edgeQuery);
+        }
+        if (selfEdges != null && !selfEdges.isEmpty())
+        {
+            QmsLotGenealogy edge = selfEdges.get(0);
+            rootRow.setMaterialCode(edge.getMaterialCode());
+            rootRow.setMaterialName(edge.getMaterialName());
+        }
+        QmsInspTask taskQuery = new QmsInspTask();
+        taskQuery.setBatchNo(batchNo);
+        rootRow.setInspectInfo(joinInspectTasks(qmsInspTaskMapper.selectInspTaskList(taskQuery)));
+        QmsNcr ncrQuery = new QmsNcr();
+        ncrQuery.setBatchNo(batchNo);
+        rootRow.setNcrInfo(joinNcrs(qmsNcrMapper.selectNcrList(ncrQuery)));
+        rows.add(rootRow);
+
+        // 2. 上游原料层（反向追溯树拍平）
+        QmsLotGenealogy backward = backwardTrace(batchNo);
+        flattenTree(backward.getChildren(), "backward", 1, rows);
+
+        // 3. 下游成品层（正向追溯树拍平）
+        QmsLotGenealogy forward = forwardTrace(batchNo);
+        flattenTree(forward.getChildren(), "forward", 1, rows);
+
+        log.info("追溯报告构建完成：{}，共 {} 行（上游{}行/下游{}行）", batchNo, rows.size(),
+                backward.getChildren() == null ? 0 : countNodes(backward.getChildren()),
+                forward.getChildren() == null ? 0 : countNodes(forward.getChildren()));
+        return rows;
+    }
+
+    /**
+     * 追溯树拍平为报告行：深度优先，父子层级递增
+     */
+    private void flattenTree(List<QmsLotGenealogy> children, String direction, int level, List<QmsTraceReportRow> rows)
+    {
+        if (children == null || children.isEmpty())
+        {
+            return;
+        }
+        for (QmsLotGenealogy node : children)
+        {
+            QmsTraceReportRow row = new QmsTraceReportRow();
+            row.setDirection(direction);
+            row.setLevel(level);
+            // 反向树节点批次=投入批次（parentBatchNo），正向树节点批次=产出批次（childBatchNo）
+            row.setBatchNo("backward".equals(direction) ? node.getParentBatchNo() : node.getChildBatchNo());
+            row.setMaterialCode(node.getMaterialCode());
+            row.setMaterialName(node.getMaterialName());
+            row.setSourceType(node.getSourceType());
+            row.setSourceNo(node.getSourceNo());
+            row.setWorkOrderNo(node.getWorkOrderNo());
+            row.setQtyIn(node.getQtyIn() != null ? node.getQtyIn().stripTrailingZeros().toPlainString() : null);
+            row.setSupplierName(node.getSupplierName());
+            row.setInspectInfo(joinInspectTasks(node.getInspectTasks()));
+            row.setNcrInfo(joinNcrs(node.getNcrList()));
+            row.setTraceTime(node.getTraceTime());
+            row.setBreakFlag(node.getBreakFlag());
+            row.setBreakReason(node.getBreakReason());
+            rows.add(row);
+            flattenTree(node.getChildren(), direction, level + 1, rows);
+        }
+    }
+
+    /** 检验记录摘要：任务号：结果，多条分号分隔 */
+    private String joinInspectTasks(List<QmsInspTask> tasks)
+    {
+        if (tasks == null || tasks.isEmpty())
+        {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (QmsInspTask t : tasks)
+        {
+            if (sb.length() > 0)
+            {
+                sb.append("；");
+            }
+            String result;
+            if ("1".equals(t.getInspectResult()))
+            {
+                result = "合格";
+            }
+            else if ("2".equals(t.getInspectResult()))
+            {
+                result = "不合格";
+            }
+            else
+            {
+                result = "待检";
+            }
+            sb.append(t.getTaskNo()).append("：").append(result);
+        }
+        return sb.toString();
+    }
+
+    /** NCR摘要：单号，多条分号分隔 */
+    private String joinNcrs(List<QmsNcr> ncrs)
+    {
+        if (ncrs == null || ncrs.isEmpty())
+        {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (QmsNcr n : ncrs)
+        {
+            if (sb.length() > 0)
+            {
+                sb.append("；");
+            }
+            sb.append(n.getNcrNo());
+        }
+        return sb.toString();
+    }
+
+    /** 统计树节点总数（日志用） */
+    private int countNodes(List<QmsLotGenealogy> children)
+    {
+        if (children == null || children.isEmpty())
+        {
+            return 0;
+        }
+        int count = children.size();
+        for (QmsLotGenealogy node : children)
+        {
+            count += countNodes(node.getChildren());
+        }
+        return count;
+    }
 
     /**
      * 写入业务谱系事件（幂等）：sourceType+sourceNo 已存在则跳过。

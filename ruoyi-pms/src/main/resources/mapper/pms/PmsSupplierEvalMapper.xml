@@ -132,4 +132,39 @@
         <foreach item="evalId" collection="array" open="(" separator="," close=")">#{evalId}</foreach>
     </delete>
 
+    <!-- 复评到期提醒：最近已审核评估 + 复评周期(月) 超期 -->
+    <select id="selectReevalDueList" resultType="java.util.HashMap">
+        SELECT s.supplier_id AS supplierId, s.supplier_name AS supplierName,
+               s.reeval_cycle_months AS reevalCycleMonths,
+               e.eval_id AS lastEvalId, e.eval_date AS lastEvalDate, e.eval_level AS evalLevel,
+               e.total_score AS totalScore,
+               DATE_ADD(e.eval_date, INTERVAL s.reeval_cycle_months MONTH) AS dueDate,
+               DATEDIFF(CURDATE(), DATE_ADD(e.eval_date, INTERVAL s.reeval_cycle_months MONTH)) AS overdueDays
+        FROM wms_supplier s
+        JOIN (
+            SELECT supplier_id, MAX(eval_id) AS max_eval_id
+            FROM pms_supplier_eval
+            WHERE status = '1' AND del_flag = '0' AND eval_date IS NOT NULL
+            GROUP BY supplier_id
+        ) m ON m.supplier_id = s.supplier_id
+        JOIN pms_supplier_eval e ON e.eval_id = m.max_eval_id
+        WHERE s.del_flag = '0'
+          AND DATE_ADD(e.eval_date, INTERVAL s.reeval_cycle_months MONTH) &lt; CURDATE()
+        ORDER BY overdueDays DESC
+    </select>
+
+    <!-- 供应商最近一次已审核评估 -->
+    <select id="selectLatestAuditedEval" parameterType="Long" resultType="java.util.HashMap">
+        SELECT eval_id AS evalId, eval_level AS evalLevel, eval_date AS evalDate, total_score AS totalScore
+        FROM pms_supplier_eval
+        WHERE supplier_id = #{supplierId} AND status = '1' AND del_flag = '0' AND eval_date IS NOT NULL
+        ORDER BY eval_date DESC, eval_id DESC
+        LIMIT 1
+    </select>
+
+    <!-- 供应商复评周期（月） -->
+    <select id="selectSupplierReevalCycle" parameterType="Long" resultType="java.lang.Integer">
+        SELECT reeval_cycle_months FROM wms_supplier WHERE supplier_id = #{supplierId} AND del_flag = '0'
+    </select>
+
 </mapper>

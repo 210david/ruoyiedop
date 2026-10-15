@@ -66,7 +66,7 @@
                 <el-table-column label="损耗率(%)" width="80" align="center"><template #default="scope"><span v-if="scope.row.lossRate != null">{{ scope.row.lossRate }}%</span><span v-else class="text-muted">—</span></template></el-table-column>
                 <el-table-column label="建议数量" prop="suggestedQty" width="90" align="center" />
                 <el-table-column label="领料数量" width="110" align="center"><template #default="scope"><el-input-number v-model="scope.row.issueQty" :min="0" :precision="2" :controls="false" size="small" style="width: 100%" placeholder="数量" /></template></el-table-column>
-                <el-table-column label="批次号" width="110"><template #header><span style="color:#f56c6c">*</span> 批次号</template><template #default="scope"><el-input v-model="scope.row.batchNo" size="small" placeholder="必填" /></template></el-table-column>
+                <el-table-column label="批次号" width="200"><template #header><span style="color:#f56c6c">*</span> 批次号</template><template #default="scope"><el-input :model-value="scope.row.batchNo" size="small" readonly placeholder="点击选择批次" @click="openBatchStockPicker(scope.$index)"><template v-if="scope.row.batchNo" #append><el-button size="small" icon="CircleClose" @click.stop="clearBatchNo(scope.$index)" /></template><template v-else #append><el-button size="small" icon="Search" @click="openBatchStockPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="操作" width="60" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" @click="removeDetail(scope.$index)" /></template></el-table-column>
               </el-table>
               <div v-if="!form.detailList || form.detailList.length === 0" class="empty-detail-tip">
@@ -294,6 +294,7 @@
     <!-- ===== 人员选择器 ===== -->
     <user-picker ref="userPickerRef" title="选择领料人" @confirm="onUserPickerConfirm" />
     <user-picker ref="confirmUserPickerRef" title="选择领料人" @confirm="onConfirmUserPickerConfirm" />
+    <batch-stock-picker ref="batchStockPickerRef" title="选择物料批次" @confirm="onBatchStockPickerConfirm" />
   </div>
 </template>
 
@@ -301,6 +302,7 @@
 import { listIssue, getIssue, addIssue, updateIssue, delIssue, confirmIssue } from "@/api/mms/issue";
 import { listWorkOrder, getWorkOrderBomSnapshot } from "@/api/mms/workorder";
 import UserPicker from '@/components/UserPicker/index.vue'
+import BatchStockPicker from '@/components/BatchStockPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, ArrowDown, WarningFilled, ArrowRight, QuestionFilled, CircleClose } from '@element-plus/icons-vue'
@@ -492,6 +494,23 @@ function handleMatPickerConfirm() {
   // 展开明细卡片，让用户看到刚添加的物料
   collapsedCards.c1 = false;
   if (newRows.length === 0) { proxy.$modal.msgSuccess('所选物料已在列表中'); }
+}
+/** ===== 批次库存选择器（仅合格批次可领，FEFO排序） ===== */
+const batchStockPickerRef = ref(null);
+const batchPickerIndex = ref(-1);
+function openBatchStockPicker(index) {
+  const d = form.value.detailList[index];
+  if (!d || !d.materialId) { proxy.$modal.msgWarning('明细缺少物料信息，无法选择批次'); return; }
+  batchPickerIndex.value = index;
+  batchStockPickerRef.value.open(d.materialId, d.batchNo, (d.materialCode || '') + ' / ' + (d.materialName || ''));
+}
+function clearBatchNo(index) {
+  const d = form.value.detailList[index];
+  if (d) d.batchNo = undefined;
+}
+function onBatchStockPickerConfirm(batch) {
+  const d = form.value.detailList[batchPickerIndex.value];
+  if (d) d.batchNo = batch.batchNo;
 }
 function removeDetail(index) {
   if (!form.value.detailList || form.value.detailList.length <= 1) {

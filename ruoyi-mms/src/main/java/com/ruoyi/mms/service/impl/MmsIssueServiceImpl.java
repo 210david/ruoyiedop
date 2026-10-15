@@ -17,6 +17,7 @@ import com.ruoyi.mms.domain.MmsIssueDetail;
 import com.ruoyi.mms.mapper.MmsIssueMapper;
 import com.ruoyi.mms.service.IMmsGenealogySyncService;
 import com.ruoyi.mms.service.IMmsIssueService;
+import com.ruoyi.food.service.IFoodBatchStockService;
 
 /**
  * 领料 Service实现
@@ -34,6 +35,9 @@ public class MmsIssueServiceImpl implements IMmsIssueService
 
     @Autowired
     private IMmsGenealogySyncService genealogySyncService;
+
+    @Autowired
+    private IFoodBatchStockService batchStockService;
 
     @Override
     @DataScope(deptAlias = "mms_issue")
@@ -205,6 +209,13 @@ public class MmsIssueServiceImpl implements IMmsIssueService
         issue.setUpdateBy(SecurityUtils.getUsername());
         issue.setUpdateTime(DateUtils.getNowDate());
         int rows = issueMapper.updateIssue(issue);
+
+        // ===== 批次库存联动：领料确认扣减批次库存（仅效期管理物料；批次未登记/非合格/可用不足拦截，失败回滚确认） =====
+        for (MmsIssueDetail d : issue.getDetailList())
+        {
+            batchStockService.deductAcrossWarehouse(d.getMaterialId(), d.getBatchNo(), d.getIssueQty(),
+                    SecurityUtils.getUsername());
+        }
 
         // ===== 谱系联动：领料确认 → 写入投料谱系（feeding，幂等，失败不阻断） =====
         for (MmsIssueDetail d : issue.getDetailList())

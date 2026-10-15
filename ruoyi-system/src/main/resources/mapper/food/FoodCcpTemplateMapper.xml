@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodCcpTemplateMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodCcpTemplate" id="FoodCcpTemplateResult">
+        <id property="templateId" column="template_id"/>
+        <result property="templateName" column="template_name"/>
+        <result property="routeId" column="route_id"/>
+        <result property="routeName" column="route_name"/>
+        <result property="processName" column="process_name"/>
+        <result property="ccpName" column="ccp_name"/>
+        <result property="monitorType" column="monitor_type"/>
+        <result property="limitType" column="limit_type"/>
+        <result property="limitMin" column="limit_min"/>
+        <result property="limitMax" column="limit_max"/>
+        <result property="limitValue" column="limit_value"/>
+        <result property="unit" column="unit"/>
+        <result property="monitorFreq" column="monitor_freq"/>
+        <result property="correctiveAction" column="corrective_action"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectCcpTemplateVo">
+        SELECT template_id, template_name, route_id, route_name, process_name, ccp_name,
+               monitor_type, limit_type, limit_min, limit_max, limit_value, unit,
+               monitor_freq, corrective_action, status, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM food_ccp_template
+    </sql>
+
+    <select id="selectCcpTemplateList" parameterType="com.ruoyi.food.domain.FoodCcpTemplate" resultMap="FoodCcpTemplateResult">
+        <include refid="selectCcpTemplateVo"/>
+        <where>
+            del_flag = '0'
+            <if test="templateName != null and templateName != ''"> AND template_name LIKE CONCAT('%', #{templateName}, '%')</if>
+            <if test="ccpName != null and ccpName != ''"> AND ccp_name LIKE CONCAT('%', #{ccpName}, '%')</if>
+            <if test="processName != null and processName != ''"> AND process_name LIKE CONCAT('%', #{processName}, '%')</if>
+            <if test="routeId != null"> AND route_id = #{routeId}</if>
+            <if test="monitorType != null and monitorType != ''"> AND monitor_type = #{monitorType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY route_id, template_id
+    </select>
+
+    <select id="selectCcpTemplateById" parameterType="Long" resultMap="FoodCcpTemplateResult">
+        <include refid="selectCcpTemplateVo"/>
+        WHERE template_id = #{templateId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertCcpTemplate" parameterType="com.ruoyi.food.domain.FoodCcpTemplate" useGeneratedKeys="true" keyProperty="templateId">
+        INSERT INTO food_ccp_template (
+            template_name, route_id, route_name, process_name, ccp_name,
+            monitor_type, limit_type, limit_min, limit_max, limit_value, unit,
+            monitor_freq, corrective_action, status, del_flag,
+            create_by, create_time, update_by, update_time, remark
+        )VALUES(
+            #{templateName}, #{routeId}, #{routeName}, #{processName}, #{ccpName},
+            #{monitorType}, #{limitType}, #{limitMin}, #{limitMax}, #{limitValue}, #{unit},
+            #{monitorFreq}, #{correctiveAction}, #{status}, '0',
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateCcpTemplate" parameterType="com.ruoyi.food.domain.FoodCcpTemplate">
+        UPDATE food_ccp_template
+        <set>
+            <if test="templateName != null">template_name = #{templateName},</if>
+            <if test="routeId != null">route_id = #{routeId},</if>
+            <if test="routeName != null">route_name = #{routeName},</if>
+            <if test="processName != null">process_name = #{processName},</if>
+            <if test="ccpName != null">ccp_name = #{ccpName},</if>
+            <if test="monitorType != null">monitor_type = #{monitorType},</if>
+            <if test="limitType != null">limit_type = #{limitType},</if>
+            <if test="limitMin != null">limit_min = #{limitMin},</if>
+            <if test="limitMax != null">limit_max = #{limitMax},</if>
+            <if test="limitValue != null">limit_value = #{limitValue},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="monitorFreq != null">monitor_freq = #{monitorFreq},</if>
+            <if test="correctiveAction != null">corrective_action = #{correctiveAction},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        </set>
+        WHERE template_id = #{templateId}
+    </update>
+
+    <delete id="deleteCcpTemplateByIds" parameterType="Long">
+        UPDATE food_ccp_template SET del_flag = '2' WHERE template_id IN
+        <foreach collection="array" item="templateId" open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+    </delete>
+</mapper>

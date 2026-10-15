@@ -314,6 +314,7 @@
               <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
               <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
               <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
+              <el-table-column label="批次号" prop="batchNo" min-width="120" align="center"><template #default="scope">{{ scope.row.batchNo || '-' }}</template></el-table-column>
               <el-table-column label="单位" prop="unit" width="80" align="center" />
               <el-table-column label="订单数量" prop="orderQty" width="100" align="right" />
               <el-table-column label="已发数量" prop="shippedQty" width="100" align="right" />
@@ -353,6 +354,7 @@
                 <el-table-column label="序号" type="index" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
                 <el-table-column label="商品名称" prop="productName" min-width="150" show-overflow-tooltip />
                 <el-table-column label="规格型号" prop="productSpec" min-width="120" show-overflow-tooltip />
+                <el-table-column label="批次号" prop="batchNo" min-width="120" align="center"><template #default="scope">{{ scope.row.batchNo || '-' }}</template></el-table-column>
                 <el-table-column label="单位" prop="unit" width="80" align="center" />
                 <el-table-column label="发货数量" prop="shipQty" width="100" align="right" />
                 <el-table-column label="单价" prop="unitPrice" width="100" align="right" />
@@ -367,13 +369,27 @@
             <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>出库与物流信息</div></div>
             <div class="rd-card-body">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="出库单号" prop="outboundOrderNo"><el-input v-model="confirmForm.outboundOrderNo" placeholder="请输入仓库出库单号" style="width: 100%"><template #append><el-tooltip content="必须先在仓库管理完成出库，填写出库单号后才能发货" placement="top"><el-button icon="QuestionFilled" /></el-tooltip></template></el-input></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="出库单号" prop="outboundOrderNo"><el-input v-model="confirmForm.outboundOrderNo" placeholder="请输入仓库出库单号" style="width: 100%" @blur="loadOutboundBatches" @keyup.enter="loadOutboundBatches"><template #append><el-tooltip content="必须先在仓库管理完成出库，填写出库单号后才能发货" placement="top"><el-button icon="QuestionFilled" /></el-tooltip></template></el-input></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="发货日期" prop="shipmentDate"><el-date-picker v-model="confirmForm.shipmentDate" type="date" value-format="YYYY-MM-DD" placeholder="选择发货日期" style="width: 100%" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="物流公司" prop="logisticsCompany"><el-input v-model="confirmForm.logisticsCompany" placeholder="请输入物流公司" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="物流单号" prop="trackingNo"><el-input v-model="confirmForm.trackingNo" placeholder="请输入物流单号" style="width: 100%" /></el-form-item></el-col>
               </el-row>
+              <div v-if="outboundBatches && outboundBatches.length" class="outbound-batch-box">
+                <div class="outbound-batch-title">出库批次信息（三重拦截校验通过后才能发货）</div>
+                <el-table :data="outboundBatches" border size="small" :header-cell-style="{ textAlign: 'center' }">
+                  <el-table-column label="物料编码" prop="material_code" min-width="110" align="center" />
+                  <el-table-column label="物料名称" prop="material_name" min-width="140" show-overflow-tooltip />
+                  <el-table-column label="批次号" prop="batch_no" min-width="120" align="center" />
+                  <el-table-column label="出库数量" prop="plan_qty" width="90" align="right" />
+                  <el-table-column label="到期日期" prop="expire_date" width="100" align="center"><template #default="scope"><span :class="{ 'expiry-warn': scope.row.expire_date && new Date(scope.row.expire_date).getTime() - Date.now() <= 30 * 86400000 }">{{ scope.row.expire_date ? String(scope.row.expire_date).slice(0, 10) : '-' }}</span></template></el-table-column>
+                  <el-table-column label="批次状态" width="90" align="center"><template #default="scope"><span v-if="scope.row.batch_status" class="badge" :class="batchStatusClass(scope.row.batch_status)"><span class="dot"></span>{{ batchStatusLabel(scope.row.batch_status) }}</span><span v-else>-</span></template></el-table-column>
+                </el-table>
+              </div>
+              <div v-else-if="outboundBatchesLoaded && confirmForm.outboundOrderNo" class="outbound-batch-box">
+                <el-alert type="info" :closable="false" show-icon title="未查询到该出库单的批次明细，请核对出库单号" />
+              </div>
             </div>
           </section>
         </div>
@@ -525,7 +541,7 @@
 </template>
 
 <script setup name="MkShipment">
-import { listShipment, getShipment, addShipment, updateShipment, delShipment, confirmShipment, receiveShipment, getInProgressOrderIds } from '@/api/mk/shipment'
+import { listShipment, getShipment, addShipment, updateShipment, delShipment, confirmShipment, receiveShipment, getInProgressOrderIds, getOutboundBatches } from '@/api/mk/shipment'
 import { listOrder, getOrder } from '@/api/mk/order'
 import { addReturn } from '@/api/mk/returnOrder'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -545,6 +561,8 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const confirmOpen = ref(false)
 const confirmForm = ref({})
+const outboundBatches = ref([])
+const outboundBatchesLoaded = ref(false)
 const returnOpen = ref(false)
 const returnForm = ref({})
 const showStatusHelp = ref(false)
@@ -961,9 +979,31 @@ function handleConfirm(row) {
       trackingNo: undefined,
       shipmentDate: new Date().toISOString().slice(0, 10)
     }
+    outboundBatches.value = []
+    outboundBatchesLoaded.value = false
     confirmOpen.value = true
   })
 }
+
+/** 按出库单号加载出库批次明细（用于发货前三重拦截可视化） */
+function loadOutboundBatches() {
+  const orderNo = confirmForm.value.outboundOrderNo
+  if (!orderNo) {
+    outboundBatches.value = []
+    outboundBatchesLoaded.value = false
+    return
+  }
+  getOutboundBatches(orderNo).then(res => {
+    outboundBatches.value = res.data || []
+    outboundBatchesLoaded.value = true
+  }).catch(() => {
+    outboundBatches.value = []
+    outboundBatchesLoaded.value = true
+  })
+}
+
+function batchStatusLabel(v) { const map = { '0': '待检', '1': '合格', '2': '冻结', '3': '报废' }; return map[String(v)] || '-' }
+function batchStatusClass(v) { const map = { '0': 'amber', '1': 'green', '2': 'blue', '3': 'red' }; return map[String(v)] || 'gray' }
 
 function submitConfirm() {
   proxy.$refs['confirmRef'].validate(valid => {
@@ -1213,4 +1253,35 @@ onActivated(() => { getList() })
 .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+/* 出库批次信息区块（确认发货弹框，append-to-body 脱离 .mk-list-page 作用域，badge 样式本地补充） */
+.outbound-batch-box {
+  margin: 4px 0 8px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.outbound-batch-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 10px;
+}
+.outbound-batch-box .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1; border: 1px solid transparent; }
+.outbound-batch-box .badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.outbound-batch-box .badge.amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.outbound-batch-box .badge.amber .dot { background: #f59e0b; }
+.outbound-batch-box .badge.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.outbound-batch-box .badge.green .dot { background: #10b981; }
+.outbound-batch-box .badge.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.outbound-batch-box .badge.blue .dot { background: #3b82f6; }
+.outbound-batch-box .badge.red { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.outbound-batch-box .badge.red .dot { background: #ef4444; }
+.outbound-batch-box .badge.gray { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+.outbound-batch-box .badge.gray .dot { background: #9ca3af; }
+.expiry-warn {
+  color: #f56c6c;
+  font-weight: 600;
+}
 </style>

@@ -681,7 +681,7 @@ public class AiNlQueryServiceImpl implements IAiNlQueryService
     // ==================== 可查表解析（黑名单模式） ====================
 
     /** 默认放行域：业务模块 + 系统管理 + 工作流（qrtz_/gen_ 等纯技术表天然不可查） */
-    private static final String[] ALLOWED_PREFIXES = { "dms_", "wms_", "mk_", "pms_", "qms_", "mms_", "biz_", "sys_", "flow_" };
+    private static final String[] ALLOWED_PREFIXES = { "dms_", "wms_", "mk_", "pms_", "qms_", "mms_", "food_", "biz_", "sys_", "flow_" };
 
     /** 系统日志表例外：虽命中 *_log 排除规则，但对管理查询有价值，显式放行 */
     private static final Set<String> LOG_TABLE_ALLOW = new java.util.HashSet<>(java.util.Arrays.asList(

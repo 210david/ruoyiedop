@@ -36,6 +36,14 @@ public class PmsSupplierEvalController extends BaseController
         return getDataTable(list);
     }
 
+    /** 复评到期提醒：最近已审核评估超过复评周期的供应商 */
+    @PreAuthorize("@ss.hasPermi('pms:eval:list')")
+    @GetMapping("/reevalDue")
+    public AjaxResult reevalDue()
+    {
+        return AjaxResult.success(pmsSupplierEvalService.selectReevalDueList());
+    }
+
     @Log(title = "供应商评估", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('pms:eval:export')")
     @PostMapping("/export")

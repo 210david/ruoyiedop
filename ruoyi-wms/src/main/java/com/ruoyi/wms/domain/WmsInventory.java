@@ -58,8 +58,8 @@ public class WmsInventory extends BaseEntity
     @Excel(name = "库区")
     private String areaName;
 
-    /** 批次号 */
-    @Excel(name = "批次号")
+    /** 内部批次号（效期管理物料收货时自动生成，批次维度统计键） */
+    @Excel(name = "内部批次")
     private String batchNo;
 
     /** 生产日期 */
@@ -69,6 +69,13 @@ public class WmsInventory extends BaseEntity
     /** 有效期 */
     @Excel(name = "有效期", dateFormat = "yyyy-MM-dd")
     private Date expiryDate;
+
+    /** 批次状态（关联food_batch：0待检 1合格 2冻结 3报废，非本表字段） */
+    private String batchStatus;
+
+    /** 供应商批次号（关联food_batch.ext_batch_code，非本表字段，仅追溯参考） */
+    @Excel(name = "供应商批次")
+    private String extBatchNo;
 
     /** 可用数量 */
     @Excel(name = "可用数量")
@@ -120,6 +127,10 @@ public class WmsInventory extends BaseEntity
     public void setProductionDate(Date productionDate) { this.productionDate = productionDate; }
     public Date getExpiryDate() { return expiryDate; }
     public void setExpiryDate(Date expiryDate) { this.expiryDate = expiryDate; }
+    public String getBatchStatus() { return batchStatus; }
+    public void setBatchStatus(String batchStatus) { this.batchStatus = batchStatus; }
+    public String getExtBatchNo() { return extBatchNo; }
+    public void setExtBatchNo(String extBatchNo) { this.extBatchNo = extBatchNo; }
     public BigDecimal getQty() { return qty; }
     public void setQty(BigDecimal qty) { this.qty = qty; }
     public BigDecimal getLockQty() { return lockQty; }

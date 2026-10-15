@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodRecallMapper">
+
+    <resultMap type="FoodRecall" id="RecallResult">
+        <id     property="recallId"         column="recall_id"/>
+        <result property="recallCode"       column="recall_code"/>
+        <result property="triggerBatchId"   column="trigger_batch_id"/>
+        <result property="triggerBatchCode" column="trigger_batch_code"/>
+        <result property="recallScope"      column="recall_scope"/>
+        <result property="recallReason"     column="recall_reason"/>
+        <result property="recallLevel"      column="recall_level"/>
+        <result property="affectedCount"    column="affected_count"/>
+        <result property="status"           column="status"/>
+        <result property="executeTime"      column="execute_time"/>
+        <result property="executeBy"        column="execute_by"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+        <result property="materialName"     column="material_name"/>
+    </resultMap>
+
+    <resultMap type="FoodRecallBatch" id="RecallBatchResult">
+        <id     property="rbId"         column="rb_id"/>
+        <result property="recallId"     column="recall_id"/>
+        <result property="batchId"      column="batch_id"/>
+        <result property="batchCode"    column="batch_code"/>
+        <result property="materialId"   column="material_id"/>
+        <result property="materialName" column="material_name"/>
+        <result property="depth"        column="depth"/>
+        <result property="relationPath" column="relation_path"/>
+        <result property="prevStatus"   column="prev_status"/>
+        <result property="frozenFlag"   column="frozen_flag"/>
+        <result property="qty"          column="qty"/>
+        <result property="expireDate"   column="expire_date"/>
+        <result property="batchStatus"  column="batch_status"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <sql id="selectRecallVo">
+        select r.recall_id, r.recall_code, r.trigger_batch_id, r.trigger_batch_code, r.recall_scope,
+               r.recall_reason, r.recall_level, r.affected_count, r.status, r.execute_time, r.execute_by,
+               r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               mm.material_name
+        from food_recall r
+        left join food_batch b on b.batch_id = r.trigger_batch_id
+        left join wms_material mm on mm.material_id = b.material_id
+    </sql>
+
+    <select id="selectRecallById" parameterType="Long" resultMap="RecallResult">
+        <include refid="selectRecallVo"/>
+        where r.recall_id = #{recallId} and r.del_flag = '0'
+    </select>
+
+    <select id="selectRecallList" parameterType="FoodRecall" resultMap="RecallResult">
+        <include refid="selectRecallVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="recallCode != null and recallCode != ''">AND r.recall_code like concat('%', #{recallCode}, '%')</if>
+            <if test="triggerBatchCode != null and triggerBatchCode != ''">AND r.trigger_batch_code like concat('%', #{triggerBatchCode}, '%')</if>
+            <if test="recallScope != null and recallScope != ''">AND r.recall_scope = #{recallScope}</if>
+            <if test="recallLevel != null and recallLevel != ''">AND r.recall_level = #{recallLevel}</if>
+            <if test="status != null and status != ''">AND r.status = #{status}</if>
+            <if test="recallReason != null and recallReason != ''">AND r.recall_reason like concat('%', #{recallReason}, '%')</if>
+            <if test="materialName != null and materialName != ''">AND mm.material_name like concat('%', #{materialName}, '%')</if>
+            <if test="executeBy != null and executeBy != ''">AND r.execute_by like concat('%', #{executeBy}, '%')</if>
+            <if test="createBy != null and createBy != ''">AND r.create_by like concat('%', #{createBy}, '%')</if>
+            <if test="params.beginExecuteTime != null and params.beginExecuteTime != ''">AND date(r.execute_time) &gt;= #{params.beginExecuteTime}</if>
+            <if test="params.endExecuteTime != null and params.endExecuteTime != ''">AND date(r.execute_time) &lt;= #{params.endExecuteTime}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''">AND date(r.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''">AND date(r.create_time) &lt;= #{params.endCreateTime}</if>
+        </where>
+        order by r.recall_id desc
+    </select>
+
+    <insert id="insertRecall" parameterType="FoodRecall" useGeneratedKeys="true" keyProperty="recallId">
+        insert into food_recall
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="recallCode != null">recall_code,</if>
+            <if test="triggerBatchId != null">trigger_batch_id,</if>
+            <if test="triggerBatchCode != null">trigger_batch_code,</if>
+            <if test="recallScope != null">recall_scope,</if>
+            <if test="recallReason != null">recall_reason,</if>
+            <if test="recallLevel != null">recall_level,</if>
+            <if test="affectedCount != null">affected_count,</if>
+            <if test="status != null">status,</if>
+            <if test="executeTime != null">execute_time,</if>
+            <if test="executeBy != null">execute_by,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            create_time,
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="recallCode != null">#{recallCode},</if>
+            <if test="triggerBatchId != null">#{triggerBatchId},</if>
+            <if test="triggerBatchCode != null">#{triggerBatchCode},</if>
+            <if test="recallScope != null">#{recallScope},</if>
+            <if test="recallReason != null">#{recallReason},</if>
+            <if test="recallLevel != null">#{recallLevel},</if>
+            <if test="affectedCount != null">#{affectedCount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="executeTime != null">#{executeTime},</if>
+            <if test="executeBy != null">#{executeBy},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            sysdate(),
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRecall" parameterType="FoodRecall">
+        update food_recall
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="triggerBatchCode != null">trigger_batch_code = #{triggerBatchCode},</if>
+            <if test="recallScope != null">recall_scope = #{recallScope},</if>
+            <if test="recallReason != null">recall_reason = #{recallReason},</if>
+            <if test="recallLevel != null">recall_level = #{recallLevel},</if>
+            <if test="affectedCount != null">affected_count = #{affectedCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="executeTime != null">execute_time = #{executeTime},</if>
+            <if test="executeBy != null">execute_by = #{executeBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where recall_id = #{recallId}
+    </update>
+
+    <update id="deleteRecallByIds" parameterType="Long">
+        update food_recall set del_flag = '2' where recall_id in
+        <foreach collection="array" item="recallId" open="(" separator="," close=")">
+            #{recallId}
+        </foreach>
+    </update>
+
+    <select id="selectRecallBatchList" parameterType="Long" resultMap="RecallBatchResult">
+        select rb.rb_id, rb.recall_id, rb.batch_id, rb.batch_code, rb.material_id, rb.depth, rb.relation_path,
+               rb.prev_status, rb.frozen_flag, rb.create_time,
+               mm.material_name, b.qty, b.expire_date, b.batch_status
+        from food_recall_batch rb
+        left join food_batch b on b.batch_id = rb.batch_id
+        left join wms_material mm on mm.material_id = rb.material_id
+        where rb.recall_id = #{recallId}
+        order by rb.depth asc, rb.rb_id asc
+    </select>
+
+    <insert id="insertRecallBatch" parameterType="FoodRecallBatch" useGeneratedKeys="true" keyProperty="rbId">
+        insert into food_recall_batch (recall_id, batch_id, batch_code, material_id, depth, relation_path, prev_status, frozen_flag, create_time)
+        values (#{recallId}, #{batchId}, #{batchCode}, #{materialId}, #{depth}, #{relationPath}, #{prevStatus}, #{frozenFlag}, sysdate())
+    </insert>
+
+    <delete id="deleteRecallBatchByRecallId" parameterType="Long">
+        delete from food_recall_batch where recall_id = #{recallId}
+    </delete>
+
+    <!-- qms生产谱系有效边（batchNo维度，del_flag=0，status=0，parent/child 均非空且不互等） -->
+    <select id="selectQmsGenealogyEdges" resultType="java.util.HashMap">
+        select g.parent_batch_no as parentNo, g.child_batch_no as childNo,
+               g.work_order_no as workOrderNo, g.source_type as sourceType, g.source_no as sourceNo,
+               g.qty_in as qtyIn, g.trace_time as traceTime
+        from qms_lot_genealogy g
+        where g.del_flag = '0' and g.status = '0'
+          and g.parent_batch_no is not null and g.parent_batch_no != ''
+          and g.child_batch_no is not null and g.child_batch_no != ''
+          and g.parent_batch_no != g.child_batch_no
+    </select>
+
+    <select id="selectBatchesByCodes" resultMap="com.ruoyi.food.mapper.FoodBatchMapper.FoodBatchResult">
+        select * from food_batch
+        where del_flag = '0' and batch_code in
+        <foreach collection="codes" item="code" open="(" separator="," close=")">
+            #{code}
+        </foreach>
+    </select>
+
+</mapper>

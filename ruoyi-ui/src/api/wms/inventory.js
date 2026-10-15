@@ -8,6 +8,15 @@ export function listInventory(query) {
   })
 }
 
+// 按物料+仓库汇总查询（管理视角）
+export function listInventorySummary(query) {
+  return request({
+    url: '/wms/inventory/summary',
+    method: 'get',
+    params: query
+  })
+}
+
 export function getInventory(inventoryId) {
   return request({
     url: '/wms/inventory/' + inventoryId,

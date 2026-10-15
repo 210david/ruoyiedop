@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.food.domain.FoodBatch;
+import com.ruoyi.food.service.IFoodBatchService;
 import com.ruoyi.qms.domain.QmsNcr;
 import com.ruoyi.qms.domain.QmsNcrApproveLog;
 import com.ruoyi.qms.domain.QmsEsigRecord;
@@ -51,6 +53,9 @@ public class QmsNcrServiceImpl implements IQmsNcrService
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private IFoodBatchService foodBatchService;
 
     @Override
     @DataScope(deptAlias = "qms_ncr")
@@ -352,7 +357,40 @@ public class QmsNcrServiceImpl implements IQmsNcrService
 "3",   // bizStatus: 待验证
 "NCR台账"  // bizEntryName
 );
+        // 处置联动批次状态（食品行业）：报废→批次报废；退货→批次冻结
+        linkBatchDisposition(existing, ncr.getDisposition());
         return rows;
+    }
+
+    /**
+     * 处置联动批次状态（食品行业）：
+     * 报废(4) → 批次非报废(3)则报废；退货(1) → 批次待检/合格(0/1)冻结
+     */
+    private void linkBatchDisposition(QmsNcr existing, String disposition)
+    {
+        if (StringUtils.isEmpty(existing.getBatchNo()))
+        {
+            return;
+        }
+        FoodBatch batch = foodBatchService.selectBatchByCode(existing.getBatchNo());
+        if (batch == null)
+        {
+            return;
+        }
+        if ("4".equals(disposition))
+        {
+            if (!"3".equals(batch.getBatchStatus()))
+            {
+                foodBatchService.scrapBatch(batch.getBatchId(), "NCR" + existing.getNcrNo() + "报废处置");
+            }
+        }
+        else if ("1".equals(disposition))
+        {
+            if ("0".equals(batch.getBatchStatus()) || "1".equals(batch.getBatchStatus()))
+            {
+                foodBatchService.freezeBatch(batch.getBatchId(), "NCR" + existing.getNcrNo() + "退货处置中");
+            }
+        }
     }
 
     @Override

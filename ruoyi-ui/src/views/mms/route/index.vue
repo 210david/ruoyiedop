@@ -124,7 +124,7 @@
                 <el-table-column label="准备(h)" width="100"><template #default="scope"><el-input-number v-model="scope.row.prepTime" :min="0" :precision="2" :step="0.5" size="small" controls-position="right" style="width: 100%" /></template></el-table-column>
                 <el-table-column label="关键" width="50" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isKeyProcess" true-value="1" false-value="0" /></template></el-table-column>
                 <el-table-column label="外协" width="50" align="center"><template #default="scope"><el-checkbox v-model="scope.row.isOutsource" true-value="1" false-value="0" /></template></el-table-column>
-                <el-table-column label="操作" width="50" align="center" fixed="right"><template #default="scope"><el-button link type="danger" icon="Delete" size="small" @click.stop="handleDeleteProcess(scope.$index)" /></template></el-table-column>
+                <el-table-column label="操作" width="85" align="center" fixed="right"><template #default="scope"><el-button link type="primary" icon="Setting" size="small" title="行业参数" @click.stop="openProcessParam(scope.row)" /><el-button link type="danger" icon="Delete" size="small" @click.stop="handleDeleteProcess(scope.$index)" /></template></el-table-column>
               </el-table>
               <div v-if="!form.processList || form.processList.length === 0" class="empty-detail"><el-empty description="暂无工序" :image-size="60" /></div>
             </div>
@@ -192,6 +192,11 @@
               <el-table-column label="产能单元" prop="resourceName" min-width="120" show-overflow-tooltip />
               <el-table-column label="标准工时(h)" prop="stdTime" width="100" align="center" />
               <el-table-column label="准备时间(h)" prop="prepTime" width="100" align="center" />
+              <el-table-column label="标准天数" prop="stdDays" width="85" align="center"><template #default="scope"><span v-if="scope.row.stdDays != null">{{ scope.row.stdDays }}天</span><span v-else class="text-muted">—</span></template></el-table-column>
+              <el-table-column label="温度(℃)" width="110" align="center"><template #default="scope"><span v-if="scope.row.tempMin != null || scope.row.tempMax != null">{{ scope.row.tempMin ?? '—' }} ~ {{ scope.row.tempMax ?? '—' }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+              <el-table-column label="湿度(%)" width="100" align="center"><template #default="scope"><span v-if="scope.row.humidityMin != null || scope.row.humidityMax != null">{{ scope.row.humidityMin ?? '—' }} ~ {{ scope.row.humidityMax ?? '—' }}</span><span v-else class="text-muted">—</span></template></el-table-column>
+              <el-table-column label="CCP" width="60" align="center"><template #default="scope"><el-tag v-if="scope.row.ccpFlag === '1'" size="small" type="danger">CCP</el-tag><span v-else class="text-muted">—</span></template></el-table-column>
+              <el-table-column label="损耗控制" width="130" align="center"><template #default="scope"><span v-if="scope.row.lossType">{{ dictLabel(food_loss_type, scope.row.lossType) }}≤{{ scope.row.lossRateMax != null ? scope.row.lossRateMax + '%' : '—' }}</span><span v-else class="text-muted">—</span></template></el-table-column>
               <el-table-column label="关键" width="55" align="center"><template #default="scope"><el-tag v-if="scope.row.isKeyProcess === '1'" size="small" type="danger">是</el-tag><span v-else>否</span></template></el-table-column>
               <el-table-column label="外协" width="55" align="center"><template #default="scope"><el-tag v-if="scope.row.isOutsource === '1'" size="small" type="warning">是</el-tag><span v-else>否</span></template></el-table-column>
             </el-table>
@@ -345,6 +350,72 @@
         <div class="dialog-footer">
           <el-button @click="processPickerOpen = false">取 消</el-button>
           <el-button type="primary" @click="confirmProcessPicker" :disabled="!selectedProcessId">确 定</el-button>
+        </div>
+      </template>
+    </el-dialog>
+    <!-- Process Industry Param Dialog（食品行业工序参数：时长/温湿度/CCP/损耗） -->
+    <el-dialog v-model="paramOpen" width="640px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          <span class="rd-detail-header-title">工序行业参数{{ paramRow.processName ? ' - ' + paramRow.processName : '' }}</span>
+        </div>
+      </template>
+      <el-form label-width="110px" size="default">
+        <div class="rd-page" style="padding:0">
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>工序时长（天）</div></div>
+            <div class="rd-card-body">
+              <el-row :gutter="20">
+                <el-col :span="8"><el-form-item label="标准时长"><el-input-number v-model="paramRow.stdDays" :min="0" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="最短时长"><el-input-number v-model="paramRow.minDays" :min="0" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="最长时长"><el-input-number v-model="paramRow.maxDays" :min="0" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+              <div class="form-tip" style="margin-left:10px">长周期工序（腌制/发酵/晾制）以天计；WIP预计出柜时间 = 入柜时间 + 标准时长</div>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span>环境控制要求</div></div>
+            <div class="rd-card-body">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="温度下限(℃)"><el-input-number v-model="paramRow.tempMin" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="温度上限(℃)"><el-input-number v-model="paramRow.tempMax" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="湿度下限(%)"><el-input-number v-model="paramRow.humidityMin" :precision="1" :step="1" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="湿度上限(%)"><el-input-number v-model="paramRow.humidityMax" :precision="1" :step="1" :min="0" :max="100" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>CCP与损耗控制</div></div>
+            <div class="rd-card-body">
+              <el-row :gutter="20">
+                <el-col :span="8">
+                  <el-form-item label="关键控制点">
+                    <el-switch v-model="paramRow.ccpFlag" active-value="1" inactive-value="0" active-text="CCP" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="损耗类型">
+                    <el-select v-model="paramRow.lossType" placeholder="请选择" clearable style="width: 100%">
+                      <el-option v-for="d in food_loss_type" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="损耗率上限"><el-input-number v-model="paramRow.lossRateMax" :min="0" :max="100" :precision="2" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item>
+                </el-col>
+              </el-row>
+              <div class="form-tip" style="margin-left:10px">标记CCP的工序将在HACCP监控中重点关注；转移损耗率超过上限时推送告警</div>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="paramOpen = false">确 定</el-button>
+          <el-button @click="paramOpen = false">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -646,7 +717,15 @@ import Sortable from 'sortablejs'
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c0', 'cAudit', 'vc1', 'vc2', 'vc3', 'vcAudit', 'vc4', 'vc5', 'aAudit', 'aOpinion'])
 const { proxy } = getCurrentInstance();
-const { mms_route_status, mms_route_change_type, mms_process_type } = proxy.useDict("mms_route_status", "mms_route_change_type", "mms_process_type");
+const { mms_route_status, mms_route_change_type, mms_process_type, food_loss_type } = proxy.useDict("mms_route_status", "mms_route_change_type", "mms_process_type", "food_loss_type");
+
+/** 工序行业参数编辑（时长/温湿度/CCP/损耗） */
+const paramOpen = ref(false);
+const paramRow = ref({});
+function openProcessParam(row) {
+  paramRow.value = row;
+  paramOpen.value = true;
+}
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mms_route_index')
 
 const dataList = ref([]);
@@ -908,7 +987,7 @@ let _uidCounter = 0;
 function genUid() { return 'p_' + (++_uidCounter) + '_' + Date.now(); }
 function handleAddProcess() {
   const list = form.value.processList || (form.value.processList = []);
-  list.push({ _uid: genUid(), id: null, processId: undefined, processCode: '', processName: '', resourceId: undefined, resourceName: '', stepSeq: (list.length + 1) * 10, stdTime: 0, prepTime: 0, isKeyProcess: '0', isOutsource: '0', remark: undefined, _isParallel: false, _stepGroupIdx: list.length });
+  list.push({ _uid: genUid(), id: null, processId: undefined, processCode: '', processName: '', resourceId: undefined, resourceName: '', stepSeq: (list.length + 1) * 10, stdTime: 0, prepTime: 0, isKeyProcess: '0', isOutsource: '0', stdDays: undefined, minDays: undefined, maxDays: undefined, tempMin: undefined, tempMax: undefined, humidityMin: undefined, humidityMax: undefined, ccpFlag: '0', lossType: undefined, lossRateMax: undefined, remark: undefined, _isParallel: false, _stepGroupIdx: list.length });
   syncStepGroups();
 }
 function handleDeleteProcess(index) {

@@ -1,6 +1,7 @@
 package com.ruoyi.pms.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.pms.domain.PmsSupplierEval;
 
 /**
@@ -18,4 +19,7 @@ public interface IPmsSupplierEvalService
 
     /** 审批 */
     public int auditEval(Long evalId, String status, String auditRemark);
+
+    /** 复评到期提醒列表 */
+    public List<Map<String, Object>> selectReevalDueList();
 }

@@ -16,7 +16,12 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.wms.domain.WmsOutboundOrder;
 import com.ruoyi.wms.domain.WmsOutboundOrderDetail;
+import com.ruoyi.wms.domain.WmsMaterial;
+import com.ruoyi.food.domain.FoodBatchStock;
+import com.ruoyi.food.domain.FoodFefoPlan;
+import com.ruoyi.food.service.IFoodBatchStockService;
 import com.ruoyi.wms.mapper.WmsOutboundOrderMapper;
+import com.ruoyi.wms.mapper.WmsMaterialMapper;
 import com.ruoyi.wms.service.IWmsOutboundOrderService;
 import com.ruoyi.wms.service.IWmsInventoryService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -36,6 +41,12 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
 
     @Autowired
     private MessageHelper messageHelper;
+
+    @Autowired
+    private WmsMaterialMapper wmsMaterialMapper;
+
+    @Autowired
+    private IFoodBatchStockService foodBatchStockService;
 
     @Override
     @DataScope(deptAlias = "wms_outbound_order")
@@ -82,6 +93,8 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             }
         }
         order.setTotalQty(totalQty);
+        // 保存时即校验批次可发性：不合格/待检/冻结/过期批次不能进入出库单（不必等到提交）
+        validateDetailsBatchShippable(order);
         int rows = wmsOutboundOrderMapper.insertOutboundOrder(order);
         if (order.getDetailList() != null)
         {
@@ -101,6 +114,8 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
     @Transactional(rollbackFor = Exception.class)
     public int updateOutboundOrder(WmsOutboundOrder order)
     {
+        // 保存时即校验批次可发性：不合格/待检/冻结/过期批次不能进入出库单（不必等到提交）
+        validateDetailsBatchShippable(order);
         wmsOutboundOrderMapper.deleteOutboundDetailByOrderId(order.getOrderId());
         BigDecimal totalQty = BigDecimal.ZERO;
         if (order.getDetailList() != null)
@@ -179,9 +194,35 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
         {
             throw new ServiceException("出库单明细不能为空，无法提交");
         }
-        // 锁定库存：将各明细的计划数量从可用库存移入锁定库存
+        // 效期管理物料：FEFO批次自动分配（三重拦截），人工批次校验并留痕
         String username = SecurityUtils.getUsername();
-        for (WmsOutboundOrderDetail d : details)
+        List<WmsOutboundOrderDetail> fefoDetails = new java.util.ArrayList<>(details);
+        for (WmsOutboundOrderDetail d : fefoDetails)
+        {
+            allocateBatchIfNeeded(order, d, fefoDetails, username);
+        }
+        // 换批校验（与FEFO推荐不一致必须填写换批原因）+ 授权换批留痕 + 回写批次分配结果
+        for (WmsOutboundOrderDetail d : fefoDetails)
+        {
+            if (d.getFefoBatchNo() != null && d.getBatchNo() != null && !d.getFefoBatchNo().equals(d.getBatchNo())
+                    && StringUtils.isEmpty(d.getChangeReason()))
+            {
+                throw new ServiceException("物料【" + (d.getMaterialName() != null ? d.getMaterialName() : "") + "】指定批次 "
+                        + d.getBatchNo() + " 与FEFO推荐批次 " + d.getFefoBatchNo()
+                        + " 不一致，必须填写换批原因（授权换批留痕）");
+            }
+            if (StringUtils.isNotEmpty(d.getChangeReason()) && d.getBatchNo() != null)
+            {
+                foodBatchStockService.recordAllocLog(d.getMaterialId(), d.getBatchNo(), "CHANGE_ALLOC",
+                        "换批出库：" + d.getChangeReason(), "outbound", orderId, username);
+            }
+            if (d.getDetailId() != null)
+            {
+                wmsOutboundOrderMapper.updateOutboundDetail(d);
+            }
+        }
+        // 锁定库存：将各明细的计划数量从可用库存移入锁定库存（含FEFO拆行明细）
+        for (WmsOutboundOrderDetail d : fefoDetails)
         {
             try
             {
@@ -310,6 +351,105 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             messageHelper.markHandled("wms", orderId);
         }
         return 1;
+    }
+
+    /**
+     * 效期管理物料批次分配：
+     * 批次为空 → FEFO自动分配并拆行（最临期优先，三重拦截）；
+     * 人工指定 → 三重拦截校验并记录FEFO推荐批次（用于换批留痕判断）
+     */
+    /**
+     * 保存时批次可发性校验：仅效期管理物料的明细参与校验（有批次号的行），
+     * 待检/冻结/报废/过期/低于最小发运剩余天数的批次直接拦截，不必等到提交时才发现
+     */
+    private void validateDetailsBatchShippable(WmsOutboundOrder order)
+    {
+        if (order.getDetailList() == null)
+        {
+            return;
+        }
+        for (WmsOutboundOrderDetail d : order.getDetailList())
+        {
+            if (d.getMaterialId() == null || StringUtils.isEmpty(d.getBatchNo()))
+            {
+                continue;
+            }
+            WmsMaterial material = wmsMaterialMapper.selectMaterialById(d.getMaterialId());
+            if (material == null || !"1".equals(material.getIsExpiryManage()))
+            {
+                continue;
+            }
+            try
+            {
+                d.setBatchId(foodBatchStockService.validateBatchShippable(d.getMaterialId(), d.getBatchNo()));
+            }
+            catch (ServiceException e)
+            {
+                String desc = StringUtils.isNotEmpty(d.getMaterialName()) ? d.getMaterialName() : d.getMaterialCode();
+                throw new ServiceException("保存失败：物料【" + desc + "】" + e.getMessage());
+            }
+        }
+    }
+
+    private void allocateBatchIfNeeded(WmsOutboundOrder order, WmsOutboundOrderDetail d,
+                                       List<WmsOutboundOrderDetail> allDetails, String username)
+    {
+        WmsMaterial material = wmsMaterialMapper.selectMaterialById(d.getMaterialId());
+        if (material == null || !"1".equals(material.getIsExpiryManage()))
+        {
+            return;
+        }
+        if (StringUtils.isEmpty(d.getBatchNo()))
+        {
+            FoodFefoPlan plan = foodBatchStockService.planFefo(d.getMaterialId(), order.getWarehouseId(), d.getPlanQty());
+            if (!plan.isSuccess())
+            {
+                throw new ServiceException("物料【" + (d.getMaterialName() != null ? d.getMaterialName() : "")
+                        + "】FEFO批次分配失败：" + String.join("；", plan.getSkipped()));
+            }
+            boolean first = true;
+            for (FoodBatchStock alloc : plan.getAllocations())
+            {
+                if (first)
+                {
+                    d.setBatchNo(alloc.getBatchCode());
+                    d.setBatchId(alloc.getBatchId());
+                    d.setLocationId(alloc.getLocationId());
+                    d.setFefoBatchNo(alloc.getBatchCode());
+                    d.setExpireDate(alloc.getExpireDate());
+                    first = false;
+                }
+                else
+                {
+                    WmsOutboundOrderDetail split = new WmsOutboundOrderDetail();
+                    split.setOrderId(order.getOrderId());
+                    split.setMaterialId(d.getMaterialId());
+                    split.setMaterialCode(d.getMaterialCode());
+                    split.setMaterialName(d.getMaterialName());
+                    split.setSpecModel(d.getSpecModel());
+                    split.setUnit(d.getUnit());
+                    split.setBatchNo(alloc.getBatchCode());
+                    split.setBatchId(alloc.getBatchId());
+                    split.setFefoBatchNo(alloc.getBatchCode());
+                    split.setPlanQty(alloc.getQty());
+                    split.setPickQty(BigDecimal.ZERO);
+                    split.setActualQty(BigDecimal.ZERO);
+                    split.setLocationId(alloc.getLocationId());
+                    split.setExpireDate(alloc.getExpireDate());
+                    split.setDelFlag("0");
+                    split.setCreateBy(username);
+                    wmsOutboundOrderMapper.insertOutboundDetail(split);
+                    allDetails.add(split);
+                }
+            }
+        }
+        else
+        {
+            d.setBatchId(foodBatchStockService.validateBatchShippable(d.getMaterialId(), d.getBatchNo()));
+            // 记录FEFO推荐批次：与人工批次不一致时要求换批原因
+            java.util.List<FoodBatchStock> top = foodBatchStockService.listShippableBatches(d.getMaterialId(), order.getWarehouseId());
+            d.setFefoBatchNo(top.isEmpty() ? null : top.get(0).getBatchCode());
+        }
     }
 
     /**

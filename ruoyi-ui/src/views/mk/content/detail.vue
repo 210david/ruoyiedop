@@ -78,7 +78,7 @@
             <span class="pkg-count" v-if="pkgs.length">{{ pkgs.length }}</span>
           </div>
           <div class="pkg-actions" @click.stop v-if="editable">
-            <el-button size="small" icon="MagicStick" :loading="aiGenerating" @click="handleAiGenerate">AI 生成文案</el-button>
+            <el-button v-if="aiModuleEnabled" size="small" icon="MagicStick" :loading="aiGenerating" @click="handleAiGenerate">AI 生成文案</el-button>
             <el-button size="small" type="primary" plain icon="Plus" @click="addPackage">添加内容包</el-button>
           </div>
           <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.package }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -90,7 +90,7 @@
           </div>
           <div v-for="(pkg, index) in pkgs" :key="index" class="package-block">
             <div class="package-block-head">
-              <el-checkbox v-if="editable" v-model="pkg.aiChecked" size="small" title="勾选后参与 AI 生成">AI</el-checkbox>
+              <el-checkbox v-if="editable && aiModuleEnabled" v-model="pkg.aiChecked" size="small" title="勾选后参与 AI 生成">AI</el-checkbox>
               <span class="badge" :class="channelBadgeClass(pkg.channelType)"><span class="dot"></span>{{ channelLabel(pkg.channelType) }}</span>
               <span class="badge" :class="packageStatusBadgeClass(pkg.packageStatus)">{{ packageStatusLabel(pkg.packageStatus) }}</span>
               <span class="package-block-title">{{ pkg.packageTitle || '未命名内容包' }}</span>
@@ -269,6 +269,11 @@ import { getContent, addContent, updateContent, publishContent, aiGenerateConten
 import { listMaterial } from '@/api/mk/material'
 import { getToken } from '@/utils/auth'
 import { CircleClose } from '@element-plus/icons-vue'
+import useModuleStore from '@/store/modules/module'
+
+/* 模块联动：AI中心停用时隐藏页面内AI功能按钮 */
+const moduleStore = useModuleStore()
+const aiModuleEnabled = computed(() => moduleStore.isEnabled('ai'))
 import { useDetailCard } from '@/composables/useDetailCard'
 import MkMaterialPicker from '@/components/MkMaterialPicker/index.vue'
 import ActivityPicker from '@/components/ActivityPicker/index.vue'

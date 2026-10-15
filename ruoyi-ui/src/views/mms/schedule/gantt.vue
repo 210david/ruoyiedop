@@ -54,7 +54,10 @@
                  @dragend="onDragEnd">
               <div class="wo-card-header">
                 <span class="wo-no">{{ wo.workOrderNo }}</span>
-                <el-tag size="small" :type="wo.priority == '0' ? 'danger' : wo.priority == '1' ? 'warning' : 'info'" effect="dark">{{ wo.priority == '0' ? '高' : wo.priority == '1' ? '中' : '低' }}</el-tag>
+                <span class="wo-tags">
+                  <el-tag v-if="scheduleModeLabel(wo.productId)" size="small" :type="modeMap[wo.productId] === '1' ? 'warning' : 'info'" effect="plain">{{ scheduleModeLabel(wo.productId) }}</el-tag>
+                  <el-tag size="small" :type="wo.priority == '0' ? 'danger' : wo.priority == '1' ? 'warning' : 'info'" effect="dark">{{ wo.priority == '0' ? '高' : wo.priority == '1' ? '中' : '低' }}</el-tag>
+                </span>
               </div>
               <div class="wo-card-body">
                 <div class="wo-product">{{ wo.productName }}</div>
@@ -672,12 +675,14 @@ import { Tickets, InfoFilled, QuestionFilled, Fold, FullScreen, Aim } from '@ele
 import { getGanttData, dragSchedule, batchSchedule, cancelSchedule, getScheduledWoIds } from '@/api/mms/schedule'
 import { listWorkOrder } from '@/api/mms/workorder'
 import { listResource } from '@/api/mms/resource'
+import { listParam } from '@/api/food/materialParam'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 const { mms_schedule_status, mms_schedule_strategy } = proxy.useDict('mms_schedule_status', 'mms_schedule_strategy')
 const { mms_order_type, mms_priority } = proxy.useDict('mms_order_type', 'mms_priority')
 const { wms_unit } = proxy.useDict('wms_unit')
+const { food_schedule_mode } = proxy.useDict('food_schedule_mode')
 const { collapsedCards, toggleCard } = useDetailCard(['sc_wo', 'sc_plan', 'td_basic', 'td_wo', 'td_plan', 'help_layout', 'help_flow', 'help_resource', 'help_color', 'help_task', 'help_strategy', 'help_faq'])
 
 // ===== 状态 =====
@@ -701,6 +706,7 @@ const scheduleForm = ref(null)
 const scheduleData = ref([])
 const resourceList = ref([])
 const unscheduledOrders = ref([])
+const modeMap = ref({})
 const filteredUnscheduled = ref([])
 const woSearch = ref('')
 const woCurrentPage = ref(1)
@@ -883,10 +889,11 @@ function loadGanttData() {
 
 function loadUnscheduledOrders() {
   sidebarLoading.value = true
-  // 并行查询：所有工单 + 所有有已下达排产记录的工单ID（不限日期范围）
+  // 并行查询：所有工单 + 所有有已下达排产记录的工单ID（不限日期范围）+ 物料排产模式映射
   Promise.all([
     listWorkOrder({ pageSize: 500 }),
-    getScheduledWoIds()
+    getScheduledWoIds(),
+    loadScheduleModes()
   ]).then(([woRes, idsRes]) => {
     // 全量已下达排产记录的工单ID集合（不受甘特图日期范围限制）
     const scheduledWoIds = new Set(idsRes.data || [])
@@ -905,6 +912,23 @@ function loadResources() {
   return listResource({ status: '0', pageSize: 200 }).then(res => {
     resourceList.value = res.rows || []
   }).catch(() => {})
+}
+
+/** 加载物料排产模式映射（food_material_param：1=批次计划模式 2=离散日排产） */
+function loadScheduleModes() {
+  return listParam({ pageNum: 1, pageSize: 1000 }).then(res => {
+    const map = {}
+    ;(res.rows || []).forEach(p => { map[p.materialId] = p.scheduleMode })
+    modeMap.value = map
+  }).catch(() => {})
+}
+
+/** 工单产品排产模式标签（未配置行业参数的物料不显示） */
+function scheduleModeLabel(productId) {
+  const v = modeMap.value[productId]
+  if (!v) return ''
+  const d = food_schedule_mode.value.find(x => x.value === v)
+  return d ? d.label : v
 }
 
 function filterUnscheduled() {
@@ -1666,6 +1690,7 @@ function handleCancelTask(task) {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
 }
 .wo-no { font-size: 13px; font-weight: 600; color: var(--ink-700); }
+.wo-tags { display: inline-flex; align-items: center; gap: 4px; }
 .wo-card-body { font-size: 12px; color: var(--ink-500); }
 .wo-product { font-size: 13px; color: var(--ink-700); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wo-meta { display: flex; justify-content: space-between; }

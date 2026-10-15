@@ -54,6 +54,12 @@ public class SysJob extends BaseEntity
     @Excel(name = "任务状态", readConverterExp = "0=正常,1=暂停")
     private String status;
 
+    /** 所属模块标识（关联sys_module.module_key，NULL为平台级任务） */
+    private String moduleKey;
+
+    /** 查询参数：是否显示已停用模块任务（仅查询用，非表字段） */
+    private String showDisabledModule;
+
     public Long getJobId()
     {
         return jobId;
@@ -79,6 +85,26 @@ public class SysJob extends BaseEntity
     public String getJobGroup()
     {
         return jobGroup;
+    }
+
+    public String getModuleKey()
+    {
+        return moduleKey;
+    }
+
+    public void setModuleKey(String moduleKey)
+    {
+        this.moduleKey = moduleKey;
+    }
+
+    public String getShowDisabledModule()
+    {
+        return showDisabledModule;
+    }
+
+    public void setShowDisabledModule(String showDisabledModule)
+    {
+        this.showDisabledModule = showDisabledModule;
     }
 
     public void setJobGroup(String jobGroup)

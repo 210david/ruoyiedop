@@ -45,11 +45,11 @@ export function submitInbound(orderId) {
   })
 }
 
-export function receiveInbound(orderId, detailId, receivedQty) {
+export function receiveInbound(orderId, detailId, receivedQty, data) {
   return request({
     url: '/wms/inbound/receive/' + orderId + '/' + detailId,
     method: 'put',
-    params: { receivedQty }
+    params: { receivedQty, ...(data || {}) }
   })
 }
 
