@@ -263,7 +263,7 @@ SELECT 9062210,'价格与返利',4000,10,'price',NULL,1,0,'M','0','0','','money'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=9062210);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 9062211,'价格政策',9062210,1,'pricePolicy','mk/pricePolicy/index',1,0,'C','0','0','marketing:price:list','#','admin',NOW(),'P2批次六'
+SELECT 9062211,'价格政策',9062210,1,'pricePolicy','mk/pricePolicy/index',1,0,'C','0','0','marketing:price:list','shopping','admin',NOW(),'P2批次六'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=9062211);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
@@ -277,7 +277,7 @@ SELECT t.* FROM (
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=9062212);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT 9062221,'返利管理',9062210,2,'rebate','mk/rebate/index',1,0,'C','0','0','marketing:rebate:list','#','admin',NOW(),'P2批次六'
+SELECT 9062221,'返利管理',9062210,2,'rebate','mk/rebate/index',1,0,'C','0','0','marketing:rebate:list','money','admin',NOW(),'P2批次六'
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id=9062221);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)

@@ -165,7 +165,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="settleNo != null and settleNo != ''"> AND s.settle_no LIKE CONCAT('%', #{settleNo}, '%')</if>
             <if test="customerId != null"> AND s.customer_id = #{customerId}</if>
             <if test="period != null and period != ''"> AND s.period = #{period}</if>
-            <if test="policyNo != null and policyNo != ''"> AND s.policy_no = #{policyNo}</if>
+            <if test="policyNo != null and policyNo != ''"> AND s.policy_no LIKE CONCAT('%', #{policyNo}, '%')</if>
             <if test="status != null and status != ''"> AND s.status = #{status}</if>
         </where>
         ORDER BY s.settle_id DESC

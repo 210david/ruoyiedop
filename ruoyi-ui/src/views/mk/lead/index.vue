@@ -718,7 +718,15 @@
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="primary">跟进中</el-tag>
+            <el-tag type="primary">培育中</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="warning">MQL</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+          </div>
+          <div class="flow-item">
+            <el-tag type="success">SQL</el-tag>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
@@ -727,25 +735,30 @@
         </div>
         <div class="status-flow" style="margin-top: 8px;">
           <div class="flow-item">
-            <el-tag type="primary">跟进中</el-tag>
+            <el-tag type="info">新线索</el-tag>
+            <el-tag type="primary">培育中</el-tag>
+            <span style="font-size: 12px; color: #909399; margin: 0 4px;">任一阶段均可</span>
             <el-icon class="flow-arrow"><ArrowRight /></el-icon>
           </div>
           <div class="flow-item">
-            <el-tag type="danger">无效</el-tag>
+            <el-tag type="danger">已无效</el-tag>
             <el-tag size="small" type="info">无法再跟进</el-tag>
           </div>
         </div>
 
-        <h4>二、各状态说明</h4>
+        <h4>二、各状态说明（对应行业 MQL / SQL 模型）</h4>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="新线索">线索创建后的初始状态，等待分配或跟进</el-descriptions-item>
-          <el-descriptions-item label="跟进中">线索已分配负责人，正在进行跟进沟通</el-descriptions-item>
+          <el-descriptions-item label="新线索">线索创建后的初始状态，等待分配或跟进（行业称 Raw Lead，原始线索）</el-descriptions-item>
+          <el-descriptions-item label="培育中">已分配负责人，正在持续跟进沟通，逐步验证客户意向与客户画像（行业称 Nurturing，线索培育）</el-descriptions-item>
+          <el-descriptions-item label="MQL">营销合格线索（Marketing Qualified Lead）：市场端确认线索已有明确购买意向、符合目标客户画像，达到转交销售评估的标准</el-descriptions-item>
+          <el-descriptions-item label="SQL">销售合格线索（Sales Qualified Lead）：销售端进一步确认需求、预算、决策链真实有效，正式投入销售资源重点跟进</el-descriptions-item>
           <el-descriptions-item label="已转化">线索已成功转化为客户，自动创建客户档案和联系人</el-descriptions-item>
-          <el-descriptions-item label="无效">线索被标记为无效（电话空号、客户拒绝等），不可再跟进</el-descriptions-item>
+          <el-descriptions-item label="已无效">线索被标记为无效（电话空号、客户拒绝等），不可再跟进</el-descriptions-item>
         </el-descriptions>
 
         <h4>三、重点业务规则</h4>
         <div class="highlight-card">
+          <p>• <strong>MQL / SQL 判定标准：</strong>MQL 看"意向"（符合客户画像且有主动询价/留资行为），SQL 看"成交条件"（需求、预算、决策链三要素齐全）；判定不达标可退回"培育中"继续跟进</p>
           <p>• <strong>快速跟进：</strong>点击"跟进"按钮可快速录入跟进记录，系统自动更新最后跟进时间</p>
           <p>• <strong>转化为客户：</strong>线索转化后自动创建客户档案和联系人，不可逆操作</p>
           <p>• <strong>公海机制：</strong>可退回公海，其他销售人员可申请领取</p>

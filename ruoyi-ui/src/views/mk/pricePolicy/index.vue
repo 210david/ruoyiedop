@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -29,17 +33,17 @@
           </div>
         </div>
         <div class="field">
-          <label>客户名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field">
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>
@@ -56,6 +60,24 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button class="status-tab tab-green" :class="{ 'is-active': activeStatusTab === '0' }" @click="handleStatusTabClick('0')">
+            <span class="dot"></span><span>启用</span><span class="count">{{ statusCounts['0'] || 0 }}</span>
+          </button>
+          <button class="status-tab tab-gray" :class="{ 'is-active': activeStatusTab === '1' }" @click="handleStatusTabClick('1')">
+            <span class="dot"></span><span>停用</span><span class="count">{{ statusCounts['1'] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+        </button>
+      </div>
+
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:price:add']">新增</el-button>
@@ -102,10 +124,13 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '启用' : '停用' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 160)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
-              <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:price:edit']">修改</el-button>
-              <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:price:remove']">删除</el-button>
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['marketing:price:query']">详情</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:price:edit']">修改</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:price:remove']">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -127,12 +152,12 @@
         <div class="rd-page">
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('c1')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>政策信息</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="24">
+                <el-col :span="12">
                   <el-form-item label="价格类型" prop="priceType">
                     <el-radio-group v-model="form.priceType" @change="onPriceTypeChange">
                       <el-radio value="1">客户专价</el-radio>
@@ -140,6 +165,21 @@
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
+                <el-col :span="12">
+                  <el-form-item label="政策名称" prop="policyName">
+                    <el-input v-model="form.policyName" placeholder="如：A客户专价/一级客户价" maxlength="100" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>适用对象</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
                 <el-col v-if="form.priceType === '1'" :span="24">
                   <el-form-item label="客户" prop="customerId">
                     <el-input :model-value="form.customerName" readonly placeholder="点击选择客户（客户专价必选）" @click="openCustomerPicker">
@@ -155,27 +195,22 @@
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
-                  <el-form-item label="政策名称" prop="policyName">
-                    <el-input v-model="form.policyName" placeholder="如：A客户专价/一级客户价" maxlength="100" />
-                  </el-form-item>
-                </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>价格与物料</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="政策单价" prop="unitPrice">
                     <el-input-number v-model="form.unitPrice" :precision="4" :min="0" :step="0.01" controls-position="right" style="width: 100%" placeholder="请输入政策单价" />
                   </el-form-item>
                 </el-col>
-              </el-row>
-            </div>
-          </section>
-          <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c2')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>适用物料与有效期</div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-            </div>
-            <div class="rd-card-body" v-show="!collapsedCards.c2">
-              <el-row :gutter="20">
-                <el-col :span="24">
+                <el-col :span="12">
                   <el-form-item label="物料" prop="materialId">
                     <el-input :model-value="form.materialName" readonly placeholder="点击选择物料" @click="openMaterialPicker">
                       <template v-if="form.materialId" #append><el-button icon="CircleClose" @click.stop="clearMaterial" /></template>
@@ -183,6 +218,16 @@
                     </el-input>
                   </el-form-item>
                 </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c4')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>有效期与状态</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c4">
+              <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="生效日期" prop="startDate">
                     <el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" placeholder="选择生效日期" style="width: 100%" />
@@ -219,6 +264,88 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 详情弹窗 ===== -->
+    <el-dialog v-model="viewOpen" width="760px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">价格政策详情</span>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">基本信息</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="政策编号"><span class="mono">{{ viewForm.policyNo }}</span></el-descriptions-item>
+            <el-descriptions-item label="政策名称">{{ viewForm.policyName }}</el-descriptions-item>
+            <el-descriptions-item label="价格类型"><dict-tag :options="mk_price_type" :value="viewForm.priceType" /></el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <span class="badge" :class="viewForm.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ viewForm.status === '0' ? '启用' : '停用' }}</span>
+            </el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">适用对象</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="客户名称">{{ viewForm.priceType === '1' ? (viewForm.customerName || '—') : '按客户等级通用' }}</el-descriptions-item>
+            <el-descriptions-item label="客户等级"><dict-tag v-if="viewForm.customerLevel" :options="marketing_customer_level" :value="viewForm.customerLevel" /><span v-else>—</span></el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">价格与物料</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="政策单价（元）"><span class="mono">{{ viewForm.unitPrice }}</span></el-descriptions-item>
+            <el-descriptions-item label="物料名称">{{ viewForm.materialName || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">有效期与状态</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="生效日期">{{ viewForm.startDate || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="失效日期">{{ viewForm.endDate || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="创建人">{{ viewForm.createBy || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ parseTime(viewForm.createTime) || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="备注" :span="2">{{ viewForm.remark || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" icon="Edit" @click="viewOpen = false; handleUpdate(viewForm)" v-hasPermi="['marketing:price:edit']">编 辑</el-button>
+          <el-button @click="viewOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 业务操作说明弹窗 ===== -->
+    <el-dialog v-model="showStatusHelp" title="价格政策 - 业务操作说明" width="760px" append-to-body class="rd-dialog">
+      <div class="help-body">
+        <h4>功能定位</h4>
+        <p>价格政策用于为指定客户或客户等级设定专属销售单价（客户专价 / 等级价），销售下单时系统自动按政策单价取价，覆盖标准售价。是"一客一价、大客户让价"的核心管理工具。</p>
+        <h4>价格类型</h4>
+        <ul>
+          <li><b>客户专价</b>：绑定单个客户 + 单个物料，适用大客户谈判价</li>
+          <li><b>等级价</b>：绑定客户等级 + 单个物料，同等级客户共享价格</li>
+        </ul>
+        <h4>状态说明</h4>
+        <ul>
+          <li><b>启用</b>：政策生效中，下单取价时参与匹配（需在有效期内）</li>
+          <li><b>停用</b>：暂停使用，不参与取价，可随时重新启用</li>
+        </ul>
+        <h4>重点业务规则</h4>
+        <ul>
+          <li>取价优先级：在有效期内且启用的客户专价 &gt; 等级价 &gt; 物料标准售价</li>
+          <li>失效日期必须晚于生效日期；过期政策自动失效，无需手动停用</li>
+          <li>同一客户+同一物料建议只保留一条启用政策，避免取价歧义</li>
+        </ul>
+        <h4>操作流程</h4>
+        <p>新增政策（选类型 → 选对象 → 选物料填单价 → 设有效期）→ 启用 → 销售下单自动取价 → 到期或策略调整时停用</p>
+      </div>
+      <template #footer>
+        <div class="dialog-footer"><el-button @click="showStatusHelp = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
     <!-- 客户选择器 / 物料选择器 -->
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
@@ -231,7 +358,7 @@ import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2'])
+const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pricePolicy_index')
@@ -279,6 +406,35 @@ const customerPickerRef = ref(null)
 const materialPickerRef = ref(null)
 const statusOptions = [{ value: '0', label: '启用' }, { value: '1', label: '停用' }]
 
+// ===== 高级筛选 / 状态卡片 / 详情 / 说明 =====
+const showAdvanced = ref(false)
+const statusCounts = ref({ all: 0, '0': 0, '1': 0 })
+const activeStatusTab = ref('all')
+const showStatusHelp = ref(false)
+const viewOpen = ref(false)
+const viewForm = ref({})
+
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.status = status === 'all' ? undefined : status
+  handleQuery()
+}
+
+function loadStatusCounts() {
+  listPolicy({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0 }
+    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
+    statusCounts.value = counts
+  }).catch(() => {})
+}
+
+function handleView(row) {
+  getPolicy(row.policyId).then(response => {
+    viewForm.value = response.data || row
+    viewOpen.value = true
+  })
+}
+
 const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, policyNo: undefined, policyName: undefined, priceType: undefined, customerName: undefined, status: undefined },
@@ -311,6 +467,7 @@ function getList() {
     loading.value = false
     applySavedWidths()
   })
+  loadStatusCounts()
 }
 
 function handleQuery() {
@@ -455,4 +612,16 @@ onMounted(() => {
 
 <style scoped>
 .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+.help-body h4 { margin: 14px 0 6px; color: #303133; font-size: 14px; }
+.help-body h4:first-child { margin-top: 0; }
+.help-body p, .help-body li { font-size: 13px; color: #606266; line-height: 1.8; }
+.help-body ul { margin: 0; padding-left: 20px; }
+
+/* 状态卡片颜色 */
+.wms-list-page .status-tab.tab-green .dot { background: var(--green-500); }
+.wms-list-page .status-tab.tab-green .count { background: var(--green-50); color: var(--green-700); }
+.wms-list-page .status-tab.is-active.tab-green .count { background: var(--green-500); color: #fff; }
+.wms-list-page .status-tab.tab-gray .dot { background: var(--ink-400); }
+.wms-list-page .status-tab.tab-gray .count { background: var(--ink-100); color: var(--ink-500); }
+.wms-list-page .status-tab.is-active.tab-gray .count { background: var(--ink-400); color: #fff; }
 </style>

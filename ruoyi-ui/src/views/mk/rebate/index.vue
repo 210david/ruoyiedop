@@ -7,8 +7,26 @@
         <div class="surface filter-card" v-show="policyShowSearch">
           <div class="filter-head">
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+            <a class="adv-link" :class="{ 'is-open': showPolicyAdvanced }" @click.prevent="showPolicyAdvanced = !showPolicyAdvanced">
+              <span>{{ showPolicyAdvanced ? '收起' : '高级筛选' }}</span>
+              <el-icon class="chev"><ArrowDown /></el-icon>
+            </a>
           </div>
           <div class="filter-bar">
+            <div class="field">
+              <label>政策编号</label>
+              <div class="control">
+                <el-input v-model="policyQuery.policyNo" placeholder="请输入" clearable @keyup.enter="handlePolicyQuery">
+                  <template #prefix><el-icon><Search /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
+            <div class="field">
+              <label>政策名称</label>
+              <div class="control">
+                <el-input v-model="policyQuery.policyName" placeholder="请输入" clearable @keyup.enter="handlePolicyQuery" />
+              </div>
+            </div>
             <div class="field">
               <label>客户名称</label>
               <div class="control">
@@ -21,6 +39,22 @@
                 <el-select v-model="policyQuery.status" placeholder="全部" clearable @change="handlePolicyQuery">
                   <el-option label="启用" value="0" />
                   <el-option label="停用" value="1" />
+                </el-select>
+              </div>
+            </div>
+            <div class="field" v-show="showPolicyAdvanced">
+              <label>考核口径</label>
+              <div class="control is-select">
+                <el-select v-model="policyQuery.basis" placeholder="全部" clearable @change="handlePolicyQuery">
+                  <el-option v-for="d in mk_rebate_basis" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </div>
+            </div>
+            <div class="field" v-show="showPolicyAdvanced">
+              <label>周期类型</label>
+              <div class="control is-select">
+                <el-select v-model="policyQuery.periodType" placeholder="全部" clearable @change="handlePolicyQuery">
+                  <el-option v-for="d in mk_rebate_period" :key="d.value" :label="d.label" :value="d.value" />
                 </el-select>
               </div>
             </div>
@@ -38,6 +72,24 @@
 
         <!-- ===== Table Section ===== -->
         <div class="surface">
+          <!-- Status Tabs -->
+          <div class="status-tabs">
+            <div class="tabs-track">
+              <button class="status-tab" :class="{ 'is-active': activePolicyStatusTab === 'all' }" @click="handlePolicyStatusTabClick('all')">
+                <span class="dot"></span><span>全部</span><span class="count">{{ policyStatusCounts.all || 0 }}</span>
+              </button>
+              <button class="status-tab tab-green" :class="{ 'is-active': activePolicyStatusTab === '0' }" @click="handlePolicyStatusTabClick('0')">
+                <span class="dot"></span><span>启用</span><span class="count">{{ policyStatusCounts['0'] || 0 }}</span>
+              </button>
+              <button class="status-tab tab-gray" :class="{ 'is-active': activePolicyStatusTab === '1' }" @click="handlePolicyStatusTabClick('1')">
+                <span class="dot"></span><span>停用</span><span class="count">{{ policyStatusCounts['1'] || 0 }}</span>
+              </button>
+            </div>
+            <button class="tip-pill" @click="showPolicyHelp = true">
+              <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+            </button>
+          </div>
+
           <div class="toolbar">
             <div class="left">
               <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:rebate:add']">新增</el-button>
@@ -87,10 +139,13 @@
                   <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '启用' : '停用' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" :width="colWidth('操作', 130)" align="center" fixed="right" class-name="col-action">
+              <el-table-column label="操作" :width="colWidth('操作', 160)" align="center" fixed="right" class-name="col-action">
                 <template #default="scope">
-                  <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:rebate:edit']">修改</el-button>
-                  <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:rebate:remove']">删除</el-button>
+                  <div class="action-btn-row">
+                    <el-button link type="primary" icon="View" @click="handlePolicyView(scope.row)">详情</el-button>
+                    <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:rebate:edit']">修改</el-button>
+                    <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:rebate:remove']">删除</el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -107,8 +162,20 @@
         <div class="surface filter-card" v-show="settleShowSearch">
           <div class="filter-head">
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+            <a class="adv-link" :class="{ 'is-open': showSettleAdvanced }" @click.prevent="showSettleAdvanced = !showSettleAdvanced">
+              <span>{{ showSettleAdvanced ? '收起' : '高级筛选' }}</span>
+              <el-icon class="chev"><ArrowDown /></el-icon>
+            </a>
           </div>
           <div class="filter-bar">
+            <div class="field">
+              <label>结算单号</label>
+              <div class="control">
+                <el-input v-model="settleQuery.settleNo" placeholder="请输入" clearable @keyup.enter="handleSettleQuery">
+                  <template #prefix><el-icon><Search /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
             <div class="field">
               <label>客户名称</label>
               <div class="control">
@@ -129,6 +196,12 @@
                 </el-select>
               </div>
             </div>
+            <div class="field" v-show="showSettleAdvanced">
+              <label>政策编号</label>
+              <div class="control">
+                <el-input v-model="settleQuery.policyNo" placeholder="支持模糊查询" clearable @keyup.enter="handleSettleQuery" />
+              </div>
+            </div>
           </div>
           <div class="filter-actions">
             <div class="filter-info">
@@ -143,6 +216,21 @@
 
         <!-- ===== Table Section ===== -->
         <div class="surface">
+          <!-- Status Tabs -->
+          <div class="status-tabs">
+            <div class="tabs-track">
+              <button class="status-tab" :class="{ 'is-active': activeSettleStatusTab === 'all' }" @click="handleSettleStatusTabClick('all')">
+                <span class="dot"></span><span>全部</span><span class="count">{{ settleStatusCounts.all || 0 }}</span>
+              </button>
+              <button v-for="d in mk_rebate_settle_status" :key="d.value" class="status-tab" :class="[settleTabClass(d.value), { 'is-active': activeSettleStatusTab === d.value }]" @click="handleSettleStatusTabClick(d.value)">
+                <span class="dot"></span><span>{{ d.label }}</span><span class="count">{{ settleStatusCounts[d.value] || 0 }}</span>
+              </button>
+            </div>
+            <button class="tip-pill" @click="showSettleHelp = true">
+              <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+            </button>
+          </div>
+
           <div class="toolbar">
             <div class="left">
               <el-button type="primary" plain icon="Money" @click="handleSettle" v-hasPermi="['marketing:rebate:settle']">核算返利</el-button>
@@ -189,9 +277,12 @@
               <el-table-column label="兑现时间" prop="redeemDate" key="redeemDate" :width="colWidth('redeemDate', 150)" resizable align="center" v-if="settleColumns.redeemDate.visible">
                 <template #default="scope">{{ parseTime(scope.row.redeemDate) || '—' }}</template>
               </el-table-column>
-              <el-table-column label="操作" :width="colWidth('操作', 90)" align="center" fixed="right" class-name="col-action">
+              <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action">
                 <template #default="scope">
-                  <el-button v-if="scope.row.status === '0'" link type="primary" icon="Money" @click="handleRedeem(scope.row)" v-hasPermi="['marketing:rebate:redeem']">兑现</el-button>
+                  <div class="action-btn-row">
+                    <el-button link type="primary" icon="View" @click="handleSettleView(scope.row)">详情</el-button>
+                    <el-button v-if="scope.row.status === '0'" link type="primary" icon="Money" @click="handleRedeem(scope.row)" v-hasPermi="['marketing:rebate:redeem']">兑现</el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -233,6 +324,16 @@
                     </el-input>
                   </el-form-item>
                 </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>考核规则</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="考核口径" prop="basis">
                     <el-radio-group v-model="policyForm.basis">
@@ -250,6 +351,16 @@
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>有效期与状态</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="生效日期" prop="startDate">
                     <el-date-picker v-model="policyForm.startDate" type="date" value-format="YYYY-MM-DD" placeholder="选择生效日期" style="width: 100%" />
@@ -272,11 +383,11 @@
             </div>
           </section>
           <section class="rd-card">
-            <div class="rd-card-header" @click="toggleCard('c2')">
+            <div class="rd-card-header" @click="toggleCard('c4')">
               <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>阶梯明细</div>
-              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c4 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
-            <div class="rd-card-body" v-show="!collapsedCards.c2">
+            <div class="rd-card-body" v-show="!collapsedCards.c4">
               <div class="tier-bar">
                 <el-button type="primary" plain icon="Plus" size="small" @click="addTier">添加阶梯</el-button>
                 <span class="form-tip">阶梯上限留空表示不封顶；各档区间不可重叠</span>
@@ -375,6 +486,166 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 政策详情弹窗 ===== -->
+    <el-dialog v-model="policyViewOpen" width="760px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">返利政策详情</span>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">基本信息</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="政策编号"><span class="mono">{{ policyView.policyNo }}</span></el-descriptions-item>
+            <el-descriptions-item label="政策名称">{{ policyView.policyName }}</el-descriptions-item>
+            <el-descriptions-item label="客户名称">{{ policyView.customerName || '全部客户' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <span class="badge" :class="policyView.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ policyView.status === '0' ? '启用' : '停用' }}</span>
+            </el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">考核规则</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="考核口径"><dict-tag :options="mk_rebate_basis" :value="policyView.basis" /></el-descriptions-item>
+            <el-descriptions-item label="周期类型"><dict-tag :options="mk_rebate_period" :value="policyView.periodType" /></el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">返利阶梯</div>
+          <el-table :data="policyView.tiers || []" border size="small" style="margin: 10px 16px 16px; width: calc(100% - 32px)">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column label="阶梯下限（含）" prop="tierMin" align="right"><template #default="s"><span class="mono">{{ s.row.tierMin }}</span></template></el-table-column>
+            <el-table-column label="阶梯上限（含）" align="right"><template #default="s"><span class="mono">{{ s.row.tierMax == null ? '不封顶' : s.row.tierMax }}</span></template></el-table-column>
+            <el-table-column label="返利比例%" prop="rebateRate" align="right"><template #default="s"><span class="mono">{{ s.row.rebateRate }}%</span></template></el-table-column>
+          </el-table>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">有效期与状态</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="生效日期">{{ parseTime(policyView.startDate, '{y}-{m}-{d}') || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="失效日期">{{ parseTime(policyView.endDate, '{y}-{m}-{d}') || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="创建人">{{ policyView.createBy || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ parseTime(policyView.createTime) || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" icon="Edit" @click="policyViewOpen = false; handleUpdate(policyView)" v-hasPermi="['marketing:rebate:edit']">编 辑</el-button>
+          <el-button @click="policyViewOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 结算详情弹窗 ===== -->
+    <el-dialog v-model="settleViewOpen" width="760px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="rd-detail-header-title">返利结算详情</span>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">结算信息</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="结算单号"><span class="mono">{{ settleView.settleNo }}</span></el-descriptions-item>
+            <el-descriptions-item label="核算期间"><span class="mono">{{ settleView.period }}</span></el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <span class="badge" :class="settleView.status === '1' ? 'green' : 'amber'"><span class="dot"></span>{{ dictLabel(mk_rebate_settle_status, settleView.status) }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ parseTime(settleView.createTime) || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">客户与政策</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="客户名称">{{ settleView.customerName || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="政策编号"><span class="mono">{{ settleView.policyNo || '—' }}</span></el-descriptions-item>
+            <el-descriptions-item label="政策名称" :span="2">{{ settleView.policyName || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">返利计算</div>
+          <el-descriptions :column="3" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="达成额"><span class="mono">{{ settleView.achieveAmount }}</span></el-descriptions-item>
+            <el-descriptions-item label="返利比例"><span class="mono">{{ settleView.rebateRate }}%</span></el-descriptions-item>
+            <el-descriptions-item label="返利额"><span class="mono">{{ settleView.rebateAmount }}</span></el-descriptions-item>
+          </el-descriptions>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-title" style="padding: 12px 16px 0">兑现信息</div>
+          <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="兑现方式">{{ settleView.redeemType || '未兑现' }}</el-descriptions-item>
+            <el-descriptions-item label="兑现时间">{{ parseTime(settleView.redeemDate) || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="兑现操作人">{{ settleView.redeemBy || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="备注">{{ settleView.remark || '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </section>
+      </div>
+      <template #footer>
+        <div class="dialog-footer"><el-button @click="settleViewOpen = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 政策业务操作说明 ===== -->
+    <el-dialog v-model="showPolicyHelp" title="返利政策 - 业务操作说明" width="760px" append-to-body class="rd-dialog">
+      <div class="help-body">
+        <h4>功能定位</h4>
+        <p>返利政策定义"达成即返"的销售激励规则：按周期考核客户的进货金额或数量，达到阶梯档位即按比例计提返利。是快消/食品行业渠道压货、大客户锁量的核心手段。</p>
+        <h4>政策要素</h4>
+        <ul>
+          <li><b>考核口径</b>：按金额（元）或按数量（件/箱）</li>
+          <li><b>周期类型</b>：月 / 季 / 年，决定达成额的统计周期</li>
+          <li><b>返利阶梯</b>：多档区间递进，如月进货 10~20 万返 1%、20 万以上返 2%；上限留空=不封顶</li>
+          <li><b>适用客户</b>：可指定单一客户，或留空适用全部客户</li>
+        </ul>
+        <h4>状态说明</h4>
+        <ul>
+          <li><b>启用</b>：参与返利核算（需在有效期内）</li>
+          <li><b>停用</b>：暂停使用，不再参与核算</li>
+        </ul>
+        <h4>重点业务规则</h4>
+        <ul>
+          <li>同一客户同一期间命中多条政策时按各政策分别核算</li>
+          <li>阶梯区间不可重叠；下限含本值，上限含本值</li>
+          <li>政策整组管理：修改/删除均作用于整组阶梯</li>
+        </ul>
+        <h4>操作流程</h4>
+        <p>新增政策（基本信息 → 考核规则 → 有效期 → 阶梯明细）→ 启用 → 到"返利结算"页签按客户+期间核算 → 生成结算单 → 兑现</p>
+      </div>
+      <template #footer>
+        <div class="dialog-footer"><el-button @click="showPolicyHelp = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 结算业务操作说明 ===== -->
+    <el-dialog v-model="showSettleHelp" title="返利结算 - 业务操作说明" width="760px" append-to-body class="rd-dialog">
+      <div class="help-body">
+        <h4>功能定位</h4>
+        <p>按"客户 + 核算期间"自动计算返利：系统统计该客户期间内已完成订单的金额/数量，匹配启用的返利政策阶梯，生成返利结算单。</p>
+        <h4>状态流转</h4>
+        <ul>
+          <li><b>待兑现</b>：核算生成，返利额已确认，尚未支付给客户</li>
+          <li><b>已兑现</b>：已按兑现方式（抵货款/现金等）支付，终态留痕</li>
+        </ul>
+        <h4>重点业务规则</h4>
+        <ul>
+          <li>达成额统计口径：已完成/已发货/已回款状态订单之和（与政策考核口径对应金额或数量）</li>
+          <li>同一客户+同一期间+同一政策只生成一张结算单，重复核算自动跳过</li>
+          <li>兑现时必须填写兑现方式，操作人+时间自动留痕</li>
+        </ul>
+        <h4>操作流程</h4>
+        <p>核算返利（选客户 → 选期间 → 开始核算）→ 查看核算结果 → 确认结算单 → 对待兑现单执行兑现（填兑现方式）→ 完成</p>
+      </div>
+      <template #footer>
+        <div class="dialog-footer"><el-button @click="showSettleHelp = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
     <!-- 客户选择器 -->
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
   </div>
@@ -385,7 +656,7 @@ import { listPolicyGroups, addPolicyGroup, updatePolicyGroup, delPolicyGroup, li
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2'])
+const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('rebate_columns')
@@ -438,9 +709,23 @@ const settleColumns = ref({
   redeemDate: { label: '兑现时间', visible: true }
 })
 
+// ===== 高级筛选 / 状态卡片 / 业务说明 / 详情弹窗 =====
+const showPolicyAdvanced = ref(false)
+const showSettleAdvanced = ref(false)
+const activePolicyStatusTab = ref('all')
+const activeSettleStatusTab = ref('all')
+const policyStatusCounts = ref({ all: 0, '0': 0, '1': 0 })
+const settleStatusCounts = ref({ all: 0 })
+const showPolicyHelp = ref(false)
+const showSettleHelp = ref(false)
+const policyViewOpen = ref(false)
+const policyView = ref({})
+const settleViewOpen = ref(false)
+const settleView = ref({})
+
 const data = reactive({
-  policyQuery: { pageNum: 1, pageSize: 10, customerName: undefined, status: undefined },
-  settleQuery: { pageNum: 1, pageSize: 10, customerName: undefined, period: undefined, status: undefined },
+  policyQuery: { pageNum: 1, pageSize: 10, policyNo: undefined, policyName: undefined, customerName: undefined, basis: undefined, periodType: undefined, status: undefined },
+  settleQuery: { pageNum: 1, pageSize: 10, settleNo: undefined, customerName: undefined, period: undefined, policyNo: undefined, status: undefined },
   policyForm: {},
   settleForm: {}
 })
@@ -459,8 +744,47 @@ const settleRules = {
   period: [{ required: true, message: "核算期间不能为空", trigger: "change" }]
 }
 
-const policyFilterCount = computed(() => (policyQuery.value.customerName ? 1 : 0) + (policyQuery.value.status ? 1 : 0))
-const settleFilterCount = computed(() => (settleQuery.value.customerName ? 1 : 0) + (settleQuery.value.period ? 1 : 0) + (settleQuery.value.status ? 1 : 0))
+const policyFilterCount = computed(() => [policyQuery.value.policyNo, policyQuery.value.policyName, policyQuery.value.customerName, policyQuery.value.basis, policyQuery.value.periodType, policyQuery.value.status].filter(v => v != null && v !== '').length)
+const settleFilterCount = computed(() => [settleQuery.value.settleNo, settleQuery.value.customerName, settleQuery.value.period, settleQuery.value.policyNo, settleQuery.value.status].filter(v => v != null && v !== '').length)
+
+// ==================== 状态卡片 / 说明 / 详情 ====================
+function handlePolicyStatusTabClick(status) {
+  activePolicyStatusTab.value = status
+  policyQuery.value.status = status === 'all' ? undefined : status
+  handlePolicyQuery()
+}
+function handleSettleStatusTabClick(status) {
+  activeSettleStatusTab.value = status
+  settleQuery.value.status = status === 'all' ? undefined : status
+  handleSettleQuery()
+}
+function settleTabClass(v) { return v === '1' ? 'tab-green' : 'tab-draft' }
+
+function loadPolicyStatusCounts() {
+  listPolicyGroups({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total, '0': 0, '1': 0 }
+    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
+    policyStatusCounts.value = counts
+  }).catch(() => {})
+}
+function loadSettleStatusCounts() {
+  listSettles({ pageNum: 1, pageSize: 999 }).then(res => {
+    const counts = { all: res.total }
+    ;(res.rows || []).forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1 })
+    settleStatusCounts.value = counts
+  }).catch(() => {})
+}
+
+/** 政策详情（列表行已带整组 tiers） */
+function handlePolicyView(row) {
+  policyView.value = { ...row, tiers: row.tiers || [] }
+  policyViewOpen.value = true
+}
+/** 结算详情 */
+function handleSettleView(row) {
+  settleView.value = { ...row }
+  settleViewOpen.value = true
+}
 
 // ==================== 返利政策 ====================
 function getPolicyList() {
@@ -470,6 +794,7 @@ function getPolicyList() {
     policyTotal.value = response.total
     policyLoading.value = false
     applySavedWidths()
+    loadPolicyStatusCounts()
   })
 }
 
@@ -479,7 +804,11 @@ function handlePolicyQuery() {
 }
 
 function resetPolicyQuery() {
+  policyQuery.value.policyNo = undefined
+  policyQuery.value.policyName = undefined
   policyQuery.value.customerName = undefined
+  policyQuery.value.basis = undefined
+  policyQuery.value.periodType = undefined
   policyQuery.value.status = undefined
   handlePolicyQuery()
 }
@@ -632,6 +961,7 @@ function getSettleList() {
     settleTotal.value = response.total
     settleLoading.value = false
     applySavedWidths()
+    loadSettleStatusCounts()
   })
 }
 
@@ -641,8 +971,10 @@ function handleSettleQuery() {
 }
 
 function resetSettleQuery() {
+  settleQuery.value.settleNo = undefined
   settleQuery.value.customerName = undefined
   settleQuery.value.period = undefined
+  settleQuery.value.policyNo = undefined
   settleQuery.value.status = undefined
   handleSettleQuery()
 }
@@ -739,4 +1071,20 @@ onMounted(() => {
 .tier-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .form-tip { font-size: 12px; color: #909399; line-height: 1.6; }
 .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+
+/* 状态卡片颜色 */
+.wms-list-page .status-tab.tab-green .dot { background: var(--green-500); }
+.wms-list-page .status-tab.tab-green .count { background: var(--green-50); color: var(--green-700); }
+.wms-list-page .status-tab.is-active.tab-green .count { background: var(--green-500); color: #fff; }
+.wms-list-page .status-tab.tab-draft .dot { background: var(--amber-500); }
+.wms-list-page .status-tab.tab-draft .count { background: var(--amber-50); color: var(--amber-700); }
+.wms-list-page .status-tab.tab-gray .dot { background: var(--ink-400); }
+.wms-list-page .status-tab.tab-gray .count { background: var(--ink-100); color: var(--ink-500); }
+.wms-list-page .status-tab.is-active.tab-gray .count { background: var(--ink-400); color: #fff; }
+
+/* 业务操作说明 */
+.help-body h4 { margin: 14px 0 6px; color: #303133; font-size: 14px; }
+.help-body h4:first-child { margin-top: 0; }
+.help-body p, .help-body li { font-size: 13px; color: #606266; line-height: 1.8; }
+.help-body ul { margin: 0; padding-left: 20px; }
 </style>

@@ -789,7 +789,7 @@ function loadStatusCounts() {
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.opportunityStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = marketing_opportunity_status.value.find(d => d.value == status); return item ? item.label : '-' }
-function stageBadgeClass(stageCode) { const map = { 'stage1': 'blue', 'stage2': 'violet', 'stage3': 'amber', 'stage4': 'cyan', 'stage5': 'orange' }; return map[stageCode] || 'gray' }
+function stageBadgeClass(stageCode) { const map = { 'stage1': 'blue', 'stage2': 'violet', 'stage3': 'amber', 'stage4': 'cyan', 'stage5': 'orange', 'stage6': 'violet', 'stage7': 'green' }; return map[stageCode] || 'gray' }
 function statusTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-done', '2': 'tab-reject', '3': 'tab-draft' }; return map[value] || '' }
 const ids = ref([])
 const single = ref(true)
