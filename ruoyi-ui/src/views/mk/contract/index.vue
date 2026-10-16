@@ -131,7 +131,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="合同编号" prop="contractNo" key="contractNo" :width="colWidth('contractNo', 150)" resizable v-if="columns.contractNo.visible" />
-          <el-table-column label="合同名称" prop="contractName" key="contractName" show-overflow-tooltip v-if="columns.contractName.visible" />
+          <el-table-column label="合同名称" prop="contractName" key="contractName" :min-width="colWidth('contractName', 200)" resizable show-overflow-tooltip v-if="columns.contractName.visible" />
           <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="合同类型" prop="contractType" key="contractType" :width="colWidth('contractType', 100)" resizable align="center" v-if="columns.contractType.visible">
             <template #default="scope"><span class="badge" :class="contractTypeBadgeClass(scope.row.contractType)"><span class="dot"></span>{{ contractTypeLabel(scope.row.contractType) }}</span></template>

@@ -4,6 +4,7 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -21,12 +22,6 @@
           </div>
         </div>
         <div class="field">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
-          </div>
-        </div>
-        <div class="field">
           <label>物料名称</label>
           <div class="control">
             <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
@@ -38,6 +33,18 @@
             <el-select v-model="queryParams.wipStatus" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in food_wip_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>批次号</label>
+          <div class="control">
+            <el-input v-model="queryParams.batchCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>创建日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -141,7 +148,7 @@
         <div class="rd-page">
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('w1')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>生产信息</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>关联工单</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.w1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.w1">
@@ -157,6 +164,14 @@
                   <template v-else #append><el-button icon="Search" @click="openMaterialPicker" /></template>
                 </el-input>
               </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('w1b')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>批次与数量</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.w1b }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.w1b">
               <el-form-item label="批次号" prop="batchId">
                 <el-input :model-value="form.batchCode" readonly placeholder="点击选择批次（可选，干腌火腿建垛时可暂不指定）" @click="openBatchPicker">
                   <template v-if="form.batchId" #append><el-button icon="CircleClose" @click.stop="clearBatch" /></template>
@@ -171,12 +186,21 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="单位" prop="qtyUnit">
-                    <el-select v-model="form.qtyUnit" placeholder="请选择" :disabled="!!form.workOrderId" style="width: 100%">
-                      <el-option v-for="d in wms_unit" :key="d.value" :label="d.label" :value="d.value" />
-                    </el-select>
+                    <el-input :model-value="unitLabel(form.qtyUnit) || undefined" readonly :disabled="!!form.workOrderId" :placeholder="form.workOrderId ? '跟工单产品自动带出' : '点击选择单位'" @click="openUnitPicker" style="width: 100%">
+                      <template v-if="form.qtyUnit && !form.workOrderId" #append><el-button icon="CircleClose" @click.stop="clearUnit" /></template>
+                      <template v-else-if="!form.workOrderId" #append><el-button icon="Search" @click="openUnitPicker" /></template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
               </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('w1c')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>存放信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.w1c }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.w1c">
               <el-form-item label="柜位/垛位" prop="wipLocation">
                 <el-input v-model="form.wipLocation" placeholder="如：晾房A区-1号柜" maxlength="100" />
               </el-form-item>
@@ -240,11 +264,18 @@
           </div>
         </section>
         <section class="rd-card">
-          <div class="rd-card-header" @click="toggleCard('d2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>生产信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d2 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-header" @click="toggleCard('d2')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>工单与批次</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d2 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.d2" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ detail.workOrderNo || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detail.batchCode || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('d2b')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>产品与数量</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d2b }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.d2b" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">物料</span><div class="rd-value">{{ [detail.materialCode, detail.materialName].filter(Boolean).join(' - ') || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">在制数量</span><div class="rd-value">{{ detail.qty != null ? detail.qty + (detail.qtyUnit ? ' ' + unitLabel(detail.qtyUnit) : '') : '—' }}</div></div>
             </div>
@@ -264,24 +295,11 @@
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('d4')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span>温湿度/上霉记录</div>
             <div style="display:flex;align-items:center;gap:8px">
-              <el-button v-if="detail.wipStatus === '0'" type="primary" plain icon="Plus" size="small" @click="envFormOpen = !envFormOpen" v-hasPermi="['food:wip:env']">记录</el-button>
+              <el-button v-if="detail.wipStatus === '0'" type="primary" plain icon="Plus" size="small" @click.stop="openEnvDialog" v-hasPermi="['food:wip:env']">记录</el-button>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d4 }"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.d4" style="display:block">
-            <el-form v-show="envFormOpen" :model="envForm" label-width="90px" style="margin-bottom:12px" inline>
-              <el-form-item label="温度(℃)"><el-input-number v-model="envForm.temp" :precision="1" :step="0.5" controls-position="right" style="width: 120px" /></el-form-item>
-              <el-form-item label="湿度(%)"><el-input-number v-model="envForm.humidity" :precision="1" :step="1" :min="0" :max="100" controls-position="right" style="width: 120px" /></el-form-item>
-              <el-form-item label="上霉状态">
-                <el-select v-model="envForm.moldStatus" placeholder="请选择" clearable style="width: 130px">
-                  <el-option v-for="d in food_mold_status" :key="d.value" :label="d.label" :value="d.value" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="记录时间"><el-date-picker v-model="envForm.recordTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="默认当前时间" style="width: 170px" /></el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="submitEnv" v-hasPermi="['food:wip:env']">保 存</el-button>
-              </el-form-item>
-            </el-form>
             <el-table :data="detail.envList || []" border size="small" class="detail-table">
               <el-table-column type="index" label="序号" width="60" align="center" />
               <el-table-column label="记录时间" prop="recordTime" width="150" align="center"><template #default="scope">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</template></el-table-column>
@@ -299,11 +317,85 @@
       <template #footer><el-button @click="detailOpen = false">关 闭</el-button></template>
     </el-dialog>
 
+    <!-- 新增温湿度/上霉记录对话框 -->
+    <el-dialog v-model="envDialogOpen" width="740px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
+          <span class="rd-detail-header-title">新增温湿度/上霉记录</span>
+          <div class="rd-detail-header-sub" v-if="detail.wipNo"><div class="rd-detail-header-divider"></div><span class="rd-detail-header-no">{{ detail.wipNo }}</span></div>
+        </div>
+      </template>
+      <el-form :model="envForm" label-width="90px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span>环境数据</div></div>
+            <div class="rd-card-body">
+              <el-row :gutter="12">
+                <el-col :span="8">
+                  <el-form-item label="温度(℃)"><el-input-number v-model="envForm.temp" :precision="1" :step="0.5" controls-position="right" placeholder="如 10" style="width: 100%" /></el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="湿度(%)"><el-input-number v-model="envForm.humidity" :precision="1" :step="1" :min="0" :max="100" controls-position="right" placeholder="如 75" style="width: 100%" /></el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="上霉状态">
+                    <el-select v-model="envForm.moldStatus" placeholder="请选择" clearable style="width: 100%">
+                      <el-option v-for="d in food_mold_status" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <div class="form-tip">温度、湿度、上霉状态至少填写一项；记录人自动取当前登录用户</div>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>记录信息</div></div>
+            <div class="rd-card-body">
+              <el-row :gutter="12">
+                <el-col :span="12">
+                  <el-form-item label="当前工序"><el-input :model-value="detail.currentStepSeq ? detail.currentStepSeq + ' ' + (detail.currentProcessName || '') : '—'" disabled /></el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="记录时间"><el-date-picker v-model="envForm.recordTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="默认当前时间" style="width: 100%" /></el-form-item>
+                </el-col>
+              </el-row>
+              <div class="form-tip">工序自动取垛的当前工序，不可修改；工序流转后新记录将挂到新工序</div>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitEnv" v-hasPermi="['food:wip:env']">确 定</el-button>
+          <el-button @click="envDialogOpen = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 工单选择器 -->
     <el-dialog v-model="woPickerOpen" width="936px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="rd-detail-header-title">选择工单</span></div></template>
       <div class="material-picker"><div class="material-picker-search"><el-input v-model="woPickerQuery.workOrderNo" placeholder="工单编号" clearable size="small" style="width: 180px" @keyup.enter="handleWoPickerQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input><el-input v-model="woPickerQuery.productName" placeholder="产品名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleWoPickerQuery" /><el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleWoPickerQuery">查询</el-button><el-button icon="RefreshLeft" size="small" @click="resetWoPickerQuery">重置</el-button></div><div class="material-picker-table"><el-table v-loading="woPickerLoading" :data="woPickerList" highlight-current-row @row-click="onWoRowClick" @row-dblclick="onWoRowDblClick" height="360" size="small" border><el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="woPickerSelectedId" :value="row.workOrderId" @click.stop="onWoRowClick(row)"><span /></el-radio></template></el-table-column><el-table-column label="工单编号" prop="workOrderNo" width="150" show-overflow-tooltip /><el-table-column label="产品编码" prop="productCode" width="120" show-overflow-tooltip /><el-table-column label="产品名称" prop="productName" min-width="160" show-overflow-tooltip /><el-table-column label="计划数量" prop="planQty" width="90" align="center" /><el-table-column label="状态" prop="status" width="90" align="center"><template #default="scope"><dict-tag :options="mms_workorder_status" :value="scope.row.status" /></template></el-table-column></el-table></div><div class="material-picker-pager"><el-pagination v-model:current-page="woPickerQuery.pageNum" v-model:page-size="woPickerQuery.pageSize" :total="woPickerTotal" layout="total, prev, pager, next" small @current-change="getWoPickerList" /></div></div>
       <template #footer><el-button @click="woPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleWoPickerConfirm" :disabled="!woPickerSelectedId">确 定</el-button></template>
+    </el-dialog>
+
+    <!-- 单位选择器（wms_unit 字典） -->
+    <el-dialog v-model="unitPickerOpen" width="480px" append-to-body draggable class="rd-dialog">
+      <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="rd-detail-header-title">选择单位</span></div></template>
+      <div class="material-picker">
+        <div class="material-picker-search">
+          <el-input v-model="unitPickerKeyword" placeholder="输入单位名称/字典值过滤" clearable size="small" style="width: 220px" @keyup.enter><template #prefix><el-icon><Search /></el-icon></template></el-input>
+        </div>
+        <div class="material-picker-table">
+          <el-table :data="unitPickerList" highlight-current-row @row-click="onUnitRowClick" @row-dblclick="onUnitRowDblClick" height="300" size="small" border>
+            <el-table-column width="45" align="center"><template #default="{ row }"><el-radio :model-value="unitPickerSelected" :value="row.value" @click.stop="onUnitRowClick(row)"><span /></el-radio></template></el-table-column>
+            <el-table-column label="单位名称" prop="label" min-width="140" show-overflow-tooltip />
+            <el-table-column label="字典值" prop="value" width="100" align="center" />
+          </el-table>
+        </div>
+      </div>
+      <template #footer><el-button @click="unitPickerOpen = false">取 消</el-button><el-button type="primary" @click="handleUnitPickerConfirm" :disabled="!unitPickerSelected">确 定</el-button></template>
     </el-dialog>
 
     <!-- 批次选择器 / 物料选择器 -->
@@ -320,7 +412,7 @@ import BatchPicker from '@/components/BatchPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(['w1', 'w2', 'd1', 'd2', 'd3', 'd4'])
+const { collapsedCards, toggleCard } = useDetailCard(['w1', 'w1b', 'w1c', 'w2', 'd1', 'd2', 'd2b', 'd3', 'd4'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('food_wip_index')
@@ -361,6 +453,8 @@ const wipList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -370,7 +464,7 @@ const routeSteps = ref([])
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref({})
-const envFormOpen = ref(false)
+const envDialogOpen = ref(false)
 const envForm = reactive({ temp: undefined, humidity: undefined, moldStatus: undefined, recordTime: undefined })
 const batchPickerRef = ref(null)
 const materialPickerRef = ref(null)
@@ -401,7 +495,7 @@ const activeFilterCount = computed(() => {
 
 function getList() {
   loading.value = true
-  listWip(queryParams.value).then(response => {
+  listWip(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     wipList.value = response.rows
     total.value = response.total
     loading.value = false
@@ -410,6 +504,7 @@ function getList() {
 }
 
 function handleQuery() {
+  showAdvanced.value = false
   queryParams.value.pageNum = 1
   getList()
 }
@@ -420,6 +515,8 @@ function resetQuery() {
   queryParams.value.batchCode = undefined
   queryParams.value.materialName = undefined
   queryParams.value.wipStatus = undefined
+  dateRange.value = []
+  queryParams.value.params = {}
   handleQuery()
 }
 
@@ -455,12 +552,18 @@ function handleUpdate(row) {
 function handleDetail(row) {
   detailOpen.value = true
   detailLoading.value = true
-  envFormOpen.value = false
+  envDialogOpen.value = false
   Object.assign(envForm, { temp: undefined, humidity: undefined, moldStatus: undefined, recordTime: undefined })
   getWip(row.wipId).then(response => {
     detail.value = response.data
     detailLoading.value = false
   }).catch(() => { detailLoading.value = false })
+}
+
+/** 打开温湿度/上霉记录弹框 */
+function openEnvDialog() {
+  Object.assign(envForm, { temp: undefined, humidity: undefined, moldStatus: undefined, recordTime: undefined })
+  envDialogOpen.value = true
 }
 
 /** 取消按钮 */
@@ -553,8 +656,8 @@ function submitEnv() {
   }
   addEnv({ ...envForm, wipId: detail.value.wipId }).then(() => {
     proxy.$modal.msgSuccess("记录成功")
+    envDialogOpen.value = false
     Object.assign(envForm, { temp: undefined, humidity: undefined, moldStatus: undefined, recordTime: undefined })
-    envFormOpen.value = false
     handleDetail(detail.value)
   })
 }
@@ -598,6 +701,28 @@ function clearWorkOrder() {
   form.value.routeId = null;
   routeSteps.value = [];
 }
+
+/** 单位选择（wms_unit 字典弹框，与批次/物料选择器交互一致） */
+const unitPickerOpen = ref(false); const unitPickerKeyword = ref(''); const unitPickerSelected = ref(null);
+const unitPickerList = computed(() => (wms_unit.value || []).filter(d => {
+  const kw = (unitPickerKeyword.value || '').trim().toLowerCase()
+  if (!kw) return true
+  return String(d.label || '').toLowerCase().includes(kw) || String(d.value || '').toLowerCase().includes(kw)
+}))
+function openUnitPicker() {
+  if (form.value.workOrderId) return
+  unitPickerOpen.value = true
+  unitPickerKeyword.value = ''
+  unitPickerSelected.value = form.value.qtyUnit || null
+}
+function onUnitRowClick(row) { unitPickerSelected.value = row.value }
+function onUnitRowDblClick(row) { onUnitRowClick(row); handleUnitPickerConfirm() }
+function handleUnitPickerConfirm() {
+  if (!unitPickerSelected.value) { proxy.$modal.msgWarning('请先选择单位'); return }
+  form.value.qtyUnit = unitPickerSelected.value
+  unitPickerOpen.value = false
+}
+function clearUnit() { form.value.qtyUnit = undefined }
 
 /** 加载工艺路线工序列表（供选择当前工序） */
 function loadRouteSteps(routeId) {

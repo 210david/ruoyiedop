@@ -38,7 +38,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-show="showAdvanced">
           <label>调用目标</label>
           <div class="control">
             <el-input v-model="queryParams.invokeTarget" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -53,6 +53,11 @@
           <el-checkbox v-model="showDisabledModule" style="margin-left: 16px;">显示已停用模块任务</el-checkbox>
         </div>
         <div class="filter-buttons">
+          <el-button link type="primary" class="advanced-toggle" @click="showAdvanced = !showAdvanced">
+            {{ showAdvanced ? '收起筛选' : '高级筛选' }}
+            <el-icon class="advanced-arrow" :class="{ 'is-open': showAdvanced }"><ArrowDown /></el-icon>
+            <span v-if="advancedCount > 0 && !showAdvanced" class="advanced-badge">{{ advancedCount }}</span>
+          </el-button>
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         </div>
@@ -349,6 +354,7 @@ const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResiz
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -525,6 +531,13 @@ const activeFilterCount = computed(() => {
   return count
 })
 
+/** 高级筛选区已填条件数量 */
+const advancedCount = computed(() => {
+  let count = 0
+  if (queryParams.value.invokeTarget) count++
+  return count
+})
+
 /** 获取模块开关选项 */
 function getModuleOptions() {
   listModule({ pageNum: 1, pageSize: 100 }).then(response => {
@@ -597,6 +610,8 @@ function reset() {
 function handleQuery() {
   queryParams.value.pageNum = 1
   getList()
+  // 搜索后自动收起高级筛选
+  showAdvanced.value = false
 }
 
 /** 重置按钮操作 */
@@ -762,7 +777,11 @@ watch(showDisabledModule, () => {
 .monitor-job-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
 .monitor-job-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
 .monitor-job-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
-.monitor-job-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.monitor-job-page .filter-card .filter-buttons { display:flex; gap:8px; align-items:center; }
+.monitor-job-page .filter-card .advanced-toggle { height:32px; padding:0 8px; font-size:14px; font-weight:500; }
+.monitor-job-page .filter-card .advanced-arrow { margin-left:2px; font-size:14px; transition:transform .2s var(--ease-out); }
+.monitor-job-page .filter-card .advanced-arrow.is-open { transform:rotate(180deg); }
+.monitor-job-page .filter-card .advanced-badge { min-width:18px; height:18px; padding:0 5px; margin-left:2px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; background:var(--brand-600); color:#fff; font-size:12px; font-weight:600; line-height:1; }
 
 /* ===== Form Field ===== */
 .monitor-job-page .field { display:flex; flex-direction:column; gap:6px; }

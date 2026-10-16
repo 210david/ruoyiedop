@@ -4,6 +4,10 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -31,12 +35,38 @@
         <div class="field">
           <label>判定结果</label>
           <div class="control is-select">
-            <el-select v-model="queryParams.judgeResult" placeholder="全部" clearable @change="handleQuery">
+            <el-select v-model="queryParams.judgeResult" placeholder="全部" clearable @change="onJudgeFilterChange">
               <el-option v-for="d in food_ccp_judge" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-show="showAdvanced">
+          <label>工序名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.processName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>垛号</label>
+          <div class="control">
+            <el-input v-model="queryParams.wipNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>物料名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>监控项类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.monitorType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in food_ccp_monitor_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
           <label>记录时间</label>
           <div class="control is-date">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -56,6 +86,21 @@
 
     <!-- ===== Table Section ===== -->
     <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all || 0 }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value" class="status-tab" :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]" @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><WarningFilled /></el-icon><span>业务操作说明</span>
+        </button>
+      </div>
+
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['food:ccp:add']">录入</el-button>
@@ -202,27 +247,61 @@
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <span class="rd-detail-header-title">CCP记录详情</span>
+          <div class="rd-detail-header-sub" v-if="detail.recordNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ detail.recordNo }}</span>
+          </div>
         </div>
       </template>
-      <div v-loading="detailLoading">
-        <div class="rd-detail-grid">
-          <div class="rd-item"><span class="rd-label">记录编号</span><div class="rd-value mono">{{ detail.recordNo || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">记录时间</span><div class="rd-value">{{ parseTime(detail.recordTime) || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">控制点</span><div class="rd-value">{{ detail.ccpName || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">工序</span><div class="rd-value">{{ detail.processName || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">监控项</span><div class="rd-value">{{ dictLabel(food_ccp_monitor_type, detail.monitorType) }}</div></div>
-          <div class="rd-item"><span class="rd-label">监控值</span><div class="rd-value mono">{{ monitorText(detail) || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">关键限值</span><div class="rd-value mono">{{ detail.limitSnapshot || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">判定结果</span><div class="rd-value"><span v-if="detail.judgeResult" class="badge" :class="detail.judgeResult === '1' ? 'red' : 'green'"><span class="dot"></span>{{ dictLabel(food_ccp_judge, detail.judgeResult) }}</span><span v-else class="text-muted">—</span></div></div>
-          <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detail.batchCode || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">物料</span><div class="rd-value">{{ [detail.materialCode, detail.materialName].filter(Boolean).join(' - ') || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ detail.workOrderNo || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">垛号</span><div class="rd-value">{{ detail.wipNo || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">偏差说明</span><div class="rd-value">{{ detail.overNote || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">纠正措施</span><div class="rd-value">{{ detail.corrective || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">联动NCR</span><div class="rd-value">{{ detail.ncrNo || '—' }}</div></div>
-          <div class="rd-item"><span class="rd-label">记录人</span><div class="rd-value">{{ detail.recorder || '—' }}</div></div>
-        </div>
+      <div class="rd-page" v-loading="detailLoading">
+        <!-- 记录信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('d1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>记录信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.d1">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">记录时间</span><div class="rd-value">{{ parseTime(detail.recordTime) || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">记录人</span><div class="rd-value">{{ detail.recorder || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">控制点</span><div class="rd-value">{{ detail.ccpName || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工序</span><div class="rd-value">{{ detail.processName || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">监控项</span><div class="rd-value">{{ dictLabel(food_ccp_monitor_type, detail.monitorType) }}</div></div>
+              <div class="rd-item"><span class="rd-label">监控值</span><div class="rd-value mono">{{ monitorText(detail) || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">关键限值</span><div class="rd-value mono">{{ detail.limitSnapshot || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">判定结果</span><div class="rd-value"><span v-if="detail.judgeResult" class="badge" :class="detail.judgeResult === '1' ? 'red' : 'green'"><span class="dot"></span>{{ dictLabel(food_ccp_judge, detail.judgeResult) }}</span><span v-else class="text-muted">—</span></div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 关联信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('d2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>关联信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.d2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detail.batchCode || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">物料</span><div class="rd-value">{{ [detail.materialCode, detail.materialName].filter(Boolean).join(' - ') || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ detail.workOrderNo || '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">垛号</span><div class="rd-value">{{ detail.wipNo || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 偏差与纠正 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('d3')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>偏差与纠正</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.d3">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">偏差说明</span><div class="rd-value" :class="{ 'rd-value--muted': !detail.overNote }">{{ detail.overNote || '暂无' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">纠正措施</span><div class="rd-value" :class="{ 'rd-value--muted': !detail.corrective }">{{ detail.corrective || '暂无' }}</div></div>
+              <div class="rd-item"><span class="rd-label">联动NCR</span><div class="rd-value mono">{{ detail.ncrNo || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -281,52 +360,83 @@
     </el-dialog>
 
     <!-- ===== 模板编辑弹框 ===== -->
-    <el-dialog v-model="tplFormOpen" width="640px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="tplFormOpen" width="680px" append-to-body draggable class="rd-dialog">
       <template #header><div class="rd-detail-header"><div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><span class="rd-detail-header-title">{{ tplTitle }}</span></div></template>
       <el-form ref="tplRef" :model="tplForm" :rules="tplRules" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="12"><el-form-item label="控制点名称" prop="ccpName"><el-input v-model="tplForm.ccpName" placeholder="如：腌制间温度" maxlength="100" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="tplForm.processName" placeholder="如：三次上盐腌制" maxlength="100" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="模板名称" prop="templateName"><el-input v-model="tplForm.templateName" placeholder="如：干腌火腿CCP" maxlength="100" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="工艺路线" prop="routeName"><el-input v-model="tplForm.routeName" placeholder="如：干腌火腿工艺路线" maxlength="100" /></el-form-item></el-col>
-          <el-col :span="12">
-            <el-form-item label="监控项类型" prop="monitorType">
-              <el-select v-model="tplForm.monitorType" placeholder="请选择" style="width: 100%">
-                <el-option v-for="d in food_ccp_monitor_type" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="限值类型" prop="limitType">
-              <el-select v-model="tplForm.limitType" placeholder="请选择" style="width: 100%">
-                <el-option v-for="d in food_ccp_limit_type" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col v-if="tplForm.limitType === '1'" :span="12"><el-form-item label="限值下限" prop="limitMin"><el-input-number v-model="tplForm.limitMin" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col v-if="tplForm.limitType === '1'" :span="12"><el-form-item label="限值上限" prop="limitMax"><el-input-number v-model="tplForm.limitMax" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col v-if="tplForm.limitType === '2'" :span="12"><el-form-item label="限值下限" prop="limitMin"><el-input-number v-model="tplForm.limitMin" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col v-if="tplForm.limitType === '3'" :span="12"><el-form-item label="限值上限" prop="limitMax"><el-input-number v-model="tplForm.limitMax" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
-          <el-col v-if="tplForm.limitType === '4'" :span="12">
-            <el-form-item label="枚举限值" prop="limitValue">
-              <el-select v-model="tplForm.limitValue" placeholder="限定枚举值" style="width: 100%">
-                <el-option v-for="d in food_mold_status" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12"><el-form-item label="单位" prop="unit"><el-input v-model="tplForm.unit" placeholder="如 ℃ / %" maxlength="20" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="监控频率" prop="monitorFreq"><el-input v-model="tplForm.monitorFreq" placeholder="如：每日2次" maxlength="50" /></el-form-item></el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="tplForm.status">
-                <el-radio value="0">正常</el-radio>
-                <el-radio value="1">停用</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24"><el-form-item label="纠正措施" prop="correctiveAction"><el-input v-model="tplForm.correctiveAction" type="textarea" :rows="2" placeholder="超限时的默认纠正措施，录入时自动带出" maxlength="500" /></el-form-item></el-col>
-          <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="tplForm.remark" type="textarea" :rows="2" maxlength="500" /></el-form-item></el-col>
-        </el-row>
+        <div class="rd-page">
+          <!-- 基础信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('t1')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基础信息</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.t1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.t1">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="控制点名称" prop="ccpName"><el-input v-model="tplForm.ccpName" placeholder="如：腌制间温度" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="tplForm.processName" placeholder="如：三次上盐腌制" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="模板名称" prop="templateName"><el-input v-model="tplForm.templateName" placeholder="如：干腌火腿CCP" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工艺路线" prop="routeName"><el-input v-model="tplForm.routeName" placeholder="如：干腌火腿工艺路线" maxlength="100" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 监控与限值 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('t2')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>监控与限值</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.t2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.t2">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="监控项类型" prop="monitorType">
+                    <el-select v-model="tplForm.monitorType" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="d in food_ccp_monitor_type" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="限值类型" prop="limitType">
+                    <el-select v-model="tplForm.limitType" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="d in food_ccp_limit_type" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col v-if="tplForm.limitType === '1' || tplForm.limitType === '2'" :span="12"><el-form-item label="限值下限" prop="limitMin"><el-input-number v-model="tplForm.limitMin" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col v-if="tplForm.limitType === '1' || tplForm.limitType === '3'" :span="12"><el-form-item label="限值上限" prop="limitMax"><el-input-number v-model="tplForm.limitMax" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col v-if="tplForm.limitType === '4'" :span="12">
+                  <el-form-item label="枚举限值" prop="limitValue">
+                    <el-select v-model="tplForm.limitValue" placeholder="限定枚举值" style="width: 100%">
+                      <el-option v-for="d in food_mold_status" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12"><el-form-item label="单位" prop="unit"><el-input v-model="tplForm.unit" placeholder="如 ℃ / %" maxlength="20" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <!-- 监控要求 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('t3')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>监控要求</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.t3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.t3">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="监控频率" prop="monitorFreq"><el-input v-model="tplForm.monitorFreq" placeholder="如：每日2次" maxlength="50" /></el-form-item></el-col>
+                <el-col :span="12">
+                  <el-form-item label="状态" prop="status">
+                    <el-radio-group v-model="tplForm.status">
+                      <el-radio value="0">正常</el-radio>
+                      <el-radio value="1">停用</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="24"><el-form-item label="纠正措施" prop="correctiveAction"><el-input v-model="tplForm.correctiveAction" type="textarea" :rows="2" placeholder="超限时的默认纠正措施，录入时自动带出" maxlength="500" /></el-form-item></el-col>
+                <el-col :span="24"><el-form-item label="备注" prop="remark"><el-input v-model="tplForm.remark" type="textarea" :rows="2" maxlength="500" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+        </div>
       </el-form>
       <template #footer><el-button @click="tplFormOpen = false">取 消</el-button><el-button type="primary" @click="submitTpl">确 定</el-button></template>
     </el-dialog>
@@ -334,16 +444,90 @@
     <!-- 批次选择器 / 物料选择器 -->
     <batch-picker ref="batchPickerRef" title="选择批次" @confirm="onBatchPickerConfirm" />
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+
+    <!-- 业务操作说明对话框 -->
+    <el-dialog v-model="showStatusHelp" title="CCP电子台账业务操作说明" width="720px" append-to-body>
+      <div class="status-help-content">
+        <h4>一、什么是CCP电子台账</h4>
+        <div class="highlight-card highlight-primary">
+          <div class="highlight-card-title">CCP是什么？</div>
+          <div class="highlight-card-body">CCP全称 Critical Control Point（关键控制点）。用大白话说：就是食品加工过程中<strong>最容易出食品安全问题、必须重点盯防的关键环节</strong>。比如腌火腿时盐要撒够、腌制间温度要达标、发酵间温湿度要合适、表面不能上霉——这些环节一旦没控制住，做出来的产品就可能不安全。所以每个环节都要定一条"合格标准"（即关键限值），工人班次班次地记录检查数据</div>
+        </div>
+        <div class="highlight-card highlight-success" style="margin-top: 12px;">
+          <div class="highlight-card-title">CCP电子台账是什么？</div>
+          <div class="highlight-card-body">就是把这些关键环节的日常检查记录<strong>从纸质台账搬到系统里</strong>：工人按时录入温度、湿度、盐量、感官检查结果，系统自动对照"合格标准"判断<strong>达标还是超标</strong>；一旦超标，系统自动要求填写纠正措施、自动开出问题处理单、自动锁住相关批次不许发货。记录改不了也删不掉，随时能按时间段导出——客户验厂、官方检查时直接拿出来，就是一份完整的食品安全监控证据。这套做法来自国际通用的食品安全管理方法HACCP，核心思路是<strong>提前防住问题，而不是事后检验才发现</strong></div>
+        </div>
+
+        <h4>二、判定结果说明</h4>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="success">合格</el-tag>
+            <span class="flow-note">监控值在关键限值范围内，记录归档</span>
+          </div>
+        </div>
+        <div class="status-flow">
+          <div class="flow-item">
+            <el-tag type="danger">超限</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag type="warning">必填纠正措施</el-tag>
+            <el-icon class="flow-arrow"><ArrowRight /></el-icon>
+            <el-tag type="danger">自动建NCR＋冻批</el-tag>
+          </div>
+          <span class="flow-note">NCR＝不合格品处理单；冻批＝相关批次立即锁定、禁止出库发货</span>
+        </div>
+
+        <h4>三、检查什么、标准怎么定</h4>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <div class="highlight-card highlight-primary">
+              <div class="highlight-card-title">监控项类型＝检查什么内容</div>
+              <div class="highlight-card-body"><strong>温度(℃)、湿度(%)、盐量比例(%)</strong>这三类直接填数字；<strong>感官检查</strong>类（比如上霉状态）不用填数，直接选选项（如：无上霉/轻微上霉/严重上霉）</div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="highlight-card highlight-success">
+              <div class="highlight-card-title">限值类型＝合格标准怎么写</div>
+              <div class="highlight-card-body">共4种写法：<strong>区间</strong>（最低~最高之间才算合格）、<strong>不低于</strong>（只卡下限）、<strong>不高于</strong>（只卡上限）、<strong>指定选项</strong>（感官类用）。录入时系统自动对照判断达标还是超标，不用人工心算</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <h4>四、超限了系统会自动做什么</h4>
+        <div class="highlight-card highlight-danger">
+          <div class="highlight-card-title">超标自动联动，不用人工再跑流程</div>
+          <div class="highlight-card-body">录入的监控值超出"合格标准"时：<strong>①必须填写纠正措施</strong>（比如调整温度、补加盐量），不填就存不了，防止漏处理；<strong>②系统自动开出一张"问题处理单"</strong>（系统里叫NCR），单号自动回填到这条记录上，质量部门接手处理；<strong>③相关批次自动锁定</strong>，在办完处理前不让出库发货，防止问题产品流出；<strong>④记录改不了也删不掉</strong>，每一步都有痕迹。问题处理单最后定为"报废"还是"退货"后，对应批次的状态也会跟着自动更新</div>
+        </div>
+
+        <h4>五、业务操作流程</h4>
+        <el-timeline>
+          <el-timeline-item type="primary" :hollow="true">
+            <strong>第一步 定标准：</strong>在「模板设置」里给每个关键环节定好规则——属于哪条工艺路线哪个工序、检查什么内容、合格标准是多少、多久检查一次、超标时默认怎么处理
+          </el-timeline-item>
+          <el-timeline-item type="success" :hollow="true">
+            <strong>第二步 日常记录：</strong>点「录入」，选好要检查的环节，如实填写当时的检查数据，系统自动判断达标还是超标；建议关联上批次/工单/垛号，以后出了问题方便追查
+          </el-timeline-item>
+          <el-timeline-item type="warning" :hollow="true">
+            <strong>第三步 处理超标：</strong>超标的记录要写清楚哪里出了问题、怎么纠正的；当时没写完的，也可以在详情页点「补充偏差/纠正」补上
+          </el-timeline-item>
+          <el-timeline-item type="danger" :hollow="true">
+            <strong>第四步 导出备查：</strong>客户验厂或官方检查时，选好时间段导出，就是一份完整的关键环节监控记录
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="FoodCcp">
-import { listCcpTemplate, addCcpTemplate, updateCcpTemplate, delCcpTemplate, listCcpRecord, getCcpRecord, addCcpRecord, updateCcpRecord } from "@/api/food/ccp"
+import { listCcpTemplate, addCcpTemplate, updateCcpTemplate, delCcpTemplate, listCcpRecord, getCcpRecord, addCcpRecord, updateCcpRecord, ccpStats } from "@/api/food/ccp"
 import BatchPicker from '@/components/BatchPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3'])
+const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'd1', 'd2', 'd3', 't1', 't2', 't3'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('food_ccp_index')
@@ -387,6 +571,7 @@ const templateList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
 const ids = ref([])
 const total = ref(0)
 const title = ref("")
@@ -403,9 +588,26 @@ const tplTitle = ref("")
 const batchPickerRef = ref(null)
 const materialPickerRef = ref(null)
 
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0 })
+const showStatusHelp = ref(false)
+const statusTabList = computed(() => food_ccp_judge.value)
+function statusTabClass(value) { const map = { '0': 'tab-done', '1': 'tab-reject' }; return map[value] || '' }
+function handleStatusTabClick(status) {
+  activeStatusTab.value = status
+  queryParams.value.judgeResult = status === 'all' ? undefined : status
+  handleQuery()
+}
+function loadStatusCounts() {
+  ccpStats({}).then(res => {
+    const d = res.data || {}
+    statusCounts.value = { all: d.total || 0, '0': d.pass || 0, '1': d.over || 0 }
+  }).catch(() => {})
+}
+
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, ccpName: undefined, batchCode: undefined, workOrderNo: undefined, judgeResult: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, ccpName: undefined, batchCode: undefined, workOrderNo: undefined, judgeResult: undefined, processName: undefined, wipNo: undefined, materialName: undefined, monitorType: undefined },
   rules: {
     templateId: [{ required: true, message: "请选择CCP控制点模板", trigger: "change" }],
     recordTime: [{ required: true, message: "记录时间不能为空", trigger: "blur" }]
@@ -455,6 +657,10 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.batchCode) count++
   if (queryParams.value.workOrderNo) count++
   if (queryParams.value.judgeResult) count++
+  if (queryParams.value.processName) count++
+  if (queryParams.value.wipNo) count++
+  if (queryParams.value.materialName) count++
+  if (queryParams.value.monitorType) count++
   if (dateRange.value && dateRange.value.length === 2) count++
   return count
 })
@@ -480,7 +686,13 @@ function getList() {
 
 function handleQuery() {
   queryParams.value.pageNum = 1
+  showAdvanced.value = false
   getList()
+}
+
+function onJudgeFilterChange(v) {
+  activeStatusTab.value = v || 'all'
+  handleQuery()
 }
 
 function resetQuery() {
@@ -488,7 +700,12 @@ function resetQuery() {
   queryParams.value.batchCode = undefined
   queryParams.value.workOrderNo = undefined
   queryParams.value.judgeResult = undefined
+  queryParams.value.processName = undefined
+  queryParams.value.wipNo = undefined
+  queryParams.value.materialName = undefined
+  queryParams.value.monitorType = undefined
   dateRange.value = []
+  activeStatusTab.value = 'all'
   handleQuery()
 }
 
@@ -548,6 +765,7 @@ function submitForm() {
         proxy.$modal.msgSuccess("录入成功")
         open.value = false
         getList()
+        loadStatusCounts()
       })
     }
   })
@@ -683,10 +901,29 @@ function tplLimitText(tpl) {
 onMounted(() => {
   getList()
   loadTemplates()
+  loadStatusCounts()
 })
 </script>
 
 <style scoped>
 .form-tip { font-size: 12px; color: #909399; line-height: 1.6; }
 .mono { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+.status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+.status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.status-help-content h4:first-child { margin-top: 0; }
+.status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.flow-item { display: flex; align-items: center; gap: 8px; }
+.flow-arrow { font-size: 18px; color: #909399; }
+.flow-note { font-size: 13px; color: #606266; }
+.highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.highlight-success { background: #f0f9eb; border-color: #e1f3d8; }
+.highlight-danger { background: #fef0f0; border-color: #fde2e2; }
+.highlight-primary { background: #ecf5ff; border-color: #d9ecff; }
+.highlight-warning { background: #fdf6ec; border-color: #faecd8; }
+.highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.highlight-card-body { font-size: 13px; color: #606266; line-height: 1.7; }
+.highlight-success .highlight-card-title { color: #67c23a; }
+.highlight-danger .highlight-card-title { color: #f56c6c; }
+.highlight-primary .highlight-card-title { color: #409eff; }
+.highlight-warning .highlight-card-title { color: #e6a23c; }
 </style>

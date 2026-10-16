@@ -4,6 +4,7 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -32,6 +33,24 @@
             <el-select v-model="queryParams.lossType" placeholder="全部" clearable @change="handleQuery">
               <el-option v-for="d in food_loss_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>物料名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>批次号</label>
+          <div class="control">
+            <el-input v-model="queryParams.batchCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>转移日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -148,7 +167,7 @@
           </section>
           <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('t2')">
-              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>转移信息</div>
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>目标工序</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.t2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.t2">
@@ -158,6 +177,14 @@
                 </el-select>
                 <div class="form-tip" v-if="form.wipId && targetSteps.length === 0">该垛已在最后一道工序，或未挂工艺路线，无法转移</div>
               </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('t3')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>数量与损耗</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.t3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.t3">
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="转移数量" prop="transferQty">
@@ -202,21 +229,42 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>流转信息</div></div>
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></span>在制垛信息</div></div>
           <div class="rd-card-body" style="display:block">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">工单号</span><div class="rd-value">{{ detail.workOrderNo || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">垛号</span><div class="rd-value mono-text">{{ detail.wipNo || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">批次号</span><div class="rd-value">{{ detail.batchCode || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">物料</span><div class="rd-value">{{ [detail.materialCode, detail.materialName].filter(Boolean).join(' - ') || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>工序流转</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">转出工序</span><div class="rd-value">{{ detail.fromStepSeq ? detail.fromStepSeq + ' ' + detail.fromProcessName : '建垛起点' }}</div></div>
               <div class="rd-item"><span class="rd-label">转入工序</span><div class="rd-value">{{ detail.toStepSeq ? detail.toStepSeq + ' ' + detail.toProcessName : '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">标准时长</span><div class="rd-value">{{ detail.stdDays != null ? detail.stdDays + ' 天' : '—' }}</div></div>
+              <div class="rd-item"><span class="rd-label">预计出柜</span><div class="rd-value">{{ parseTime(detail.planStepEnd, '{y}-{m}-{d} {h}:{i}') || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>数量与损耗</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">转移数量</span><div class="rd-value">{{ detail.transferQty != null ? detail.transferQty : '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">损耗数量</span><div class="rd-value">{{ detail.lossQty != null ? detail.lossQty : '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">损耗率</span><div class="rd-value">{{ detail.lossRate != null ? detail.lossRate + '%' : '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">损耗类型</span><div class="rd-value">{{ detail.lossType ? dictLabel(food_loss_type, detail.lossType) : '—' }}</div></div>
-              <div class="rd-item"><span class="rd-label">标准时长</span><div class="rd-value">{{ detail.stdDays != null ? detail.stdDays + ' 天' : '—' }}</div></div>
-              <div class="rd-item"><span class="rd-label">预计出柜</span><div class="rd-value">{{ parseTime(detail.planStepEnd, '{y}-{m}-{d} {h}:{i}') || '—' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>转移记录</div></div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">转移时间</span><div class="rd-value">{{ parseTime(detail.transferTime, '{y}-{m}-{d} {h}:{i}') || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">转移人</span><div class="rd-value">{{ detail.transferBy || '—' }}</div></div>
               <div class="rd-item"><span class="rd-label">备注</span><div class="rd-value">{{ detail.remark || '—' }}</div></div>
@@ -242,7 +290,7 @@ import { listWip } from "@/api/food/wip"
 import { getRoute } from "@/api/mms/route"
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
-const { collapsedCards, toggleCard } = useDetailCard(['t1', 't2'])
+const { collapsedCards, toggleCard } = useDetailCard(['t1', 't2', 't3'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('food_wip_transfer_index')
@@ -286,6 +334,8 @@ const transferList = ref([])
 const open = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
+const showAdvanced = ref(false)
+const dateRange = ref([])
 const total = ref(0)
 const detailOpen = ref(false)
 const detail = ref({})
@@ -295,7 +345,7 @@ const targetSteps = computed(() => routeSteps.value.filter(s => form.value.fromS
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, transferNo: undefined, wipNo: undefined, workOrderNo: undefined, lossType: undefined },
+  queryParams: { pageNum: 1, pageSize: 10, transferNo: undefined, wipNo: undefined, workOrderNo: undefined, materialName: undefined, batchCode: undefined, lossType: undefined },
   rules: {
     wipId: [{ required: true, message: "在制垛不能为空", trigger: "change" }],
     toStepSeq: [{ required: true, message: "转入工序不能为空", trigger: "change" }],
@@ -313,13 +363,16 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.transferNo) count++
   if (queryParams.value.wipNo) count++
   if (queryParams.value.workOrderNo) count++
+  if (queryParams.value.materialName) count++
+  if (queryParams.value.batchCode) count++
   if (queryParams.value.lossType) count++
+  if (dateRange.value && dateRange.value.length) count++
   return count
 })
 
 function getList() {
   loading.value = true
-  listTransfer(queryParams.value).then(response => {
+  listTransfer(proxy.addDateRange(queryParams.value, dateRange.value)).then(response => {
     transferList.value = response.rows
     total.value = response.total
     loading.value = false
@@ -328,6 +381,7 @@ function getList() {
 }
 
 function handleQuery() {
+  showAdvanced.value = false
   queryParams.value.pageNum = 1
   getList()
 }
@@ -336,7 +390,11 @@ function resetQuery() {
   queryParams.value.transferNo = undefined
   queryParams.value.wipNo = undefined
   queryParams.value.workOrderNo = undefined
+  queryParams.value.materialName = undefined
+  queryParams.value.batchCode = undefined
   queryParams.value.lossType = undefined
+  dateRange.value = []
+  queryParams.value.params = {}
   handleQuery()
 }
 
