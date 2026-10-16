@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkPricePolicyMapper">
+
+    <resultMap type="MkPricePolicy" id="MkPricePolicyResult">
+        <id     property="policyId"      column="policy_id"/>
+        <result property="policyNo"      column="policy_no"/>
+        <result property="policyName"    column="policy_name"/>
+        <result property="priceType"     column="price_type"/>
+        <result property="customerId"    column="customer_id"/>
+        <result property="customerName"  column="customer_name"/>
+        <result property="customerLevel" column="customer_level"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="startDate"     column="start_date"/>
+        <result property="endDate"       column="end_date"/>
+        <result property="status"        column="status"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectPolicyVo">
+        SELECT p.policy_id, p.policy_no, p.policy_name, p.price_type, p.customer_id, p.customer_level,
+               p.material_id, p.unit_price, p.start_date, p.end_date, p.status,
+               p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time, p.remark,
+               c.customer_name, wms_m.material_name
+        FROM mk_price_policy p
+        LEFT JOIN mk_customer c ON p.customer_id = c.customer_id
+        LEFT JOIN wms_material wms_m ON p.material_id = wms_m.material_id
+    </sql>
+
+    <select id="selectPolicyList" parameterType="MkPricePolicy" resultMap="MkPricePolicyResult">
+        <include refid="selectPolicyVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="policyNo != null and policyNo != ''"> AND p.policy_no LIKE CONCAT('%', #{policyNo}, '%')</if>
+            <if test="policyName != null and policyName != ''"> AND p.policy_name LIKE CONCAT('%', #{policyName}, '%')</if>
+            <if test="priceType != null and priceType != ''"> AND p.price_type = #{priceType}</if>
+            <if test="customerId != null"> AND p.customer_id = #{customerId}</if>
+            <if test="customerLevel != null and customerLevel != ''"> AND p.customer_level = #{customerLevel}</if>
+            <if test="materialId != null"> AND p.material_id = #{materialId}</if>
+            <if test="status != null and status != ''"> AND p.status = #{status}</if>
+        </where>
+        ORDER BY p.policy_id DESC
+    </select>
+
+    <select id="selectPolicyById" parameterType="Long" resultMap="MkPricePolicyResult">
+        <include refid="selectPolicyVo"/> WHERE p.policy_id = #{policyId} AND p.del_flag = '0'
+    </select>
+
+    <select id="selectCustomerPrice" resultMap="MkPricePolicyResult">
+        <include refid="selectPolicyVo"/>
+        WHERE p.del_flag = '0' AND p.status = '0' AND p.price_type = '1'
+          AND p.customer_id = #{customerId} AND p.material_id = #{materialId}
+          AND p.start_date &lt;= CURDATE() AND p.end_date &gt;= CURDATE()
+        ORDER BY p.policy_id DESC LIMIT 1
+    </select>
+
+    <select id="selectLevelPrice" resultMap="MkPricePolicyResult">
+        <include refid="selectPolicyVo"/>
+        WHERE p.del_flag = '0' AND p.status = '0' AND p.price_type = '2'
+          AND p.customer_level = #{customerLevel} AND p.material_id = #{materialId}
+          AND p.start_date &lt;= CURDATE() AND p.end_date &gt;= CURDATE()
+        ORDER BY p.policy_id DESC LIMIT 1
+    </select>
+
+    <insert id="insertPolicy" parameterType="MkPricePolicy" useGeneratedKeys="true" keyProperty="policyId">
+        INSERT INTO mk_price_policy (policy_no, policy_name, price_type, customer_id, customer_level,
+            material_id, unit_price, start_date, end_date, status, create_by, create_time, remark)
+        VALUES (#{policyNo}, #{policyName}, #{priceType}, #{customerId}, #{customerLevel},
+            #{materialId}, #{unitPrice}, #{startDate}, #{endDate}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updatePolicy" parameterType="MkPricePolicy">
+        UPDATE mk_price_policy
+        <set>
+            <if test="policyName != null and policyName != ''">policy_name = #{policyName},</if>
+            <if test="priceType != null and priceType != ''">price_type = #{priceType},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="customerLevel != null">customer_level = #{customerLevel},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE policy_id = #{policyId}
+    </update>
+
+    <delete id="deletePolicyByIds" parameterType="Long">
+        UPDATE mk_price_policy SET del_flag = '1' WHERE policy_id IN
+        <foreach collection="array" item="policyId" open="(" separator="," close=")">
+            #{policyId}
+        </foreach>
+    </delete>
+</mapper>
