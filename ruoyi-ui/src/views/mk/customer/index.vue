@@ -180,6 +180,13 @@
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="信用状态" prop="creditStatus" key="creditStatus" :min-width="colWidth('creditStatus', 100)" resizable align="center" v-if="columns.creditStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.creditStatus === '1' ? 'is-danger' : 'is-success'">
+                <span class="dot"></span>{{ scope.row.creditStatus === '1' ? '冻结' : '正常' }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="累计交易额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 120)" resizable align="right" sortable="custom" class-name="col-num" v-if="columns.totalAmount.visible"><template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.totalAmount) }}</span></template></el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible">
             <template #default="scope">
@@ -188,10 +195,11 @@
             </template>
           </el-table-column>
           <el-table-column label="部门" prop="deptName" key="deptName" :width="colWidth('deptName', 120)" resizable v-if="columns.deptName.visible" />
-      <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+      <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
           <div class="action-btn-row">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+          <el-button link type="primary" icon="CreditCard" @click="handleCredit(scope.row)">信用</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:customer:edit']">修改</el-button>
           <el-dropdown @command="(cmd) => handleCommand(cmd, scope.row)" trigger="click" v-hasPermi="['marketing:customer:edit']">
             <el-button link type="primary" icon="ArrowDown">更多</el-button>
@@ -301,6 +309,13 @@
               <el-col :span="12"><el-form-item label="首次接触" prop="firstContactDate"><el-date-picker v-model="form.firstContactDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="合作开始" prop="cooperationDate"><el-date-picker v-model="form.cooperationDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="累计交易额" prop="totalAmount"><el-input-number v-model="form.totalAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="信用额度" prop="creditLimit"><el-input-number v-model="form.creditLimit" :min="0" :precision="2" controls-position="right" style="width: 100%" placeholder="0=不启用信用控制" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="账期天数" prop="creditDays"><el-input-number v-model="form.creditDays" :min="0" :max="365" :precision="0" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="信用状态" prop="creditStatus">
+                <el-select v-model="form.creditStatus" placeholder="请选择" style="width: 100%">
+                  <el-option v-for="d in mk_credit_status" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </el-form-item></el-col>
             </el-row>
           </div>
         </section>
@@ -454,6 +469,34 @@
       <template #footer>
         <el-button type="primary" @click="confirmStatusChange">确 定</el-button>
         <el-button @click="statusOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 信用占用弹窗 -->
+    <el-dialog v-model="creditOpen" width="560px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <span class="rd-detail-header-title">信用占用情况</span>
+          <div class="rd-detail-header-sub" v-if="creditData.customerName">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ creditData.customerName }}</span>
+          </div>
+        </div>
+      </template>
+      <div v-loading="creditLoading">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="rd-item"><span class="rd-label">信用状态</span><div class="rd-value"><dict-tag :options="mk_credit_status" :value="creditData.creditStatus" /></div></div>
+          <div class="rd-item"><span class="rd-label">信用额度</span><div class="rd-value rd-amount">￥{{ formatAmount(creditData.creditLimit) }}</div></div>
+          <div class="rd-item"><span class="rd-label">账期天数</span><div class="rd-value">{{ creditData.creditDays || 0 }} 天</div></div>
+          <div class="rd-item"><span class="rd-label">未收款应收</span><div class="rd-value rd-amount">￥{{ formatAmount(creditData.arOutstanding) }}</div></div>
+          <div class="rd-item"><span class="rd-label">未开票金额</span><div class="rd-value rd-amount">￥{{ formatAmount(creditData.uninvoicedAmount) }}</div></div>
+          <div class="rd-item"><span class="rd-label">已占用额度</span><div class="rd-value rd-amount">￥{{ formatAmount(creditData.used) }}</div></div>
+          <div class="rd-item" style="grid-column:span 2"><span class="rd-label">剩余可用额度</span><div class="rd-value rd-amount" :style="Number(creditData.available) < 0 ? 'color:#e34d59' : 'color:#12b76a'">￥{{ formatAmount(creditData.available) }}</div></div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="creditOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
 
@@ -733,7 +776,7 @@
 
 <script setup name="MkCustomer">
 import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Search, Filter, Edit, Delete, Download, User, Upload, RefreshRight } from '@element-plus/icons-vue'
-import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus } from '@/api/mk/customer'
+import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus, getCreditUsage } from '@/api/mk/customer'
 import { aiCustomerChurnReport, aiChurnPrediction } from '@/api/ai/manage'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
@@ -754,12 +797,15 @@ const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_index')
-const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status')
+const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status, mk_credit_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status', 'mk_credit_status')
 
 const list = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewForm = ref({})
+const creditOpen = ref(false)
+const creditLoading = ref(false)
+const creditData = ref({})
 const detailTab = ref('basic')
 const loading = ref(true)
 const showSearch = ref(true)
@@ -871,6 +917,7 @@ const defaultColumns = {
   customerLevel: { label: '客户等级', visible: true },
   industry: { label: '所属行业', visible: true },
   customerStatus: { label: '客户状态', visible: true },
+  creditStatus: { label: '信用状态', visible: true },
   totalAmount: { label: '累计交易额', visible: true },
   userName: { label: '负责人', visible: true },
   deptName: { label: '部门', visible: true }
@@ -979,7 +1026,7 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.cus
 function reset() {
   const today = new Date()
   const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
-  form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: todayStr, cooperationDate: undefined, totalAmount: 0, userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
+  form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: todayStr, cooperationDate: undefined, totalAmount: 0, creditLimit: 0, creditDays: 0, creditStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
   proxy.resetForm('customerRef')
 }
 function handleAdd() { reset(); open.value = true; title.value = '新增企业客户' }
@@ -1025,6 +1072,14 @@ function handleExport() { proxy.download('mk/customer/export', proxy.withExportI
 function cancel() { open.value = false; reset() }
 
 // ====== 操作下拉菜单 ======
+/** 信用占用情况 */
+function handleCredit(row) {
+  creditOpen.value = true
+  creditLoading.value = true
+  creditData.value = {}
+  getCreditUsage(row.customerId).then(res => { creditData.value = res.data || {} }).finally(() => { creditLoading.value = false })
+}
+
 function handleCommand(cmd, row) {
   if (cmd === 'assign') handleAssignSingle(row)
   else if (cmd === 'release') handleRelease(row)

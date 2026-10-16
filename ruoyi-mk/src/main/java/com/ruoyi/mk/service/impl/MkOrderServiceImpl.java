@@ -46,6 +46,9 @@ public class MkOrderServiceImpl implements IMkOrderService
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private com.ruoyi.mk.service.IMkCreditService mkCreditService;
+
     @Override
     @DataScope(deptAlias = "o", userAlias = "o")
     public List<MkOrder> selectOrderList(MkOrder order)
@@ -104,6 +107,8 @@ public class MkOrderServiceImpl implements IMkOrderService
         {
             order.setOrderAmount(totalAmount);
         }
+        // 信用控制：冻结拦截 + 额度拦截（欠款占用+本单金额 > 信用额度则禁止）
+        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount());
         int rows = mkOrderMapper.insertOrder(order);
         // 插入订单明细
         if (order.getItemList() != null)
@@ -155,6 +160,8 @@ public class MkOrderServiceImpl implements IMkOrderService
         {
             order.setOrderAmount(totalAmount);
         }
+        // 信用控制：冻结拦截 + 额度拦截（欠款占用+本单金额 > 信用额度则禁止）
+        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount());
         return mkOrderMapper.updateOrder(order);
     }
 

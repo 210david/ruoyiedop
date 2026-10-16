@@ -46,3 +46,11 @@ export function auditEval(evalId, status, auditRemark) {
     params: { status, auditRemark }
   })
 }
+
+// 复评到期提醒
+export function reevalDue() {
+  return request({
+    url: '/pms/eval/reevalDue',
+    method: 'get'
+  })
+}

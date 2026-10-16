@@ -64,7 +64,7 @@
             <h3>快速开始</h3>
             <p>1. 联系系统管理员获取 API Key</p>
             <p>2. 在请求头中携带 <code>X-API-Key</code> 发起请求</p>
-            <pre class="code-block">curl -H "X-API-Key: YOUR_API_KEY" http://your-server:8081/openapi/v1/wms/material/list</pre>
+            <pre class="code-block">curl -H "X-API-Key: YOUR_API_KEY" http://your-server:8080/openapi/v1/wms/material/list</pre>
 
             <h3>响应结构</h3>
             <el-table :data="responseStructures" border>

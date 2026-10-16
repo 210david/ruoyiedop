@@ -17,7 +17,7 @@ const PP = [
 ]
 
 function codes(method, path, query) {
-  const url = `http://your-server:8081${path}${query ? '?' + query : ''}`
+  const url = `http://your-server:8080${path}${query ? '?' + query : ''}`
   return {
     curl: `curl -X ${method} -H "X-API-Key: YOUR_API_KEY" "${url}"`,
     java: `HttpClient client = HttpClient.newHttpClient();

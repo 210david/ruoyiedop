@@ -632,6 +632,11 @@
             </div>
           </div>
         </section>
+        <!-- 三方匹配前置提示 -->
+        <el-alert v-if="payMatch && payMatch.matchResult === '匹配成功'" type="success" :closable="false" show-icon title="三方匹配一致，可正常付款" style="margin-bottom:12px" />
+        <el-alert v-else-if="payMatch && payMatch.matchResult" type="error" :closable="false" show-icon style="margin-bottom:12px">
+          <template #title>三方匹配不一致（{{ payMatch.matchResult }}）：订单-发票差异 {{ formatMoney(payMatch.orderInvoiceDiff) }}，收货-发票差异 {{ formatMoney(payMatch.receiveInvoiceDiff) }}，禁止付款</template>
+        </el-alert>
         <!-- 本次付款 -->
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('p1')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>本次付款</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.p1 }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
@@ -1040,6 +1045,7 @@ const viewOpen = ref(false)
 const viewData = ref({})
 const matchOpen = ref(false)
 const matchData = ref({})
+const payMatch = ref({})
 const auditOpen = ref(false)
 const auditData = ref({})
 const auditForm = ref({ invoiceId: undefined, auditOpinion: undefined })
@@ -1222,11 +1228,20 @@ function handlePay(row) {
       remark: undefined
     }
     payOpen.value = true
+    // 关联订单的发票：打开付款弹窗前先做三方匹配前置校验
+    payMatch.value = {}
+    if (res.data.orderId) {
+      threeWayMatch(row.invoiceId).then(m => { payMatch.value = m.data || {} }).catch(() => { payMatch.value = {} })
+    }
   })
 }
 function submitPay() {
   proxy.$refs['payRef'].validate(valid => {
     if (!valid) return
+    if (payMatch.value && payMatch.value.matchResult && payMatch.value.matchResult !== '匹配成功') {
+      proxy.$modal.msgError('三方匹配不一致，禁止付款，请先核对订单与收货数据')
+      return
+    }
     if (payForm.value.paymentAmount > payUnpaid.value) {
       proxy.$modal.msgError('付款金额不能超过未付金额')
       return

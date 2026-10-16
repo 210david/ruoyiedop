@@ -88,6 +88,9 @@
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['pms:eval:export']">
             <el-icon><Download /></el-icon> 导出
           </button>
+          <button type="button" class="btn-soft is-outline" @click="handleReeval" v-hasPermi="['pms:eval:query']">
+            <el-icon><AlarmClock /></el-icon> 复评提醒
+          </button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="pms_eval_columns" />
@@ -429,6 +432,36 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 复评到期提醒弹框 ===== -->
+    <el-dialog v-model="reevalOpen" width="960px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <span class="rd-detail-header-title">复评到期提醒</span>
+          <div class="rd-detail-header-sub"><span class="rd-detail-header-divider"></span><span class="rd-detail-header-no">共 {{ reevalList.length }} 家供应商需复评</span></div>
+        </div>
+      </template>
+      <el-table v-loading="reevalLoading" :data="reevalList" border size="small" max-height="480">
+        <el-table-column type="index" label="序号" width="55" align="center" />
+        <el-table-column label="供应商" prop="supplierName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="复评周期" prop="reevalCycleMonths" width="90" align="center"><template #default="scope">{{ scope.row.reevalCycleMonths }} 个月</template></el-table-column>
+        <el-table-column label="最近评估" prop="lastEvalDate" width="110" align="center" />
+        <el-table-column label="评估等级" prop="evalLevel" width="90" align="center">
+          <template #default="scope">
+            <el-tag :type="scope.row.evalLevel === 'A' ? 'success' : scope.row.evalLevel === 'B' ? 'primary' : scope.row.evalLevel === 'C' ? 'warning' : 'danger'" size="small" effect="light" round>{{ scope.row.evalLevel || '-' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="总分" prop="totalScore" width="80" align="center" />
+        <el-table-column label="复评到期日" prop="dueDate" width="110" align="center" />
+        <el-table-column label="逾期状态" width="120" align="center">
+          <template #default="scope"><span :style="Number(scope.row.overdueDays) > 0 ? 'color:#e34d59;font-weight:600' : ''">{{ Number(scope.row.overdueDays) > 0 ? '逾期 ' + scope.row.overdueDays + ' 天' : '临期' }}</span></template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="reevalOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- ===== 人员选择弹框 ===== -->
     <user-picker ref="userPickerRef" title="选择评估人" @confirm="onUserPickerConfirm" />
 
@@ -439,7 +472,7 @@
 </template>
 
 <script setup name="PmsEval">
-import { listEval, getEval, addEval, updateEval, delEval, auditEval } from '@/api/pms/eval'
+import { listEval, getEval, addEval, updateEval, delEval, auditEval, reevalDue } from '@/api/pms/eval'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -669,6 +702,15 @@ function reset() {
 function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
 function onSupplierPickerConfirm(supplier) { form.value.supplierId = supplier.supplierId; form.value.supplierName = supplier.supplierName }
 function clearSupplier() { form.value.supplierId = undefined; form.value.supplierName = undefined }
+const reevalOpen = ref(false)
+const reevalLoading = ref(false)
+const reevalList = ref([])
+/** 复评到期提醒 */
+function handleReeval() {
+  reevalOpen.value = true
+  reevalLoading.value = true
+  reevalDue().then(res => { reevalList.value = res.data || [] }).finally(() => { reevalLoading.value = false })
+}
 function handleAdd() { reset(); open.value = true; title.value = '添加供应商评估' }
 function handleUpdate(row) {
   reset()

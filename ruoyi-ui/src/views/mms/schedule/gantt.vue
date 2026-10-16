@@ -101,6 +101,16 @@
           <div class="task-tooltip-row">状态：{{ taskTooltip.statusLabel }}</div>
         </div>
         <div ref="ganttChartRef" class="gantt-chart" v-loading="ganttLoading"></div>
+        <!-- 空状态引导：无启用产能资源时甘特图无法渲染，给出明确提示避免误认为系统故障 -->
+        <div v-if="resourceEmpty && !ganttLoading" class="gantt-empty">
+          <el-empty :image-size="110">
+            <template #description>
+              <div class="gantt-empty-title">暂无可用的产能资源</div>
+              <div class="gantt-empty-desc">排产前需先维护产能资源（产线 / 设备），请前往「基础数据 → 资源管理」新增并启用后，再回到本页进行排产</div>
+            </template>
+            <el-button type="primary" icon="Setting" @click="goResource">前往资源管理</el-button>
+          </el-empty>
+        </div>
         <div class="gantt-legend">
           <span class="legend-item"><span class="dot dot-released"></span>已下达</span>
           <span v-if="showCancelled" class="legend-item"><span class="dot dot-cancelled"></span>已取消</span>
@@ -673,8 +683,10 @@ import { getGanttData, dragSchedule, batchSchedule, cancelSchedule, getScheduled
 import { listWorkOrder } from '@/api/mms/workorder'
 import { listResource } from '@/api/mms/resource'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 const { mms_schedule_status, mms_schedule_strategy } = proxy.useDict('mms_schedule_status', 'mms_schedule_strategy')
 const { mms_order_type, mms_priority } = proxy.useDict('mms_order_type', 'mms_priority')
 const { wms_unit } = proxy.useDict('wms_unit')
@@ -700,6 +712,7 @@ const scheduleForm = ref(null)
 // 数据
 const scheduleData = ref([])
 const resourceList = ref([])
+const resourceEmpty = ref(false) // 无启用产能资源时显示引导空状态，避免白板被误认为故障
 const unscheduledOrders = ref([])
 const filteredUnscheduled = ref([])
 const woSearch = ref('')
@@ -904,7 +917,13 @@ function loadUnscheduledOrders() {
 function loadResources() {
   return listResource({ status: '0', pageSize: 200 }).then(res => {
     resourceList.value = res.rows || []
+    resourceEmpty.value = resourceList.value.length === 0
   }).catch(() => {})
+}
+
+/** 跳转产能资源管理页（空状态引导） */
+function goResource() {
+  router.push('/mms/basedata/resource')
 }
 
 function filterUnscheduled() {
@@ -1677,6 +1696,30 @@ flex: 1; display: flex; flex-direction: column; position: relative;
 .gantt-chart {
   flex: 1; min-height: 400px;
   position: relative; /* 为拖拽指示线提供定位上下文 */
+}
+
+/* 空状态引导：无产能资源时覆盖甘特图区域 */
+.gantt-empty {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--el-bg-color, #fff);
+  z-index: 5;
+}
+.gantt-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+.gantt-empty-desc {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 /* 拖拽时间指示线 */
