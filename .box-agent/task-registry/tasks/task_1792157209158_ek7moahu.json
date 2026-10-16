@@ -1,0 +1,769 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "artifact_c656c6640fe69d6e7d5dad01",
+      "current_revision_id": "revision_1be5f9fd5447546aba9aba3c",
+      "filename": "ccp_export_drill.xlsx",
+      "kind": "spreadsheet",
+      "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "rel_path": "ccp_export_drill.xlsx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_1be5f9fd5447546aba9aba3c",
+          "produced_at": "2026-10-16T21:27:50+08:00",
+          "sha256": "1b86820cac5c2c0cd56e7daa57657491c0f07d3b311f537b47066bf127574bf4",
+          "size": 4516,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_85ea1ab90bfbc0e5f8fae226",
+      "current_revision_id": "revision_f401635056a71c17ec2d814b",
+      "filename": "deploy_safety.bat",
+      "kind": "document",
+      "mime": "text/plain",
+      "rel_path": "deploy_safety.bat",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_f401635056a71c17ec2d814b",
+          "produced_at": "2026-10-16T21:27:50+08:00",
+          "sha256": "4c739c6cf96f61aa770257e2ab7495479f0172c18241ef5f1282d95433e83420",
+          "size": 1037,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_0ca8cbcd76521ec95bae3577",
+      "current_revision_id": "revision_ab1e08391d5a44b6d6140581",
+      "filename": "docker-compose.yml",
+      "kind": "data",
+      "mime": "application/yaml",
+      "rel_path": "docker-compose.yml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_ab1e08391d5a44b6d6140581",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "7211264669561da565288e420015b5b0b1f399aada38615f5ba70986c0110ca1",
+          "size": 3695,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_292a78b7ecefdbb0695350d2",
+      "current_revision_id": "revision_ca46ee3820396e6ae36c81bf",
+      "filename": "Dockerfile",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "Dockerfile",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_ca46ee3820396e6ae36c81bf",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "b45d55ce6daccd5af6e0cf7003f874ea649c48e0f596812bdf624d383012a44f",
+          "size": 2000,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_5f953f3feb2c20867ec9de43",
+      "current_revision_id": "revision_bf31d59eb70ce6e13b3d9fe7",
+      "filename": "LICENSE",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "LICENSE",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_bf31d59eb70ce6e13b3d9fe7",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "46973d260eabeaf43df2478bf00dacf862911988eba72387596fcafbc4888cab",
+          "size": 1090,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_469bb378a127d6172eff68ba",
+      "current_revision_id": "revision_563395848df18a58c59c8d98",
+      "filename": "pom.xml",
+      "kind": "document",
+      "mime": "text/xml",
+      "rel_path": "pom.xml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_563395848df18a58c59c8d98",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "7e33c46dbb93d100d0fee4aa800e60429ea651b0162bf2e573a35b0f44430486",
+          "size": 12527,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_e3bd6664fcf1ea3fafa6cd01",
+      "current_revision_id": "revision_9aa5ff7f07859ca79d897eb8",
+      "filename": "README.en.md",
+      "kind": "document",
+      "mime": "text/markdown",
+      "rel_path": "README.en.md",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_9aa5ff7f07859ca79d897eb8",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "7fcea081225c3001cf1c9cfad5663dc1dc2f5fb97fee09e7666315d8deb87c5e",
+          "size": 1000,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_774468851304a35c9c14f216",
+      "current_revision_id": "revision_3c949445a45e1841ddb3626f",
+      "filename": "README.md",
+      "kind": "document",
+      "mime": "text/markdown",
+      "rel_path": "README.md",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_3c949445a45e1841ddb3626f",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "d03eb79bf4a80b01390ddd93e139d635af53d8ef514d257341dc34b003b9b0cc",
+          "size": 11919,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_53996d59bc57b7c05a1707e1",
+      "current_revision_id": "revision_5c9495d0567c8a0dfae82e36",
+      "filename": "run-backend.bat",
+      "kind": "document",
+      "mime": "text/plain",
+      "rel_path": "run-backend.bat",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_528a75bd5a300dee46b09faa",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "9e8e42050b524b707721e719341340607a76d1ae56ae9e2a3e63b5856f71a2c8",
+          "size": 1424,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_5c9495d0567c8a0dfae82e36",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "719f5c25c58558962e4f29a0e325882ed3dea4fad601a19dab41f64f9dea317d",
+          "size": 1405,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_06669c22a7c4d5a4fbb1f803",
+      "current_revision_id": "revision_b1557e568bcaea6e447dbc1e",
+      "filename": "run-frontend.bat",
+      "kind": "document",
+      "mime": "text/plain",
+      "rel_path": "run-frontend.bat",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_b1557e568bcaea6e447dbc1e",
+          "produced_at": "2026-10-16T21:27:51+08:00",
+          "sha256": "5cf05e59c8a95ef6c9df414e532f84c052bd0585e679b8f84ceaf8a56a04d0e3",
+          "size": 532,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_084b4185dbb21820881a2fdb",
+      "current_revision_id": "revision_4ea75bee6e32661b2cb9033d",
+      "filename": "ry.bat",
+      "kind": "document",
+      "mime": "text/plain",
+      "rel_path": "ry.bat",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_4ea75bee6e32661b2cb9033d",
+          "produced_at": "2026-10-16T21:27:57+08:00",
+          "sha256": "ac0ebaa8d920174c7a70fe481719322fd354856654060a0dc54d7dbfb9f32453",
+          "size": 1635,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_2312bb74a676f5f3788a1740",
+      "current_revision_id": "revision_bfed7f920322cd2b2b7807a3",
+      "filename": "ry.sh",
+      "kind": "code",
+      "mime": "application/x-sh",
+      "rel_path": "ry.sh",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_bfed7f920322cd2b2b7807a3",
+          "produced_at": "2026-10-16T21:27:57+08:00",
+          "sha256": "0bad74b856127a42a993aa502e5abfe0a655b37f2fbaf1964605076144b44c88",
+          "size": 1767,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_80356d0cedf8874308a8044b",
+      "current_revision_id": "revision_7cdf2858d16b501f9b269575",
+      "filename": "SAFETY_DEPLOYMENT.md",
+      "kind": "document",
+      "mime": "text/markdown",
+      "rel_path": "SAFETY_DEPLOYMENT.md",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_7cdf2858d16b501f9b269575",
+          "produced_at": "2026-10-16T21:27:57+08:00",
+          "sha256": "264ad4220be5188e206f1c4c53d46e2f57d50b6a62913be48a24e2ded1d62f30",
+          "size": 7640,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_e01ab4787c049ceef02677cb",
+      "current_revision_id": "revision_d5fcd80fdcb8987f94969a53",
+      "filename": "传丰ERP模块开关功能实施方案.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "传丰ERP模块开关功能实施方案.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_d5fcd80fdcb8987f94969a53",
+          "produced_at": "2026-10-16T21:27:58+08:00",
+          "sha256": "9b4c0b3c5f82fca44df2da726b762104d192eb60195b79151358ef570fc21d3e",
+          "size": 21943,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_37a9912c10033c840f960761",
+      "current_revision_id": "revision_dfb0fbe1cc492ec85703d5c5",
+      "filename": "传丰食品ERP行业化改造功能点与页面全景清单.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "传丰食品ERP行业化改造功能点与页面全景清单.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_dfb0fbe1cc492ec85703d5c5",
+          "produced_at": "2026-10-16T21:27:58+08:00",
+          "sha256": "d1d0ba09c977135cc17ac29effb726344c240bdc7a33e581a404df734ec9c5da",
+          "size": 18609,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_6a4d9b2c253737993cc9977e",
+      "current_revision_id": "revision_8c624eff5676ab2478860607",
+      "filename": "传丰食品ERP行业匹配度分析报告.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "传丰食品ERP行业匹配度分析报告.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_8c624eff5676ab2478860607",
+          "produced_at": "2026-10-16T21:27:58+08:00",
+          "sha256": "a8219fb7552199e2d6dd930b0eb8e7ddba9579aceae95b378f3f6eb1d09fccb6",
+          "size": 20760,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_57a7110654b376b4fb66e3a7",
+      "current_revision_id": "revision_c487ea715daefe25224f73a9",
+      "filename": "食品行业批次效期能力设计方案.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "食品行业批次效期能力设计方案.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_c487ea715daefe25224f73a9",
+          "produced_at": "2026-10-16T21:27:58+08:00",
+          "sha256": "654c83090bbb21e2ef948696fdfad0b993d746edfc2fed5c2729c460faf87026",
+          "size": 21256,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_a3eed99229c887feeb981ef6",
+      "current_revision_id": "revision_9409b86c4afaf08ebfa30d71",
+      "filename": "application.yml",
+      "kind": "data",
+      "mime": "application/yaml",
+      "rel_path": "ruoyi-admin/src/main/resources/application.yml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_24318ca8680843f8ae79c5d0",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "bc2da7f757b69563c3c279d0ffbf09986b86d0730cf62341227763ac7fd40c0e",
+          "size": 4880,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_f2f6858ff2de5c1701b7c7c9",
+          "produced_at": "2026-10-16T21:49:38+08:00",
+          "sha256": "79e99fb1e1a34be23aec8eaa6639bceee11e5b4550ab07791027dc81166caf3b",
+          "size": 4880,
+          "turn_id": "local_1792158499808_wuxl7b5n"
+        },
+        {
+          "artifact_revision_id": "revision_9409b86c4afaf08ebfa30d71",
+          "produced_at": "2026-10-16T22:03:38+08:00",
+          "sha256": "d0c00843e05a4e2679651a2800332e494e69a4e72c6d80a69f4770c6466de28a",
+          "size": 4878,
+          "turn_id": "local_1792159404303_hs2i795g"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_04005a3025a90f79470f96e6",
+      "current_revision_id": "revision_56181c3a78602ca43563c142",
+      "filename": "MmsWorkOrderMapper.xml",
+      "kind": "document",
+      "mime": "text/xml",
+      "rel_path": "ruoyi-mms/src/main/resources/mapper/mms/MmsWorkOrderMapper.xml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_56181c3a78602ca43563c142",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "16cc0c8fb606979f5109303748942896ce9d6c60e0986e18c1c7b7df729d76e8",
+          "size": 13595,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_3233363f216fe5e7689ccded",
+      "current_revision_id": "revision_a3c1cac666f37eaa7442d6cb",
+      "filename": "index.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/food/ccp/index.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_4a6d19b50b6d875a9f06b53b",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "dd1b16c8620bbff49c1e2dc82d1eb15503e1e9514a531c99ea70ab63ce553cff",
+          "size": 58478,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_a3c1cac666f37eaa7442d6cb",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "0a665270e13ce36724e3fdb6956db936b738ccce51d67cd4092836d93fdd44e2",
+          "size": 59407,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_d07d7a75f6400e585943677a",
+      "current_revision_id": "revision_f42f84778270683fa55b61a3",
+      "filename": "index.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/food/wip/index.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_b5b9db19c9f26d38afc2759c",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "882c1013b73fba67500fa8cb6263a1d686460a13141833a4db0361bfc2d20cd9",
+          "size": 53211,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_f42f84778270683fa55b61a3",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "6e660db0c386497c628eb669b8ca5aac31446a803e2400fb8e413ab366fb4296",
+          "size": 53229,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_edeafcad3903dfb12b51adf9",
+      "current_revision_id": "revision_f03d53f312b83cad34f99d52",
+      "filename": "index.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/food/wipTransfer/index.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_f03d53f312b83cad34f99d52",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "762d2998038ddf092ea9991f1ad44e165174d7475270751690d4378810931b14",
+          "size": 35849,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_33c2577dd8f510e6b9d84a3f",
+      "current_revision_id": "revision_a1e145a45e2ee1074d80ba6b",
+      "filename": "index.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/mk/contract/index.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_a1e145a45e2ee1074d80ba6b",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "609ad0b9b290e1b07ebe61e74f6e12684c8210212bca65a640d2a23f16abbd78",
+          "size": 123368,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_6706de76c59f34ae9979d45b",
+      "current_revision_id": "revision_24f958e3c10dd9ee00860471",
+      "filename": "gantt.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/mms/schedule/gantt.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_24f958e3c10dd9ee00860471",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "8d1cdea092cf43f71b1aba1f57d2c125d682a650aa65855194892aedadafd942",
+          "size": 86224,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_d07c8b9bd6589bb592bb8f62",
+      "current_revision_id": "revision_c9d4baf15f25a4fbe6f21ba7",
+      "filename": "index.vue",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "ruoyi-ui/src/views/monitor/job/index.vue",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_11d8e1a2cee36b9a495a49da",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "059851bf89c6771a1661c8491a854fce512813249798278b993ea28e82eea344",
+          "size": 44856,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_c9d4baf15f25a4fbe6f21ba7",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "674620cb171416a6afc699c238066eb9e2a9f3f85d39c3d53e8570a5a93be766",
+          "size": 44863,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_9620695e0b9335c0a892e017",
+      "current_revision_id": "revision_53c72d75bf76bf026a8937a9",
+      "filename": "vite.config.js",
+      "kind": "document",
+      "mime": "text/javascript",
+      "rel_path": "ruoyi-ui/vite.config.js",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_d5bf537afa5b962b8dfeb12f",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "a5b3fbf36656e0f501fa145258a15ea8204d31c1b4f3cfb4db8dcae350882d25",
+          "size": 2546,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_efb04d4eb1ed04b8ae986406",
+          "produced_at": "2026-10-16T21:49:41+08:00",
+          "sha256": "4e8453115e1aa3cad6535e7728e167d95ec99c0b1002bba998be51cff6e19270",
+          "size": 2546,
+          "turn_id": "local_1792158499808_wuxl7b5n"
+        },
+        {
+          "artifact_revision_id": "revision_f5f3348ca48280db86395474",
+          "produced_at": "2026-10-16T22:03:40+08:00",
+          "sha256": "ce7e440bdcff52b24dfaf10f0bb338c839669f1dd54889eddddfca66aee324a7",
+          "size": 2544,
+          "turn_id": "local_1792159404303_hs2i795g"
+        },
+        {
+          "artifact_revision_id": "revision_53c72d75bf76bf026a8937a9",
+          "produced_at": "2026-10-16T22:03:42+08:00",
+          "sha256": "ce7e440bdcff52b24dfaf10f0bb338c839669f1dd54889eddddfca66aee324a7",
+          "size": 2546,
+          "turn_id": "local_1792159404303_hs2i795g"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_1b649cdb93b65c80ba247791",
+      "current_revision_id": "revision_2f893f6b6c1f99de94440597",
+      "filename": "base_config_baseline.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/base_config_baseline.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_5bae8f177baf5a01ea5cba6b",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "c91f92cb87dcefc51827824949fc85043d8adaab29d49fece4040e8b6209bcd4",
+          "size": 134302,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_2f893f6b6c1f99de94440597",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "5e549794593ab8860bdaee0f28ec5634617dc5718a86c905ae0563fc88122f02",
+          "size": 134663,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_096e063383c7347cd7dc6b7e",
+      "current_revision_id": "revision_b492c175c07e4d618716b1d5",
+      "filename": "clean_business_data_safe.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/clean_business_data_safe.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_23fd9af572c6f53f05f8d335",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "3ce57a87af8f28b073a5c6210d1fdcad370f6c5089e35fa7bda3f4eda3b87832",
+          "size": 3197,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_b492c175c07e4d618716b1d5",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "75535cf5cd59f77b9ba8a197c47e782f136761f169d0ff1335d84ed751c51dfc",
+          "size": 3268,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_e8bc2c166d5ad6c5c3702cc4",
+      "current_revision_id": "revision_d04fcfa88316c74fe00a5560",
+      "filename": "ham_industry_base_data.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/ham_industry_base_data.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_270b7a5df282908483d465d9",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "d5e5075364f275f0a2438d71bbaf63a02e0c2dd47e7e275af8c2957867d5f8a6",
+          "size": 16124,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_d04fcfa88316c74fe00a5560",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "0731c8dc37b25be17300a14af3cc6535b3483b7df9618d0da6525367371255f8",
+          "size": 16254,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_54fbd3a24378b776c4b078fa",
+      "current_revision_id": "revision_0250e6ecf5f47fdd6f04bd4d",
+      "filename": "mk_number_rule_baseline.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/mk_number_rule_baseline.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_dbdd7bc34856001271f8b084",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "d1fc8c705d2ae3ddd7f0b190a2f00b5e022e3420e0e0196fda1b3af9431d6277",
+          "size": 22803,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_0250e6ecf5f47fdd6f04bd4d",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "1a8b60ebe72797282d80c6473ba06c9227a8ce008ed468440c04ea62746e2f2f",
+          "size": 22871,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_62343227a3ac4175f8da3ebd",
+      "current_revision_id": "revision_4783ffcd044a126f22febf70",
+      "filename": "sync_credit_control_standard.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/sync_credit_control_standard.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_159ecd0fd91ac41cc1aa6888",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "122239d8e9817979e7086496feb5efb8d1774b2c1d2f5044dc00fdbc4aa490d9",
+          "size": 1911,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_4783ffcd044a126f22febf70",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "c325328131b623ac8d42beaf684c1d7fb0a26f64a50a57d4ceea125702108eaa",
+          "size": 1939,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_7f2f732d912e91d944f82355",
+      "current_revision_id": "revision_8c01acda78919641e7d5891c",
+      "filename": "sync_mk_number_rules_standard.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/sync_mk_number_rules_standard.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_f00fde9534a3f66949777978",
+          "produced_at": "2026-10-16T21:28:30+08:00",
+          "sha256": "f640d6d844117b0d28695be351591371945a6c8480e6a4312372841f0d630513",
+          "size": 1460,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_8c01acda78919641e7d5891c",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "ab95b293fe8f181c209220f1ee126b40f916c5a685322d3ff63377919bbc4f20",
+          "size": 1477,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_8e76212698f2f3f455dd6d57",
+      "current_revision_id": "revision_6c566bf802c9889c6e45ac5e",
+      "filename": "verify_base_config.sql",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "sql/verify_base_config.sql",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_5849bdb8ea096443e839d5ff",
+          "produced_at": "2026-10-16T21:28:31+08:00",
+          "sha256": "40a05db4ee55051cdc78e47566f2d0ea6ae99af751e04a626dc1d1d1f1666e23",
+          "size": 5326,
+          "turn_id": "local_1792157209158_7cy8nu42"
+        },
+        {
+          "artifact_revision_id": "revision_6c566bf802c9889c6e45ac5e",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "23a687d3163592065dce3867f230ffd1dc3d7f44a1b90f65962235a03c26b791",
+          "size": 5391,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_701b3a068f7fca322e512203",
+      "current_revision_id": "revision_37a943d334e4a16345bdd15a",
+      "filename": "check_base_config.ps1",
+      "kind": "file",
+      "mime": "application/octet-stream",
+      "rel_path": "scripts/check_base_config.ps1",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_37a943d334e4a16345bdd15a",
+          "produced_at": "2026-10-16T21:32:28+08:00",
+          "sha256": "91d881cc6c96e53b989539c220b14d98d6e7866d463e596eca595d40802a08bd",
+          "size": 2674,
+          "turn_id": "local_1792157488610_9l9fwrfm"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_036e212c6f03cf613c4011aa",
+      "current_revision_id": "revision_6ae580a57887235ba0380639",
+      "filename": "gen_dwx_report.js",
+      "kind": "document",
+      "mime": "text/javascript",
+      "rel_path": "gen_dwx_report.js",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_6ae580a57887235ba0380639",
+          "produced_at": "2026-10-16T21:58:47+08:00",
+          "sha256": "b189ea774baa3c4071b9a937538c6fbdccd170a8cfb7ca3dfb9762409d636a88",
+          "size": 28868,
+          "turn_id": "local_1792158927124_grdzfpxz"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_9250aa22af253ddef1562a6e",
+      "current_revision_id": "revision_4f740036dc57f1b7e62abfc6",
+      "filename": "云南滇味鲜ERP业务流程与组织架构分析报告.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "云南滇味鲜ERP业务流程与组织架构分析报告.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_4f740036dc57f1b7e62abfc6",
+          "produced_at": "2026-10-16T22:00:08+08:00",
+          "sha256": "ee4e906231c2c7740e55d4fc1d7a2b8d5baa75dcf8973b74c6e913f00ebed91d",
+          "size": 24901,
+          "turn_id": "local_1792158927124_grdzfpxz"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_7795e7117f246d0feee250de",
+      "current_revision_id": "revision_419c938fb28bd46c9b4f8894",
+      "filename": "application-druid.yml",
+      "kind": "data",
+      "mime": "application/yaml",
+      "rel_path": "ruoyi-admin/src/main/resources/application-druid.yml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_419c938fb28bd46c9b4f8894",
+          "produced_at": "2026-10-16T22:11:46+08:00",
+          "sha256": "5ce4ed5b84d41c1fff731e7ccca55d6a780f7e17879bc0d5ff8ac1ceff706e57",
+          "size": 3199,
+          "turn_id": "local_1792159749774_m3ii5kgk"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_669f846ef1fa2b870eb54f75",
+      "current_revision_id": "revision_da24de1ed687bead7c4c13c8",
+      "filename": "application-druid.yml",
+      "kind": "data",
+      "mime": "application/yaml",
+      "rel_path": "deploy/config/application-druid.yml",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_da24de1ed687bead7c4c13c8",
+          "produced_at": "2026-10-16T22:11:48+08:00",
+          "sha256": "7d656fc551417c6982d4e2578ed5cbe596ba394c09bcde6a614a849e0c50b614",
+          "size": 2761,
+          "turn_id": "local_1792159749774_m3ii5kgk"
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-10-16T13:26:50.289479+00:00",
+  "current_turn_id": "local_1792160287346_p8122div",
+  "execution_status": "running",
+  "schema_version": 3,
+  "session_id": "beca7e49-fa92-4bcb-9492-16819b418ca3",
+  "task_id": "task_1792157209158_ek7moahu",
+  "updated_at": "2026-10-16T14:18:10.386026+00:00"
+}
