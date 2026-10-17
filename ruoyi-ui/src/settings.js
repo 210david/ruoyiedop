@@ -62,6 +62,6 @@ export default {
   /**
    * 底部版权文本内容
    */
-  footerContent: 'Copyright © 2026 传丰食品 CFSP. All Rights Reserved.'
+  footerContent: 'Copyright © 2026 云南滇味鲜调味品有限公司 DWX. All Rights Reserved.'
 }
 
