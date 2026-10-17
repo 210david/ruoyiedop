@@ -119,7 +119,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable v-if="columns.customerNo.visible" />
-          <el-table-column label="企业名称" prop="customerName" key="customerName" show-overflow-tooltip v-if="columns.customerName.visible">
+          <el-table-column label="企业名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
             </template>
