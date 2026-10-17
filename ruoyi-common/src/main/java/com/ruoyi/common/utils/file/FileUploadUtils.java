@@ -146,7 +146,9 @@ public class FileUploadUtils
      */
     public static final String extractFilename(MultipartFile file)
     {
-        return StringUtils.format("{}/{}_{}.{}", DateUtils.datePath(), FilenameUtils.getBaseName(file.getOriginalFilename()), Seq.getId(Seq.uploadSeqType), getExtension(file));
+        // 安全加固：文件名主体去除路径片段与非法字符，防止构造特殊文件名
+        String baseName = FilenameUtils.getBaseName(file.getOriginalFilename()).replaceAll("[\\\\/:*?\"<>|\\r\\n]", "");
+        return StringUtils.format("{}/{}_{}.{}", DateUtils.datePath(), baseName, Seq.getId(Seq.uploadSeqType), getExtension(file));
     }
 
     /**

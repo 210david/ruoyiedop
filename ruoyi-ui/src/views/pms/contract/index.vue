@@ -237,7 +237,7 @@
                 <div class="rd-item rd-item--full" v-for="(file, idx) in viewData.fileUrl.split(',')" :key="idx">
                   <span class="rd-label">合同附件</span>
                   <div class="rd-value">
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(file)"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
                     <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
                   </div>
                 </div>
@@ -425,7 +425,7 @@
                 <div class="rd-item rd-item--full" v-for="(file, idx) in approveForm.fileUrl.split(',')" :key="idx">
                   <span class="rd-label">合同附件</span>
                   <div class="rd-value">
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(file)"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
                     <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
                   </div>
                 </div>
@@ -593,6 +593,7 @@ import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import RequestPicker from '@/components/RequestPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
+import { downloadFile } from '@/utils/downloadFile'
 import { ArrowRight, ArrowDown, QuestionFilled, Search, Filter, WarningFilled, Edit, Delete, Download } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -700,7 +701,6 @@ const total = ref(0)
 const title = ref('')
 const supplierPickerRef = ref(null)
 const requestPickerRef = ref(null)
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
   form: {},
@@ -738,6 +738,7 @@ function openRequestPicker() { requestPickerRef.value.open(form.value.orderId) }
 function onRequestPickerConfirm(request) { form.value.orderId = request.requestId; form.value.orderNo = request.requestNo }
 function clearRequest() { form.value.orderId = undefined; form.value.orderNo = undefined }
 function getFileName(url) { if (url.lastIndexOf('/') > -1) { return url.slice(url.lastIndexOf('/') + 1) } return url }
+function handleFileDownload(url) { downloadFile(url) }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
 function handleAdd() { reset(); open.value = true; title.value = '添加采购合同' }
 function handleUpdate(row) { reset(); getContract(row.contractId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改采购合同' }) }

@@ -481,7 +481,7 @@
                 <div class="rd-item rd-item--full" v-for="(file, idx) in viewForm.attachment.split(',')" :key="idx">
                   <span class="rd-label">附件{{ idx + 1 }}</span>
                   <div class="rd-value">
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(file)"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
                     <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
                   </div>
                 </div>
@@ -1212,7 +1212,7 @@
                 <div class="rd-item rd-item--full" v-for="(file, idx) in approveForm.attachment.split(',')" :key="idx">
                   <span class="rd-label">附件{{ idx + 1 }}</span>
                   <div class="rd-value">
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(file)"><el-icon><Download /></el-icon> {{ getFileName(file) }}</el-link>
                     <el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(file)">预览</el-button>
                   </div>
                 </div>
@@ -1373,6 +1373,7 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { downloadFile } from '@/utils/downloadFile'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_contract_index')
@@ -1412,7 +1413,6 @@ const isExpired = computed(() => {
 })
 const collapsedCards = reactive({ basic: false, attachment: false, dates: false, owner: false, paymentPlans: false, approve: false, changes: false, other: false, approveBasic: false, approveDates: false, approveOwner: false, approveAttach: false, approvePaymentPlans: false, approveOpinion: false, renewOriginal: false, renewTerms: false, renewAttachment: false, renewRemark: false, changeOriginal: false, changeContent: false, changeApprove: false })
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const data = reactive({
   form: {},
@@ -1603,6 +1603,9 @@ function getFileName(url) {
 }
 function handlePreview(fileUrl) {
   proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl))
+}
+function handleFileDownload(url) {
+  downloadFile(url)
 }
 function handleDelete(row) {
   const contractIds = row.contractId || ids.value
