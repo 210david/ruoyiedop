@@ -80,7 +80,7 @@
                 <template v-if="info.attachmentUrl">
                   <div v-for="(file, idx) in info.attachmentUrl.split(',')" :key="idx" style="line-height: 28px; display: flex; align-items: center; gap: 4px;">
                     <el-link :underline="false" type="primary" @click="handlePreview(file)"><el-icon><View /></el-icon>预览</el-link>
-                    <el-link :href="baseUrl + file" :underline="false" target="_blank" type="success" style="margin-left: 10px;"><el-icon><Download /></el-icon>下载</el-link>
+                    <el-link :underline="false" type="success" style="margin-left: 10px;" @click="handleFileDownload(file)"><el-icon><Download /></el-icon>下载</el-link>
                     <span style="margin-left: 10px; font-size: 13px; color: #606266;">{{ getFileName(file) }}</span>
                   </div>
                 </template>
@@ -181,6 +181,7 @@
 <script setup name="DmsEquipmentViewDrawer">
 import { getEquipment, getEquipmentHistory, listEquipmentLog } from '@/api/dms/equipment'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { downloadFile } from '@/utils/downloadFile'
 const { collapsedCards, toggleCard } = useDetailCard(['v4', 'v3', 'v2', 'v1', 'v0'])
 
 const { proxy } = getCurrentInstance()
@@ -189,7 +190,6 @@ const { dms_equipment_status, dms_equipment_level, dms_order_type, dms_order_sta
 const visible = ref(false)
 const loading = ref(false)
 const info = reactive({})
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 
 const activeTab = ref('detail')
 /** 工单记录分页 */
@@ -279,6 +279,11 @@ function getFileName(url) {
 /** 预览附件 */
 function handlePreview(file) {
   proxy.$refs.filePreviewRef.open(file, getFileName(file))
+}
+
+/** 下载附件（携带认证 token） */
+function handleFileDownload(file) {
+  downloadFile(file)
 }
 
 defineExpose({ open })

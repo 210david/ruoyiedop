@@ -461,7 +461,7 @@
                 <div class="rd-value">
                   <template v-if="viewForm.invoiceAttachment">
                     <div v-for="(file, idx) in viewForm.invoiceAttachment.split(',')" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                      <el-link :href="baseUrl + file" :underline="false" target="_blank" type="primary">
+                      <el-link :underline="false" type="primary" @click="handleFileDownload(file)">
                         <el-icon><Download /></el-icon> {{ getFileName(file) }}
                       </el-link>
                       <el-button link type="success" icon="View" size="small" @click="handlePreview(file)">预览</el-button>
@@ -503,13 +503,12 @@ import OrderPicker from '@/components/OrderPicker/index.vue'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import request from '@/utils/request'
+import { downloadFile } from '@/utils/downloadFile'
 import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_invoice_index')
 const { marketing_invoice_type, marketing_invoice_status } = proxy.useDict('marketing_invoice_type', 'marketing_invoice_status')
-
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 const list = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
@@ -723,6 +722,7 @@ function uploadAttachment(file) {
 
 function getFileName(name) { if (name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
+function handleFileDownload(url) { downloadFile(url) }
 
 getList()
 </script>
