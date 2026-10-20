@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.annotation.RateLimiter;
 import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.constant.Constants;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.LimitType;
 import com.ruoyi.common.utils.StringUtils;
@@ -64,6 +65,14 @@ public class CommonController
             }
             String realFileName = System.currentTimeMillis() + fileName.substring(fileName.indexOf("_") + 1);
             String filePath = RuoYiConfig.getDownloadPath() + fileName;
+
+            // 安全加固：规范化路径后必须仍在下载根目录内（防目录穿越，CVE-2026-76576 同源风险）
+            Path basePath = Paths.get(RuoYiConfig.getDownloadPath()).toAbsolutePath().normalize();
+            Path targetPath = Paths.get(filePath).toAbsolutePath().normalize();
+            if (!targetPath.startsWith(basePath))
+            {
+                throw new Exception(StringUtils.format("文件名称({})非法，不允许下载。 ", fileName));
+            }
 
             response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
             FileUtils.setAttachmentResponseHeader(response, realFileName);
@@ -109,6 +118,7 @@ public class CommonController
     /**
      * 通用上传请求（多个）
      */
+    @RateLimiter(time = 60, count = 100, limitType = LimitType.IP)
     @PostMapping("/uploads")
     public AjaxResult uploadFiles(List<MultipartFile> files) throws Exception
     {
@@ -160,8 +170,21 @@ public class CommonController
             }
             // 本地资源路径
             String localPath = RuoYiConfig.getProfile();
+            // 安全加固：资源路径必须以 /profile 前缀开头（防止拼接出任意路径）
+            String normalizedResource = resource.startsWith("/") ? resource : "/" + resource;
+            if (!normalizedResource.startsWith(Constants.RESOURCE_PREFIX))
+            {
+                throw new Exception(StringUtils.format("资源文件({})非法，不允许下载。 ", resource));
+            }
             // 数据库资源地址
             String downloadPath = localPath + FileUtils.stripPrefix(resource);
+            // 安全加固：规范化路径后必须仍在 profile 根目录内（防目录穿越，CVE-2026-76576）
+            Path basePath = Paths.get(localPath).toAbsolutePath().normalize();
+            Path targetPath = Paths.get(downloadPath).toAbsolutePath().normalize();
+            if (!targetPath.startsWith(basePath))
+            {
+                throw new Exception(StringUtils.format("资源文件({})非法，不允许下载。 ", resource));
+            }
             // 下载名称
             String downloadName = StringUtils.substringAfterLast(downloadPath, "/");
             response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
@@ -258,6 +281,8 @@ public class CommonController
                 FileUtils.setAttachmentResponseHeader(response, downloadName);
             }
             // 注意：加密文件解压后的实际大小与磁盘文件大小不同，不设置 Content-Length
+            // 认证文件内容不做浏览器缓存，避免服务端修复/文件更新后命中过期响应
+            response.setHeader("Cache-Control", "no-store");
 
             // 6. 读取加密文件并解密解压后输出
             fis = new FileInputStream(file);
@@ -346,6 +371,7 @@ public class CommonController
 
             response.setContentType(MediaType.APPLICATION_PDF_VALUE);
             response.setHeader("Content-Disposition", "inline");
+            response.setHeader("Cache-Control", "no-store");
             response.setContentLengthLong(pdf.length());
             FileInputStream pis = new FileInputStream(pdf);
             OutputStream os = response.getOutputStream();

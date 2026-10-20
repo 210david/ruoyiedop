@@ -262,6 +262,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- PDM产品设计管理模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-pdm</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- HTML解析-->
             <dependency>
                 <groupId>org.jsoup</groupId>
@@ -291,6 +298,7 @@
         <module>ruoyi-flowable</module>
         <module>ruoyi-bid</module>
         <module>ruoyi-fin</module>
+        <module>ruoyi-pdm</module>
     </modules>
     <packaging>pom</packaging>
 

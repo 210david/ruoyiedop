@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmProductCategoryMapper">
+
+    <resultMap type="PdmProductCategory" id="PdmProductCategoryResult">
+        <result property="categoryId"   column="category_id"/>
+        <result property="parentId"     column="parent_id"/>
+        <result property="ancestors"    column="ancestors"/>
+        <result property="categoryCode" column="category_code"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="orderNum"     column="order_num"/>
+        <result property="status"       column="status"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectCategoryVo">
+        SELECT category_id, parent_id, ancestors, category_code, category_name, order_num,
+               status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pdm_product_category
+    </sql>
+
+    <select id="selectCategoryList" parameterType="PdmProductCategory" resultMap="PdmProductCategoryResult">
+        <include refid="selectCategoryVo"/>
+        <where>
+            del_flag = '0'
+            <if test="categoryName != null and categoryName != ''"> AND category_name LIKE CONCAT('%', #{categoryName}, '%')</if>
+            <if test="categoryCode != null and categoryCode != ''"> AND category_code LIKE CONCAT('%', #{categoryCode}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY parent_id, order_num
+    </select>
+
+    <select id="selectCategoryById" parameterType="Long" resultMap="PdmProductCategoryResult">
+        <include refid="selectCategoryVo"/> WHERE category_id = #{categoryId} AND del_flag = '0'
+    </select>
+
+    <select id="checkCategoryNameUnique" parameterType="PdmProductCategory" resultMap="PdmProductCategoryResult">
+        <include refid="selectCategoryVo"/>
+        WHERE category_name = #{categoryName} AND parent_id = #{parentId} AND del_flag = '0' LIMIT 1
+    </select>
+
+    <select id="hasChildByCategoryId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM pdm_product_category WHERE parent_id = #{categoryId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertCategory" parameterType="PdmProductCategory" useGeneratedKeys="true" keyProperty="categoryId">
+        INSERT INTO pdm_product_category (parent_id, ancestors, category_code, category_name, order_num,
+            status, create_by, create_time, remark)
+        VALUES (#{parentId}, #{ancestors}, #{categoryCode}, #{categoryName}, #{orderNum},
+            #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateCategory" parameterType="PdmProductCategory">
+        UPDATE pdm_product_category
+        <set>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="ancestors != null">ancestors = #{ancestors},</if>
+            <if test="categoryCode != null and categoryCode != ''">category_code = #{categoryCode},</if>
+            <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE category_id = #{categoryId}
+    </update>
+
+    <delete id="deleteCategoryByIds" parameterType="Long">
+        UPDATE pdm_product_category SET del_flag = '2' WHERE category_id IN
+        <foreach item="categoryId" collection="array" open="(" separator="," close=")">#{categoryId}</foreach>
+    </delete>
+
+</mapper>

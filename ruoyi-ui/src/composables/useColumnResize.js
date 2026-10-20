@@ -34,12 +34,12 @@ export function useColumnResize(storageKey) {
   }
 
   /**
-   * 获取列宽：优先使用保存的值，否则返回默认值
-   * 保存的宽度不能小于默认宽度的 80%，防止折行
+   * 获取列宽：优先使用保存的值（持久化忠实原则，用户拖过的宽度必须还原），
+   * 仅设绝对下限 60px 防止拖至过窄破坏布局
    */
   function colWidth(prop, defaultWidth) {
     const saved = savedWidths.value[prop]
-    if (saved && saved >= defaultWidth * 0.8) {
+    if (saved && saved >= 60) {
       return saved
     }
     return defaultWidth
