@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.dms.domain.DmsEquipment;
@@ -46,6 +48,8 @@ public class DmsEquipmentServiceImpl implements IDmsEquipmentService
         if (StringUtils.isNotEmpty(equipment.getEquipmentStatus())) { params.put("equipmentStatus", equipment.getEquipmentStatus()); }
         equipment.setEquipmentCode(mkNumberRuleService.generateNumber("dms_equipment", params));
         }
+        equipment.setCreateBy(SecurityUtils.getUsername());
+        equipment.setCreateTime(DateUtils.getNowDate());
         return dmsEquipmentMapper.insertEquipment(equipment);
     }
 

@@ -58,6 +58,7 @@ public class MkPromotionDataServiceImpl implements IMkPromotionDataService
             return mkPromotionDataMapper.updatePromotionData(data);
         }
         data.setCreateBy(SecurityUtils.getUsername());
+        data.setCreateTime(DateUtils.getNowDate());
         return mkPromotionDataMapper.insertPromotionData(data);
     }
 
