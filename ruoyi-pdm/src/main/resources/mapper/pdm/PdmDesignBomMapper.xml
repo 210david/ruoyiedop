@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmDesignBomMapper">
+
+    <resultMap type="PdmDesignBom" id="PdmDesignBomResult">
+        <result property="bomId"       column="bom_id"/>
+        <result property="bomNo"       column="bom_no"/>
+        <result property="bomName"     column="bom_name"/>
+        <result property="productId"   column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="baseQty"     column="base_qty"/>
+        <result property="baseUnit"    column="base_unit"/>
+        <result property="bomStatus"   column="bom_status"/>
+        <result property="deptId"      column="dept_id"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"    column="create_by"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateBy"    column="update_by"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="remark"      column="remark"/>
+        <result property="itemCount"   column="item_count"/>
+        <result property="currentVersionNo" column="current_version_no"/>
+        <result property="releasedVersionNo" column="released_version_no"/>
+    </resultMap>
+
+    <resultMap type="PdmDesignBomItem" id="PdmDesignBomItemResult">
+        <result property="itemId"       column="item_id"/>
+        <result property="bomId"        column="bom_id"/>
+        <result property="parentId"     column="parent_id"/>
+        <result property="itemLevel"    column="item_level"/>
+        <result property="materialId"   column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel"    column="spec_model"/>
+        <result property="unit"         column="unit"/>
+        <result property="usageQty"     column="usage_qty"/>
+        <result property="lossRate"     column="loss_rate"/>
+        <result property="orderNum"     column="order_num"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectBomVo">
+        SELECT bom_id, bom_no, bom_name, product_id, product_code, product_name, base_qty, base_unit,
+               bom_status, dept_id, del_flag, create_by, create_time, update_by, update_time, remark,
+               (SELECT COUNT(1) FROM pdm_design_bom_item i WHERE i.bom_id = bom_id) AS item_count,
+               (SELECT v.version_no FROM pdm_doc_version v WHERE v.biz_type = '3' AND v.biz_id = bom_id AND v.effective_flag = '1' ORDER BY v.version_id DESC LIMIT 1) AS current_version_no,
+               (SELECT r.ebom_version FROM pdm_mbom_release r WHERE r.product_id = pdm_design_bom.product_id AND r.release_status = '0' ORDER BY r.release_id DESC LIMIT 1) AS released_version_no
+        FROM pdm_design_bom
+    </sql>
+
+    <select id="selectBomList" parameterType="PdmDesignBom" resultMap="PdmDesignBomResult">
+        <include refid="selectBomVo"/>
+        <where>
+            del_flag = '0'
+            <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="bomName != null and bomName != ''"> AND bom_name LIKE CONCAT('%', #{bomName}, '%')</if>
+            <if test="productId != null"> AND product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="bomStatus != null and bomStatus != ''"> AND bom_status = #{bomStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND create_time &lt;= #{params.endTime}</if>
+            <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+        </where>
+        ORDER BY bom_id DESC
+    </select>
+
+    <select id="selectBomById" parameterType="Long" resultMap="PdmDesignBomResult">
+        <include refid="selectBomVo"/> WHERE bom_id = #{bomId} AND del_flag = '0'
+    </select>
+
+    <select id="selectItemsByBomId" parameterType="Long" resultMap="PdmDesignBomItemResult">
+        SELECT item_id, bom_id, parent_id, item_level, material_id, material_code, material_name,
+               spec_model, unit, usage_qty, loss_rate, order_num, remark
+        FROM pdm_design_bom_item WHERE bom_id = #{bomId} ORDER BY order_num ASC, item_id ASC
+    </select>
+
+    <insert id="insertBom" parameterType="PdmDesignBom" useGeneratedKeys="true" keyProperty="bomId">
+        INSERT INTO pdm_design_bom (bom_no, bom_name, product_id, product_code, product_name,
+            base_qty, base_unit, bom_status, dept_id, create_by, create_time, remark)
+        VALUES (#{bomNo}, #{bomName}, #{productId}, #{productCode}, #{productName},
+            #{baseQty}, #{baseUnit}, #{bomStatus}, #{deptId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <insert id="insertBomItem" parameterType="PdmDesignBomItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO pdm_design_bom_item (bom_id, parent_id, item_level, material_id, material_code, material_name,
+            spec_model, unit, usage_qty, loss_rate, order_num, remark)
+        VALUES (#{bomId}, #{parentId}, #{itemLevel}, #{materialId}, #{materialCode}, #{materialName},
+            #{specModel}, #{unit}, #{usageQty}, #{lossRate}, #{orderNum}, #{remark})
+    </insert>
+
+    <update id="updateBom" parameterType="PdmDesignBom">
+        UPDATE pdm_design_bom
+        <set>
+            <if test="bomName != null and bomName != ''">bom_name = #{bomName},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productCode != null and productCode != ''">product_code = #{productCode},</if>
+            <if test="productName != null and productName != ''">product_name = #{productName},</if>
+            <if test="baseQty != null">base_qty = #{baseQty},</if>
+            <if test="baseUnit != null and baseUnit != ''">base_unit = #{baseUnit},</if>
+            <if test="bomStatus != null and bomStatus != ''">bom_status = #{bomStatus},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE bom_id = #{bomId}
+    </update>
+
+    <update id="updateBomItem" parameterType="PdmDesignBomItem">
+        UPDATE pdm_design_bom_item SET parent_id = #{parentId}, item_level = #{itemLevel} WHERE item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBomByIds" parameterType="Long">
+        UPDATE pdm_design_bom SET del_flag = '2' WHERE bom_id IN
+        <foreach item="bomId" collection="array" open="(" separator="," close=")">#{bomId}</foreach>
+    </delete>
+
+    <delete id="deleteItemsByBomId" parameterType="Long">
+        DELETE FROM pdm_design_bom_item WHERE bom_id = #{bomId}
+    </delete>
+
+</mapper>

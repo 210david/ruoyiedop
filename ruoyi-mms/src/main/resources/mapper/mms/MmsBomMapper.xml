@@ -259,4 +259,36 @@
         LIMIT 1
     </select>
 
+    <!-- ============ 接收产品设计模块下发的MBOM（纯新增，跨模块衔接点一） ============ -->
+
+    <!-- 根据物料ID查询物料信息（校验产品物料有效） -->
+    <select id="selectMaterialById" resultType="java.util.HashMap">
+        SELECT
+            material_id AS materialId,
+            material_code AS materialCode,
+            material_name AS materialName,
+            material_type AS materialType,
+            spec_model AS specModel,
+            unit
+        FROM wms_material
+        WHERE del_flag = '0' AND material_id = #{materialId}
+        LIMIT 1
+    </select>
+
+    <!-- 查询产品当前已发布状态的BOM列表（停用旧版本，D3口径） -->
+    <select id="selectPublishedListByProductId" parameterType="Long" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.product_id = #{productId} AND b.status = '1' AND b.del_flag = '0'
+    </select>
+
+    <!-- 停用BOM并记录失效日期 -->
+    <update id="disableBomWithExpire" parameterType="MmsBom">
+        UPDATE mms_bom SET
+            status = '2',
+            expire_date = #{expireDate},
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        WHERE bom_id = #{bomId}
+    </update>
+
 </mapper>

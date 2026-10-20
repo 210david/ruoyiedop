@@ -281,6 +281,8 @@ public class CommonController
                 FileUtils.setAttachmentResponseHeader(response, downloadName);
             }
             // 注意：加密文件解压后的实际大小与磁盘文件大小不同，不设置 Content-Length
+            // 认证文件内容不做浏览器缓存，避免服务端修复/文件更新后命中过期响应
+            response.setHeader("Cache-Control", "no-store");
 
             // 6. 读取加密文件并解密解压后输出
             fis = new FileInputStream(file);
@@ -369,6 +371,7 @@ public class CommonController
 
             response.setContentType(MediaType.APPLICATION_PDF_VALUE);
             response.setHeader("Content-Disposition", "inline");
+            response.setHeader("Cache-Control", "no-store");
             response.setContentLengthLong(pdf.length());
             FileInputStream pis = new FileInputStream(pdf);
             OutputStream os = response.getOutputStream();

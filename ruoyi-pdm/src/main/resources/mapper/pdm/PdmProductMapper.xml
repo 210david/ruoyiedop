@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmProductMapper">
+
+    <resultMap type="PdmProduct" id="PdmProductResult">
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"   column="product_code"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="categoryId"    column="category_id"/>
+        <result property="categoryName"  column="category_name"/>
+        <result property="productStatus" column="product_status"/>
+        <result property="designerId"    column="designer_id"/>
+        <result property="designerName"  column="designer_name"/>
+        <result property="finalDate"     column="final_date"/>
+        <result property="attach"        column="attach"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectProductVo">
+        SELECT product_id, product_code, material_id, material_name, spec_model, unit,
+               category_id, category_name, product_status, designer_id, designer_name, final_date, attach,
+               dept_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pdm_product
+    </sql>
+
+    <select id="selectProductList" parameterType="PdmProduct" resultMap="PdmProductResult">
+        <include refid="selectProductVo"/>
+        <where>
+            del_flag = '0'
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="categoryId != null"> AND (category_id = #{categoryId} OR category_id IN (SELECT category_id FROM pdm_product_category WHERE FIND_IN_SET(#{categoryId}, ancestors) AND del_flag = '0'))</if>
+            <if test="productStatus != null and productStatus != ''"> AND product_status = #{productStatus}</if>
+            <if test="specModel != null and specModel != ''"> AND spec_model LIKE CONCAT('%', #{specModel}, '%')</if>
+            <if test="designerId != null"> AND designer_id = #{designerId}</if>
+            <if test="designerName != null and designerName != ''"> AND designer_name LIKE CONCAT('%', #{designerName}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND create_time &lt;= #{params.endTime}</if>
+            <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+        </where>
+        ORDER BY product_id DESC
+    </select>
+
+    <select id="selectProductById" parameterType="Long" resultMap="PdmProductResult">
+        <include refid="selectProductVo"/> WHERE product_id = #{productId} AND del_flag = '0'
+    </select>
+
+    <select id="selectProductByMaterialId" parameterType="Long" resultMap="PdmProductResult">
+        <include refid="selectProductVo"/> WHERE material_id = #{materialId} AND del_flag = '0' LIMIT 1
+    </select>
+
+    <select id="checkMaterialUsed" resultMap="PdmProductResult">
+        <include refid="selectProductVo"/>
+        WHERE material_id = #{materialId} AND del_flag = '0'
+        <if test="productId != null"> AND product_id != #{productId}</if>
+        LIMIT 1
+    </select>
+
+    <select id="selectProductByCode" parameterType="String" resultMap="PdmProductResult">
+        <include refid="selectProductVo"/> WHERE product_code = #{productCode} LIMIT 1
+    </select>
+
+    <select id="countProductByCategoryId" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM pdm_product WHERE category_id = #{categoryId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertProduct" parameterType="PdmProduct" useGeneratedKeys="true" keyProperty="productId">
+        INSERT INTO pdm_product (product_code, material_id, material_name, spec_model, unit,
+            category_id, category_name, product_status, designer_id, designer_name, final_date, attach,
+            dept_id, create_by, create_time, remark)
+        VALUES (#{productCode}, #{materialId}, #{materialName}, #{specModel}, #{unit},
+            #{categoryId}, #{categoryName}, #{productStatus}, #{designerId}, #{designerName}, #{finalDate}, #{attach},
+            #{deptId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateProduct" parameterType="PdmProduct">
+        UPDATE pdm_product
+        <set>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null and unit != ''">unit = #{unit},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+            <if test="productStatus != null and productStatus != ''">product_status = #{productStatus},</if>
+            <if test="designerId != null">designer_id = #{designerId},</if>
+            <if test="designerName != null and designerName != ''">designer_name = #{designerName},</if>
+            <if test="finalDate != null">final_date = #{finalDate},</if>
+            <if test="attach != null">attach = #{attach},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE product_id = #{productId}
+    </update>
+
+    <delete id="deleteProductByIds" parameterType="Long">
+        UPDATE pdm_product SET del_flag = '2' WHERE product_id IN
+        <foreach item="productId" collection="array" open="(" separator="," close=")">#{productId}</foreach>
+    </delete>
+
+    <select id="selectMaterialType" parameterType="Long" resultType="String">
+        SELECT material_type FROM wms_material WHERE material_id = #{materialId} AND del_flag = '0'
+    </select>
+</mapper>

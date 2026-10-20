@@ -34,4 +34,13 @@ public interface IMmsBomService
      * @return 导入结果
      */
     public AjaxResult importBom(List<MmsBomImport> importList, Boolean isUpdateSupport, String operName);
+
+    /**
+     * 接收产品设计模块下发的制造BOM（跨模块衔接点一，D1决策：mms 纯新增方法）
+     * 校验产品物料有效 → 同产品旧已发布BOM置停用（D3口径）→ 事务内落库 mms_bom(status=1,bomType=0) + 明细
+     *
+     * @param bom 下发的BOM（productId=物料ID、version=EBOM生效版本号、明细需已确认物料编码）
+     * @return 接收生成的 mms_bom.bomId
+     */
+    public Long receiveMbom(MmsBom bom);
 }

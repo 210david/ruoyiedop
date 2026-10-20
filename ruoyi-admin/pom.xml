@@ -126,6 +126,12 @@
             <artifactId>ruoyi-fin</artifactId>
         </dependency>
 
+        <!-- PDM产品设计管理模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-pdm</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

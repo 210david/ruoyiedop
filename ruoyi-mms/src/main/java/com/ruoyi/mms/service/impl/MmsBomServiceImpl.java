@@ -587,6 +587,65 @@ public class MmsBomServiceImpl implements IMmsBomService
     }
 
     /**
+     * 接收产品设计模块下发的制造BOM（跨模块衔接点一，纯新增不改既有逻辑）
+     * 事务内完成：校验物料 → 停用旧发布BOM（D3）→ 落库主表+明细，失败整体回滚
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long receiveMbom(MmsBom bom)
+    {
+        if (bom.getProductId() == null)
+        {
+            throw new ServiceException("MBOM接收失败：产品物料ID不能为空");
+        }
+        if (bom.getDetailList() == null || bom.getDetailList().isEmpty())
+        {
+            throw new ServiceException("MBOM接收失败：BOM明细不能为空");
+        }
+        for (MmsBomDetail d : bom.getDetailList())
+        {
+            if (d.getMaterialId() == null)
+            {
+                throw new ServiceException("MBOM接收失败：明细存在未确认编码的物料行，禁止下发");
+            }
+        }
+        // 校验产品物料在物料库中有效
+        Map<String, Object> material = bomMapper.selectMaterialById(bom.getProductId());
+        if (material == null)
+        {
+            throw new ServiceException("MBOM接收失败：产品物料在物料库中不存在或已删除");
+        }
+        bom.setProductName(String.valueOf(material.get("materialName")));
+        if (StringUtils.isEmpty(bom.getBaseUnit()))
+        {
+            bom.setBaseUnit(String.valueOf(material.get("unit")));
+        }
+        // D3：同产品旧已发布BOM置停用并记录失效日期（在制工单靠 mms_wo_bom_snapshot 快照兼容）
+        List<MmsBom> publishedList = bomMapper.selectPublishedListByProductId(bom.getProductId());
+        for (MmsBom old : publishedList)
+        {
+            MmsBom disable = new MmsBom();
+            disable.setBomId(old.getBomId());
+            disable.setStatus("2"); // 停用
+            disable.setExpireDate(DateUtils.getNowDate());
+            disable.setUpdateBy(SecurityUtils.getUsername());
+            disable.setUpdateTime(DateUtils.getNowDate());
+            bomMapper.disableBomWithExpire(disable);
+        }
+        // 落库：bomType=0标准BOM、status=1已发布（mms齐套按productId自动找已发布BOM）
+        bom.setBomNo(mkNumberRuleService.generateNumber("mms_bom"));
+        bom.setBomType("0");
+        bom.setStatus("1");
+        bom.setDelFlag("0");
+        bom.setEffectiveDate(DateUtils.getNowDate());
+        bom.setCreateBy(SecurityUtils.getUsername());
+        bom.setCreateTime(DateUtils.getNowDate());
+        bomMapper.insertBom(bom);
+        insertBomDetails(bom);
+        return bom.getBomId();
+    }
+
+    /**
      * 校验字典类字段和数字字段
      */
     private void validateDictFields(MmsBomImport row)

@@ -167,7 +167,9 @@ public class FileStorageUtils
     }
 
     /**
-     * 从输入流读取加密数据，解密解压后写入输出流（读取时使用）
+     * 从输入流读取数据，解密解压后写入输出流（读取时使用）
+     * 兼容明文文件（历史数据、外部放置文件）：非本系统加密格式时原样透传输出，
+     * 避免直接抛异常导致响应体为空
      *
      * @param input 磁盘文件输入流
      * @param output 浏览器输出流
@@ -175,6 +177,12 @@ public class FileStorageUtils
     public static void decryptStream(InputStream input, OutputStream output) throws IOException
     {
         byte[] inputData = input.readAllBytes();
+        if (!isEncryptedFile(inputData))
+        {
+            output.write(inputData);
+            output.flush();
+            return;
+        }
         byte[] decrypted = decryptAndDecompress(inputData);
         output.write(decrypted);
         output.flush();

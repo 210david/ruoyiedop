@@ -23,4 +23,13 @@ public interface MmsBomMapper {
 
     /** 根据物料编码查询物料信息（导入时通过编码获取物料ID） */
     public java.util.Map<String, Object> selectMaterialByCode(@Param("materialCode") String materialCode);
+
+    /** 根据物料ID查询物料信息（接收MBOM时校验产品物料有效） */
+    public java.util.Map<String, Object> selectMaterialById(@Param("materialId") Long materialId);
+
+    /** 查询产品当前已发布状态的BOM列表（接收MBOM时停用旧版本，D3口径） */
+    public List<MmsBom> selectPublishedListByProductId(Long productId);
+
+    /** 停用BOM并记录失效日期（接收MBOM时停用旧发布BOM） */
+    public int disableBomWithExpire(MmsBom bom);
 }

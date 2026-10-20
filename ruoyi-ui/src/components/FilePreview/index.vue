@@ -32,6 +32,15 @@
       <!-- 视频预览 -->
       <video v-else-if="previewType === 'video'" :src="objectUrl" controls class="video-preview"></video>
 
+      <!-- 文本预览 -->
+      <div v-else-if="previewType === 'text'" class="text-preview-wrap">
+        <div class="text-preview-toolbar">
+          <span class="text-preview-name">{{ fileName }}</span>
+          <el-button type="primary" link :icon="Download" @click="handleDownload">下载文件</el-button>
+        </div>
+        <pre class="text-preview-body">{{ textContent }}</pre>
+      </div>
+
       <!-- 不支持的格式 -->
       <div v-else class="unsupported-wrap">
         <el-icon :size="48" color="#c0c4cc"><Document /></el-icon>
@@ -63,12 +72,15 @@ const objectUrl = ref('')
 const previewType = ref('')
 const excelHtml = ref('')
 const wordContainer = ref(null)
+// 文本类文件内容
+const textContent = ref('')
 
 const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']
 const pdfExts = ['pdf']
 const wordExts = ['docx', 'doc']
 const excelExts = ['xlsx', 'xls']
 const videoExts = ['mp4', 'avi', 'rmvb', 'webm']
+const textExts = ['txt', 'md', 'log', 'json', 'xml', 'csv']
 
 function getExtension(name) {
   const idx = name.lastIndexOf('.')
@@ -81,6 +93,7 @@ function getPreviewType(ext) {
   if (wordExts.includes(ext)) return 'word'
   if (excelExts.includes(ext)) return 'excel'
   if (videoExts.includes(ext)) return 'video'
+  if (textExts.includes(ext)) return 'text'
   return ''
 }
 
@@ -93,6 +106,7 @@ async function open(url, name) {
   maximized.value = false
   loading.value = true
   excelHtml.value = ''
+  textContent.value = ''
   // 清理上一次的 objectUrl
   if (objectUrl.value) {
     URL.revokeObjectURL(objectUrl.value)
@@ -122,6 +136,14 @@ async function open(url, name) {
       // 图片、PDF、视频通过安全接口获取 blob 后用 objectURL 展示
       const blob = await fetchBlob(url)
       objectUrl.value = URL.createObjectURL(blob)
+    } else if (previewType.value === 'text') {
+      // 文本类文件：读取内容直接展示（UTF-8 优先，检测到乱码时回退 GBK 解码，兼容 Windows 记事本 ANSI 文件）
+      const buf = await (await fetchBlob(url)).arrayBuffer()
+      let text = new TextDecoder('utf-8').decode(buf)
+      if (text.includes('\uFFFD')) {
+        try { text = new TextDecoder('gbk').decode(buf) } catch (e) { /* 忽略，保持 UTF-8 结果 */ }
+      }
+      textContent.value = text
     }
   } catch (e) {
     proxy.$modal.msgError('文件加载失败：' + e.message)
@@ -263,6 +285,7 @@ function handleClose() {
   visible.value = false
   previewType.value = ''
   excelHtml.value = ''
+  textContent.value = ''
   fileUrl.value = ''
   fileName.value = ''
 }
@@ -300,6 +323,7 @@ defineExpose({ open })
 .file-preview-dialog.is-max .word-preview-wrap,
 .file-preview-dialog.is-max .excel-preview-wrap,
 .file-preview-dialog.is-max .video-preview,
+.file-preview-dialog.is-max .text-preview-wrap,
 .file-preview-dialog.is-max .unsupported-wrap {
   height: 100%;
   max-height: none;
@@ -360,6 +384,48 @@ defineExpose({ open })
   width: 100%;
   max-height: 70vh;
 }
+
+.text-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.text-preview-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.text-preview-name {
+  font-size: 13px;
+  color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.text-preview-body {
+  flex: 1;
+  min-height: 320px;
+  max-height: 62vh;
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  background: #f8f9fb;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.file-preview-dialog.is-max .text-preview-body { max-height: none; }
 
 .unsupported-wrap {
   text-align: center;
