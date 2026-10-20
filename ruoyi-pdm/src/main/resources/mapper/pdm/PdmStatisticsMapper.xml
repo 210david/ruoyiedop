@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmStatisticsMapper">
+
+    <resultMap type="com.ruoyi.pdm.domain.PdmStatistics" id="PdmStatisticsResult">
+        <result property="productId" column="product_id" />
+        <result property="productCode" column="product_code" />
+        <result property="productName" column="material_name" />
+        <result property="categoryId" column="category_id" />
+        <result property="categoryName" column="category_name" />
+        <result property="productStatus" column="product_status" />
+        <result property="finalDate" column="final_date" />
+        <result property="createTime" column="create_time" />
+        <result property="schemeCount" column="scheme_count" />
+        <result property="fileCount" column="file_count" />
+        <result property="bomCount" column="bom_count" />
+        <result property="changeCount" column="change_count" />
+        <result property="lastChangeTime" column="last_change_time" />
+        <result property="productCount" column="product_count" />
+        <result property="releaseCount" column="release_count" />
+    </resultMap>
+
+    <sql id="statisticsFrom">
+        FROM pdm_product p
+        LEFT JOIN (SELECT product_id, COUNT(*) cnt FROM pdm_scheme WHERE del_flag = '0' GROUP BY product_id) s ON s.product_id = p.product_id
+        LEFT JOIN (SELECT product_id, COUNT(*) cnt FROM pdm_design_file WHERE del_flag = '0' GROUP BY product_id) f ON f.product_id = p.product_id
+        LEFT JOIN (SELECT product_id, COUNT(*) cnt FROM pdm_design_bom WHERE del_flag = '0' GROUP BY product_id) b ON b.product_id = p.product_id
+        LEFT JOIN (SELECT product_id, COUNT(*) cnt, MAX(create_time) last_time FROM pdm_change_order WHERE del_flag = '0' GROUP BY product_id) c ON c.product_id = p.product_id
+    </sql>
+
+    <sql id="statisticsWhere">
+        WHERE p.del_flag = '0'
+        <if test="productCode != null and productCode != ''"> AND p.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+        <if test="productName != null and productName != ''"> AND p.material_name LIKE CONCAT('%', #{productName}, '%')</if>
+        <if test="categoryId != null"> AND (p.category_id = #{categoryId} OR p.category_id IN (SELECT t.category_id FROM pdm_product_category t WHERE FIND_IN_SET(#{categoryId}, t.ancestors)))</if>
+        <if test="productStatus != null and productStatus != ''"> AND p.product_status = #{productStatus}</if>
+        <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(p.create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+        <if test="params.endTime != null and params.endTime != ''"> AND date_format(p.create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
+    </sql>
+
+    <select id="selectStatisticsList" parameterType="com.ruoyi.pdm.domain.PdmStatistics" resultMap="PdmStatisticsResult">
+        SELECT p.product_id, p.product_code, p.material_name, p.category_id, p.category_name, p.product_status, p.final_date, p.create_time,
+               IFNULL(s.cnt, 0) scheme_count, IFNULL(f.cnt, 0) file_count, IFNULL(b.cnt, 0) bom_count, IFNULL(c.cnt, 0) change_count, c.last_time last_change_time
+        <include refid="statisticsFrom"/>
+        <include refid="statisticsWhere"/>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="selectStatisticsSummary" parameterType="com.ruoyi.pdm.domain.PdmStatistics" resultMap="PdmStatisticsResult">
+        SELECT COUNT(*) product_count,
+               IFNULL(SUM(s.cnt), 0) scheme_count,
+               IFNULL(SUM(f.cnt), 0) file_count,
+               IFNULL(SUM(b.cnt), 0) bom_count,
+               IFNULL(SUM(c.cnt), 0) change_count,
+               (SELECT COUNT(*) FROM pdm_mbom_release WHERE del_flag = '0') release_count
+        <include refid="statisticsFrom"/>
+        <include refid="statisticsWhere"/>
+    </select>
+
+    <select id="selectCategoryDist" resultType="java.util.HashMap">
+        SELECT c.category_name name, COUNT(*) value
+        FROM pdm_product p JOIN pdm_product_category c ON p.category_id = c.category_id
+        WHERE p.del_flag = '0'
+        GROUP BY c.category_name
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectStatusDist" resultType="java.util.HashMap">
+        SELECT product_status name, COUNT(*) value
+        FROM pdm_product WHERE del_flag = '0'
+        GROUP BY product_status
+    </select>
+
+    <select id="selectMonthTrend" resultType="java.util.HashMap">
+        SELECT m.month,
+               IFNULL(s.cnt, 0) schemeCount,
+               IFNULL(f.cnt, 0) fileCount,
+               IFNULL(b.cnt, 0) bomCount,
+               IFNULL(ch.cnt, 0) changeCount
+        FROM (
+            SELECT DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL n MONTH), '%Y-%m') month
+            FROM (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+                  UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11) nums
+        ) m
+        LEFT JOIN (SELECT DATE_FORMAT(create_time, '%Y-%m') mk, COUNT(*) cnt FROM pdm_scheme WHERE del_flag = '0' AND create_time >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH) GROUP BY mk) s ON s.mk = m.month
+        LEFT JOIN (SELECT DATE_FORMAT(create_time, '%Y-%m') mk, COUNT(*) cnt FROM pdm_design_file WHERE del_flag = '0' AND create_time >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH) GROUP BY mk) f ON f.mk = m.month
+        LEFT JOIN (SELECT DATE_FORMAT(create_time, '%Y-%m') mk, COUNT(*) cnt FROM pdm_design_bom WHERE del_flag = '0' AND create_time >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH) GROUP BY mk) b ON b.mk = m.month
+        LEFT JOIN (SELECT DATE_FORMAT(create_time, '%Y-%m') mk, COUNT(*) cnt FROM pdm_change_order WHERE del_flag = '0' AND create_time >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH) GROUP BY mk) ch ON ch.mk = m.month
+        ORDER BY m.month
+    </select>
+
+    <select id="selectChangeStatusDist" resultType="java.util.HashMap">
+        SELECT change_status name, COUNT(*) value
+        FROM pdm_change_order WHERE del_flag = '0'
+        GROUP BY change_status
+    </select>
+
+    <select id="selectProductTop" resultType="java.util.HashMap">
+        SELECT p.material_name name,
+               (SELECT COUNT(*) FROM pdm_scheme s WHERE s.product_id = p.product_id AND s.del_flag = '0') schemeCount,
+               (SELECT COUNT(*) FROM pdm_design_file f WHERE f.product_id = p.product_id AND f.del_flag = '0') fileCount,
+               (SELECT COUNT(*) FROM pdm_design_bom b WHERE b.product_id = p.product_id AND b.del_flag = '0') bomCount
+        FROM pdm_product p
+        WHERE p.del_flag = '0'
+        ORDER BY schemeCount + fileCount + bomCount DESC, p.create_time DESC
+        LIMIT 10
+    </select>
+
+</mapper>
