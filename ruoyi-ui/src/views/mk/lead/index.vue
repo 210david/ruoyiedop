@@ -1086,7 +1086,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const leadIds = row.leadId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delLead(leadIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const leadIds = row.leadId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delLead(leadIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/lead/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'leadId'), `lead_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -1156,7 +1156,7 @@ function handleRelease(row) {
       proxy.$modal.msgSuccess('已退回公海')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('退回公海失败：' + (e?.message || e)) })
 }
 
 // 标记无效

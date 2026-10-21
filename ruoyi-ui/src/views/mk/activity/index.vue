@@ -1095,7 +1095,7 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.activityStatus] !== undefined) counts[r.activityStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-done', '4': 'tab-void', '5': 'tab-reject' }; return map[value] || '' }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'green', '4': 'gray', '5': 'red' }; return map[status] || 'gray' }
@@ -1198,13 +1198,13 @@ function handleSignIn(row) {
   proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => {
     proxy.$modal.msgSuccess('签到成功')
     getParticipantsByActivity(viewForm.value.activityId).then(res => { viewParticipants.value = res.data || [] })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('签到失败：' + (e?.message || e)) })
 }
 function handleConvertLead(row) {
   proxy.$modal.confirm('确认将该参与人转化为线索？').then(() => convertToLead(row.participantId)).then(() => {
     proxy.$modal.msgSuccess('转线索成功')
     getParticipantsByActivity(viewForm.value.activityId).then(res => { viewParticipants.value = res.data || [] })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('转线索失败：' + (e?.message || e)) })
 }
 // 详情页报名推广
 async function loadViewPromoteUrl() {
@@ -1236,7 +1236,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const activityIds = row.activityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delActivity(activityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const activityIds = row.activityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delActivity(activityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/activity/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'Activity') }, ids.value, 'activityId'), `activity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -1255,7 +1255,7 @@ function handleChangeStatus(row, toStatus) {
         }, 500)
       }
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('变更活动状态失败：' + (e?.message || e)) })
 }
 
 // 活动结算
@@ -1291,7 +1291,7 @@ function handleCopy(row) {
   proxy.$modal.confirm('确认复制活动"' + row.activityName + '"？').then(() => copyActivity(row.activityId)).then(() => {
     proxy.$modal.msgSuccess('复制成功')
     getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('复制活动失败：' + (e?.message || e)) })
 }
 
 // 操作下拉菜单统一分发
@@ -1316,7 +1316,7 @@ function handleBatchPublish() {
       proxy.$modal.msgSuccess('批量发布成功')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('批量发布失败：' + (e?.message || e)) })
 }
 function handleBatchArchive() {
   proxy.$modal.confirm('确认批量归档选中的' + ids.value.length + '个活动？').then(() => {
@@ -1324,7 +1324,7 @@ function handleBatchArchive() {
       proxy.$modal.msgSuccess('批量归档成功')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('批量归档失败：' + (e?.message || e)) })
 }
 function handleBatchOwner() {
   batchOwnerUserId.value = null

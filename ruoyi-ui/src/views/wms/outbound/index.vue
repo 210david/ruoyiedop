@@ -184,10 +184,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.detail">
               <el-alert v-if="!form.warehouseId" title="请先选择出库仓库，系统将加载该仓库的可用库存" type="info" :closable="false" show-icon style="margin-bottom: 10px" />
-              <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAddDetail" :disabled="!form.warehouseId">添加明细</el-button></el-col>
-                <el-col :span="1.5"><el-button type="success" plain icon="MagicStick" @click="openFefoDialog" :disabled="!form.warehouseId">FEFO自动分配</el-button></el-col>
-              </el-row>
+              <el-row :gutter="10" class="mb8"><el-col :span="1.5"><el-button type="primary" plain icon="Plus" @click="handleAddDetail" :disabled="!form.warehouseId">添加明细</el-button></el-col></el-row>
               <el-table :data="form.detailList" border @header-dragend="onHeaderDragEnd">
                 <el-table-column label="库存物料" min-width="220"><template #default="scope"><el-input v-model="scope.row.materialCode" readonly size="small" placeholder="选择库存物料" @click="openInventoryPicker(scope.$index)"><template v-if="scope.row.materialCode" #append><el-button icon="CircleClose" size="small" @click.stop="clearInventory(scope.$index)" /></template><template v-else #append><el-button icon="Search" size="small" @click="openInventoryPicker(scope.$index)" /></template></el-input></template></el-table-column>
                 <el-table-column label="物料编码" prop="materialCode" :width="colWidth('materialCode', 120)" resizable align="center" />
@@ -195,11 +192,9 @@
                 <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
                 <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
                 <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable align="center" />
-                <el-table-column label="到期日期" prop="expiryDate" :width="colWidth('expiryDate', 110)" resizable align="center"><template #default="scope"><span :class="{ 'expiry-warn': isExpiryWarn(scope.row) }">{{ scope.row.expiryDate || '-' }}</span></template></el-table-column>
                 <el-table-column label="库位" prop="locationName" :width="colWidth('locationName', 90)" resizable show-overflow-tooltip align="center" />
                 <el-table-column label="可用库存" prop="availableQty" :width="colWidth('availableQty', 90)" resizable align="center" />
                 <el-table-column label="出库数量" width="130"><template #default="scope"><el-input-number v-model="scope.row.planQty" :precision="2" :min="0" :max="scope.row.availableQty" controls-position="right" style="width:100%" @change="validatePlanQty(scope.$index)" /></template></el-table-column>
-                <el-table-column label="换批原因" min-width="140"><template #default="scope"><el-input v-model="scope.row.changeReason" size="small" placeholder="与FEFO推荐不一致时必填" maxlength="255" /></template></el-table-column>
                 <el-table-column label="操作" width="70" align="center"><template #default="scope"><el-button link type="danger" icon="Delete" @click="handleDeleteDetail(scope.$index)">删除</el-button></template></el-table-column>
               </el-table>
               <el-form-item label="备注" prop="remark" style="margin-top: 15px"><el-input v-model="form.remark" type="textarea" /></el-form-item>
@@ -211,81 +206,6 @@
 
 <!-- 库存选择器 -->
 <inventory-picker ref="inventoryPickerRef" title="选择库存物料" @confirm="onInventoryPickerConfirm" />
-
-<!-- FEFO自动分配对话框 -->
-<el-dialog v-model="fefoOpen" width="900px" append-to-body draggable class="rd-dialog">
-  <template #header>
-    <div class="rd-detail-header">
-      <div class="rd-detail-header-icon"><el-icon style="font-size:18px"><MagicStick /></el-icon></div>
-      <span class="rd-detail-header-title">FEFO自动分配</span>
-      <div class="rd-detail-header-sub"><span class="rd-detail-header-divider"></span><span class="rd-detail-header-no">先到期先出 · 三重拦截校验</span></div>
-    </div>
-  </template>
-  <section class="rd-card">
-    <div class="rd-card-header" @click="toggleCard('fSelect')">
-      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>选择物料与数量</div>
-      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fSelect }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-    </div>
-    <div class="rd-card-body" v-show="!collapsedCards.fSelect">
-      <el-row :gutter="16">
-        <el-col :span="10">
-          <el-form-item label="物料" label-width="80px">
-            <el-input v-model="fefoForm.materialCode" readonly placeholder="选择物料" @click="openFefoMaterialPicker">
-              <template v-if="fefoForm.materialCode" #append><el-button icon="CircleClose" @click.stop="clearFefoMaterial" /></template>
-              <template v-else #append><el-button icon="Search" @click="openFefoMaterialPicker" /></template>
-            </el-input>
-          </el-form-item>
-        </el-col>
-        <el-col :span="8">
-          <el-form-item label="出库数量" label-width="80px">
-            <el-input-number v-model="fefoForm.qty" :precision="2" :min="0" style="width:100%" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label-width="0">
-            <el-button type="primary" icon="Search" :loading="fefoLoading" :disabled="!fefoForm.materialId || !fefoForm.qty || fefoForm.qty <= 0" @click="loadFefoPreview">试算分配</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row :gutter="16" v-if="fefoForm.materialName">
-        <el-col :span="24">
-          <div class="fefo-material-info">物料名称：<strong>{{ fefoForm.materialName }}</strong></div>
-        </el-col>
-      </el-row>
-    </div>
-  </section>
-  <section class="rd-card" v-if="fefoPreviewed">
-    <div class="rd-card-header" @click="toggleCard('fPlan')">
-      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>分配计划（按到期日期升序）</div>
-      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.fPlan }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-    </div>
-    <div class="rd-card-body" v-show="!collapsedCards.fPlan">
-      <el-alert v-if="fefoPlan && fefoPlan.success" type="success" :closable="false" show-icon style="margin-bottom: 10px"
-        :title="'分配成功：需求 ' + fefoPlan.requestedQty + '，可用 ' + fefoPlan.availableQty + '，共拆分 ' + (fefoPlan.allocations || []).length + ' 行'" />
-      <el-alert v-else type="warning" :closable="false" show-icon style="margin-bottom: 10px"
-        title="分配未满足，请检查拦截原因" />
-      <el-table :data="fefoPlan ? fefoPlan.allocations : []" border size="small" v-loading="fefoLoading">
-        <el-table-column label="序号" type="index" width="60" align="center" />
-        <el-table-column label="批次号" prop="batchCode" align="center" />
-        <el-table-column label="库位" prop="locationName" align="center" show-overflow-tooltip />
-        <el-table-column label="到期日期" prop="expireDate" align="center"><template #default="scope">{{ fmtDate(scope.row.expireDate) }}</template></el-table-column>
-        <el-table-column label="剩余天数" prop="daysRemain" width="90" align="center"><template #default="scope">{{ scope.row.daysRemain != null ? scope.row.daysRemain + ' 天' : '-' }}</template></el-table-column>
-        <el-table-column label="分配数量" prop="qty" align="center" />
-      </el-table>
-      <template v-if="fefoPlan && fefoPlan.skipped && fefoPlan.skipped.length">
-        <div class="fefo-skip-title">被拦截批次（三重拦截）</div>
-        <el-alert v-for="(s, i) in fefoPlan.skipped" :key="i" type="error" :closable="false" style="margin-bottom: 6px" :title="s" />
-      </template>
-    </div>
-  </section>
-  <template #footer>
-    <el-button type="primary" :disabled="!(fefoPlan && fefoPlan.success && fefoPlan.allocations && fefoPlan.allocations.length)" @click="applyFefoPlan">采纳分配</el-button>
-    <el-button @click="fefoOpen = false">取 消</el-button>
-  </template>
-</el-dialog>
-
-<!-- 物料选择器（FEFO用） -->
-<material-picker ref="fefoMaterialPickerRef" title="选择物料" @confirm="onFefoMaterialConfirm" />
 
 <!-- 仓库选择器 -->
 <warehouse-picker ref="warehousePickerRef" title="选择仓库" @confirm="onWarehousePickerConfirm" />
@@ -345,10 +265,6 @@
               <el-table-column label="规格型号" prop="specModel" :min-width="colWidth('specModel', 120)" resizable show-overflow-tooltip align="center" />
               <el-table-column label="单位" prop="unit" :width="colWidth('unit', 70)" resizable align="center"><template #default="scope"><dict-tag :options="wms_unit" :value="scope.row.unit" /></template></el-table-column>
               <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 110)" resizable align="center" />
-              <el-table-column label="到期日期" prop="expireDate" :width="colWidth('expireDate', 110)" resizable align="center"><template #default="scope">{{ fmtDate(scope.row.expireDate) }}</template></el-table-column>
-              <el-table-column label="剩余天数" prop="daysRemain" :width="colWidth('daysRemain', 90)" resizable align="center"><template #default="scope"><span :class="{ 'expiry-warn': scope.row.daysRemain != null && scope.row.daysRemain <= 30 }">{{ scope.row.daysRemain != null ? scope.row.daysRemain + ' 天' : '-' }}</span></template></el-table-column>
-              <el-table-column label="FEFO推荐批次" prop="fefoBatchNo" :width="colWidth('fefoBatchNo', 130)" resizable align="center"><template #default="scope"><span v-if="scope.row.fefoBatchNo">{{ scope.row.fefoBatchNo }}<el-tooltip v-if="scope.row.batchNo && scope.row.fefoBatchNo !== scope.row.batchNo" content="人工指定批次与FEFO推荐不一致" placement="top"><el-icon style="margin-left:4px;vertical-align:middle"><WarningFilled /></el-icon></el-tooltip></span><span v-else>-</span></template></el-table-column>
-              <el-table-column label="换批原因" prop="changeReason" :min-width="colWidth('changeReason', 130)" resizable show-overflow-tooltip align="center"><template #default="scope">{{ scope.row.changeReason || '-' }}</template></el-table-column>
               <el-table-column label="计划数量" prop="planQty" :width="colWidth('planQty', 90)" resizable align="center" />
               <el-table-column label="已拣货数量" prop="pickQty" :width="colWidth('pickQty', 90)" resizable align="center" />
               <el-table-column label="拣货库位" prop="locationName" :width="colWidth('locationName', 90)" resizable show-overflow-tooltip align="center" />
@@ -444,16 +360,15 @@
 </template>
 
 <script setup name="WmsOutbound">
-import { listOutbound, getOutbound, addOutbound, updateOutbound, delOutbound, submitOutbound, fefoPreview } from '@/api/wms/outbound'
+import { listOutbound, getOutbound, addOutbound, updateOutbound, delOutbound, submitOutbound } from '@/api/wms/outbound'
 import { listWarehouse } from '@/api/wms/warehouse'
 import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import InventoryPicker from '@/components/InventoryPicker/index.vue'
 import WarehousePicker from '@/components/WarehousePicker/index.vue'
-import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Filter, Search, CircleClose } from '@element-plus/icons-vue'
-const { collapsedCards, toggleCard } = useDetailCard(['basic', 'info', 'detail', 'dBasic', 'dInfo', 'dDetail', 'fSelect', 'fPlan'])
+const { collapsedCards, toggleCard } = useDetailCard(['basic', 'info', 'detail', 'dBasic', 'dInfo', 'dDetail'])
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_outbound_index')
 const { wms_outbound_type, wms_outbound_status, wms_unit } = proxy.useDict('wms_outbound_type', 'wms_outbound_status', 'wms_unit')
@@ -462,12 +377,6 @@ const warehouseOptions = ref([])
 const inventoryPickerRef = ref(null)
 const warehousePickerRef = ref(null)
 const currentDetailIndex = ref(-1)
-const fefoOpen = ref(false)
-const fefoLoading = ref(false)
-const fefoPreviewed = ref(false)
-const fefoPlan = ref(null)
-const fefoForm = ref({ materialId: undefined, materialCode: '', materialName: '', qty: undefined })
-const fefoMaterialPickerRef = ref(null)
 const defaultColumns = { orderNo: { label: '出库单号', visible: true }, orderType: { label: '出库类型', visible: true }, warehouseName: { label: '出库仓库', visible: true }, status: { label: '状态', visible: true }, totalQty: { label: '总数量', visible: true }, remark: { label: '备注', visible: true } }
 function loadColumnVisibility() { try { const saved = localStorage.getItem('wms_outbound_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
 const columns = ref(loadColumnVisibility())
@@ -482,7 +391,7 @@ function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
 function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, warehouseName: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
 function handleAdd() { reset(); open.value = true; title.value = '添加出库单' }
-function handleUpdate(row) { reset(); getOutbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库单' }) }
+function handleUpdate(row) { reset(); getOutbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库单'; onWarehouseChange(form.value.warehouseId) }) }
 function handleDetail(row) { getOutbound(row.orderId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
 
 
@@ -491,9 +400,7 @@ function handleAddDetail() {
   if (!form.value.detailList) form.value.detailList = []
   form.value.detailList.push({
     inventoryId: undefined, materialId: undefined, materialCode: '', materialName: '',
-    specModel: '', unit: '', batchNo: '', batchId: undefined, expiryDate: undefined, batchStatus: undefined,
-    fefoBatchNo: undefined, changeReason: undefined,
-    locationId: undefined, locationCode: '', locationName: '',
+    specModel: '', unit: '', batchNo: '', locationId: undefined, locationCode: '', locationName: '',
     availableQty: 0, planQty: undefined
   })
 }
@@ -514,7 +421,7 @@ function openInventoryPicker(index) {
 function clearInventory(index) {
   const row = form.value.detailList[index]
   row.inventoryId = undefined; row.materialId = undefined; row.materialCode = ''; row.materialName = ''
-  row.specModel = ''; row.unit = ''; row.batchNo = ''; row.expiryDate = undefined; row.batchStatus = undefined
+  row.specModel = ''; row.unit = ''; row.batchNo = ''
   row.locationId = undefined; row.locationCode = ''; row.locationName = ''
   row.availableQty = 0; row.planQty = undefined
 }
@@ -528,8 +435,6 @@ function onInventoryPickerConfirm(inv) {
     row.specModel = inv.specModel
     row.unit = inv.unit
     row.batchNo = inv.batchNo || ''
-    row.expiryDate = fmtDate(inv.expiryDate)
-    row.batchStatus = inv.batchStatus
     row.locationId = inv.locationId
     row.locationCode = inv.locationCode
     row.locationName = inv.locationName
@@ -545,63 +450,6 @@ function validatePlanQty(index) {
     row.planQty = row.availableQty
     proxy.$modal.msgWarning('出库数量不能超过可用库存数量')
   }
-}
-
-/* ===== FEFO自动分配 ===== */
-function openFefoDialog() {
-  if (!form.value.warehouseId) { proxy.$modal.msgWarning('请先选择出库仓库'); return }
-  fefoForm.value = { materialId: undefined, materialCode: '', materialName: '', qty: undefined }
-  fefoPlan.value = null
-  fefoPreviewed.value = false
-  fefoOpen.value = true
-}
-function openFefoMaterialPicker() { fefoMaterialPickerRef.value.open(fefoForm.value.materialId) }
-function clearFefoMaterial() { fefoForm.value = { materialId: undefined, materialCode: '', materialName: '', qty: undefined }; fefoPlan.value = null; fefoPreviewed.value = false }
-function onFefoMaterialConfirm(material) {
-  fefoForm.value.materialId = material.materialId
-  fefoForm.value.materialCode = material.materialCode
-  fefoForm.value.materialName = material.materialName
-  fefoPlan.value = null
-  fefoPreviewed.value = false
-}
-function loadFefoPreview() {
-  if (!fefoForm.value.materialId || !fefoForm.value.qty || fefoForm.value.qty <= 0) return
-  fefoLoading.value = true
-  fefoPreview(fefoForm.value.materialId, form.value.warehouseId, fefoForm.value.qty).then(res => {
-    fefoPlan.value = res.data
-    fefoPreviewed.value = true
-    fefoLoading.value = false
-  }).catch(() => { fefoLoading.value = false })
-}
-function applyFefoPlan() {
-  const plan = fefoPlan.value
-  if (!plan || !plan.success || !plan.allocations || !plan.allocations.length) return
-  if (!form.value.detailList) form.value.detailList = []
-  plan.allocations.forEach(a => {
-    form.value.detailList.push({
-      inventoryId: undefined, materialId: fefoForm.value.materialId,
-      materialCode: fefoForm.value.materialCode, materialName: fefoForm.value.materialName,
-      specModel: '', unit: '', batchNo: a.batchCode, batchId: a.batchId,
-      expiryDate: fmtDate(a.expireDate), fefoBatchNo: a.batchCode,
-      locationId: a.locationId, locationCode: '', locationName: a.locationName,
-      availableQty: a.qty, planQty: a.qty, changeReason: undefined
-    })
-  })
-  fefoOpen.value = false
-  proxy.$modal.msgSuccess('已按FEFO规则拆分 ' + plan.allocations.length + ' 行明细，请补充校验后提交')
-}
-
-/** 日期格式化（yyyy-MM-dd） */
-function fmtDate(val) {
-  if (!val) return ''
-  return String(val).slice(0, 10)
-}
-
-/** 到期日预警高亮（30天内） */
-function isExpiryWarn(row) {
-  if (!row.expiryDate) return false
-  const diff = Math.floor((new Date(row.expiryDate).getTime() - Date.now()) / 86400000)
-  return diff <= 30
 }
 
 /** 提交表单 */
@@ -626,16 +474,15 @@ function validateDetailList() {
   }
   for (let i = 0; i < form.value.detailList.length; i++) {
     const d = form.value.detailList[i]
-    // FEFO分配行无库存ID但有批次ID，人工行必须有库存ID
-    if (!d.inventoryId && !d.batchId) { proxy.$modal.msgError('第' + (i + 1) + '行：请选择库存物料'); return false }
+    if (!d.inventoryId) { proxy.$modal.msgError('第' + (i + 1) + '行：请选择库存物料'); return false }
     if (!d.planQty || d.planQty <= 0) { proxy.$modal.msgError('第' + (i + 1) + '行：出库数量必须大于0'); return false }
     if (d.availableQty && d.planQty > d.availableQty) { proxy.$modal.msgError('第' + (i + 1) + '行：出库数量不能超过可用库存' + d.availableQty); return false }
   }
   return true
 }
 
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交失败：' + (e?.message || e)) }) }
 /** 导出出库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
   const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'OutboundDate'), dateRangeCreateTime.value, 'CreateTime')
@@ -659,7 +506,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 };
     (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 function cancel() { open.value = false; reset() }
 
@@ -696,7 +543,7 @@ function openDetailFromRoute() {
   listOutbound({ pageNum: 1, pageSize: 1, orderNo: no }).then(res => {
     const row = (res.rows || []).find(r => r.orderNo === no)
     if (row) handleDetail(row)
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('按单号加载出库单失败：' + (e?.message || e)) })
 }
 
 loadOptions()
@@ -714,9 +561,6 @@ onDeactivated(() => { appliedOrderNo = null })
 
 <style scoped>
 /* 页面特定样式 - 列表页面共享样式见 wms-list-page.scss */
-.expiry-warn { color: #f56c6c; font-weight: 600; }
-.fefo-material-info { padding: 8px 12px; background: #f5f7fa; border-radius: 6px; color: #606266; font-size: 13px; }
-.fefo-skip-title { margin: 12px 0 8px 0; font-weight: 600; color: #303133; font-size: 13px; }
 .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
 .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
 .status-help-content h4:first-child { margin-top: 0; }

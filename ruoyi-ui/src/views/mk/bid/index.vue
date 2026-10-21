@@ -590,7 +590,7 @@ function handleDelete() {
   proxy.$modal.confirm('是否确认删除投标编号为"' + bidNos.value.join('、') + '"的数据项？').then(() => delBid(ids.value.join(','))).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 /** 详情 */
@@ -656,7 +656,7 @@ function handleCreateContract() {
     const tip = (typeof res.data === 'string' && res.data) || res.msg || "合同草稿生成成功"
     proxy.$modal.msgSuccess(tip)
     getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('生成合同草稿失败：' + (e?.message || e)) })
 }
 
 /** ===== 客户选择器 ===== */

@@ -1260,7 +1260,7 @@ function handleStatusTabClick(status) {
 function loadStatusCounts() {
   countWorkorderStatus().then(res => {
     statusCounts.value = res.data || {}
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 const userOptions = ref([])
 const currentPickerTarget = ref(null)
@@ -1518,7 +1518,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delWorkorder(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delWorkorder(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 function handleExport() { proxy.download('dms/workorder/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'orderId'), `workorder_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -1546,10 +1546,10 @@ function handleReassign(row) {
   dispatchOpen.value = true
 }
 function handleAccept(row) {
-  proxy.$modal.confirm('确认接单？').then(() => acceptWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('接单成功'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认接单？').then(() => acceptWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('接单成功'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('接单失败：' + (e?.message || e)) })
 }
 function handleProcess(row) {
-  proxy.$modal.confirm('确认开始处理？').then(() => processWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已开始处理'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认开始处理？').then(() => processWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已开始处理'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('开始处理失败：' + (e?.message || e)) })
 }
 function handleComplete(row) {
   completeForm.value = { orderId: row.orderId, orderNo: row.orderNo, orderType: row.orderType, equipmentCode: row.equipmentCode, equipmentName: row.equipmentName, reporterName: row.reporterName, reportTime: row.reportTime, faultDescription: row.faultDescription, faultCause: '', repairMeasure: '', sparePartsUsed: '', repairCost: 0, downtimeDuration: 0, completeRemark: '', deviationReason: '' }
@@ -1660,7 +1660,7 @@ function submitReject() {
   rejectWorkorder(rejectForm.value).then(() => { proxy.$modal.msgSuccess('已驳回'); rejectOpen.value = false; getList(); loadStatusCounts() })
 }
 function handleCancel(row) {
-  proxy.$modal.confirm('确认撤销该工单？').then(() => cancelWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已撤销'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认撤销该工单？').then(() => cancelWorkorder(row.orderId)).then(() => { proxy.$modal.msgSuccess('已撤销'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('撤销失败：' + (e?.message || e)) })
 }
 
 // ===== 工单操作历史 =====

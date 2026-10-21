@@ -1,0 +1,112 @@
+ai_call_log	892	1 | dms | repair_assistant | 1
+ai_knowledge_chunk	26	1 | 2 | 0 | 设备操作规程：CNC数控车床安全操作规范\n\n一、开机前检查\n1. 检查润滑油位，确保导轨润滑系统油量在标线以上。\n2. 检查气压表读数，工作
+ai_knowledge_doc	2	2 | dms | CNC车床操作规程.txt | txt
+ai_nlq_history	9	1 | 1 | admin | ����Ӧ�̵Ĺ����������
+ai_qa_history	12	34 | 1 | admin | 
+ai_tool	8	1 | getPaymentSummary | 查询客户回款汇总统计。支持按月份统计回款总金额、回款笔数，可按客户名称过滤。示例问句："本月回款情况"、"上个月回款了多�
+biz_hr_certificate	3	1 | 18 | 王伟 | EMP0110
+biz_hr_employee	15	15 | EMP0001 | 吴传丰 | 1
+biz_hr_employee_education	3	1 | 7 | NULL | NULL
+biz_hr_employee_family	7	1 | 7 | 测试家属 | 配偶
+biz_hr_employee_qualification	3	1 | 7 | 职称 | 测试证书
+biz_hr_employee_work_exp	3	1 | 7 | NULL | NULL
+biz_hr_salary_item	21	1 | basic_salary | 基本工资 | 0
+biz_hr_shift	17	1 | S001 | 测试班次-改 | 08:00
+biz_hr_tax_rate	7	11 | 1 | 0.00 | 36000.00
+biz_hr_workday_calendar	365	1 | 2026-01-01 | 2026 | 1
+biz_safety_area	8	1 | NULL | NULL | QY-202608090001
+dms_data_collection_config	7	1004 | 6 | 数控加工中心 | 1
+dms_equipment	14	1 | ed200001 | 机床01 | ZC20240001
+dms_equipment_category	27	1 | 0 | 0 | A
+dms_inspection_route	20	1 | tttttttt1 | ttttttt1 | NULL
+dms_pm_plan	15	1 | ddddddddd111 | 6 | 1
+dms_repair_faq	11	13 | 数控车床主轴异响的常见原因及处理方法 | 1. 主轴轴承磨损或损坏：检查轴承间隙，用手转动主轴感觉是否有卡滞或异响，必要时更换轴承（建议选
+fin_ar_order	1	1 | 0 | AR202610140001 | mk
+fin_cost_method_config	4	1 | NULL | WEIGHTED_AVG | Y
+fin_fiscal_config	5	1 | cost_method | WEIGHTED_AVG | 默认计价方法
+fin_ledger	6	4 | NULL | 1403 | 202607
+fin_material_tax	16	3 | 1 | MAT20250001 | 0.1300
+fin_period	24	1 | NULL | 202501 | 2025年1月
+fin_subject	39	4 | 1001 | 库存现金 | NULL
+fin_voucher_rule	7	1 | pms_invoice_approved | 采购发票审核-应付账款 | pms
+mk_bid_archive	1	1 | TB202610140001 | CFSP Demo Tender 2026Q4 | T2026-1014
+mk_bid_item	2	1 | 1 | 10 | 1
+mk_contract	1	1 | HT202610140001 | CFSP Demo Tender 2026Q4合同 | 0
+mk_contract_approve_log	2	1 | 1 | 1 | 提交审批
+mk_customer	11	1 | KH202610140001 | CFSP Demo Customer | 91310000MA1FL0001A
+mk_customer_tag	5	1 | 高价值 | 0 | #f56c6c
+mk_invoice	1	1 | FP202610140001 | 4 | NULL
+mk_number_rule	112	1 | wms_inbound | wms | 入库单号规则
+mk_number_rule_prefix	8	1 | 14 | OQC | 出货检验
+mk_opportunity_stage	7	1 | stage1 | 线索报备 | 1
+mk_order	4	1 | SO202610130001 | NULL | 1
+mk_order_audit_log	3	1 | 2 | 1 | food_test
+mk_order_item	4	1 | 1 | NULL | 1
+mk_price_policy	3	1 | PP202610140001 | CFSP-Demo-CustPrice-MAT001 | 1
+mk_rebate_policy	2	1 | RP202610140001 | CFSP-Demo-Rebate-Q4 | 1
+mk_rebate_settle	1	1 | FL202610140001 | 1 | CFSP Demo Customer
+mk_shipment	3	1 | SH202610130001 | 2 | SO202610130002
+mk_shipment_detail	3	1 | 1 | 2 | XianNiuNai
+mms_bom	10	1 | BOM20260001 | 火腿肠标准BOM（100支/箱） | 2
+mms_bom_detail	43	1 | 1 | 1 | 8
+mms_code_rule	12	1 | WO | 工单号 | WO
+mms_factory	2	1 | CF01 | 传丰食品火腿产业园 | 浙江省金华市金东区傅村镇工业园兴业路8号
+mms_finish_receipt	1	1 | WG-202610140001 | 1 | WO202610140001
+mms_issue	3	1 | LL-202610140001 | 1 | WO202610140001
+mms_issue_detail	4	1 | 1 | 1 | 1
+mms_line	9	1 | CF-L01 | 鲜腿验收预处理线 | 1
+mms_process	19	1 | HX01 | 原料腿验收 | 0
+mms_resource	18	1 | RES-HM-001 | 鲜腿验收工作站 | 0
+mms_route	1	1 | RT-HAM-01 | 干腌火腿标准工艺路线 | 4
+mms_route_process	9	1 | 1 | 1 | HX01
+mms_schedule_task	1	1 | SCH202610160001 | NULL | 3
+mms_shift	18	2 | SFT-0002 | 白班 | 08:00
+mms_station	120	1 | S001 | 上料工位 | 1
+mms_work_order	3	1 | WO202610140001 | 0 | 3
+mms_workshop	8	1 | CF-W01 | 原料预处理车间 | 1
+pms_contract	1	1 | HT2026101700001 | 222 | NULL
+pms_inquiry	1	1 | XJ202610140001 | 批次六演练询价-鲜牛奶 | 4
+pms_inquiry_detail	1	1 | 1 | 1 | MAT001
+pms_invoice	1	1 | PI202610140001 | NULL | NULL
+pms_invoice_audit_log	1	1 | 1 | 1 | admin
+pms_invoice_payment	1	1 | FK202610140001 | 1 | NULL
+pms_order_audit_log	1	1 | 1 | 1 | admin
+pms_purchase_order	1	1 | CG202610140001 | NULL | NULL
+pms_purchase_order_detail	1	1 | 1 | NULL | 1
+pms_quotation	1	1 | 1 | 1 | 传丰供应商Demo
+pms_quotation_detail	1	1 | 1 | 1 | 1
+pms_receive	1	1 | SH202610140001 | 1 | CG202610140001
+pms_receive_audit_log	1	1 | 1 | 1 | admin
+pms_receive_detail	1	1 | 1 | 1 | 1
+pms_supplier_catalog	3	1 | 4 | 惠州电池有限公司 | 10
+pms_supplier_eval	1	1 | 1 | 传丰供应商Demo | 2026-Q4
+pms_supplier_eval_audit_log	2	1 | 1 | 2 | admin
+qms_aql_plan	38	1 | 0.65 | G | 32
+qms_audit_check_template	1	1 | ISO9001质量管理体系全要素检查表 | ISO9001 | 覆盖ISO9001:2015主要条款的通用内审检查表
+qms_audit_check_template_item	20	1 | 1 | 4.4 | 组织是否建立并保持质量管理体系所需的过程及其相互作用？
+qms_defect_code	9	11 | DF-001 | 主含量不达标 | 2
+qms_doc	1	1 | DOC-2026101701 | 2222222222 | procedure
+qms_esig_record	7	1 | insp_judge | 1 | NULL
+qms_insp_item	4	1 | 1 | NULL | Sense
+qms_insp_task	3	1 | JY202610140001 | IQC | NULL
+qms_inspect_std	10	1 | ZLBZ001 | 蛋白质含量标准 | GB 5009.5-2016 凯氏定氮法
+qms_lot_genealogy	2	1 | B202610130001 | B202610140001 | WO202610140001
+qms_material_attr	6	11 | 9001 | TEST-MAT-Q001 | 氢氧化锂(电池级)
+qms_ncr	5	1 | NCR202610140001 | ccp | 3
+qms_ncr_approve_log	9	1 | 2 | 1 | 质量经理审批
+qms_quality_target	7	11 | 2026 | NULL | factory
+qms_workshop	51	1 | 0 | CF-WS01 | 原料预处理车间
+wms_inbound_order	3	1 | RK202610150001 | 0 | 10
+wms_inbound_order_detail	5	1 | 1 | 8 | 100.00
+wms_inventory	6	1 | 8 | 2 | 9
+wms_inventory_log	10	1 | 8 | 2 | 9
+wms_material	14	1 | MAT001 | 鲜牛奶 | 1
+wms_move_order	1	1 | YK202610150001 | 2 | 8
+wms_outbound_order	1	1 | CK202610150001 | 0 | 2
+wms_outbound_order_detail	1	1 | 1 | 6 | B202610150003
+wms_stock_take	1	1 | PD202610150001 | 2 | 5
+wms_stock_take_approve_log	1	1 | 1 | admin | 2026-10-15 19:45:48
+wms_stock_take_detail	5	1 | 1 | 6 | 10
+wms_stock_take_snapshot	5	1 | 1 | 6 | 10
+wms_supplier	11	1 | GYS2026B6001 | 传丰供应商Demo | 传丰Demo
+wms_warehouse	11	1 | 0 | 0 | 1

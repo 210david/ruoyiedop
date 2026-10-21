@@ -742,7 +742,7 @@ const u = res.data
 if (u && form.value.assigneeId === userId) {
 form.value.assigneeDeptName = u.dept ? u.dept.deptName : undefined
 }
-}).catch(() => {})
+}).catch(() => { form.value.assigneeDeptName = undefined })  // 降级：部门信息取不到时留空
 }
 /** 删除设备后清空派工人员 */
 function onRemoveEquipment() {
@@ -856,7 +856,7 @@ function submitForm() {
     else { addPmplan(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) }
   })
 }
-function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delPmplan(planIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const planIds = row.planId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delPmplan(planIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 function handleGenerate(row) {
   proxy.$modal.confirm('确认根据计划「' + row.planName + '」生成工单？').then(() => {
     return generateWorkOrder(row.planId)
@@ -875,7 +875,7 @@ function handleAutoGenerate() {
   }).then((res) => {
     proxy.$modal.msgSuccess(res.msg || '执行完成')
     getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('自动生成失败：' + (e?.message || e)) })
 }
 function cancel() { open.value = false; reset() }
 

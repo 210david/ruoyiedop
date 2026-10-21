@@ -1010,11 +1010,11 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.paymentStatus] !== undefined) counts[r.paymentStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 
 function loadStats() {
-  paymentStatistics().then(res => { stats.value = res.data }).catch(() => {})
+  paymentStatistics().then(res => { stats.value = res.data }).catch(e => { proxy.$modal.msgWarning('回款统计加载失败：' + (e?.message || e)) })
 }
 
 /** 打开客户选择弹窗 */
@@ -1095,7 +1095,7 @@ function submitAdd() {
 
 function handleDelete(row) {
   const planIds = row.planId || ids.value
-  proxy.$modal.confirm('确认删除选中的回款计划？').then(() => delPayment(planIds)).then(() => { getList(); loadStats(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的回款计划？').then(() => delPayment(planIds)).then(() => { getList(); loadStats(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleView(row) {
@@ -1169,7 +1169,7 @@ function submitConfirm(confirmStatus) {
     confirmOpen.value = false
     getList()
     loadStats()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('操作失败：' + (e?.message || e)) })
 }
 
 function handleExport() { proxy.download('mk/payment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, ids.value, 'planId'), `payment_${new Date().getTime()}.xlsx`) }

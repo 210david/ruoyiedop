@@ -292,7 +292,7 @@ async function handleExport() {
 }
 function handleDelete(row) {
   const partIds = row.partId || ids.value
-  proxy.$modal.confirm('确认删除选中的备件库存预警？\n删除后将清除该备件的安全库存上下限设置。').then(() => delPartAlert(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的备件库存预警？\n删除后将清除该备件的安全库存上下限设置。').then(() => delPartAlert(partIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 onActivated(() => {

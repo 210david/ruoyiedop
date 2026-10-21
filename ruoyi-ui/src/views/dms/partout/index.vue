@@ -643,7 +643,7 @@ async function handleExport() {
     i.supplierOrDept || '', i.receiver || '', i.quantity != null ? i.quantity : '', i.operateDate || ''
   ]))
 }
-function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的出库记录？').then(() => delPartOut(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的出库记录？').then(() => delPartOut(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 
 onActivated(() => {
   getList()

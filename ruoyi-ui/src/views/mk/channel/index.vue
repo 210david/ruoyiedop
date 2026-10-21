@@ -349,7 +349,7 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.channelStatus] !== undefined) counts[r.channelStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) { const map = { '0': 'tab-done', '1': 'tab-void' }; return map[value] || '' }
 function badgeClass(status) { const map = { '0': 'green', '1': 'gray' }; return map[status] || 'gray' }
@@ -381,7 +381,7 @@ function submitForm() {
 }
 function handleDelete(row) {
   const channelIds = row.channelId || ids.value
-  proxy.$modal.confirm('确认删除选中的渠道账号？').then(() => delChannel(channelIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的渠道账号？').then(() => delChannel(channelIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 function handleExport() { proxy.download('mk/channel/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'channelId'), `channel_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }

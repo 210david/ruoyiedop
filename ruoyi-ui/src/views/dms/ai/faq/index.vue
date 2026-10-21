@@ -300,7 +300,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const faqIds = row.faqId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delFaq(faqIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const faqIds = row.faqId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delFaq(faqIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 getList()
 </script>

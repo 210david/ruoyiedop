@@ -658,7 +658,7 @@ function handleSubmitForApproval() {
       currentTake.value = res.data
     })
     getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交审批失败：' + (e?.message || e)) })
 }
 function handleApprove(row) {
   getStockTake(row.takeId).then(res => {
@@ -698,7 +698,7 @@ function loadStatusCounts() {
       if (counts[r.status] !== undefined) counts[r.status]++
     })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 
 // 初始化

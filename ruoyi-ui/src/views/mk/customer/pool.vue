@@ -510,7 +510,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.customerStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'green', '1': 'amber', '2': 'red', '3': 'blue', '4': 'gray' }; return map[status] || 'gray' }
@@ -580,7 +580,7 @@ function handleClaim(row) {
       proxy.$modal.msgSuccess('领取成功')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('领取失败：' + (e?.message || e)) })
 }
 function handleBatchClaim() {
   proxy.$modal.confirm('确认领取选中的 ' + ids.value.length + ' 个客户？').then(() => {
@@ -588,7 +588,7 @@ function handleBatchClaim() {
     Promise.all(promises).then(() => {
       proxy.$modal.msgSuccess('批量领取成功')
       getList(); loadStatusCounts()
-    }).catch(() => {})
+    }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('批量领取失败：' + (e?.message || e)) })
   }).catch(() => {})
 }
 

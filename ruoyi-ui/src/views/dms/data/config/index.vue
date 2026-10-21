@@ -445,7 +445,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const configIds = row.configId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delConfig(configIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const configIds = row.configId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delConfig(configIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 getEquipmentOptions()
 getList()

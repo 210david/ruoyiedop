@@ -525,7 +525,7 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.participateStatus] !== undefined) counts[r.participateStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-approved' }; return map[value] || '' }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet' }; return map[status] || 'gray' }
@@ -615,17 +615,17 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const participantIds = row.participantId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delParticipant(participantIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const participantIds = row.participantId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delParticipant(participantIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/participant/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'SignTime') }, ids.value, 'participantId'), `participant_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
 // P1-5: 签到
 function handleSignIn(row) {
-  proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => { proxy.$modal.msgSuccess('签到成功'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => { proxy.$modal.msgSuccess('签到成功'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('签到失败：' + (e?.message || e)) })
 }
 // P1-5: 转线索
 function handleConvertLead(row) {
-  proxy.$modal.confirm('确认将"' + row.contactName + '"转化为线索？').then(() => convertToLead(row.participantId)).then(() => { proxy.$modal.msgSuccess('转线索成功'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认将"' + row.contactName + '"转化为线索？').then(() => convertToLead(row.participantId)).then(() => { proxy.$modal.msgSuccess('转线索成功'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('转线索失败：' + (e?.message || e)) })
 }
 
 // 操作下拉菜单统一分发

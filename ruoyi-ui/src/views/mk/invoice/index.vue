@@ -509,6 +509,7 @@ import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_invoice_index')
 const { marketing_invoice_type, marketing_invoice_status } = proxy.useDict('marketing_invoice_type', 'marketing_invoice_status')
+
 const list = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
@@ -598,7 +599,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.invoiceStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray' }
@@ -678,8 +679,8 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('发票已作废') }).catch(() => {}) }
+function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('发票已作废') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('作废发票失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/invoice/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'InvoiceDate') }, ids.value, 'invoiceId'), `invoice_${new Date().getTime()}.xlsx`) }
 
 function handleBeforeRecognize(file) {
@@ -711,13 +712,13 @@ function handleRecognizeUpload(options) {
       if (recognizedFields.value.length > 0) { proxy.$modal.msgSuccess('识别成功，已回填' + recognizedFields.value.length + '项信息') } else { proxy.$modal.msgWarning('未识别到发票信息，请检查PDF文件是否为电子发票') }
       uploadAttachment(options.file)
     } else { proxy.$modal.msgWarning('未识别到发票信息') }
-  }).catch(() => {}).finally(() => { recognizing.value = false })
+  }).catch(e => { proxy.$modal.msgError('发票识别失败：' + (e?.message || e)) }).finally(() => { recognizing.value = false })
 }
 
 function uploadAttachment(file) {
   const formData = new FormData()
   formData.append('file', file)
-  request({ url: '/common/upload', method: 'post', data: formData, timeout: 60000, headers: { 'repeatSubmit': false, 'Content-Type': false } }).then(res => { if (res.fileName) { form.value.invoiceAttachment = res.fileName } }).catch(() => {})
+  request({ url: '/common/upload', method: 'post', data: formData, timeout: 60000, headers: { 'repeatSubmit': false, 'Content-Type': false } }).then(res => { if (res.fileName) { form.value.invoiceAttachment = res.fileName } }).catch(e => { proxy.$modal.msgError('发票附件上传失败：' + (e?.message || e)) })
 }
 
 function getFileName(name) { if (name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name }

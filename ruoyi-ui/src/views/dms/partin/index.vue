@@ -549,7 +549,7 @@ async function handleExport() {
     i.supplierOrDept || '', i.storageLocation || '', i.quantity != null ? i.quantity : '', i.operateDate || ''
   ]))
 }
-function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的入库记录？').then(() => delPartIn(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除选中的入库记录？').then(() => delPartIn(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 
 onActivated(() => {
   getList()

@@ -363,7 +363,7 @@ function getList() {
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.partCode = undefined; queryParams.value.partName = undefined; queryParams.value.partType = undefined; queryParams.value.stockStatus = undefined; proxy.resetForm('queryRef'); handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.stockId); multiple.value = !selection.length }
-function handleDelete(row) { const stockIds = row.stockId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？（不会删除备件主数据）').then(() => delPartLedger(stockIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const stockIds = row.stockId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？（不会删除备件主数据）').then(() => delPartLedger(stockIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 /** 导出台账（与列表口径一致：含筛选条件、库存状态前端过滤，导出全部页数据） */
 async function handleExport() {
   let rows = await fetchAllPages(listPartLedger, queryParams.value)

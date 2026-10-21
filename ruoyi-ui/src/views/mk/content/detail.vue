@@ -361,7 +361,7 @@ function hydrateSelectedMaterials() {
     listMaterial({ pageNum: 1, pageSize: 9999 }).then(res => {
       allMaterials.value = res.rows || []
       match()
-    }).catch(() => {})
+    }).catch(e => { proxy.$modal.msgWarning('素材列表加载失败，素材匹配将不可用：' + (e?.message || e)) })
   } else {
     match()
   }

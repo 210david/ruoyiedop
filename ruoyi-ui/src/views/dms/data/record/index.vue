@@ -355,7 +355,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRecord(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const recordIds = row.recordId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRecord(recordIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 function handleView(row) { getRecord(row.recordId).then(res => { viewForm.value = res.data; viewOpen.value = true }) }
 getList()

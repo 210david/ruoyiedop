@@ -92,9 +92,6 @@
       </el-table-column>
       <el-table-column label="安全下限" prop="safetyStockMin" :width="colWidth('safetyStockMin', 100)" resizable align="center" />
       <el-table-column label="安全上限" prop="safetyStockMax" :width="colWidth('safetyStockMax', 100)" resizable align="center" />
-      <el-table-column label="批次号" prop="batchNo" :width="colWidth('batchNo', 130)" resizable align="center">
-        <template #default="scope">{{ scope.row.batchNo || '—' }}</template>
-      </el-table-column>
       <el-table-column label="生产日期" prop="productionDate" :width="colWidth('productionDate', 110)" resizable align="center">
         <template #default="scope">{{ scope.row.productionDate || '—' }}</template>
       </el-table-column>
@@ -246,7 +243,7 @@ function handleDelete(row) {
     getList()
     getSummary()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleBatchDelete() {
@@ -260,7 +257,7 @@ function handleBatchDelete() {
     getList()
     getSummary()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function alertLabel(type) {

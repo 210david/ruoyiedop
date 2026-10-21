@@ -509,7 +509,7 @@ function loadTypeCounts() {
     marketing_material_type.value.forEach(d => { counts[d.value] = 0 })
     rows.forEach(r => { if (counts[r.materialType] !== undefined) counts[r.materialType]++ })
     typeCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function typeTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-done', '2': 'tab-draft', '3': 'tab-void' }; return map[value] || '' }
 function typeBadgeClass(type) {
@@ -620,7 +620,7 @@ function submitForm() {
 }
 function handleDelete(row) {
   const materialIds = row.materialId || ids.value
-  proxy.$modal.confirm('确认删除选中的素材？').then(() => delMaterial(materialIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的素材？').then(() => delMaterial(materialIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 /** 关联活动选择器 */
@@ -636,8 +636,8 @@ function clearActivity() {
 function handleExport() { proxy.download('mk/material/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'materialId'), `material_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
-listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows }).catch(() => {})
-listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }).catch(() => {})
+listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows }).catch(e => { proxy.$modal.msgWarning('活动列表加载失败，活动下拉将为空：' + (e?.message || e)) })
+listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }).catch(e => { proxy.$modal.msgWarning('用户列表加载失败，用户下拉将为空：' + (e?.message || e)) })
 getList()
 </script>
 
