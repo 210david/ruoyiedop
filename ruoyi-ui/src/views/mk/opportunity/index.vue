@@ -784,7 +784,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.opportunityStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'amber' }; return map[status] || 'gray' }
@@ -968,7 +968,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const opportunityIds = row.opportunityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOpportunity(opportunityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const opportunityIds = row.opportunityId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOpportunity(opportunityIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/opportunity/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'opportunityId'), `opportunity_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -1018,7 +1018,7 @@ function submitAction() {
   }
 }
 function handleReopen(row) {
-  proxy.$modal.confirm('确认重新打开商机"' + row.opportunityName + '"？').then(() => reopenOpportunity(row.opportunityId)).then(() => { proxy.$modal.msgSuccess('重新打开成功'); getList(); loadStatusCounts() }).catch(() => {})
+  proxy.$modal.confirm('确认重新打开商机"' + row.opportunityName + '"？').then(() => reopenOpportunity(row.opportunityId)).then(() => { proxy.$modal.msgSuccess('重新打开成功'); getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('重新打开商机失败：' + (e?.message || e)) })
 }
 
 function getInteractTypeLabel(type) {

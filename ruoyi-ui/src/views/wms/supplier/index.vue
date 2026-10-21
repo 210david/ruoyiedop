@@ -535,7 +535,7 @@ function loadStatusCounts() {
     sys_normal_disable.value.forEach(d => { counts[d.value] = 0 })
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) {
   const map = { '0': 'tab-approved', '1': 'tab-void' }
@@ -828,7 +828,7 @@ function handleDelete(row) {
     getList()
 
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 /** 导出供应商（与列表口径一致：含筛选条件，导出全部页数据） */

@@ -187,13 +187,6 @@
       </div>
     </div>
 
-    <!-- 流程详情弹窗（四页签共享组件） -->
-    <flow-detail v-model:open="detailOpen" :instance-id="detailInstanceId">
-      <template #header-extra>
-        <span v-if="detailStatus" class="badge" :class="statusBadge(detailStatus)"><span class="dot"></span>{{ statusLabel(detailStatus) }}</span>
-      </template>
-    </flow-detail>
-
   </div>
 </template>
 
@@ -202,9 +195,11 @@ import request from '@/utils/request'
 import { getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useRouter } from 'vue-router'
 import { Search, Filter, Document, Guide, User, CollectionTag, ArrowDown, Folder, Fold, Expand } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_search_index')
 const list = ref([])
 const loading = ref(true)
@@ -314,7 +309,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, running: 0, completed: 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0, running: 0, completed: 0 } })
 }
 
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
@@ -346,10 +341,13 @@ function syncStatusTab() {
 function statusBadge(s) { return { running: 'blue', completed: 'green', canceled: 'gray' }[s] || 'gray' }
 function statusLabel(s) { return { running: '进行中', completed: '已结束', canceled: '已撤销' }[s] || s || '-' }
 
-async function handleView(row) {
-  detailInstanceId.value = row.instanceId
-  detailStatus.value = row.status || ''
-  detailOpen.value = true
+/** 查看流程详情：新标签页打开独立页面（不再使用当前页弹框） */
+function handleView(row) {
+  const href = router.resolve({
+    path: '/flow/detail/create',
+    query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
+  }).href
+  window.open(href, '_blank')
 }
 
 getList()

@@ -765,14 +765,14 @@ function loadPolicyStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     policyStatusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { policyStatusCounts.value = { all: 0 } })
 }
 function loadSettleStatusCounts() {
   listSettles({ pageNum: 1, pageSize: 999 }).then(res => {
     const counts = { all: res.total }
     ;(res.rows || []).forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1 })
     settleStatusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { settleStatusCounts.value = { all: 0 } })
 }
 
 /** 政策详情（列表行已带整组 tiers） */
@@ -880,7 +880,7 @@ function handleDelete(row) {
   }).then(() => {
     getPolicyList()
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除返利政策失败：' + (e?.message || e)) })
 }
 
 /** 阶梯行操作 */
@@ -1018,7 +1018,7 @@ function handleRedeem(row) {
   }).then(() => {
     proxy.$modal.msgSuccess("兑现成功")
     getSettleList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('兑现失败：' + (e?.message || e)) })
 }
 
 // ==================== 客户选择器 ====================

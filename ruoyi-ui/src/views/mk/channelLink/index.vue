@@ -350,7 +350,7 @@ function downloadQrCode() {
 /** 删除归因链接 */
 function handleDelete(row) {
   const linkIds = (row && row.linkId) || ids.value
-  proxy.$modal.confirm('确认删除选中的归因链接？').then(() => delChannelLink(linkIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的归因链接？').then(() => delChannelLink(linkIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 loadActivities()

@@ -438,7 +438,7 @@ function handleStatusTabClick(status) {
 function loadStatusCounts() {
   countRouteByStatus().then(res => {
     statusCounts.value = res.data || {}
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 
 const defaultColumns = {
@@ -722,7 +722,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const routeIds = row.routeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRoute(routeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const routeIds = row.routeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delRoute(routeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 function cancel() { open.value = false; reset() }
 getEquipmentOptions()
 getList()

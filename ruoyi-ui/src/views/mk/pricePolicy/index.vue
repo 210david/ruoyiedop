@@ -425,7 +425,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 
 function handleView(row) {
@@ -586,7 +586,7 @@ function handleDelete(row) {
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleExport() {

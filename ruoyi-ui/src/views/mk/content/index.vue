@@ -466,7 +466,7 @@ function loadStatusCounts() {
     marketing_content_audit_status.value.forEach(d => { counts[d.value] = 0 })
     rows.forEach(r => { if (counts[r.auditStatus] !== undefined) counts[r.auditStatus]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-done', '3': 'tab-reject' }; return map[value] || '' }
 function auditBadgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red' }; return map[status] || 'gray' }
@@ -498,7 +498,7 @@ function handleEdit(row) { router.push('/mk/content-detail/' + (row.contentId ||
 function handleDetail(row) { router.push('/mk/content-detail/' + (row.contentId || ids.value[0])) }
 /** 提交审核 */
 function handleSubmitAudit(row) {
-  proxy.$modal.confirm('确认提交审核？提交后内容将进入待审核状态，无法编辑').then(() => submitContent(row.contentId)).then(() => { getList(); proxy.$modal.msgSuccess('已提交审核') }).catch(() => {})
+  proxy.$modal.confirm('确认提交审核？提交后内容将进入待审核状态，无法编辑').then(() => submitContent(row.contentId)).then(() => { getList(); proxy.$modal.msgSuccess('已提交审核') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交审核失败：' + (e?.message || e)) })
 }
 /** 打开审核弹窗（加载完整信息：基本/内容包/审核记录） */
 function handleAudit(row) {
@@ -521,7 +521,7 @@ function handleAudit(row) {
       packageList: data.packageList || [],
       auditLogList: data.auditLogList || []
     }
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgWarning('审核详情加载失败：' + (e?.message || e)) })
   auditOpen.value = true
 }
 /** 提交审核结果（通过/驳回按钮） */
@@ -538,12 +538,12 @@ function submitAudit(pass) {
 }
 function handleDelete(row) {
   const contentIds = row.contentId || ids.value
-  proxy.$modal.confirm('确认删除选中的内容？').then(() => delContent(contentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的内容？').then(() => delContent(contentIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 function handleExport() { proxy.download('mk/content/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'contentId'), `content_${new Date().getTime()}.xlsx`) }
 
-listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows }).catch(() => {})
-listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }).catch(() => {})
+listActivity({ pageNum: 1, pageSize: 9999 }).then(res => { activityOptions.value = res.rows }).catch(e => { proxy.$modal.msgWarning('活动列表加载失败，活动下拉将为空：' + (e?.message || e)) })
+listUser({ pageNum: 1, pageSize: 9999 }).then(res => { userOptions.value = res.rows.filter(u => u.userId !== 1) }).catch(e => { proxy.$modal.msgWarning('用户列表加载失败，用户下拉将为空：' + (e?.message || e)) })
 getList()
 </script>
 

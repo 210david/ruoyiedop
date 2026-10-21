@@ -33,6 +33,8 @@ import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
 import com.ruoyi.flowable.domain.dto.FlowStartDTO;
+import com.ruoyi.flowable.domain.FlowProcdefExt;
+import com.ruoyi.flowable.mapper.FlowProcdefExtMapper;
 import com.ruoyi.flowable.service.IFlowProcessService;
 
 /**
@@ -65,7 +67,16 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     private com.ruoyi.flowable.mapper.FlowLeaveMapper flowLeaveMapper;
 
     @Autowired
+    private FlowProcdefExtMapper flowProcdefExtMapper;
+
+    @Autowired
     private com.ruoyi.system.service.ISysUserService sysUserService;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private com.ruoyi.flowable.service.IFlowFormService flowFormService;
 
     /** 审批意见类型标识 */
 
@@ -73,16 +84,32 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Transactional
     public String startProcess(FlowStartDTO dto)
     {
-        ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(dto.getProcessDefinitionKey())
-                .latestVersion().singleResult();
+        // 发起路由：优先取活动版本（用户指定的当前启用版本），未设置或已挂起时回退"启用中的最新版本"
+        ProcessDefinition definition = null;
+        List<FlowProcdefExt> extList = flowProcdefExtMapper.selectFlowProcdefExtByProcKey(dto.getProcessDefinitionKey());
+        FlowProcdefExt activeExt = (extList == null) ? null
+                : extList.stream().filter(e -> "1".equals(e.getActiveFlag())).findFirst().orElse(null);
+        if (activeExt != null && "1".equals(activeExt.getActiveFlag()))
+        {
+            ProcessDefinition activeDef = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionId(activeExt.getProcdefId()).singleResult();
+            if (activeDef != null && !activeDef.isSuspended())
+            {
+                definition = activeDef;
+            }
+        }
         if (definition == null)
         {
-            throw new ServiceException("流程定义不存在或未部署：" + dto.getProcessDefinitionKey());
+            definition = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionKey(dto.getProcessDefinitionKey())
+                    .orderByProcessDefinitionVersion().desc()
+                    .list().stream()
+                    .filter(d -> !d.isSuspended())
+                    .findFirst().orElse(null);
         }
-        if (definition.isSuspended())
+        if (definition == null)
         {
-            throw new ServiceException("流程定义已挂起，无法发起");
+            throw new ServiceException("流程定义不存在、未部署或所有版本均已停用：" + dto.getProcessDefinitionKey());
         }
         Long userId = SecurityUtils.getUserId();
         // 记录发起人身份
@@ -641,6 +668,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         // 流程标题：发起时写入的实例名称（单据名-申请人-日期），为空回退流程定义名
         String instName = hpi.getName();
         fi.setTitle(StringUtils.isNotEmpty(instName) ? instName : hpi.getProcessDefinitionName());
+        // 紧急程度：来自业务表系统字段 urgency（无业务表或未填时为 null）
+        fi.setUrgency(resolveUrgency(hpi.getProcessDefinitionKey(), hpi.getBusinessKey()));
         fi.setStartUserName(resolveUserNickname(hpi.getStartUserId()));
         fi.setStartTime(hpi.getStartTime());
         fi.setEndTime(hpi.getEndTime());
@@ -733,6 +762,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 // 流程标题：发起时写入的实例名称（单据名-申请人-日期），为空回退流程定义名
                 String instName = hpi.getName();
                 ft.setTitle(StringUtils.isNotEmpty(instName) ? instName : hpi.getProcessDefinitionName());
+                // 紧急程度：来自业务表系统字段 urgency（用于待办优先级展示/排序）
+                ft.setUrgency(resolveUrgency(hpi.getProcessDefinitionKey(), hpi.getBusinessKey()));
                 ft.setProcessDefinitionKey(hpi.getProcessDefinitionKey());
                 // 创建人：发起人用户ID转昵称
                 if (StringUtils.isEmpty(ft.getStartUserName()) && StringUtils.isNotEmpty(hpi.getStartUserId()))
@@ -742,6 +773,44 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             }
         }
         catch (Exception ignored) { }
+    }
+
+    /**
+     * 解析流程的紧急程度：从流程绑定表单的业务表读取系统字段 urgency。
+     * 无绑定表单、无业务主键或表未生成时返回 null（不阻断列表展示）。
+     *
+     * @param processDefinitionKey 流程定义Key
+     * @param businessKey          业务数据行ID
+     * @return 紧急程度值（1普通 2紧急 3特急），取不到返回 null
+     */
+    private String resolveUrgency(String processDefinitionKey, String businessKey)
+    {
+        if (StringUtils.isEmpty(processDefinitionKey) || StringUtils.isEmpty(businessKey))
+        {
+            return null;
+        }
+        try
+        {
+            com.ruoyi.flowable.domain.FlowForm form =
+                    flowFormService.selectFlowFormByProcessKey(processDefinitionKey);
+            if (form == null || StringUtils.isEmpty(form.getTableName()))
+            {
+                return null;
+            }
+            Long cnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'urgency'",
+                    Long.class, form.getTableName());
+            if (cnt == null || cnt == 0)
+            {
+                return null;
+            }
+            return jdbcTemplate.queryForObject(
+                    "SELECT urgency FROM `" + form.getTableName() + "` WHERE id = ?", String.class, businessKey);
+        }
+        catch (Exception ignored)
+        {
+            return null;
+        }
     }
 
     /** 按用户ID解析昵称，失败返回原值 */

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="open" width="1100px" append-to-body draggable class="rd-dialog" @update:model-value="v => emit('update:open', v)" @open="load">
+  <el-dialog :model-value="open" fullscreen append-to-body :show-close="false" class="rd-dialog flow-detail-dialog" @update:model-value="v => emit('update:open', v)" @open="load">
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon">
@@ -24,9 +24,6 @@
     <!-- 页签：流程表单 -->
     <div class="rd-page" v-show="detailTab === 'form'">
       <section class="rd-card">
-        <div class="rd-card-header">
-          <div class="rd-card-title"><span class="rd-card-icon">i</span>{{ detailData.processDefinitionName || '流程表单' }}</div>
-        </div>
         <div class="rd-card-body" style="display:block">
           <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="detailData.variables" />
           <template v-else-if="formGroups.length">
@@ -44,16 +41,13 @@
             <div class="rd-item" v-for="(v, k) in detailData.variables || {}" :key="k">
               <span class="rd-label">{{ k }}</span><div class="rd-value">{{ v ?? '-' }}</div>
             </div>
-            <div class="rd-empty" v-if="!(detailData.variables && Object.keys(detailData.variables).length)">
-              <p class="rd-empty-text">该流程未绑定表单且暂无表单数据</p>
+            <div class="rd-empty" v-if="!hasVariables">
+              <p class="rd-empty-text">{{ emptyFormText }}</p>
             </div>
           </div>
         </div>
       </section>
       <section class="rd-card">
-        <div class="rd-card-header">
-          <div class="rd-card-title"><span class="rd-card-icon">≡</span>流转意见</div>
-        </div>
         <div class="rd-card-body" style="display:block">
           <div class="rd-timeline">
             <div class="rd-timeline-item" v-for="t in historyTasks" :key="t.taskId">
@@ -75,8 +69,7 @@
     <!-- 页签：流程图 -->
     <div class="rd-page" v-show="detailTab === 'diagram'">
       <section class="rd-card">
-        <div class="rd-card-header">
-          <div class="rd-card-title"><span class="rd-card-icon">◈</span>流程图</div>
+        <div class="rd-card-header rd-card-header--legend-only" style="background:none;border-bottom:none;cursor:default;padding:4px 0 8px;justify-content:flex-end">
           <!-- 颜色图例说明 -->
           <div class="diagram-legend">
             <span class="legend-item"><span class="legend-swatch swatch-current-node"></span>当前停留节点</span>
@@ -88,7 +81,7 @@
         <div class="rd-card-body" style="display:block">
           <div class="diagram-wrap">
             <img v-if="diagramUrl" :src="diagramUrl" class="diagram-img" alt="流程图" />
-            <div v-else class="diagram-empty">流程已结束或暂无流程图</div>
+            <div v-else class="diagram-empty">{{ diagramEmptyText }}</div>
           </div>
         </div>
       </section>
@@ -103,9 +96,6 @@
         <div class="status-card"><div class="sc-num">{{ statusStats.nodes }}</div><div class="sc-label">节点数</div></div>
       </div>
       <section class="rd-card">
-        <div class="rd-card-header">
-          <div class="rd-card-title"><span class="rd-card-icon">≡</span>流转明细</div>
-        </div>
         <div class="rd-card-body">
           <el-table :data="historyTasks" border size="small">
             <el-table-column type="index" label="序号" width="60" align="center" />
@@ -134,9 +124,6 @@
     <!-- 页签：相关资源 -->
     <div class="rd-page" v-show="detailTab === 'resource'">
       <section class="rd-card">
-        <div class="rd-card-header">
-          <div class="rd-card-title"><span class="rd-card-icon">⊞</span>相关资源</div>
-        </div>
         <div class="rd-card-body">
           <el-table :data="[]" border size="small">
             <el-table-column label="资源名称" min-width="200" />
@@ -195,6 +182,38 @@ const formGroups = computed(() => {
   return groups
 })
 
+/** 流程图空态文案：区分「实例已结束无图」与「接口未返回图」 */
+const diagramEmptyText = computed(() => {
+  if (detailData.value && detailData.value.endTime) {
+    return '该流程已结束，流程图暂不可用'
+  }
+  return '暂无流程图（该流程定义未生成流程图资源）'
+})
+
+/** 是否存在流程变量（有表单数据） */
+const hasVariables = computed(() => {
+  const v = detailData.value.variables
+  return !!(v && Object.keys(v).length)
+})
+
+/**
+ * 表单页签空态文案（精准区分三种情况）：
+ * 1. 流程定义无绑定表单        → 该流程未绑定表单
+ * 2. 已绑定表单但本实例无数据  → 该实例发起时未填写表单
+ * 3. 其他（接口返回异常等）    → 暂无表单数据
+ */
+const emptyFormText = computed(() => {
+  if (formFields.value.length) {
+    // 说明流程已绑定表单（拿到了字段定义），只是本实例没有数据
+    return '该实例发起时未填写表单'
+  }
+  if (detailData.value.processDefinitionKey) {
+    // 有流程定义键但没解析到字段：表单未绑定或表单未设计字段
+    return '该流程未绑定表单（或表单尚未设计字段）'
+  }
+  return '暂无表单数据'
+})
+
 const statusStats = computed(() => {
   const tasks = historyTasks.value
   return {
@@ -233,13 +252,22 @@ function formatValue(field, val) {
   return val
 }
 
+/**
+ * 加载绑定表单：优先按流程定义 Key 查询（/flowable/form/byProcess）；
+ * 若实例未返回 processDefinitionKey（个别历史实例），回退用当前任务节点 key 兜底查询，
+ * 避免「申请表单」空白。
+ */
 async function loadFormFields(processKey) {
   formFields.value = []
   formLayout.value = { sections: [] }
   gridLayout.value = null
-  if (!processKey) return
+  let key = processKey
+  if (!key && props.instanceId) {
+    key = await resolveProcessKeyByTask(props.instanceId)
+  }
+  if (!key) return
   try {
-    const res = await request({ url: '/flowable/form/byProcess/' + processKey, method: 'get' })
+    const res = await request({ url: '/flowable/form/byProcess/' + key, method: 'get' })
     const form = res.data
     if (form && form.fieldsJson) {
       formFields.value = JSON.parse(form.fieldsJson) || []
@@ -250,6 +278,15 @@ async function loadFormFields(processKey) {
       else formLayout.value = { sections: p.sections }
     }
   } catch (e) {}
+}
+
+/** 兜底：通过当前待办任务的 fieldPerms 接口（其内部按流程定义回查表单）取流程定义 Key */
+async function resolveProcessKeyByTask(instanceId) {
+  try {
+    const t = await request({ url: '/flowable/task/todoList', method: 'get', params: { pageNum: 1, pageSize: 200 } })
+    const hit = (t.rows || []).find(r => r.instanceId === instanceId)
+    return hit ? hit.processDefinitionKey : ''
+  } catch (e) { return '' }
 }
 
 async function load() {
@@ -270,7 +307,7 @@ async function load() {
   })
   request({ url: '/flowable/process/diagram/' + props.instanceId, method: 'get', responseType: 'blob' }).then(res => {
     diagramUrl.value = URL.createObjectURL(new Blob([res], { type: 'image/png' }))
-  }).catch(() => {})
+  }).catch(() => { diagramUrl.value = '' })  // 降级：空态由 diagramEmptyText 精准说明
 }
 </script>
 

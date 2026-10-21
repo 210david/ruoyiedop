@@ -14,6 +14,7 @@
                   <!-- 标签为独立文本格，字段格仅渲染控件/值 -->
                   <template v-if="editable && values">
                     <el-form-item :prop="e.cell.field"
+                      label-width="0"
                       :rules="fieldReq(e.cell.field) || cellAttr(e.cell) === 'req' ? [{ required: true, message: '请填写' + fieldLabel(e.cell.field), trigger: ['blur', 'change'] }] : []"
                       class="fgr-fi">
                       <i v-if="fieldReq(e.cell.field) || cellAttr(e.cell) === 'req'" class="req" title="必填">*</i>
@@ -263,6 +264,19 @@ defineExpose({ getDetailData, validateDetails })
 /* 编辑态必填标识：控件前红色星号（与只读回显 .val 内红星同口径） */
 .fgr-fi .req { color: #f56c6c; font-style: normal; margin-right: 2px; line-height: 26px; flex: none; }
 .fgr-fi :deep(.el-form-item__error) { position: static; padding-top: 2px; }
+/* ===== 主表字段控件铺满单元格（与明细表输入口径一致） =====
+   问题：el-form-item__content 默认 inline-flex，内部 ElInput 无宽度约束时按内容收缩，
+   单元格右侧留白、控件偏短，视觉上像"靠右"。
+   修复：内容块撑满 + 文本/数字/日期/选择类控件统一 width:100%。 */
+.fgr-fi :deep(.el-form-item__content) { flex: 1; min-width: 0; width: 100%; }
+.fgr-fi :deep(.el-input),
+.fgr-fi :deep(.el-input-number),
+.fgr-fi :deep(.el-date-editor),
+.fgr-fi :deep(.el-select),
+.fgr-fi :deep(.el-textarea) { width: 100%; }
+.fgr-fi :deep(.el-input-number .el-input__wrapper) { width: 100%; }
+.fgr-fi :deep(.el-textarea__inner) { width: 100%; box-sizing: border-box; }
+.fgr-field > .fgr-fi { width: 100%; }
 .fgr-detail { color: #64748b; font-size: 12px; }
 /* ===== 运行时明细表块（参照泛微 e-cology） ===== */
 .fgr-detail-block { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; width: 100%; }

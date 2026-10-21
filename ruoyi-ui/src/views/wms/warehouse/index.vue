@@ -646,7 +646,7 @@ function handleDelete(row) {
     getList()
     loadTreeData()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function cancel() {

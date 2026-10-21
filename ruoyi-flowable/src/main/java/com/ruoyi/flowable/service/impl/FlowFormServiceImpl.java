@@ -14,6 +14,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.flowable.config.FlowSystemFields;
 import com.ruoyi.flowable.domain.FlowForm;
 import com.ruoyi.flowable.mapper.FlowFormMapper;
 import com.ruoyi.flowable.service.IFlowFormService;
@@ -41,6 +42,9 @@ public class FlowFormServiceImpl implements IFlowFormService
 
     @Autowired
     private ISysUserService userService;
+
+    @Autowired
+    private com.ruoyi.flowable.service.IFlowUrgencyLevelService urgencyLevelService;
 
     /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
@@ -239,7 +243,9 @@ public class FlowFormServiceImpl implements IFlowFormService
             groups.computeIfAbsent(table, k -> new ArrayList<>()).add(f);
         }
         String tableName = "flow_data_" + formKey;
-        createOrPatchTable(tableName, form.getFormName() + "流程数据", groups.get("main"), false);
+        // 主表强制补齐系统内置字段（标题/紧急程度/签字意见/打印次数），保证物理表一定存在这几列
+        List<JSONObject> mainFields = mergeSystemFieldsWithUrgencyOptions(groups.get("main"));
+        createOrPatchTable(tableName, form.getFormName() + "流程数据", mainFields, false);
         // 明细表：flow_data_{key}_dtN，含 mainid 关联主表主键
         for (int i = 1; i <= 9; i++)
         {
@@ -250,13 +256,96 @@ public class FlowFormServiceImpl implements IFlowFormService
             }
             createOrPatchTable(tableName + "_dt" + i, form.getFormName() + "明细表" + i, dtFields, true);
         }
-        // 回写表名
+        // 回写表名 + 合并后的字段清单（系统字段落库，保证字段设计与物理表口径一致）
+        List<JSONObject> merged = new ArrayList<>(mainFields);
+        for (int i = 1; i <= 9; i++)
+        {
+            List<JSONObject> dtFields = groups.get("dt" + i);
+            if (dtFields != null)
+            {
+                merged.addAll(dtFields);
+            }
+        }
         FlowForm update = new FlowForm();
         update.setFormId(formId);
         update.setTableName(tableName);
+        update.setFieldsJson(JSON.toJSONString(merged));
         update.setUpdateBy(SecurityUtils.getUsername());
         flowFormMapper.updateFlowForm(update);
         return tableName;
+    }
+
+    /**
+     * 合并系统字段，其中「紧急程度」的选项由 flow_urgency_level 配置表驱动。
+     * 配置表无数据时回退 FlowSystemFields 内置默认档位，保证老数据兼容。
+     */
+    private List<JSONObject> mergeSystemFieldsWithUrgencyOptions(List<JSONObject> mainFields)
+    {
+        List<JSONObject> base = mainFields == null ? new ArrayList<>() : new ArrayList<>(mainFields);
+        JSONArray urgencyOptions = buildUrgencyOptions();
+        // 先按配置更新「已存在」紧急程度字段的选项，再合并缺失的系统字段
+        for (JSONObject f : base)
+        {
+            if (FlowSystemFields.FIELD_URGENCY.equals(f.getString("field")) && urgencyOptions != null)
+            {
+                f.put("selectOptions", urgencyOptions);
+            }
+        }
+        java.util.Set<String> exist = new java.util.HashSet<>();
+        for (JSONObject f : base)
+        {
+            exist.add(f.getString("field"));
+        }
+        List<JSONObject> built = new ArrayList<>();
+        JSONArray defs = FlowSystemFields.definitions(urgencyOptions);
+        for (int i = 0; i < defs.size(); i++)
+        {
+            JSONObject def = defs.getJSONObject(i);
+            if (exist.contains(def.getString("field")))
+            {
+                continue;
+            }
+            built.add(def);
+        }
+        List<JSONObject> merged = new ArrayList<>(built);
+        merged.addAll(base);
+        int order = 0;
+        for (JSONObject f : merged)
+        {
+            String table = f.getString("table");
+            if (table == null || "main".equals(table))
+            {
+                f.put("order", ++order);
+            }
+        }
+        return merged;
+    }
+
+    /** 读取紧急程度可选档位（配置表 → [{label, value}]），无数据返回 null */
+    private JSONArray buildUrgencyOptions()
+    {
+        try
+        {
+            List<com.ruoyi.flowable.domain.FlowUrgencyLevel> levels = urgencyLevelService.selectSelectableList();
+            if (levels == null || levels.isEmpty())
+            {
+                return null;
+            }
+            JSONArray arr = new JSONArray();
+            for (com.ruoyi.flowable.domain.FlowUrgencyLevel lv : levels)
+            {
+                JSONObject o = new JSONObject();
+                o.put("label", lv.getDisplayName());
+                o.put("value", lv.getLevelValue());
+                arr.add(o);
+            }
+            return arr;
+        }
+        catch (Exception e)
+        {
+            // 配置表未初始化等情况：回退内置默认档位
+            return null;
+        }
     }
 
     /** 建表（不存在则建，存在则补齐缺失列）；isDetail=true 时含 mainid 关联字段 */
@@ -293,6 +382,12 @@ public class FlowFormServiceImpl implements IFlowFormService
             }
             ddl.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='").append(comment).append("'");
             jdbcTemplate.execute(ddl.toString());
+            if (!isDetail)
+            {
+                // 主表系统字段索引：标题快速检索 / 紧急程度过滤排序
+                ensureSystemFieldIndexes(tableName, new java.util.LinkedHashSet<>(java.util.Arrays.asList(
+                        FlowSystemFields.FIELD_TITLE, FlowSystemFields.FIELD_URGENCY)));
+            }
             return;
         }
         // 已存在：补齐缺失字段列
@@ -303,7 +398,12 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD COLUMN `" + col + "` "
                     + columnType(f) + " COMMENT '" + f.getString("label") + "'");
+                existing.add(col);
             }
+        }
+        if (!isDetail)
+        {
+            ensureSystemFieldIndexes(tableName, existing);
         }
     }
 
@@ -322,6 +422,45 @@ public class FlowFormServiceImpl implements IFlowFormService
         ddl.append("  `process_instance_id` varchar(64) COMMENT '流程实例ID',\n");
         ddl.append("  `create_by` varchar(64) COMMENT '创建人',\n");
         ddl.append("  `create_time` datetime COMMENT '创建时间',\n");
+    }
+
+    /**
+     * 主表系统字段索引：标题用于快速检索、紧急程度用于待办过滤/排序。
+     * 列不存在时静默跳过（明细表 / 历史表结构）。
+     */
+    private void ensureSystemFieldIndexes(String tableName, java.util.Set<String> columns)
+    {
+        if (columns == null)
+        {
+            return;
+        }
+        if (columns.contains(FlowSystemFields.FIELD_TITLE))
+        {
+            createIndexIfAbsent(tableName, "idx_title", "`title`(191)");
+        }
+        if (columns.contains(FlowSystemFields.FIELD_URGENCY))
+        {
+            createIndexIfAbsent(tableName, "idx_urgency", "`urgency`");
+        }
+    }
+
+    private void createIndexIfAbsent(String tableName, String indexName, String indexCols)
+    {
+        Long cnt = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?",
+            Long.class, tableName, indexName);
+        if (cnt != null && cnt > 0)
+        {
+            return;
+        }
+        try
+        {
+            jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD INDEX `" + indexName + "` (" + indexCols + ")");
+        }
+        catch (Exception ignored)
+        {
+            // 建索引失败不阻断建表（如列类型不匹配），仅跳过
+        }
     }
 
     @Override
@@ -369,15 +508,19 @@ public class FlowFormServiceImpl implements IFlowFormService
         {
             org.flowable.engine.runtime.ProcessInstance instance = runtimeService
                     .startProcessInstanceById(definition.getId(), businessKey, vars);
-            // 设置流程标题（历史/查询页展示）
-            if (StringUtils.isNotEmpty(title))
+            // 流程标题：优先取表单里的「标题」系统字段（用户可检索），其次用入参 title
+            String instanceTitle = null;
+            if (vars != null && vars.get(FlowSystemFields.FIELD_TITLE) != null)
             {
-                runtimeService.setProcessInstanceName(instance.getId(), title);
+                instanceTitle = String.valueOf(vars.get(FlowSystemFields.FIELD_TITLE));
             }
-            // 设置流程标题（历史/查询页展示）
-            if (StringUtils.isNotEmpty(title))
+            if (StringUtils.isEmpty(instanceTitle))
             {
-                runtimeService.setProcessInstanceName(instance.getId(), title);
+                instanceTitle = title;
+            }
+            if (StringUtils.isNotEmpty(instanceTitle))
+            {
+                runtimeService.setProcessInstanceName(instance.getId(), instanceTitle);
             }
             // 回填业务数据行的流程实例ID
             if (formId != null && businessKey != null)
@@ -416,9 +559,22 @@ public class FlowFormServiceImpl implements IFlowFormService
         params.add(null); // 实例ID稍后回填占位，此处先插空
         for (JSONObject f : fields)
         {
-            cols.append(", `").append(f.getString("field")).append("`");
+            String col = f.getString("field");
+            cols.append(", `").append(col).append("`");
             marks.append(", ?");
-            Object v = data.get(f.getString("field"));
+            Object v = data.get(col);
+            // 系统字段默认值兜底：紧急程度默认「普通(1)」、打印次数默认 0
+            if (v == null || StringUtils.isEmpty(String.valueOf(v)))
+            {
+                if (FlowSystemFields.FIELD_URGENCY.equals(col))
+                {
+                    v = "1";
+                }
+                else if (FlowSystemFields.FIELD_PRINT_COUNT.equals(col))
+                {
+                    v = 0;
+                }
+            }
             params.add(v == null ? null : String.valueOf(v));
         }
         cols.append(", `create_by`, `create_time`");

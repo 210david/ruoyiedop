@@ -2,6 +2,8 @@ package com.ruoyi.flowable.controller;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,6 +54,17 @@ public class FlowDefinitionController extends BaseController
     }
 
     /**
+     * 流程定义流程图（发起前预览：按流程 Key 取当前活动版本，无活动版本时取最高版本）
+     * 供前台发起页「流程图」页签使用，尚无实例、不做节点高亮
+     */
+    @GetMapping("/diagram/{processKey}")
+    public ResponseEntity<byte[]> diagram(@PathVariable("processKey") String processKey)
+    {
+        byte[] png = flowModelService.generateDefinitionDiagram(processKey);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(png);
+    }
+
+    /**
      * 挂起/激活流程定义
      */
     @Log(title = "流程定义", businessType = BusinessType.UPDATE)
@@ -61,5 +74,28 @@ public class FlowDefinitionController extends BaseController
             @RequestParam("suspend") boolean suspend)
     {
         return toAjax(flowModelService.changeDefinitionState(processDefinitionId, suspend));
+    }
+
+    /**
+     * 更新流程定义版本备注
+     */
+    @Log(title = "流程定义", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:definition:state')")
+    @PutMapping("/remark/{processDefinitionId}")
+    public AjaxResult updateRemark(@PathVariable("processDefinitionId") String processDefinitionId,
+            @RequestParam("remark") String remark)
+    {
+        return toAjax(flowModelService.updateDefinitionRemark(processDefinitionId, remark));
+    }
+
+    /**
+     * 设为当前活动版本（发起流程时优先使用该版本）
+     */
+    @Log(title = "流程定义", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:definition:state')")
+    @PutMapping("/active/{processDefinitionId}")
+    public AjaxResult setActive(@PathVariable("processDefinitionId") String processDefinitionId)
+    {
+        return toAjax(flowModelService.setActiveDefinition(processDefinitionId));
     }
 }

@@ -1013,7 +1013,7 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.customerStatus] !== undefined) counts[r.customerStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function statusTabClass(value) { const map = { '0': 'tab-audit', '1': 'tab-approved', '2': 'tab-done', '3': 'tab-draft', '4': 'tab-void' }; return map[value] || '' }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'green', '3': 'amber', '4': 'gray' }; return map[status] || 'gray' }
@@ -1067,7 +1067,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const customerIds = row.customerId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delCustomer(customerIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const customerIds = row.customerId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delCustomer(customerIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/customer/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'customerId'), `customer_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -1128,7 +1128,7 @@ function handleRelease(row) {
       proxy.$modal.msgSuccess('已释放到公海')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('释放到公海失败：' + (e?.message || e)) })
 }
 
 // 领取客户
@@ -1138,7 +1138,7 @@ function handleClaim(row) {
       proxy.$modal.msgSuccess('领取成功')
       getList(); loadStatusCounts()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('领取失败：' + (e?.message || e)) })
 }
 
 // 变更状态（单条）

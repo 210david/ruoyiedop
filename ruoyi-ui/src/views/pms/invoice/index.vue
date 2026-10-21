@@ -442,7 +442,7 @@
                 <el-table-column label="付款人" prop="payer" width="100" align="center" />
                 <el-table-column label="开户银行" prop="bankName" min-width="120" show-overflow-tooltip />
                 <el-table-column label="银行账号" prop="bankAccount" min-width="120" show-overflow-tooltip />
-                <el-table-column label="付款凭证" prop="attachment" width="130" align="center"><template #default="scope"><div v-if="scope.row.attachment" style="display:flex;gap:4px;justify-content:center"><el-link type="primary" :href="baseUrl + scope.row.attachment" target="_blank" :underline="false">下载</el-link><el-link type="success" :underline="false" @click="handlePreview(scope.row.attachment)">预览</el-link></div><span v-else class="rd-value--muted">-</span></template></el-table-column>
+                <el-table-column label="付款凭证" prop="attachment" width="130" align="center"><template #default="scope"><div v-if="scope.row.attachment" style="display:flex;gap:4px;justify-content:center"><el-link type="primary" :underline="false" @click="handleFileDownload(scope.row.attachment)">下载</el-link><el-link type="success" :underline="false" @click="handlePreview(scope.row.attachment)">预览</el-link></div><span v-else class="rd-value--muted">-</span></template></el-table-column>
                 <el-table-column label="付款时间" prop="createTime" width="160" align="center" />
                 <el-table-column label="备注" prop="remark" min-width="100" show-overflow-tooltip />
               </el-table>
@@ -454,7 +454,7 @@
           <div class="rd-card-header" @click="toggleCard('v5')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v5 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v5">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><template v-if="viewData.invoiceAttachment"><el-link type="primary" :href="baseUrl + viewData.invoiceAttachment" target="_blank">{{ getFileName(viewData.invoiceAttachment) }}</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(viewData.invoiceAttachment)">预览</el-button></template><span v-else class="rd-value--muted">暂无附件</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">附件</span><div class="rd-value"><template v-if="viewData.invoiceAttachment"><el-link type="primary" :underline="false" @click="handleFileDownload(viewData.invoiceAttachment)">{{ getFileName(viewData.invoiceAttachment) }}</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(viewData.invoiceAttachment)">预览</el-button></template><span v-else class="rd-value--muted">暂无附件</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -553,7 +553,7 @@
           <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>发票附件</div></div>
           <div class="rd-card-body" style="display:block">
             <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">发票文件</span><div class="rd-value"><template v-if="auditData.invoiceAttachment"><el-link type="primary" :href="baseUrl + auditData.invoiceAttachment" target="_blank" :underline="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ getFileName(auditData.invoiceAttachment) }}</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(auditData.invoiceAttachment)">预览</el-button></template><span v-else class="rd-value--muted">暂无附件</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">发票文件</span><div class="rd-value"><template v-if="auditData.invoiceAttachment"><el-link type="primary" :underline="false" @click="handleFileDownload(auditData.invoiceAttachment)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ getFileName(auditData.invoiceAttachment) }}</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(auditData.invoiceAttachment)">预览</el-button></template><span v-else class="rd-value--muted">暂无附件</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ auditData.remark || '-' }}</div></div>
             </div>
           </div>
@@ -702,7 +702,7 @@
               <el-table-column label="付款人" prop="payer" width="100" align="center" />
               <el-table-column label="开户银行" prop="bankName" min-width="120" show-overflow-tooltip />
               <el-table-column label="银行账号" prop="bankAccount" min-width="120" show-overflow-tooltip />
-              <el-table-column label="付款凭证" prop="attachment" width="130" align="center"><template #default="scope"><div v-if="scope.row.attachment" style="display:flex;gap:4px;justify-content:center"><el-link type="primary" :href="baseUrl + scope.row.attachment" target="_blank" :underline="false">下载</el-link><el-link type="success" :underline="false" @click="handlePreview(scope.row.attachment)">预览</el-link></div><span v-else class="rd-value--muted">-</span></template></el-table-column>
+              <el-table-column label="付款凭证" prop="attachment" width="130" align="center"><template #default="scope"><div v-if="scope.row.attachment" style="display:flex;gap:4px;justify-content:center"><el-link type="primary" :underline="false" @click="handleFileDownload(scope.row.attachment)">下载</el-link><el-link type="success" :underline="false" @click="handlePreview(scope.row.attachment)">预览</el-link></div><span v-else class="rd-value--muted">-</span></template></el-table-column>
               <el-table-column label="付款时间" prop="createTime" width="160" align="center" />
               <el-table-column label="备注" prop="remark" min-width="100" show-overflow-tooltip />
             </el-table>
@@ -1030,12 +1030,11 @@ import ContractPicker from '@/components/ContractPicker/index.vue'
 import OrderPicker from '@/components/OrderPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
+import { downloadFile } from '@/utils/downloadFile'
 import { ArrowDown, Search, OfficeBuilding, Document, Filter, Edit, Delete, Download, WarningFilled, ArrowRight, CircleCheck, CircleClose, QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { pms_invoice_status, pms_invoice_type, wms_payment_method } = proxy.useDict('pms_invoice_status', 'pms_invoice_type', 'wms_payment_method')
-const baseUrl = import.meta.env.VITE_APP_BASE_API
-
 const { collapsedCards, toggleCard } = useDetailCard(["recognize","c1","c2","c3","c0","c4","v1","v3","v4","v5","v6","a1","a2","p1","m1","m2","m3","m4"])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pms_invoice_index')
 
@@ -1309,6 +1308,7 @@ function uploadAttachment(file) {
 }
 function getFileName(name) { if (name && name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name || '' }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
+function handleFileDownload(url) { downloadFile(url) }
 function cancel() { open.value = false; reset() }
 function loadStatusCounts() {
   listInvoice({ pageNum: 1, pageSize: 999 }).then(res => {

@@ -132,7 +132,7 @@ function reset() { form.value = { waveName: undefined, warehouseId: undefined, r
 function handleAdd() { reset(); open.value = true; title.value = '添加批次' }
 function handleUpdate(row) { reset(); getWave(row.waveId).then(res => { form.value = res.data; open.value = true; title.value = '修改批次' }) }
 function submitForm() { proxy.$refs['waveRef'].validate(v => { if (v) { if (form.value.waveId != null) { updateWave(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList() }) } else { addWave(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList() }) } } }) }
-function handleDelete(row) { const waveIds = row.waveId || ids.value; proxy.$modal.confirm('确认删除？删除后将解除关联的出库单。').then(() => delWave(waveIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const waveIds = row.waveId || ids.value; proxy.$modal.confirm('确认删除？删除后将解除关联的出库单。').then(() => delWave(waveIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 function handleDetail(row) {
   getWave(row.waveId).then(res => { detailData.value = res.data; detailOpen.value = true })
@@ -160,7 +160,7 @@ function handleRelease(row) {
   }).then(() => {
     proxy.$modal.msgSuccess('释放成功')
     getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('释放批次失败：' + (e?.message || e)) })
 }
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 getList()

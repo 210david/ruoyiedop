@@ -621,7 +621,7 @@ function loadTypeCounts() {
     (wms_material_type.value || []).forEach(d => { counts[d.value] = 0 });
     (res.rows || []).forEach(r => { if (counts[r.materialType] !== undefined) counts[r.materialType]++ });
     typeCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { typeCounts.value = { all: 0 } })
 }
 
 function handleSelectionChange(selection) {
@@ -700,7 +700,7 @@ function handleDelete(row) {
   }).then(() => {
     getList(); loadTypeCounts()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 /** 导出物料（与列表口径一致：含筛选条件，导出全部页数据） */

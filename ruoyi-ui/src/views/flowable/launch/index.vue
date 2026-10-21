@@ -1,5 +1,7 @@
 <template>
   <div class="app-container flowable-launch-page">
+    <!-- 列表模式：仅菜单「流程发起」时渲染（独立页 /flow/launch/create 不显示列表，避免跳转闪烁） -->
+    <template v-if="!isStandaloneLaunch">
     <!-- ===== 搜索 ===== -->
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
@@ -47,28 +49,46 @@
           style="grid-column:1/-1" />
       </div>
     </div>
+    </template>
 
-    <!-- ===== 发起弹窗 ===== -->
-    <el-dialog v-model="open" :title="'发起：' + (current.modelName || '')" width="680px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+    <!-- ===== 发起流程：泛微式全屏页面（顶部：标题 + 页签 + 操作按钮；下方：内容区） ===== -->
+    <el-dialog v-model="open" fullscreen append-to-body class="launch-dialog" :close-on-click-modal="false" destroy-on-close :show-close="false">
       <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><el-icon :size="20"><Promotion /></el-icon></div>
-          <span class="rd-detail-header-title">发起流程</span>
-          <div class="rd-detail-header-sub" v-if="current.modelName">
-            <div class="rd-detail-header-divider"></div>
-            <span class="rd-detail-header-no">{{ current.modelName }}（v{{ current.version }}）</span>
+        <div class="launch-header">
+          <!-- 第一行：标题 + 操作按钮 -->
+          <div class="launch-titlebar">
+            <div class="lt-title">
+              <span class="lt-glyph"></span>
+              <span class="lt-name">{{ current.modelName || '发起流程' }}</span>
+              <span class="lt-ver" v-if="current.version">V{{ current.version }}</span>
+              <span class="lt-form" v-if="boundForm">
+                <el-icon><Document /></el-icon>{{ boundForm.formName }}
+              </span>
+            </div>
+            <div class="lt-actions">
+              <el-button type="primary" icon="Check" :loading="submitting" @click="doLaunch">提交</el-button>
+              <el-button icon="Finished" @click="saveDraft">保存</el-button>
+            </div>
+          </div>
+          <!-- 第二行：页签 -->
+          <div class="launch-tabs">
+            <button class="launch-tab" :class="{ 'is-active': launchTab === 'form' }" @click="launchTab = 'form'">流程表单</button>
+            <button class="launch-tab" :class="{ 'is-active': launchTab === 'diagram' }" @click="launchTab = 'diagram'">流程图</button>
+            <button class="launch-tab" :class="{ 'is-active': launchTab === 'status' }" @click="launchTab = 'status'">流程状态</button>
+            <button class="launch-tab" :class="{ 'is-active': launchTab === 'resource' }" @click="launchTab = 'resource'">相关资源</button>
           </div>
         </div>
       </template>
 
-      <div v-if="boundForm && boundForm.fields && boundForm.fields.length">
-        <el-alert type="info" :closable="false" show-icon style="margin-bottom:14px"
-          :title="'使用表单：' + boundForm.formName" description="填写后提交，数据将存入业务数据表并进入审批" />
-        <el-form ref="dynRef" :model="dynData" label-width="120px">
-          <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid"
-            :fields="boundForm.fields" :values="dynData" editable @browse="openBrowse" />
-          <template v-else>
-          <template v-for="(grp, gi) in renderGroups" :key="gi">
+      <div class="launch-body">
+        <!-- 页签：流程表单 -->
+        <div class="launch-pane" v-show="launchTab === 'form'">
+          <div v-if="boundForm && boundForm.fields && boundForm.fields.length">
+            <el-form ref="dynRef" :model="dynData" label-width="120px">
+              <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid"
+                :fields="boundForm.fields" :values="dynData" editable @browse="openBrowse" />
+              <template v-else>
+                <template v-for="(grp, gi) in renderGroups" :key="gi">
             <div class="dyn-section-title" v-if="grp.title">{{ grp.title }}</div>
             <el-row :gutter="8">
               <el-col v-for="c in grp.cells" :key="c.key" :span="c.span || 24">
@@ -123,30 +143,92 @@
                 </el-form-item>
               </el-col>
             </el-row>
-          </template>
-          </template>
-        </el-form>
-      </div>
-      <div v-else>
-        <el-alert type="info" :closable="false" show-icon style="margin-bottom:14px"
-          title="该流程未绑定表单" description="可直接发起（流程变量在流程设计器中已定义），或先到后台表单管理设计表单并绑定" />
-      </div>
+                </template>
+              </template>
+            </el-form>
+          </div>
+          <div v-else>
+            <el-alert type="info" :closable="false" show-icon style="margin-bottom:14px"
+              title="该流程未绑定表单" description="仍可直接发起（填写下方「发起信息」即可）；如需填写业务表单，请先到后台表单管理设计表单并在模型基本信息中关联" />
+          </div>
 
-      <el-form label-width="120px" style="margin-top:10px">
-        <el-form-item label="流程标题">
-          <el-input v-model="title" placeholder="默认自动生成：流程名-申请人-日期" />
-        </el-form-item>
-        <el-form-item label="首节点审批人">
-          <el-select v-model="approverUserId" placeholder="选择审批人（将进入其待办）" filterable style="width:100%">
-            <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="u.userId" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+          <!-- 发起信息（流程标题 / 首节点审批人） -->
+          <section class="launch-card">
+            <div class="launch-card-head"><span class="lc-icon">◈</span>发起信息</div>
+            <div class="launch-card-body">
+              <el-form label-width="120px">
+                <el-form-item label="流程标题">
+                  <el-input v-model="title" placeholder="默认自动生成：流程名-申请人-日期" />
+                </el-form-item>
+                <el-form-item label="首节点审批人">
+                  <el-select v-model="approverUserId" placeholder="选择审批人（将进入其待办）" filterable style="width:100%">
+                    <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="u.userId" />
+                  </el-select>
+                </el-form-item>
+              </el-form>
+            </div>
+          </section>
+        </div>
 
-      <template #footer>
-        <el-button type="primary" :loading="submitting" @click="doLaunch">提交并发起</el-button>
-        <el-button @click="open = false">取 消</el-button>
-      </template>
+        <!-- 页签：流程图（发起前预览，未产生实例，展示设计态流程） -->
+        <div class="launch-pane" v-show="launchTab === 'diagram'">
+          <section class="launch-card">
+            <div class="launch-card-head"><span class="lc-icon">◈</span>流程图（发起前预览）</div>
+            <div class="launch-card-body">
+              <div class="diagram-wrap">
+                <img v-if="previewDiagramUrl" :src="previewDiagramUrl" class="diagram-img" alt="流程图" />
+                <div v-else-if="previewDiagramLoading" class="diagram-empty">流程图加载中…</div>
+                <div v-else class="diagram-empty">暂无流程图，请先在设计器中绘制并部署</div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- 页签：流程状态（发起前无实例，展示待发起状态） -->
+        <div class="launch-pane" v-show="launchTab === 'status'">
+          <div class="status-cards">
+            <div class="status-card"><div class="sc-num">1</div><div class="sc-label">总人次</div></div>
+            <div class="status-card"><div class="sc-num sc-amber">0</div><div class="sc-label">已提交</div></div>
+            <div class="status-card"><div class="sc-num">1</div><div class="sc-label">未提交</div></div>
+            <div class="status-card"><div class="sc-num">{{ launchNodeCount }}</div><div class="sc-label">节点数</div></div>
+          </div>
+          <section class="launch-card">
+            <div class="launch-card-head"><span class="lc-icon">≡</span>流转明细</div>
+            <div class="launch-card-body">
+              <el-table :data="launchStatusRows" border size="small">
+                <el-table-column type="index" label="序号" width="60" align="center" />
+                <el-table-column label="节点" prop="taskName" min-width="140" show-overflow-tooltip />
+                <el-table-column label="操作人" prop="assigneeName" width="140">
+                  <template #default="s">{{ s.row.assigneeName || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="状态" width="110" align="center">
+                  <template #default="s">
+                    <span class="badge" :class="s.row.done ? 'green' : 'amber'"><span class="dot"></span>{{ s.row.done ? '已提交' : '待提交' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="接收时间" prop="createTime" width="170" align="center">
+                  <template #default="s">{{ s.row.createTime || '-' }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </section>
+        </div>
+
+        <!-- 页签：相关资源 -->
+        <div class="launch-pane" v-show="launchTab === 'resource'">
+          <section class="launch-card">
+            <div class="launch-card-head"><span class="lc-icon">⊞</span>相关资源</div>
+            <div class="launch-card-body">
+              <el-table :data="launchResources" border size="small">
+                <el-table-column label="资源名称" prop="name" min-width="220" show-overflow-tooltip />
+                <el-table-column label="类型" prop="type" width="140" align="center" />
+                <el-table-column label="说明" prop="desc" min-width="220" show-overflow-tooltip />
+              </el-table>
+              <div class="resource-empty">发起后，流程中上传的附件与关联单据将在此汇总展示</div>
+            </div>
+          </section>
+        </div>
+      </div>
     </el-dialog>
 
     <!-- 浏览按钮：主数据选择弹窗（人员/部门/岗位/角色/物料/客户/供应商/合同） -->
@@ -173,8 +255,11 @@ import useUserStore from '@/store/modules/user'
 import { Search, Promotion, ArrowRight, Files } from '@element-plus/icons-vue'
 import FormGridRender from '@/components/FormGridRender.vue'
 import { parseLayout } from '@/views/flowable/form/designer/converters'
+import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
+const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(true)
 const showSearch = ref(true)
@@ -189,6 +274,17 @@ const approverUserId = ref(undefined)
 const title = ref('')
 const userOptions = ref([])
 const submitting = ref(false)
+/** 全屏发起页页签：流程表单 / 流程图 / 流程状态 / 相关资源 */
+const launchTab = ref('form')
+/** 发起前流程图预览（部署态的流程定义图，尚未产生实例） */
+const previewDiagramUrl = ref('')
+/** 流程图加载中标志 */
+const previewDiagramLoading = ref(false)
+/** 发起前流程状态：节点数 + 待提交行 */
+const launchNodeCount = ref(0)
+const launchStatusRows = ref([])
+/** 相关资源：发起阶段主要为关联表单与流程定义信息 */
+const launchResources = ref([])
 /** 表单布局解析：mode grid → FormGridRender 网格渲染；section → 分组渲染 */
 const layoutParsed = ref({ mode: 'section', sections: [], grid: null })
 const layoutMode = computed(() => layoutParsed.value.mode)
@@ -231,7 +327,80 @@ function getList() {
 
 function loadUsers() {
   request({ url: '/system/user/list', method: 'get', params: { pageNum: 1, pageSize: 200 } })
-    .then(res => { userOptions.value = res.rows || [] }).catch(() => {})
+    .then(res => { userOptions.value = res.rows || [] })
+    .catch(e => { proxy.$modal.msgWarning('审批人列表加载失败，将无法选择首节点审批人：' + (e?.message || e)) })
+}
+
+/** 加载发起前流程图预览（按流程 key 取已部署定义的 BPMN 图）
+ *  注意：<img src> 不会携带 Authorization 头，直接指向接口会 401，
+ *  因此用 request(blob) 取回后再转成 objectURL
+ */
+function loadPreviewDiagram() {
+  previewDiagramUrl.value = ''
+  previewDiagramLoading.value = true
+  if (!current.value.modelKey) { previewDiagramLoading.value = false; return }
+  request({
+    url: '/flowable/definition/diagram/' + current.value.modelKey,
+    method: 'get',
+    responseType: 'blob'
+  }).then(res => {
+    previewDiagramUrl.value = URL.createObjectURL(new Blob([res], { type: 'image/png' }))
+  }).catch(() => {
+    previewDiagramUrl.value = ''
+  }).finally(() => {
+    previewDiagramLoading.value = false
+  })
+}
+
+/** 发起前流程状态：节点数取自流程图预览，流转明细为待提交一行 */
+function buildLaunchStatus() {
+  launchStatusRows.value = [{
+    taskName: '发起节点（申请人提交）',
+    assigneeName: userStore.nickName || userStore.name || '',
+    done: false,
+    createTime: ''
+  }]
+}
+
+/** 相关资源：发起阶段展示关联表单与流程定义基础信息 */
+function buildLaunchResources() {
+  const rows = []
+  if (boundForm.value) {
+    rows.push({
+      name: boundForm.value.formName || '流程表单',
+      type: '关联表单',
+      desc: boundForm.value.tableName ? '数据表：' + boundForm.value.tableName : '发起时渲染填写'
+    })
+  }
+  if (current.value.modelName) {
+    rows.push({
+      name: current.value.modelName,
+      type: '流程定义',
+      desc: '流程Key：' + (current.value.modelKey || '-') + '，版本 V' + (current.value.version || '-')
+    })
+  }
+  launchResources.value = rows
+}
+
+/** 保存草稿：本地暂存表单填写内容（不发起流程） */
+function saveDraft() {
+  try {
+    const draftKey = 'flow_launch_draft_' + (current.value.modelKey || 'unknown')
+    localStorage.setItem(draftKey, JSON.stringify({
+      title: title.value,
+      approverUserId: approverUserId.value,
+      dynData: dynData.value,
+      savedAt: Date.now()
+    }))
+    proxy.$modal.msgSuccess('已保存草稿（本地暂存，未发起流程）')
+  } catch (e) {
+    proxy.$modal.msgError('草稿保存失败')
+  }
+}
+
+/** 关闭全屏发起页 */
+function closeLaunch() {
+  open.value = false
 }
 
 /** 字段归一化：新版 {form,dtype} 与旧版 {type} 统一为渲染类型 rtype；select 兼容键值对/字符串/数组 */
@@ -266,11 +435,38 @@ function parseOptionPair(s) {
 }
 
 async function handleLaunch(d) {
+  // 泛微式：点击流程在浏览器新标签页打开独立发起页（不在当前页面弹窗）
+  const routeUrl = router.resolve({
+    path: '/flow/launch/create',
+    query: { key: d.modelKey, name: d.modelName || '', version: d.version || '' }
+  }).href
+  window.open(routeUrl, '_blank')
+}
+
+/** 独立发起页初始化：按 URL 参数加载流程定义与绑定表单 */
+async function initLaunchFromRoute() {
+  const key = route.query.key
+  if (!key) {
+    proxy.$modal.msgWarning('缺少流程标识，无法发起')
+    return
+  }
+  loading.value = false
+  const hit = defs.value.find(x => x.modelKey === key)
+  const target = hit || {
+    modelKey: key,
+    modelName: route.query.name || '',
+    version: route.query.version ? Number(route.query.version) : undefined
+  }
+  await prepareLaunch(target)
+}
+
+async function prepareLaunch(d) {
   current.value = d
   approverUserId.value = undefined
   dynData.value = {}
   title.value = (d.modelName || '') + '-' + (userStore.nickName || '') + '-' + new Date().toISOString().slice(0, 10)
   boundForm.value = null
+  launchTab.value = 'form'
   try {
     const res = await formByProcess(d.modelKey)
     if (res.data && res.data.fieldsJson) {
@@ -281,7 +477,19 @@ async function handleLaunch(d) {
       initDetailRows()
     }
   } catch (e) { /* 无绑定表单 */ }
+  // 恢复本地草稿（若有）
+  try {
+    const draft = JSON.parse(localStorage.getItem('flow_launch_draft_' + d.modelKey) || 'null')
+    if (draft && draft.dynData) {
+      dynData.value = draft.dynData
+      if (draft.title) title.value = draft.title
+      if (draft.approverUserId) approverUserId.value = draft.approverUserId
+    }
+  } catch (e) {}
   loadUsers()
+  loadPreviewDiagram()
+  buildLaunchStatus()
+  buildLaunchResources()
   open.value = true
 }
 
@@ -484,7 +692,16 @@ function submitLaunch() {
   }).finally(() => { submitting.value = false })
 }
 
-getList()
+/** 是否独立发起页（新标签页打开：/flow/launch/create?key=xxx） */
+const isStandaloneLaunch = computed(() => route.path === '/flow/launch/create')
+
+if (isStandaloneLaunch.value) {
+  // 独立发起页：直接加载表单详情，不展示流程列表
+  initLaunchFromRoute()
+} else {
+  // 列表页：加载可发起流程
+  getList()
+}
 </script>
 
 <script>
@@ -582,4 +799,70 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } }
 .flowable-launch-page .flow-go { color: var(--ink-300); }
 .flowable-launch-page .flow-item:hover .flow-go { color: var(--brand-600); }
 @media (max-width:1200px) { .flowable-launch-page .cat-groups { grid-template-columns: repeat(2,1fr); } }
+
+/* ===== 泛微式全屏发起页：顶部（标题 + 页签 + 操作按钮） + 内容区 ===== */
+.launch-header { padding:0 4px; }
+
+/* 第一行：标题左、操作按钮右 */
+.launch-titlebar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:2px 0 10px; }
+.launch-titlebar .lt-title { display:flex; align-items:center; gap:10px; min-width:0; }
+.launch-titlebar .lt-glyph { width:4px; height:18px; background:var(--brand-600, #4f46e5); border-radius:2px; flex:none; }
+.launch-titlebar .lt-name { font-size:16px; font-weight:600; color:var(--ink-900, #0f172a); white-space:nowrap; }
+.launch-titlebar .lt-ver {
+  font-size:12px; font-weight:600; padding:1px 8px; border-radius:999px;
+  background:var(--brand-50, #eef2ff); color:var(--brand-700, #4338ca); flex:none;
+}
+.launch-titlebar .lt-form {
+  display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--ink-500, #64748b);
+  padding-left:10px; border-left:1px solid var(--ink-200, #e2e8f0); white-space:nowrap;
+}
+.launch-titlebar .lt-actions { display:flex; align-items:center; gap:8px; flex:none; }
+
+/* 第二行：页签行（下划线风格，与流程详情组件口径一致） */
+.launch-tabs { display:flex; align-items:center; gap:4px; padding:0; border-bottom:1px solid var(--ink-200, #e2e8f0); }
+.launch-tab {
+  position:relative; border:none; background:transparent; cursor:pointer;
+  padding:9px 16px; font-size:14px; color:var(--ink-500, #64748b);
+  transition:color .15s var(--ease-out, cubic-bezier(.16,.84,.44,1));
+}
+.launch-tab:hover { color:var(--brand-600, #4f46e5); }
+.launch-tab.is-active { color:var(--brand-600, #4f46e5); font-weight:600; }
+.launch-tab.is-active::after {
+  content:''; position:absolute; left:12px; right:12px; bottom:-1px; height:2px;
+  background:var(--brand-600, #4f46e5); border-radius:2px;
+}
+
+/* 内容区：卡片式，铺满剩余高度 */
+.launch-body { padding:16px 20px 28px; background:#f8fafc; min-height:100%; }
+.launch-pane { width:100%; }
+.launch-card {
+  background:#fff; border:1px solid var(--ink-200, #e2e8f0); border-radius:var(--r-lg, 14px);
+  box-shadow:var(--shadow-card, 0 1px 2px rgba(15,23,42,.04)); overflow:hidden; margin-bottom:14px;
+}
+.launch-card-head {
+  display:flex; align-items:center; gap:8px; padding:11px 16px;
+  border-bottom:1px solid var(--ink-100, #f1f5f9); font-size:14px; font-weight:600; color:var(--ink-900, #0f172a);
+}
+.launch-card-head .lc-icon { color:var(--brand-600, #4f46e5); }
+.launch-card-body { padding:16px; }
+
+/* 流程图预览 */
+.diagram-wrap { display:flex; align-items:center; justify-content:center; min-height:360px; background:#fbfcfe; border:1px dashed var(--ink-200, #e2e8f0); border-radius:8px; padding:12px; overflow:auto; }
+.diagram-img { max-width:100%; height:auto; }
+.diagram-empty { color:var(--ink-400, #94a3b8); font-size:13px; }
+
+/* 流程状态统计卡 */
+.status-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.status-card { background:#fff; border:1px solid var(--ink-200, #e2e8f0); border-radius:var(--r-lg, 14px); padding:16px; text-align:center; box-shadow:var(--shadow-card, 0 1px 2px rgba(15,23,42,.04)); }
+.status-card .sc-num { font-size:24px; font-weight:700; color:var(--ink-900, #0f172a); line-height:1.2; }
+.status-card .sc-num.sc-green { color:#059669; }
+.status-card .sc-num.sc-amber { color:#d97706; }
+.status-card .sc-label { margin-top:4px; font-size:13px; color:var(--ink-500, #64748b); }
+
+.resource-empty { margin-top:10px; text-align:center; color:var(--ink-400, #94a3b8); font-size:13px; }
+
+@media (max-width:900px) {
+  .status-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .launch-titlebar { flex-wrap:wrap; }
+}
 </style>

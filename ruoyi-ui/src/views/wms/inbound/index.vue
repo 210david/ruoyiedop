@@ -463,8 +463,8 @@ function validateDetailList() {
   }
   return true
 }
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delInbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交入库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitInbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交失败：' + (e?.message || e)) }) }
 /** 导出入库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
   const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'InboundDate'), dateRangeCreateTime.value, 'CreateTime')
@@ -483,7 +483,7 @@ function orderTypeLabel(type) { const item = wms_inbound_type.value.find(d => d.
 function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-partial', '3': 'tab-done' }; return map[value] || '' }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function handleStatusChange(val) { activeStatusTab.value = val ? val : 'all'; handleQuery() }
-function loadStatusCounts() { listInbound({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => {}) }
+function loadStatusCounts() { listInbound({ pageNum: 1, pageSize: 999 }).then(res => { const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }; (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ }); statusCounts.value = counts }).catch(() => { statusCounts.value = {} }) }
 function cancel() { open.value = false; reset() }
 function loadOptions() {
   listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
@@ -517,7 +517,7 @@ function openDetailFromRoute() {
   listInbound({ pageNum: 1, pageSize: 1, orderNo: no }).then(res => {
     const row = (res.rows || []).find(r => r.orderNo === no)
     if (row) handleDetail(row)
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('按单号加载入库单失败：' + (e?.message || e)) })
 }
 
 loadOptions()

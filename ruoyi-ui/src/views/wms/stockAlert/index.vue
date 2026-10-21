@@ -243,7 +243,7 @@ function handleDelete(row) {
     getList()
     getSummary()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleBatchDelete() {
@@ -257,7 +257,7 @@ function handleBatchDelete() {
     getList()
     getSummary()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function alertLabel(type) {

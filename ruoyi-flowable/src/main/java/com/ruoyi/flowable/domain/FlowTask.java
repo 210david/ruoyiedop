@@ -60,6 +60,9 @@ public class FlowTask extends BaseEntity
     /** 流程标题（流程实例名称，发起时生成） */
     private String title;
 
+    /** 紧急程度（1普通 2紧急 3特急，来自业务表系统字段） */
+    private String urgency;
+
     /** 流程定义Key（用于按流程过滤） */
     private String processDefinitionKey;
 
@@ -93,6 +96,8 @@ public class FlowTask extends BaseEntity
     public void setOutcome(String outcome) { this.outcome = outcome; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+    public String getUrgency() { return urgency; }
+    public void setUrgency(String urgency) { this.urgency = urgency; }
     public String getProcessDefinitionKey() { return processDefinitionKey; }
     public void setProcessDefinitionKey(String processDefinitionKey) { this.processDefinitionKey = processDefinitionKey; }
 }

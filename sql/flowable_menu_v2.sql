@@ -46,13 +46,14 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 ('模型删除', @p, 4, '#', '', 1, 0, 'F', '0', '0', 'flowable:model:remove', '#', 'admin', sysdate(), ''),
 ('模型部署', @p, 5, '#', '', 1, 0, 'F', '0', '0', 'flowable:model:deploy', '#', 'admin', sysdate(), '');
 
--- 流程定义
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-('流程定义', @fm, 2, 'definition', 'flowable/definition/index', 1, 0, 'C', '0', '0', 'flowable:definition:list', 'component', 'admin', sysdate(), '已部署流程版本管理');
-SET @p = LAST_INSERT_ID();
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-('定义查询', @p, 1, '#', '', 1, 0, 'F', '0', '0', 'flowable:definition:query', '#', 'admin', sysdate(), ''),
-('定义挂起激活', @p, 2, '#', '', 1, 0, 'F', '0', '0', 'flowable:definition:state', '#', 'admin', sysdate(), '');
+-- 流程定义（已合并到流程模型版本管理：版本备注/设为活动版本/挂起激活统一收在流程模型版本编辑弹框，本菜单下线）
+-- 如需回退，取消下面 4 行注释即可恢复菜单
+-- INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+-- ('流程定义', @fm, 2, 'definition', 'flowable/definition/index', 1, 0, 'C', '0', '0', 'flowable:definition:list', 'component', 'admin', sysdate(), '已部署流程版本管理');
+-- SET @p = LAST_INSERT_ID();
+-- INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+-- ('定义查询', @p, 1, '#', '', 1, 0, 'F', '0', '0', 'flowable:definition:query', '#', 'admin', sysdate(), ''),
+-- ('定义挂起激活', @p, 2, '#', '', 1, 0, 'F', '0', '0', 'flowable:definition:state', '#', 'admin', sysdate(), '');
 
 -- 表单管理（新增，含数据表生成）
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES

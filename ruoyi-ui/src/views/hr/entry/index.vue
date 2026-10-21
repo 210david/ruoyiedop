@@ -422,15 +422,15 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc2">
             <div class="rd-grid">
 <div class="rd-item rd-item--full"><span class="rd-label">材料清单</span><div class="rd-value">
-<template v-if="parseFiles(viewData.materialsStatus).length"><div v-for="(f, i) in parseFiles(viewData.materialsStatus)" :key="'m' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+<template v-if="parseFiles(viewData.materialsStatus).length"><div v-for="(f, i) in parseFiles(viewData.materialsStatus)" :key="'m' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
 <div class="rd-item rd-item--full"><span class="rd-label">岗前体检</span><div class="rd-value">
-<template v-if="parseFiles(viewData.healthCheck).length"><div v-for="(f, i) in parseFiles(viewData.healthCheck)" :key="'h' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+<template v-if="parseFiles(viewData.healthCheck).length"><div v-for="(f, i) in parseFiles(viewData.healthCheck)" :key="'h' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
 <div class="rd-item rd-item--full"><span class="rd-label">三级安全教育</span><div class="rd-value">
-<template v-if="parseFiles(viewData.safetyEducation).length"><div v-for="(f, i) in parseFiles(viewData.safetyEducation)" :key="'s' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+<template v-if="parseFiles(viewData.safetyEducation).length"><div v-for="(f, i) in parseFiles(viewData.safetyEducation)" :key="'s' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
@@ -524,15 +524,15 @@
           <div class="rd-card-body" style="display:block">
             <div class="rd-grid">
               <div class="rd-item rd-item--full"><span class="rd-label">材料清单</span><div class="rd-value">
-                <template v-if="parseFiles(auditData.materialsStatus).length"><div v-for="(f, i) in parseFiles(auditData.materialsStatus)" :key="'am' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+                <template v-if="parseFiles(auditData.materialsStatus).length"><div v-for="(f, i) in parseFiles(auditData.materialsStatus)" :key="'am' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">岗前体检</span><div class="rd-value">
-                <template v-if="parseFiles(auditData.healthCheck).length"><div v-for="(f, i) in parseFiles(auditData.healthCheck)" :key="'ah' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+                <template v-if="parseFiles(auditData.healthCheck).length"><div v-for="(f, i) in parseFiles(auditData.healthCheck)" :key="'ah' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">三级安全教育</span><div class="rd-value">
-                <template v-if="parseFiles(auditData.safetyEducation).length"><div v-for="(f, i) in parseFiles(auditData.safetyEducation)" :key="'as' + i"><a class="file-link" :href="baseUrl + f" target="_blank">{{ fileName(f) }}</a></div></template>
+                <template v-if="parseFiles(auditData.safetyEducation).length"><div v-for="(f, i) in parseFiles(auditData.safetyEducation)" :key="'as' + i"><a class="file-link" href="javascript:;" @click="handleFileDownload(f)">{{ fileName(f) }}</a></div></template>
                 <span v-else>-</span>
               </div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ auditData.remark || '-' }}</div></div>
@@ -692,6 +692,7 @@
 import { listHrEntry, getHrEntry, addHrEntry, updateHrEntry, delHrEntry, auditHrEntry } from '@/api/hr/hrEntry'
 import { Filter, ArrowDown, Search, Edit, Delete, Download, QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { downloadFile } from '@/utils/downloadFile'
 import EmployeePicker from '@/components/EmployeePicker'
 import DeptPicker from '@/components/DeptPicker'
 import PositionPicker from '@/components/PositionPicker'
@@ -802,7 +803,6 @@ const viewData = ref({})
 const auditOpen = ref(false)
 const auditSubmitting = ref(false)
 const auditData = ref({})
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 const employeePickerRef = ref(null)
 const orgPickerRef = ref(null)
 const positionPickerRef = ref(null)
@@ -942,6 +942,11 @@ function parseFiles(v) {
 /** 从URL中提取文件名 */
 function fileName(f) {
   try { return decodeURIComponent(f.split('/').pop() || f) } catch (e) { return f }
+}
+
+/** 下载附件（携带认证 token） */
+function handleFileDownload(url) {
+  downloadFile(url)
 }
 
 /** 查看弹窗审核记录：优先使用审核日志，兼容历史数据合成单节点 */

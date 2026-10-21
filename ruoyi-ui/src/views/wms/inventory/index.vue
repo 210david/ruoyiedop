@@ -217,7 +217,7 @@ async function handleExport() {
   ]))
 }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.inventoryId); multiple.value = !sel.length }
-function handleDelete(row) { const inventoryIds = row.inventoryId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？').then(() => delInventory(inventoryIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const inventoryIds = row.inventoryId || ids.value; proxy.$modal.confirm('确认删除选中的库存记录？').then(() => delInventory(inventoryIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 getList()
 
 // ===== AI辅助（外挂式增量） =====

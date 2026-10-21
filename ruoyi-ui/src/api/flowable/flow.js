@@ -21,8 +21,12 @@ export function delModel(modelIds) {
   return request({ url: '/flowable/model/' + modelIds, method: 'delete' })
 }
 
-export function deployModel(modelId) {
-  return request({ url: '/flowable/model/deploy/' + modelId, method: 'post' })
+export function deployModel(modelId, mode, remark, setActive) {
+  return request({
+    url: '/flowable/model/deploy/' + modelId,
+    method: 'post',
+    params: { mode: mode || 'new', remark: remark || undefined, setActive: setActive === false ? false : true }
+  })
 }
 
 // ===== 流程定义 =====
@@ -36,6 +40,14 @@ export function getDefinitionXml(definitionId) {
 
 export function changeDefinitionState(definitionId, suspend) {
   return request({ url: '/flowable/definition/state/' + definitionId, method: 'put', params: { suspend } })
+}
+
+export function updateDefinitionRemark(definitionId, remark) {
+  return request({ url: '/flowable/definition/remark/' + definitionId, method: 'put', params: { remark } })
+}
+
+export function setActiveDefinition(definitionId) {
+  return request({ url: '/flowable/definition/active/' + definitionId, method: 'put' })
 }
 
 // ===== 流程实例 =====

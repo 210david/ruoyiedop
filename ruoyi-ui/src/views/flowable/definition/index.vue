@@ -67,8 +67,14 @@
               <span class="badge violet">{{ categoryLabel(scope.row.category) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="版本" prop="version" width="80" align="center">
-            <template #default="scope">v{{ scope.row.version }}</template>
+          <el-table-column label="版本" prop="version" width="150" align="center">
+            <template #default="scope">
+              <span>v{{ scope.row.version }}</span>
+              <span class="badge blue" style="margin-left:6px" v-if="scope.row.activeFlag === '1'"><span class="dot"></span>当前版本</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="版本备注" prop="remark" min-width="120" align="center" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.remark || '—' }}</template>
           </el-table-column>
           <el-table-column label="状态" prop="suspended" width="100" align="center">
             <template #default="scope">
@@ -78,10 +84,12 @@
             </template>
           </el-table-column>
           <el-table-column label="部署时间" prop="deploymentTime" width="170" align="center" />
-          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="280" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleViewXml(scope.row)" v-hasPermi="['flowable:definition:query']">查看XML</el-button>
+                <el-button link type="primary" icon="EditPen" @click="handleUpdateRemark(scope.row)" v-hasPermi="['flowable:definition:state']">备注</el-button>
+                <el-button v-if="scope.row.activeFlag !== '1' && !scope.row.suspended" link type="success" icon="Select" @click="handleSetActive(scope.row)" v-hasPermi="['flowable:definition:state']">设为当前</el-button>
                 <el-button v-if="!scope.row.suspended" link type="warning" icon="VideoPause" @click="handleChangeState(scope.row, true)" v-hasPermi="['flowable:definition:state']">挂起</el-button>
                 <el-button v-else link type="success" icon="VideoPlay" @click="handleChangeState(scope.row, false)" v-hasPermi="['flowable:definition:state']">激活</el-button>
               </div>
@@ -120,7 +128,8 @@
 </template>
 
 <script setup name="FlowDefinition">
-import { listDefinition, getDefinitionXml, changeDefinitionState } from '@/api/flowable/flow'
+import { listDefinition, getDefinitionXml, changeDefinitionState, updateDefinitionRemark, setActiveDefinition } from '@/api/flowable/flow'
+import { ElMessageBox } from 'element-plus'
 import { Search, Filter, Document } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -208,6 +217,32 @@ function handleChangeState(row, suspend) {
   }).then(() => {
     proxy.$modal.msgSuccess(`已${action}`)
     getList()
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError(`${action}失败：` + (e?.message || e)) })
+}
+
+/** 编辑版本备注（泛微式：每个版本可填写备注说明） */
+function handleUpdateRemark(row) {
+  ElMessageBox.prompt('请输入版本备注说明', '版本备注：v' + row.version, {
+    inputValue: row.remark || '',
+    inputPlaceholder: '如：调整审批人为部门经理',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputType: 'textarea'
+  }).then(({ value }) => {
+    return updateDefinitionRemark(row.modelId, value || '').then(() => {
+      proxy.$modal.msgSuccess('版本备注已更新')
+      getList()
+    }).catch(e => { proxy.$modal.msgError('版本备注更新失败：' + (e?.message || e)) })
+  }).catch(() => {})
+}
+
+/** 设为当前活动版本（发起流程时优先使用该版本） */
+function handleSetActive(row) {
+  proxy.$modal.confirm(`确认将版本 v${row.version} 设为当前版本？新发起的流程将优先使用该版本`).then(() => {
+    return setActiveDefinition(row.modelId).then(() => {
+      proxy.$modal.msgSuccess('已设为当前版本')
+      getList()
+    }).catch(e => { proxy.$modal.msgError('设为当前版本失败：' + (e?.message || e)) })
   }).catch(() => {})
 }
 

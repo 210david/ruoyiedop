@@ -273,7 +273,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '2': 0, '3': 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.pageNum = 1; getList() }

@@ -564,7 +564,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green' }; return map[status] || 'gray' }
@@ -941,7 +941,7 @@ function handleDelete(row) {
   proxy.$modal.confirm(msg).then(() => delShipment(shipmentIds)).then(() => {
     getList(); loadStatusCounts()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 /** 确认发货 */
@@ -974,7 +974,7 @@ function submitConfirm() {
         proxy.$modal.msgSuccess('发货成功')
         confirmOpen.value = false
         getList(); loadStatusCounts()
-      }).catch(() => {})
+      }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('发货失败：' + (e?.message || e)) })
     }
   })
 }
@@ -986,7 +986,7 @@ function handleReceive(row) {
   }).then(() => {
     proxy.$modal.msgSuccess('签收成功')
     getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('签收失败：' + (e?.message || e)) })
 }
 
 /** 合计：退货总数量 */
@@ -1113,7 +1113,7 @@ function submitReturn() {
         proxy.$modal.msgSuccess('退货单已创建（草稿状态），可前往退货管理提交审批')
         returnOpen.value = false
         getList(); loadStatusCounts()
-      }).catch(() => {})
+      }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('创建退货单失败：' + (e?.message || e)) })
     }
   })
 }

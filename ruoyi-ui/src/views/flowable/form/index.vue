@@ -63,7 +63,7 @@
           <el-table-column label="表单描述" prop="formDesc" key="formDesc" :min-width="colWidth('formDesc', 200)" align="center" show-overflow-tooltip resizable>
             <template #default="scope">{{ scope.row.formDesc || '—' }}</template>
           </el-table-column>
-          <el-table-column label="字段数" prop="fieldCount" key="fieldCount" width="90" align="center">
+          <el-table-column label="字段数" prop="fieldCount" key="fieldCount" :min-width="colWidth('fieldCount', 90)" align="center" resizable>
             <template #default="scope">{{ fieldCount(scope.row.fieldsJson) }}</template>
           </el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" width="170" align="center" />
@@ -206,7 +206,7 @@
 
           <el-table ref="fieldTableRef" :data="activeFields" border size="small" row-key="rowKey" @selection-change="onFieldSelChange" class="field-table" max-height="380">
             <el-table-column width="36" align="center"><template #default><span class="drag-handle" title="拖动排序">☰</span></template></el-table-column>
-            <el-table-column type="selection" width="45" align="center" />
+            <el-table-column type="selection" width="45" align="center" :selectable="row => !row.sysField" />
             <el-table-column label="字段显示名" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：合同名称" size="small" /></template></el-table-column>
             <el-table-column label="数据库字段名称" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.field" placeholder="小写英文，如 htmc" size="small" /></template></el-table-column>
             <el-table-column label="表现形式" width="130" align="center">
@@ -641,6 +641,7 @@
 
 <script setup name="FlowForm">
 import { listForm, getForm, addForm, updateForm, delForm, createTable } from '@/api/flowable/form'
+import { urgencyOptions } from '@/api/flowable/urgency'
 import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { pinyin } from 'pinyin-pro'
@@ -825,6 +826,59 @@ function fieldCount(json) {
   try { return normalizeFields(JSON.parse(json || '[]')).length } catch (e) { return 0 }
 }
 
+/** 紧急程度可选档位（来自 flow_urgency_level 配置表；为空时回退内置默认档位） */
+const urgencyOptionList = ref([])
+
+/** 加载紧急程度配置（失败静默回退内置档位） */
+async function loadUrgencyOptions() {
+  try {
+    const res = await urgencyOptions()
+    urgencyOptionList.value = (res.data || []).map(o => ({
+      label: o.customName || o.defaultName,
+      value: o.levelValue
+    }))
+  } catch (e) {
+    urgencyOptionList.value = []
+  }
+}
+
+/** 系统内置字段（参照泛微：每个流程默认都有，用户无需添加，不可删除） */
+const SYSTEM_FIELDS = [
+  { field: 'title',       label: '标题',     form: 'text',     dtype: 'text', length: 200,  scale: 2, table: 'main', order: -4, sysField: true },
+  { field: 'urgency',     label: '紧急程度', form: 'select',   dtype: 'text', length: 20,   scale: 2, table: 'main', order: -3, sysField: true,
+    options: '1:普通,2:紧急,3:特急', selectOptions: [ { label: '普通', value: '1' }, { label: '紧急', value: '2' }, { label: '特急', value: '3' } ], defaultValue: '1' },
+  { field: 'signOpinion', label: '签字意见', form: 'textarea', dtype: 'text', length: 2000, scale: 2, table: 'main', order: -2, sysField: true, rows: 3 },
+  { field: 'printCount',  label: '打印次数', form: 'number',   dtype: 'int',  length: 11,   scale: 0, table: 'main', order: -1, sysField: true }
+]
+
+/** 补齐系统内置字段（已存在则沿用用户配置，仅补 sysField 标记） */
+function ensureSystemFields(list) {
+  const arr = Array.isArray(list) ? [...list] : []
+  // 紧急程度：已存在字段按配置表刷新选项，保证与后台配置一致
+  if (urgencyOptionList.value.length) {
+    arr.forEach(f => {
+      if (f.field === 'urgency') f.selectOptions = urgencyOptionList.value.map(o => ({ ...o }))
+    })
+  }
+  const exist = new Set(arr.map(f => f.field))
+  const missing = SYSTEM_FIELDS.filter(sys => !exist.has(sys.field))
+  if (!missing.length) {
+    arr.forEach(f => { if (SYSTEM_FIELDS.some(s => s.field === f.field)) f.sysField = true })
+    return arr
+  }
+  const built = missing.map(sys => {
+    const item = { ...sys, rowKey: 'r' + Math.random().toString(36).slice(2, 8) }
+    if (item.field === 'urgency' && urgencyOptionList.value.length) {
+      item.selectOptions = urgencyOptionList.value.map(o => ({ ...o }))
+    }
+    return item
+  })
+  const merged = [...built, ...arr]
+  let mainIdx = 0
+  merged.forEach(f => { if ((f.table || 'main') === 'main') f.order = ++mainIdx })
+  return merged
+}
+
 /** 兼容旧结构 {type:text/textarea/number/date/select} → {form,dtype,length,scale,table} */
 function normalizeFields(arr) {
   return (arr || []).map(f => {
@@ -891,9 +945,10 @@ function submitAdd(enterDesign) {
     proxy.$modal.msgSuccess(copied ? '新建成功，已复制所选表单的全部字段' : '新建成功，表单Key已自动生成')
     getList()
     if (enterDesign) {
+      await loadUrgencyOptions()
       const detail = await getForm(newId)
       form.value = detail.data
-      fields.value = normalizeFields(safeParse(detail.data.fieldsJson))
+      fields.value = ensureSystemFields(normalizeFields(safeParse(detail.data.fieldsJson)))
       layout.value = normalizeLayout(detail.data.layoutJson)
       rebuildDetailTables()
       activeTab.value = 'fields'
@@ -905,9 +960,10 @@ function submitAdd(enterDesign) {
 }
 
 async function handleDesign(row, tab = 'basic') {
+  await loadUrgencyOptions()
   const res = await getForm(row.formId)
   form.value = res.data
-  fields.value = normalizeFields(safeParse(res.data.fieldsJson))
+  fields.value = ensureSystemFields(normalizeFields(safeParse(res.data.fieldsJson)))
   layout.value = normalizeLayout(res.data.layoutJson)
   undoStack.value = []
   redoStack.value = []
@@ -1077,7 +1133,9 @@ function confirmBatchAdd() {
 }
 
 function removeCheckedFields() {
-  const keys = checkedFields.value.map(r => r.rowKey)
+  // 系统内置字段（标题/紧急程度/签字意见/打印次数）不允许删除
+  const keys = checkedFields.value.filter(r => !r.sysField).map(r => r.rowKey)
+  if (!keys.length) { proxy.$modal.msgWarning('系统内置字段不可删除'); return }
   fields.value = fields.value.filter(f => !keys.includes(f.rowKey))
   rebuildDetailTables()
   if (activeTableTab.value !== 'main' && !detailTables.value.includes(activeTableTab.value)) {
@@ -1511,13 +1569,13 @@ function handleCreateTable(row) {
   proxy.$modal.confirm('将按当前字段定义生成数据表 ' + 'flow_data_' + row.formKey + '（明细表自动追加 _dt1/_dt2…，已存在的表仅补齐缺失字段列）。确认执行？')
     .then(() => createTable(row.formId))
     .then(res => { proxy.$modal.msgSuccess('数据表已就绪：' + res.data); getList() })
-    .catch(() => {})
+    .catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('生成数据表失败：' + (e?.message || e)) })
 }
 
 function handleDelete(row) {
   proxy.$modal.confirm('确认删除表单"' + row.formName + '"？其数据表不会被删除').then(() => delForm(row.formId)).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 getList()

@@ -94,6 +94,27 @@ export const constantRoutes = [
     meta: { title: '检验报告打印' }
   },
   {
+    // 流程发起独立页（新标签页打开，全屏独立页面，需登录）
+    path: '/flow/launch/create',
+    component: () => import('@/views/flowable/launch/index.vue'),
+    hidden: true,
+    meta: { title: '发起流程', standalone: true }
+  },
+  {
+    // 流程详情独立页（新标签页打开，承载 FlowDetail，需登录）
+    path: '/flow/detail/create',
+    component: () => import('@/views/flowable/detail/index.vue'),
+    hidden: true,
+    meta: { title: '流程详情', standalone: true }
+  },
+  {
+    // 任务办理独立页（新标签页打开，待办点标题/办理进入，需登录）
+    path: '/flow/task/handle',
+    component: () => import('@/views/flowable/handle/index.vue'),
+    hidden: true,
+    meta: { title: '任务办理', standalone: true }
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404'),
     hidden: true

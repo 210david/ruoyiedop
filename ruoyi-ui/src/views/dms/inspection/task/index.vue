@@ -594,7 +594,7 @@ function handleStatusTabClick(status) {
 function loadStatusCounts() {
   countTaskByStatus().then(res => {
     statusCounts.value = res.data || {}
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 const routeOptions = ref([])
 const routePickerOpen = ref(false)
@@ -664,7 +664,7 @@ const equipmentOptions = ref([])
 function loadEquipmentOptions() {
   listEquipment({ pageNum: 1, pageSize: 9999 }).then(res => {
     equipmentOptions.value = res.rows || []
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgWarning('设备列表加载失败：' + (e?.message || e)) })
 }
 // 根据 equipmentId 从设备列表查找设备编号和名称
 function findEquipment(eid) {
@@ -775,7 +775,7 @@ function loadAddPreview(routeId) {
     try {
       addPreviewGroups.value = buildGroups(JSON.parse(route.inspectionItems)).devices
     } catch (e) { addPreviewGroups.value = [] }
-  }).catch(() => {})
+  }).catch(() => { addPreviewGroups.value = [] })  // 降级：路线信息取不到时预览留空
 }
 /** 清除巡检路线 */
 function clearRoute() {
@@ -808,7 +808,7 @@ function submitForm() {
     if (valid) { addTask(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) }
   })
 }
-function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTask(taskIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const taskIds = row.taskId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTask(taskIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 function cancel() { open.value = false; reset() }
 
 // ===== 查看详情 =====
@@ -869,7 +869,7 @@ function handleView(row) {
           built.devices.forEach(dg => dg.items.forEach(it => { it.abnormal = undefined; it.value = undefined }))
           viewGroups.value = built
         } catch (e) { /* 忽略解析失败 */ }
-      }).catch(() => {})
+      }).catch(() => { viewGroups.value = { common: [], devices: [] } })  // 降级：路线信息取不到时明细留空
     }
     viewOpen.value = true
   })
@@ -919,7 +919,7 @@ function handleExecute(row) {
         getList()
       })
     })
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('加载点检数据失败：' + (e?.message || e)) })
 }
 
 /**

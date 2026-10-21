@@ -39,6 +39,8 @@ public class FlowableEngineConfig
             configuration.setActivityFontName("宋体");
             configuration.setLabelFontName("宋体");
             configuration.setAnnotationFontName("宋体");
+            // 操作组任务监听器：任务创建时按节点 flowable:operatorGroups 解析候选用户（部门/分部/岗位/创建人）
+            configuration.setEventListeners(Arrays.asList(new com.ruoyi.flowable.listener.OperatorGroupTaskListener()));
         };
     }
 }

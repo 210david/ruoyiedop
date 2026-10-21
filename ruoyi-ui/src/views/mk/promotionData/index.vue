@@ -413,7 +413,7 @@ function submitForm() {
 }
 function handleDelete(row) {
   const dataIds = row.dataId || ids.value
-  proxy.$modal.confirm('确认删除选中的推广数据？').then(() => delPromotionData(dataIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的推广数据？').then(() => delPromotionData(dataIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 function cancel() { open.value = false; reset() }
 
@@ -421,8 +421,8 @@ function cancel() { open.value = false; reset() }
 function handleImport() { importRef.value.open() }
 
 // 初始化下拉数据源
-listContent({ pageNum: 1, pageSize: 9999 }).then(res => { contentOptions.value = res.rows || [] }).catch(() => {})
-listAllChannel().then(res => { channelOptions.value = res.data || [] }).catch(() => {})
+listContent({ pageNum: 1, pageSize: 9999 }).then(res => { contentOptions.value = res.rows || [] }).catch(e => { proxy.$modal.msgWarning('内容列表加载失败，内容下拉将为空：' + (e?.message || e)) })
+listAllChannel().then(res => { channelOptions.value = res.data || [] }).catch(e => { proxy.$modal.msgWarning('渠道列表加载失败，渠道下拉将为空：' + (e?.message || e)) })
 getList()
 </script>
 

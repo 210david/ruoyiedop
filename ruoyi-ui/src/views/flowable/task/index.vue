@@ -106,7 +106,8 @@
           <el-table-column type="index" label="序号" :width="colWidth('序号', 85)" align="center" />
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
-              <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
+              <span v-if="urgencyBadge(scope.row.urgency)" class="badge" :class="urgencyBadge(scope.row.urgency).cls">{{ urgencyBadge(scope.row.urgency).text }}</span>
+              <span class="col-strong link-like" @click="handleTitleClick(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 120)" show-overflow-tooltip>
@@ -127,16 +128,11 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="170" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
-                <template v-if="activeTab === 'todo'">
-                  <el-button link type="success" icon="Check" @click="handleApprove(scope.row)" v-hasPermi="['flowable:task:complete']">审批</el-button>
-                  <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程</el-button>
-                </template>
-                <template v-else>
-                  <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程</el-button>
-                </template>
+                <!-- 列表不再提供「审批」按钮：待办直接点击流程标题进入办理页，此处仅保留流程详情 -->
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
               </div>
             </template>
           </el-table-column>
@@ -151,86 +147,31 @@
     </div>
       </div>
     </div>
-
-    <!-- ===== 审批弹窗 ===== -->
-    <el-dialog v-model="approveOpen" width="720px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          </div>
-          <span class="rd-detail-header-title">任务审批</span>
-          <div class="rd-detail-header-sub" v-if="approveTask.taskName">
-            <div class="rd-detail-header-divider"></div>
-            <span class="rd-detail-header-no">{{ approveTask.taskName }}</span>
-          </div>
-        </div>
-      </template>
-      <div class="rd-page">
-        <section class="rd-card">
-          <div class="rd-card-header">
-            <div class="rd-card-title"><span class="rd-card-icon">i</span>任务信息</div>
-          </div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">任务名称</span><div class="rd-value">{{ approveTask.taskName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">流程名称</span><div class="rd-value">{{ approveTask.processDefinitionName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">业务单号</span><div class="rd-value">{{ approveTask.businessKey || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">到达时间</span><div class="rd-value">{{ approveTask.createTime || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <!-- 节点表单：按节点字段权限渲染（可编辑/只读/隐藏） -->
-        <section class="rd-card" v-if="approveFormFields.length">
-          <div class="rd-card-header">
-            <div class="rd-card-title"><span class="rd-card-icon">▤</span>申请表单</div>
-          </div>
-          <div class="rd-card-body">
-            <el-form :model="approveFormData" label-width="120px" size="small">
-              <template v-for="f in approveFormFields" :key="f.field">
-                <el-form-item v-if="f._perm !== 'hidden'" :label="f.label">
-                  <dyn-field v-if="f._perm === 'edit'" :f="f" v-model="approveFormData[f.field]" />
-                  <span v-else class="approve-ro">{{ approveFormData[f.field] ?? '-' }}</span>
-                </el-form-item>
-              </template>
-            </el-form>
-            <div class="approve-form-tip" v-if="hasEditFields">可修改标亮的可编辑字段，修改将随审批提交保存</div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header">
-            <div class="rd-card-title"><span class="rd-card-icon">✎</span>审批意见</div>
-          </div>
-          <div class="rd-card-body">
-            <el-input v-model="approveForm.comment" type="textarea" :rows="4" placeholder="请输入审批意见" show-word-limit maxlength="500" />
-          </div>
-        </section>
-      </div>
-      <template #footer>
-        <el-button type="success" @click="submitApprove('approved')">同 意</el-button>
-        <el-button type="danger" @click="submitApprove('rejected')">驳 回</el-button>
-        <el-button @click="approveOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ===== 流程详情弹窗（四页签共享组件） ===== -->
-    <flow-detail v-model:open="detailOpen" :instance-id="detailInstanceId" />
-
   </div>
 </template>
 
 <script setup name="FlowTask">
-import { listTodoTask, listDoneTask, countTodoTask, completeTask, getProcessTree } from '@/api/flowable/flow'
-import FlowDetail from '@/components/FlowDetail/index.vue'
-import { DynField } from './task-dyn-field'
-import request from '@/utils/request'
+import { listTodoTask, listDoneTask, countTodoTask, getProcessTree } from '@/api/flowable/flow'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, Document, Folder, User, Fold, Expand } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const route = useRoute()
+const router = useRouter()
 
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_task_index')
+/**
+ * 生成独立页地址：优先用 router.resolve（保留基路径），
+ * 极端情况下 router 未就绪时回退为字符串地址，保证按钮始终可用。
+ */
+function generateRouteHref(location) {
+  try {
+    return router.resolve(location).href
+  } catch (e) {
+    const q = new URLSearchParams(location.query || {}).toString()
+    return location.path + (q ? '?' + q : '')
+  }
+}
 
 const list = ref([])
 const loading = ref(true)
@@ -238,11 +179,12 @@ const showSearch = ref(true)
 const activeTab = ref(route.query.tab === 'done' ? 'done' : 'todo')
 const todoTotal = ref(0)
 const doneTotal = ref(0)
-const approveOpen = ref(false)
-const approveTask = ref({})
-const approveForm = ref({ comment: '' })
-const detailOpen = ref(false)
-const detailInstanceId = ref('')
+/** 紧急程度徽标：1普通（不显示）/ 2紧急 / 3特急 */
+function urgencyBadge(v) {
+  if (v === '3' || v === 3) return { text: '特急', cls: 'red' }
+  if (v === '2' || v === 2) return { text: '紧急', cls: 'amber' }
+  return null
+}
 
 const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, taskName: undefined, processDefinitionKey: undefined, title: undefined, startUserName: undefined }
@@ -335,8 +277,8 @@ function getList() {
 }
 
 function loadCounts() {
-  countTodoTask().then(res => { todoTotal.value = res.data || 0 }).catch(() => {})
-  listDoneTask({ pageNum: 1, pageSize: 1 }).then(res => { doneTotal.value = res.total || 0 }).catch(() => {})
+  countTodoTask().then(res => { todoTotal.value = res.data || 0 }).catch(() => { todoTotal.value = 0 })
+  listDoneTask({ pageNum: 1, pageSize: 1 }).then(res => { doneTotal.value = res.total || 0 }).catch(() => { doneTotal.value = 0 })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -350,81 +292,36 @@ function resetQuery() {
   handleQuery()
 }
 
-function handleApprove(row) {
-  approveTask.value = row
-  approveForm.value.comment = ''
-  approveOpen.value = true
-  loadApproveForm(row)
+/** 点击标题：待办进入任务办理页（优先），已办进入流程详情 */
+function handleTitleClick(row) {
+  if (activeTab.value === 'todo') handleHandle(row)
+  else handleView(row)
 }
 
-// ===== 节点字段权限：审批页渲染申请表单（可编辑/只读/隐藏） =====
-const approveFormFields = ref([])
-const approveFormData = ref({})
-const hasEditFields = computed(() => approveFormFields.value.some(f => f._perm === 'edit'))
-
-/** 字段归一化（与发起页 normalizeField 一致规则） */
-function normalizeTaskField(f) {
-  const g = { ...f }
-  let t = f.type
-  if (f.form) {
-    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'switch', 'rate'].includes(f.form)) t = f.form
-    else if (f.form === 'date' || f.form === 'datetime') t = f.form
-    else if (f.form === 'number') t = 'number'
-    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
-  } else if (!t) t = 'text'
-  g.rtype = t
-  if ((g.rtype === 'select' || g.rtype === 'radio')) {
-    let opts = g.selectOptions
-    if (!opts && g.options) {
-      opts = String(g.options).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(s => ({ label: s, value: s }))
+/** 办理任务：新标签页打开办理独立页（与流程详情页同一承载口径，不再使用弹框） */
+function handleHandle(row) {
+  const href = generateRouteHref({
+    path: '/flow/task/handle',
+    query: {
+      taskId: row.taskId || '',
+      taskName: row.taskName || '',
+      title: row.title || '',
+      instanceId: row.instanceId || '',
+      defName: row.processDefinitionName || '',
+      startUserName: row.startUserName || '',
+      createTime: row.createTime || ''
     }
-    g.optionList = opts || []
-  }
-  return g
+  })
+  window.open(href, '_blank')
 }
 
-async function loadApproveForm(row) {
-  approveFormFields.value = []
-  approveFormData.value = {}
-  if (!row || !row.taskId) return
-  try {
-    const res = await request({ url: '/flowable/task/fieldPerms/' + row.taskId, method: 'get' })
-    const d = res.data || {}
-    let perms = {}
-    try { perms = JSON.parse(d.fieldPerms || '{}') || {} } catch (e) {}
-    let fields = []
-    try { fields = JSON.parse(d.fieldsJson || '[]') || [] } catch (e) {}
-    const variables = d.variables || {}
-    approveFormFields.value = fields.map(normalizeTaskField).map(f => {
-      f._perm = perms[f.field] || 'readonly'
-      return f
-    })
-    const data = {}
-    for (const f of approveFormFields.value) data[f.field] = variables[f.field]
-    approveFormData.value = data
-  } catch (e) { /* 无表单或权限数据 */ }
-}
-
-function submitApprove(outcome) {
-  proxy.$modal.confirm(outcome === 'approved' ? '确认同意该任务？' : '确认驳回该任务？').then(() => {
-    // 可编辑字段的修改值随办理提交（仅提交有权限可编辑且值有变化的字段）
-    const variables = {}
-    let changed = false
-    for (const f of approveFormFields.value) {
-      if (f._perm === 'edit') { variables[f.field] = approveFormData.value[f.field]; changed = true }
-    }
-    return completeTask({ taskId: approveTask.value.taskId, comment: approveForm.value.comment, outcome, variables: changed ? variables : undefined })
-  }).then(() => {
-    proxy.$modal.msgSuccess(outcome === 'approved' ? '已同意' : '已驳回')
-    approveOpen.value = false
-    getList()
-    loadCounts()
-  }).catch(() => {})
-}
-
-async function handleView(row) {
-  detailInstanceId.value = row.instanceId
-  detailOpen.value = true
+/** 查看流程详情：新标签页打开独立页面（不再使用当前页弹框） */
+function handleView(row) {
+  const href = generateRouteHref({
+    path: '/flow/detail/create',
+    query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
+  })
+  window.open(href, '_blank')
 }
 
 getList()
@@ -435,9 +332,6 @@ onActivated(() => { getList(); loadCounts(); loadTree() })
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
-
-.approve-ro { color: #334155; font-size: 13px; line-height: 1.6; word-break: break-all; }
-.approve-form-tip { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 
 /* ===== 左树右列表布局 ===== */
 .flowable-task-page {

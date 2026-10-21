@@ -481,8 +481,8 @@ function validateDetailList() {
   return true
 }
 
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOutbound(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交出库单「' + row.orderNo + '」？提交后将无法修改。').then(() => submitOutbound(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交失败：' + (e?.message || e)) }) }
 /** 导出出库单（与列表口径一致：含筛选条件、日期范围，导出全部页数据） */
 async function handleExport() {
   const params = proxy.addDateRange(proxy.addDateRange(queryParams.value, dateRange.value, 'OutboundDate'), dateRangeCreateTime.value, 'CreateTime')
@@ -506,7 +506,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 };
     (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 function cancel() { open.value = false; reset() }
 
@@ -543,7 +543,7 @@ function openDetailFromRoute() {
   listOutbound({ pageNum: 1, pageSize: 1, orderNo: no }).then(res => {
     const row = (res.rows || []).find(r => r.orderNo === no)
     if (row) handleDetail(row)
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('按单号加载出库单失败：' + (e?.message || e)) })
 }
 
 loadOptions()

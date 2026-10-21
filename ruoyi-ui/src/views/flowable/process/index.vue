@@ -120,6 +120,7 @@
           <el-table-column type="index" label="序号" :width="colWidth('序号', 85)" align="center" />
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
+              <span v-if="urgencyBadge(scope.row.urgency)" class="badge" :class="urgencyBadge(scope.row.urgency).cls">{{ urgencyBadge(scope.row.urgency).text }}</span>
               <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
@@ -152,13 +153,6 @@
       </div>
     </div>
 
-    <!-- ===== 流程详情弹窗（四页签共享组件） ===== -->
-    <flow-detail v-model:open="detailOpen" :instance-id="detailInstanceId">
-      <template #header-extra>
-        <span v-if="detailStatus" class="badge" :class="statusBadge(detailStatus)"><span class="dot"></span>{{ statusLabel(detailStatus) }}</span>
-      </template>
-    </flow-detail>
-
   </div>
 </template>
 
@@ -166,9 +160,11 @@
 import { listMyProcess, cancelProcess, getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useRouter } from 'vue-router'
 import { Search, Filter, Document, Guide, Folder, Fold, Expand } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_process_index')
 
@@ -178,6 +174,13 @@ const showSearch = ref(true)
 const total = ref(0)
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, running: 0, completed: 0, canceled: 0 })
+/** 紧急程度徽标：1普通（不显示）/ 2紧急 / 3特急 */
+function urgencyBadge(v) {
+  if (v === '3' || v === 3) return { text: '特急', cls: 'red' }
+  if (v === '2' || v === 2) return { text: '紧急', cls: 'amber' }
+  return null
+}
+
 const detailOpen = ref(false)
 const detailInstanceId = ref('')
 const detailStatus = ref('')
@@ -273,7 +276,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, running: 0, completed: 0, canceled: 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0, running: 0, completed: 0, canceled: 0 } })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -304,10 +307,13 @@ function statusLabel(status) {
   return map[status] || status || '-'
 }
 
-async function handleView(row) {
-  detailInstanceId.value = row.instanceId
-  detailStatus.value = row.status || ''
-  detailOpen.value = true
+/** 查看流程详情：新标签页打开独立页面（不再使用当前页弹框） */
+function handleView(row) {
+  const href = router.resolve({
+    path: '/flow/detail/create',
+    query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
+  }).href
+  window.open(href, '_blank')
 }
 
 function handleCancel(row) {
@@ -319,7 +325,7 @@ function handleCancel(row) {
     proxy.$modal.msgSuccess('流程已撤销')
     getList()
     loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('撤销失败：' + (e?.message || e)) })
 }
 
 getList()

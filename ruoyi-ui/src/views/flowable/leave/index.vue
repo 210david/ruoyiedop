@@ -360,7 +360,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 } })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -419,14 +419,14 @@ function handleView(row) {
     request({ url: '/flowable/process/history/' + row.instanceId, method: 'get' }).then(res => { historyTasks.value = res.data || [] })
     request({ url: '/flowable/process/diagram/' + row.instanceId, method: 'get', responseType: 'blob' }).then(res => {
       diagramUrl.value = URL.createObjectURL(new Blob([res], { type: 'image/png' }))
-    }).catch(() => {})
+    }).catch(() => { diagramUrl.value = '' })  // 降级：页面显示「暂无流程图」空态
   }
 }
 
 function handleDelete(row) {
   proxy.$modal.confirm('确认删除请假单"' + row.title + '"？').then(() => delLeave(row.leaveId)).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleCancel(row) {
@@ -434,7 +434,7 @@ function handleCancel(row) {
     return request({ url: '/flowable/process/cancel/' + row.instanceId, method: 'put', params: { reason: '申请人撤销' } })
   }).then(() => {
     proxy.$modal.msgSuccess('流程已撤销'); getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('撤销失败：' + (e?.message || e)) })
 }
 
 getList()

@@ -56,6 +56,36 @@ public class FlowModel extends BaseEntity
     /** 是否解除表单绑定 */
     private Boolean unbind;
 
+    /** 关联表单的数据库表名（展示用，来自 FlowForm） */
+    private String formTableName;
+
+    /** 关联表单字段数（展示用，来自 FlowForm.fieldsJson） */
+    private Integer formFieldCount;
+
+    /** 默认部署方式（new 存为新版本 / replace 覆盖当前版本，存于 metaInfo） */
+    private String deployMode;
+
+    /** 流程锁定（锁定后禁止编辑设计，存于 metaInfo） */
+    private Boolean locked;
+
+    /** 帮助文档链接（存于 metaInfo） */
+    private String helpDoc;
+
+    /** 显示顺序（存于 metaInfo） */
+    private Integer orderNum;
+
+    /** 版本备注说明（来自扩展表，展示用） */
+    private String remark;
+
+    /** 是否当前活动版本（来自扩展表，展示用：1是 0否） */
+    private String activeFlag;
+
+    /**
+     * 查询开关：是否按流程 key 聚合、每 key 只返回 1 条（活动版本优先）
+     * 不传默认为 true（前台流程发起页据此展示）
+     */
+    private Boolean onlyActive;
+
     public String getModelId() { return modelId; }
     public void setModelId(String modelId) { this.modelId = modelId; }
     public String getModelName() { return modelName; }
@@ -84,4 +114,22 @@ public class FlowModel extends BaseEntity
     public void setFormName(String formName) { this.formName = formName; }
     public Boolean getUnbind() { return unbind; }
     public void setUnbind(Boolean unbind) { this.unbind = unbind; }
+    public String getFormTableName() { return formTableName; }
+    public void setFormTableName(String formTableName) { this.formTableName = formTableName; }
+    public Integer getFormFieldCount() { return formFieldCount; }
+    public void setFormFieldCount(Integer formFieldCount) { this.formFieldCount = formFieldCount; }
+    public String getDeployMode() { return deployMode; }
+    public void setDeployMode(String deployMode) { this.deployMode = deployMode; }
+    public Boolean getLocked() { return locked; }
+    public void setLocked(Boolean locked) { this.locked = locked; }
+    public String getHelpDoc() { return helpDoc; }
+    public void setHelpDoc(String helpDoc) { this.helpDoc = helpDoc; }
+    public Integer getOrderNum() { return orderNum; }
+    public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+    public String getActiveFlag() { return activeFlag; }
+    public void setActiveFlag(String activeFlag) { this.activeFlag = activeFlag; }
+    public Boolean getOnlyActive() { return onlyActive; }
+    public void setOnlyActive(Boolean onlyActive) { this.onlyActive = onlyActive; }
 }

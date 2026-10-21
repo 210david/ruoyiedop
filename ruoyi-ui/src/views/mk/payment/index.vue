@@ -572,7 +572,7 @@
               <el-table-column label="凭证" min-width="120" align="center">
                 <template #default="scope">
                   <div v-if="scope.row.receiptAttachment" style="display:flex;gap:4px;justify-content:center;align-items:center">
-                    <el-link :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(scope.row.receiptAttachment)"><el-icon><View /></el-icon></el-link>
                     <el-link type="success" :underline="false" @click="handlePreview(scope.row.receiptAttachment)">预览</el-link>
                   </div>
                   <span v-else style="color: #c0c4cc">-</span>
@@ -727,7 +727,7 @@
               <el-table-column label="凭证" width="120" align="center">
                 <template #default="scope">
                   <div v-if="scope.row.receiptAttachment" style="display:flex;gap:4px;justify-content:center;align-items:center">
-                    <el-link :href="baseUrl + scope.row.receiptAttachment" target="_blank" type="primary"><el-icon><View /></el-icon></el-link>
+                    <el-link :underline="false" type="primary" @click="handleFileDownload(scope.row.receiptAttachment)"><el-icon><View /></el-icon></el-link>
                     <el-link type="success" :underline="false" @click="handlePreview(scope.row.receiptAttachment)">预览</el-link>
                   </div>
                   <span v-else style="color: #c0c4cc">-</span>
@@ -844,7 +844,7 @@
               <div class="rd-item"><span class="rd-label">回款日期</span><div class="rd-value">{{ confirmRecordForm.paymentDate }}</div></div>
               <div class="rd-item"><span class="rd-label">回款方式</span><div class="rd-value"><dict-tag :options="marketing_payment_method" :value="confirmRecordForm.paymentMethod" /></div></div>
               <div class="rd-item"><span class="rd-label">银行账户</span><div class="rd-value">{{ confirmRecordForm.bankAccount }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">收款凭证</span><div class="rd-value"><template v-if="confirmRecordForm.receiptAttachment"><el-link :href="baseUrl + confirmRecordForm.receiptAttachment" target="_blank" type="primary">查看凭证</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(confirmRecordForm.receiptAttachment)">预览</el-button></template><span v-else style="color: #c0c4cc">-</span></div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">收款凭证</span><div class="rd-value"><template v-if="confirmRecordForm.receiptAttachment"><el-link :underline="false" type="primary" @click="handleFileDownload(confirmRecordForm.receiptAttachment)">查看凭证</el-link><el-button link type="success" icon="View" size="small" style="margin-left: 12px" @click="handlePreview(confirmRecordForm.receiptAttachment)">预览</el-button></template><span v-else style="color: #c0c4cc">-</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value" :class="{ 'rd-value--muted': !confirmRecordForm.remark }">{{ confirmRecordForm.remark || '暂无' }}</div></div>
             </div>
           </div>
@@ -873,6 +873,7 @@ import ContractPicker from '@/components/ContractPicker/index.vue'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatMoney } from '@/composables/useDetailCard'
+import { downloadFile } from '@/utils/downloadFile'
 import { ArrowRight, ArrowDown, Search, CircleClose, Filter, WarningFilled, Delete, Download, RefreshLeft } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
@@ -904,9 +905,9 @@ const confirmPlanForm = ref({})
 const confirmRecordForm = ref({})
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 function getFileName(name) { if (name && name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name || '' }
 function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
+function handleFileDownload(url) { downloadFile(url) }
 
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
@@ -1009,11 +1010,11 @@ function loadStatusCounts() {
     rows.forEach(r => { if (counts[r.paymentStatus] !== undefined) counts[r.paymentStatus]++ })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 
 function loadStats() {
-  paymentStatistics().then(res => { stats.value = res.data }).catch(() => {})
+  paymentStatistics().then(res => { stats.value = res.data }).catch(e => { proxy.$modal.msgWarning('回款统计加载失败：' + (e?.message || e)) })
 }
 
 /** 打开客户选择弹窗 */
@@ -1094,7 +1095,7 @@ function submitAdd() {
 
 function handleDelete(row) {
   const planIds = row.planId || ids.value
-  proxy.$modal.confirm('确认删除选中的回款计划？').then(() => delPayment(planIds)).then(() => { getList(); loadStats(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除选中的回款计划？').then(() => delPayment(planIds)).then(() => { getList(); loadStats(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleView(row) {
@@ -1168,7 +1169,7 @@ function submitConfirm(confirmStatus) {
     confirmOpen.value = false
     getList()
     loadStats()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('操作失败：' + (e?.message || e)) })
 }
 
 function handleExport() { proxy.download('mk/payment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'PlanDate') }, ids.value, 'planId'), `payment_${new Date().getTime()}.xlsx`) }

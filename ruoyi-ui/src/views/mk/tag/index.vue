@@ -322,7 +322,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.status = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'green', '1': 'gray' }; return map[status] || 'gray' }
@@ -360,7 +360,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const tagIds = row.tagId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTag(tagIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const tagIds = row.tagId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delTag(tagIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/tag/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'tagId'), `tag_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 getList()

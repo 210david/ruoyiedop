@@ -932,7 +932,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.orderStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'red', '6': 'gray' }; return map[status] || 'gray' }
@@ -1109,7 +1109,7 @@ function onMaterialPickerConfirm(material) {
           calcSubtotal(index)
           proxy.$modal.msgSuccess('已按【' + item.priceSource + '】自动取价')
         }
-      }).catch(() => {})
+      }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('自动取价失败：' + (e?.message || e)) })
     }
   }
 }
@@ -1134,15 +1134,15 @@ function handleAdd() { reset(); open.value = true; title.value = '新增订单' 
 function handleUpdate(row) { reset(); getOrder(row.orderId || ids.value[0]).then(res => { form.value = res.data; if (!form.value.itemList) { form.value.itemList = [] }; open.value = true; title.value = '修改订单' }) }
 function handleView(row) { getOrder(row.orderId).then(res => { viewForm.value = res.data; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = !res.data.itemList || res.data.itemList.length === 0; collapsedCards.other = !res.data.remark && !res.data.cancelReason; viewOpen.value = true }) }
 function submitForm() { proxy.$refs['orderRef'].validate(valid => { if (valid) { if (form.value.orderId != undefined) { updateOrder(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }) } else { addOrder(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }) } } }) }
-function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOrder(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const orderIds = row.orderId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delOrder(orderIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 
-function handleSubmit(row) { proxy.$modal.confirm('确认提交订单【' + row.orderNo + '】？').then(() => submitOrder(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('订单提交成功') }).catch(() => {}) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交订单【' + row.orderNo + '】？').then(() => submitOrder(row.orderId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('订单提交成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交订单失败：' + (e?.message || e)) }) }
 
 /** 审核按钮操作 */
 async function handleAudit(row) { const response = await getOrder(row.orderId); auditData.value = response.data; auditForm.value = { orderId: row.orderId, auditOpinion: null }; auditOpen.value = true }
 
 /** 提交审核 */
-function submitAudit(passed) { proxy.$refs['auditRef'].validate(valid => { if (valid) { const status = passed ? '2' : '1'; const actionText = passed ? '通过' : '驳回'; proxy.$modal.confirm('确认' + actionText + '该订单？').then(() => auditOrder(auditForm.value.orderId, status, auditForm.value.auditOpinion)).then(() => { proxy.$modal.msgSuccess('审核成功'); auditOpen.value = false; getList(); loadStatusCounts() }).catch(() => {}) } }) }
+function submitAudit(passed) { proxy.$refs['auditRef'].validate(valid => { if (valid) { const status = passed ? '2' : '1'; const actionText = passed ? '通过' : '驳回'; proxy.$modal.confirm('确认' + actionText + '该订单？').then(() => auditOrder(auditForm.value.orderId, status, auditForm.value.auditOpinion)).then(() => { proxy.$modal.msgSuccess('审核成功'); auditOpen.value = false; getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('审核失败：' + (e?.message || e)) }) } }) }
 
 function handleVoid(row) { voidForm.value = { orderId: row.orderId, orderNo: row.orderNo, voidReason: '' }; voidOpen.value = true }
 function submitVoid() { if (!voidForm.value.voidReason) { proxy.$modal.msgWarning('请输入作废原因'); return }; voidOrder(voidForm.value.orderId, voidForm.value.voidReason).then(() => { proxy.$modal.msgSuccess('订单已作废'); voidOpen.value = false; getList(); loadStatusCounts() }) }

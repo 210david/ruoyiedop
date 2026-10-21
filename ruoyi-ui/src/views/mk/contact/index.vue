@@ -828,7 +828,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const contactIds = row.contactId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delContact(contactIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const contactIds = row.contactId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delContact(contactIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function handleExport() { proxy.download('mk/contact/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'contactId'), `contact_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 
@@ -841,11 +841,11 @@ function handleCommand(cmd, row) {
 
 // P1-7: 设为主要联系人
 function handleSetPrimary(row) {
-  proxy.$modal.confirm('确认将"' + row.name + '"设为主要联系人？（同客户下仅一个主要联系人）').then(() => setPrimary(row.contactId)).then(() => { proxy.$modal.msgSuccess('设置成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认将"' + row.name + '"设为主要联系人？（同客户下仅一个主要联系人）').then(() => setPrimary(row.contactId)).then(() => { proxy.$modal.msgSuccess('设置成功'); getList() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('设为主要联系人失败：' + (e?.message || e)) })
 }
 // P1-7: 批量设为关键联系人
 function handleBatchSetKey() {
-  proxy.$modal.confirm('确认将选中的' + ids.value.length + '个联系人设为关键联系人？').then(() => batchSetKey({ contactIds: ids.value, isKey: '1' })).then(() => { proxy.$modal.msgSuccess('设置成功'); getList() }).catch(() => {})
+  proxy.$modal.confirm('确认将选中的' + ids.value.length + '个联系人设为关键联系人？').then(() => batchSetKey({ contactIds: ids.value, isKey: '1' })).then(() => { proxy.$modal.msgSuccess('设置成功'); getList() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('批量设为关键联系人失败：' + (e?.message || e)) })
 }
 
 // P2-8: 查重
@@ -877,7 +877,7 @@ function handleMerge(slaveRow) {
       dupOpen.value = false
       getList()
     })
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('合并联系人失败：' + (e?.message || e)) })
 }
 
 // P2-10: 分配
