@@ -1554,7 +1554,7 @@ function handleUpdate(row) {
     if (!form.value.paymentPlanList) { form.value.paymentPlanList = [] }
     open.value = true
     title.value = '修改合同'
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('加载合同失败：' + (e?.message || e)) })
 }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function handleView(row, approveMode = false) {
@@ -1568,7 +1568,7 @@ function handleView(row, approveMode = false) {
     viewApproveMode.value = approveMode
     changeApproveOpinion.value = ''
     viewOpen.value = true
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('加载合同详情失败：' + (e?.message || e)) })
 }
 
 // 待审批的变更记录列表（用于详情页审批模式）
@@ -1585,13 +1585,13 @@ function confirmChangeApprove(approved) {
     proxy.$modal.msgSuccess(msg + '成功')
     viewOpen.value = false
     getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('审批合同变更失败：' + (e?.message || e)) })
 }
 function submitForm() {
   proxy.$refs['contractRef'].validate(valid => {
     if (valid) {
-      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }).catch(() => {}) }
-      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }).catch(() => {}) }
+      if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('保存失败：' + (e?.message || e)) }) }
+      else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('保存失败：' + (e?.message || e)) }) }
     }
   })
 }
@@ -1609,10 +1609,10 @@ function handleFileDownload(url) {
 }
 function handleDelete(row) {
   const contractIds = row.contractId || ids.value
-  proxy.$modal.confirm('确认删除？').then(() => delContract(contractIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {})
+  proxy.$modal.confirm('确认删除？').then(() => delContract(contractIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 function handleSubmit(row) {
-  proxy.$modal.confirm('确认提交合同【' + row.contractNo + '】进行审批？').then(() => submitContract(row.contractId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已提交审批') }).catch(() => {})
+  proxy.$modal.confirm('确认提交合同【' + row.contractNo + '】进行审批？').then(() => submitContract(row.contractId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已提交审批') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交审批失败：' + (e?.message || e)) })
 }
 function handleApprove(row) {
   getContract(row.contractId).then(res => {
@@ -1620,7 +1620,7 @@ function handleApprove(row) {
     collapsedCards.approveAttach = !res.data.attachment
     collapsedCards.approvePaymentPlans = !res.data.paymentPlanList || res.data.paymentPlanList.length === 0
     approveOpen.value = true
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('加载审批详情失败：' + (e?.message || e)) })
 }
 function confirmApprove(passed) {
   if (!approveForm.value.approveOpinion) {
@@ -1632,13 +1632,13 @@ function confirmApprove(passed) {
       proxy.$modal.msgSuccess('审批通过，合同已生效')
       approveOpen.value = false
       getList(); loadStatusCounts()
-    }).catch(() => {})
+    }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('审批通过失败：' + (e?.message || e)) })
   } else {
     rejectContract(approveForm.value.contractId, approveForm.value.approveOpinion).then(() => {
       proxy.$modal.msgSuccess('已驳回，合同退回草稿状态')
       approveOpen.value = false
       getList(); loadStatusCounts()
-    }).catch(() => {})
+    }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('驳回失败：' + (e?.message || e)) })
   }
 }
 function handleTerminate(row) {
@@ -1650,7 +1650,7 @@ function confirmTerminate() {
     proxy.$modal.msgSuccess('合同已终止')
     terminateOpen.value = false
     getList(); loadStatusCounts()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('终止合同失败：' + (e?.message || e)) })
 }
 
 function handleRenew(row) {
@@ -1682,7 +1682,7 @@ function handleRenew(row) {
       remark: ''
     }
     renewOpen.value = true
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('加载续签数据失败：' + (e?.message || e)) })
 }
 
 function confirmRenew() {
@@ -1706,7 +1706,7 @@ function confirmRenew() {
       proxy.$modal.msgSuccess('续签合同已创建，请完善信息后提交审批')
       renewOpen.value = false
       getList(); loadStatusCounts()
-    }).catch(() => {})
+    }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('续签失败：' + (e?.message || e)) })
   })
 }
 
@@ -1803,7 +1803,7 @@ function handleChange(row) {
     }
     changeActiveTab.value = 'amount'
     changeOpen.value = true
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('加载变更数据失败：' + (e?.message || e)) })
 }
 
 function onDateFieldChange() {
@@ -1870,7 +1870,7 @@ function submitChange() {
       proxy.$modal.msgSuccess('变更申请已提交，等待审批')
       changeOpen.value = false
       getList(); loadStatusCounts()
-    }).catch(() => {})
+    }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交变更申请失败：' + (e?.message || e)) })
   })
 }
 
@@ -1891,7 +1891,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.contractStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'gray', '4': 'red', '5': 'blue' }; return map[status] || 'gray' }

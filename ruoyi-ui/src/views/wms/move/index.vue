@@ -617,8 +617,8 @@ function confirmApprove(passed) {
     })
   }
 }
-function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('执行完成') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
+function handleExecute(row) { proxy.$modal.confirm('确认执行移库？').then(() => executeMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('执行完成') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('执行移库失败：' + (e?.message || e)) }) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废该移库单？作废后不可恢复').then(() => voidMove(row.moveId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('作废失败：' + (e?.message || e)) }) }
 /** 导出移库单（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
   let rows = await fetchAllPages(listMove, proxy.addDateRange(queryParams.value, dateRange.value))
@@ -647,9 +647,9 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 };
     (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
-function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const moveIds = row.moveId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delMove(moveIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 function handleDetail(row) { getMove(row.moveId).then(res => { detailData.value = res.data; detailOpen.value = true }) }
 
@@ -752,7 +752,7 @@ function openDetailFromRoute() {
   listMove({ pageNum: 1, pageSize: 1, moveNo: no }).then(res => {
     const row = (res.rows || []).find(r => r.moveNo === no)
     if (row) handleDetail(row)
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('按单号加载移库单失败：' + (e?.message || e)) })
 }
 
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })

@@ -367,7 +367,7 @@ function loadTypeCounts() {
     (dms_part_type.value || []).forEach(d => { counts[d.value] = 0 });
     (res.rows || []).forEach(r => { if (counts[r.partType] !== undefined) counts[r.partType]++ });
     typeCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { typeCounts.value = { all: 0 } })
 }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.partId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function reset() {
@@ -400,7 +400,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const partIds = row?.partId || ids.value; const tip = Array.isArray(partIds) ? `选中的 ${partIds.length} 条数据` : '选中的备件数据'; proxy.$modal.confirm('确认删除' + tip + '？').then(() => delSparepart(partIds)).then(() => { getList(); loadTypeCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const partIds = row?.partId || ids.value; const tip = Array.isArray(partIds) ? `选中的 ${partIds.length} 条数据` : '选中的备件数据'; proxy.$modal.confirm('确认删除' + tip + '？').then(() => delSparepart(partIds)).then(() => { getList(); loadTypeCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 /** 导出备件台账（与列表口径一致：含筛选条件，导出全部页数据） */
 async function handleExport() {
   let rows = await fetchAllPages(listSparepart, queryParams.value)

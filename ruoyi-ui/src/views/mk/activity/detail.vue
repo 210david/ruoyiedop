@@ -422,13 +422,13 @@ function handleSignIn(row) {
   proxy.$modal.confirm('确认签到？').then(() => signInParticipant(row.participantId)).then(() => {
     proxy.$modal.msgSuccess('签到成功')
     getParticipants()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('签到失败：' + (e?.message || e)) })
 }
 function handleConvertLead(row) {
   proxy.$modal.confirm('确认将该参与人转化为线索？').then(() => convertToLead(row.participantId)).then(() => {
     proxy.$modal.msgSuccess('转线索成功')
     getParticipants()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('转线索失败：' + (e?.message || e)) })
 }
 
 // 复盘

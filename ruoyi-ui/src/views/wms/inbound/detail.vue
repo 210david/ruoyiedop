@@ -470,7 +470,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '1': 0, '2': 0, '3': 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 
 /** 切换标签页 */
@@ -516,7 +516,7 @@ function openReceive(row) {
       d.setDate(d.getDate() + Number(material.shelfLifeDays))
       receiveForm.value.expiryDate = d.toISOString().slice(0, 10)
     }
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgWarning('物料信息加载失败，效期/保质期将无法自动带出：' + (e?.message || e)) })
 }
 function submitReceive() {
   if (receiveForm.value.isExpiryManage && !receiveForm.value.productionDate && !receiveForm.value.expiryDate) {

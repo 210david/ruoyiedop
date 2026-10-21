@@ -478,7 +478,7 @@ function loadStatusCounts() {
     ;(dms_equipment_status.value || []).forEach(d => { counts[d.value] = 0 })
     ;(res.rows || []).forEach(r => { if (counts[r.equipmentStatus] !== undefined) counts[r.equipmentStatus]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) {
   activeStatusTab.value = status
@@ -551,7 +551,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delEquipment(equipmentIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const equipmentIds = row.equipmentId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delEquipment(equipmentIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('DELETE_FAIL') }) }
 function handleExport() { proxy.download('dms/equipment/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'CreateTime') }, ids.value, 'equipmentId'), `equipment_${new Date().getTime()}.xlsx`) }
 function handleImport() {
   proxy.$refs['importRef'].open()

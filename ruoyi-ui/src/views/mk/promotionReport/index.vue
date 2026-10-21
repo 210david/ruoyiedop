@@ -457,7 +457,7 @@ function loadFunnel() {
   }
   getFunnel({ activityId: activityId.value }).then(res => {
     nextTick(() => renderFunnel(res.data || {}))
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgWarning('归因漏斗数据加载失败：' + (e?.message || e)) })
 }
 
 /** 加载活动下拉 */

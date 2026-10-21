@@ -262,7 +262,7 @@ function submitForm() {
     }
   })
 }
-function handleDelete(row) { const stageIds = row.stageId; proxy.$modal.confirm('确认删除阶段"' + row.stageName + '"的数据？').then(() => delStage(stageIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const stageIds = row.stageId; proxy.$modal.confirm('确认删除阶段"' + row.stageName + '"的数据？').then(() => delStage(stageIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 getList()
 </script>

@@ -568,7 +568,7 @@ function loadData() {
     loading.value = false
   })
   // 加载待跟进联系人
-  getFollowUpReminders().then(res => { followUpReminders.value = res.data || [] }).catch(() => {})
+  getFollowUpReminders().then(res => { followUpReminders.value = res.data || [] }).catch(e => { proxy.$modal.msgWarning('跟进提醒加载失败：' + (e?.message || e)) })
 }
 
 /** 监听暗色模式切换 */

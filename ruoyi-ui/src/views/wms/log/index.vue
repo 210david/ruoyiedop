@@ -209,7 +209,7 @@ function refOrderTarget(row) { return row.refOrderNo ? (REF_ORDER_ROUTES[row.ref
 function openRefOrder(row) { const t = refOrderTarget(row); if (t) router.push({ path: t.path, query: { [t.key]: row.refOrderNo } }) }
 function handleExport() { proxy.download('wms/log/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value) }, ids.value, 'logId'), `inventory_log_${new Date().getTime()}.xlsx`) }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.logId); multiple.value = !sel.length }
-function handleDelete(row) { const logIds = row.logId || ids.value; proxy.$modal.confirm('确认删除选中的流水记录？').then(() => delInventoryLog(logIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleDelete(row) { const logIds = row.logId || ids.value; proxy.$modal.confirm('确认删除选中的流水记录？').then(() => delInventoryLog(logIds)).then(() => { getList(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 getList()
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })
 </script>

@@ -963,7 +963,7 @@ function loadStatusCounts() {
     })
     counts.all = rows.length
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.returnStatus = status === 'all' ? undefined : status; handleQuery() }
 function badgeClass(status) { const map = { '0': 'blue', '1': 'green', '2': 'amber', '3': 'gray', '4': 'red' }; return map[status] || 'gray' }
@@ -1058,8 +1058,8 @@ function resetQuery() { queryParams.value.returnNo = undefined; queryParams.valu
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.returnId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function handleView(row) { getReturn(row.returnId).then(res => { viewForm.value = res.data; collapsedCards.refund = !(res.data.refundAmount != null && res.data.refundAmount !== ''); viewOpen.value = true }) }
-function handleDelete(row) { const returnIds = row.returnId || ids.value; proxy.$modal.confirm('确认删除选中的退货记录？').then(() => delReturn(returnIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
-function handleSubmit(row) { proxy.$modal.confirm('确认提交编号为"' + row.returnNo + '"的退货单审批？').then(() => submitReturn(row.returnId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功，等待审批') }).catch(() => {}) }
+function handleDelete(row) { const returnIds = row.returnId || ids.value; proxy.$modal.confirm('确认删除选中的退货记录？').then(() => delReturn(returnIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleSubmit(row) { proxy.$modal.confirm('确认提交编号为"' + row.returnNo + '"的退货单审批？').then(() => submitReturn(row.returnId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('提交成功，等待审批') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交审批失败：' + (e?.message || e)) }) }
 function handleApprove(row) { getReturn(row.returnId).then(res => { approveForm.value = res.data; approveForm.value.approveOpinion = ''; approveOpen.value = true }) }
 function submitApprove(approved) { proxy.$refs['approveRef'].validate(valid => { if (valid) { approveReturn(approveForm.value.returnId, approved, approveForm.value.approveOpinion || '').then(() => { proxy.$modal.msgSuccess(approved ? '审批通过' : '审批驳回'); approveOpen.value = false; getList(); loadStatusCounts() }) } }) }
 function handleRefund(row) { refundForm.value = { returnId: row.returnId, returnNo: row.returnNo, returnAmount: row.returnAmount, refundAmount: row.returnAmount, refundDate: undefined }; refundOpen.value = true }
@@ -1219,7 +1219,7 @@ function submitAdd() {
           proxy.$modal.msgSuccess('修改成功，退货单已回到草稿状态')
           addOpen.value = false
           getList(); loadStatusCounts()
-        }).catch(() => {})
+        }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('修改退货单失败：' + (e?.message || e)) })
       } else {
         proxy.$modal.confirm('确认发起退货？退货单创建后将保存为草稿状态，可在退货管理页面提交审批。').then(() => {
           return addReturn(payload)
@@ -1227,7 +1227,7 @@ function submitAdd() {
           proxy.$modal.msgSuccess('退货单已创建（草稿状态），可提交审批')
           addOpen.value = false
           getList(); loadStatusCounts()
-        }).catch(() => {})
+        }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('发起退货失败：' + (e?.message || e)) })
       }
     }
   })

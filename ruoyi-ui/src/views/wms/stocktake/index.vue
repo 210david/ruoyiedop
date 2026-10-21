@@ -549,12 +549,12 @@ function confirmApprove(passed) {
     })
   }
 }
-function handleStart(row) { proxy.$modal.confirm('确认开始盘点？').then(() => startStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已开始') }).catch(() => {}) }
-function handleVoid(row) { proxy.$modal.confirm('确认作废该盘点单？作废后将无法继续盘点。').then(() => voidStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(() => {}) }
+function handleStart(row) { proxy.$modal.confirm('确认开始盘点？').then(() => startStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已开始') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('开始盘点失败：' + (e?.message || e)) }) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废该盘点单？作废后将无法继续盘点。').then(() => voidStockTake(row.takeId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('已作废') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('作废失败：' + (e?.message || e)) }) }
 function handleSubmitDetail(row) { inputForm.value = { takeId: detailData.value.takeId, detailId: row.detailId, materialCode: row.materialCode, materialName: row.materialName, batchNo: row.batchNo, areaName: row.areaName, locationName: row.locationName, bookQty: row.bookQty, actualQty: row.actualQty || row.bookQty, diffReason: undefined }; submitOpen.value = true }
 function submitDetailForm() { submitStockTakeDetail(inputForm.value.takeId, inputForm.value.detailId, inputForm.value.actualQty, inputForm.value.diffReason).then(() => { proxy.$modal.msgSuccess('录入成功'); submitOpen.value = false; getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }) }) }
-function handleSubmitForApproval() { proxy.$modal.confirm('确认提交审批？提交后将等待审批人审批。').then(() => submitForApproval(detailData.value.takeId)).then(() => { proxy.$modal.msgSuccess('已提交审批'); getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }); getList() }).catch(() => {}) }
-function handleDelete(row) { const takeIds = row.takeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStockTake(takeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(() => {}) }
+function handleSubmitForApproval() { proxy.$modal.confirm('确认提交审批？提交后将等待审批人审批。').then(() => submitForApproval(detailData.value.takeId)).then(() => { proxy.$modal.msgSuccess('已提交审批'); getStockTake(detailData.value.takeId).then(res => { detailData.value = res.data }); getList() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('提交审批失败：' + (e?.message || e)) }) }
+function handleDelete(row) { const takeIds = row.takeId || ids.value; proxy.$modal.confirm('确认删除？').then(() => delStockTake(takeIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
 function cancel() { open.value = false; reset() }
 function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'violet', '3': 'green', '4': 'gray' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = wms_take_status.value.find(d => d.value == status); return item ? item.label : '-' }
@@ -567,7 +567,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 };
     (res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ });
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = {} })
 }
 function onTakeTypeChange() {
   if (form.value.takeType === '1' && !form.value.sampleRatio) { form.value.sampleRatio = 30 }
@@ -620,7 +620,7 @@ function openDetailFromRoute() {
   listStockTake({ pageNum: 1, pageSize: 1, takeNo: no }).then(res => {
     const row = (res.rows || []).find(r => r.takeNo === no)
     if (row) handleDetail(row)
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgError('按单号加载盘点单失败：' + (e?.message || e)) })
 }
 
 listWarehouse({ status: '0', pageSize: 999 }).then(res => { warehouseOptions.value = res.rows })

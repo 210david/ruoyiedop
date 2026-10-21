@@ -453,7 +453,7 @@ function onDrop(e, targetStage) {
       advanceOpportunity(opp.opportunityId, { stageCode: targetStage.stageCode, remark: '看板拖拽推进' }).then(() => {
         proxy.$modal.msgSuccess('阶段推进成功')
         loadData()
-      }).catch(() => {})
+      }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('阶段推进失败：' + (e?.message || e)) })
     }).catch(() => {})
   } else {
     // 退回
@@ -461,7 +461,7 @@ function onDrop(e, targetStage) {
       retreatOpportunity(opp.opportunityId, { stageCode: targetStage.stageCode, remark: '看板拖拽退回' }).then(() => {
         proxy.$modal.msgSuccess('阶段退回成功')
         loadData()
-      }).catch(() => {})
+      }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('阶段退回失败：' + (e?.message || e)) })
     }).catch(() => {})
   }
 }

@@ -635,7 +635,7 @@ function getInteractTypeLabel(type) {
   return item ? item.label : type
 }
 function handleReceive(row) {
-  proxy.$modal.confirm('确认申请领取线索"' + row.companyName + '"？提交后需等待管理员审批。').then(() => receiveLead(row.leadId, {})).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('申请已提交，等待审批') }).catch(() => {})
+  proxy.$modal.confirm('确认申请领取线索"' + row.companyName + '"？提交后需等待管理员审批。').then(() => receiveLead(row.leadId, {})).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('申请已提交，等待审批') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('申请领取线索失败：' + (e?.message || e)) })
 }
 function handleApprove(row) {
   approveForm.value = {

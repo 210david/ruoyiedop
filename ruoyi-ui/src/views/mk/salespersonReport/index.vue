@@ -540,7 +540,7 @@ function loadTrendData(userId) {
   if (!userId) return
   getSalespersonTrend(userId).then(res => {
     nextTick(() => renderTrend(res.data || []))
-  }).catch(() => {})
+  }).catch(e => { proxy.$modal.msgWarning('月度趋势数据加载失败：' + (e?.message || e)) })
 }
 
 /** 窗口自适应 */
