@@ -1,0 +1,1100 @@
+{
+  "entities": [
+    {
+      "cls": "HrOrganization", "table": "biz_hr_organization", "path": "organization", "perms": "hr:organization", "title": "组织架构",
+      "pk": "orgId", "pkCol": "org_id", "pkType": "Long",
+      "fields": [
+        ["orgCode","org_code","String","组织编码",true],
+        ["orgName","org_name","String","组织名称",true],
+        ["parentId","parent_id","Long","父组织ID",false],
+        ["orderNum","order_num","Integer","排序号",false],
+        ["orgLevel","org_level","Integer","组织层级",false],
+        ["leaderId","leader_id","Long","负责人ID",false],
+        ["leaderName","leader_name","String","负责人姓名",false],
+        ["costCenter","cost_center","Integer","成本中心",false],
+        ["attendanceOrg","attendance_org","Integer","考勤归属",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrPosition", "table": "biz_hr_position", "path": "position", "perms": "hr:position", "title": "岗位",
+      "pk": "positionId", "pkCol": "position_id", "pkType": "Long",
+      "fields": [
+        ["positionCode","position_code","String","岗位编码",true],
+        ["positionName","position_name","String","岗位名称",true],
+        ["positionSeq","position_seq","String","岗位序列",false],
+        ["positionLevel","position_level","String","岗级",false],
+        ["skillLevel","skill_level","String","技能等级",false],
+        ["orgId","org_id","Long","所属组织ID",false],
+        ["headcount","headcount","Integer","编制人数",false],
+        ["headcountEnabled","headcount_enabled","Integer","编制管理",false],
+        ["requireCert","require_cert","String","必须持证",false],
+        ["orderNum","order_num","Integer","排序号",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrEmployee", "table": "biz_hr_employee", "path": "employee", "perms": "hr:employee", "title": "员工档案",
+      "pk": "employeeId", "pkCol": "employee_id", "pkType": "Long",
+      "fields": [
+        ["employeeNo","employee_no","String","工号",true],
+        ["employeeName","employee_name","String","姓名",true],
+        ["gender","gender","String","性别",false],
+        ["idCard","id_card","String","身份证号",false],
+        ["birthday","birthday","Date","出生日期",false],
+        ["nation","nation","String","民族",false],
+        ["politicsStatus","politics_status","String","政治面貌",false],
+        ["maritalStatus","marital_status","String","婚姻状况",false],
+        ["phone","phone","String","联系电话",false],
+        ["email","email","String","邮箱",false],
+        ["emergencyContact","emergency_contact","String","紧急联系人",false],
+        ["emergencyPhone","emergency_phone","String","紧急联系电话",false],
+        ["nativePlace","native_place","String","籍贯",false],
+        ["address","address","String","现住址",false],
+        ["eduLevel","edu_level","String","学历",false],
+        ["graduationSchool","graduation_school","String","毕业院校",false],
+        ["major","major","String","专业",false],
+        ["graduationDate","graduation_date","Date","毕业日期",false],
+        ["socialWorkYears","social_work_years","Integer","社会工龄",false],
+        ["companyWorkYears","company_work_years","Integer","本公司工龄",false],
+        ["orgId","org_id","Long","所属组织ID",false],
+        ["positionId","position_id","Long","岗位ID",false],
+        ["positionName","position_name","String","岗位名称",false],
+        ["skillLevel","skill_level","String","技能等级",false],
+        ["workType","work_type","String","工时制度",false],
+        ["employeeType","employee_type","String","用工类型",false],
+        ["entryDate","entry_date","Date","入职日期",false],
+        ["regularDate","regular_date","Date","转正日期",false],
+        ["leaveDate","leave_date","Date","离职日期",false],
+        ["employeeStatus","employee_status","String","员工状态",false],
+        ["bankName","bank_name","String","开户银行",false],
+        ["bankAccount","bank_account","String","银行卡号",false],
+        ["socialSecurityNo","social_security_no","String","社保号",false],
+        ["socialSecurityStatus","social_security_status","String","参保状态",false],
+        ["houseFundNo","house_fund_no","String","公积金号",false],
+        ["leaveReason","leave_reason","String","离职原因",false],
+        ["blacklistFlag","blacklist_flag","String","黑名单",false],
+        ["blacklistReason","blacklist_reason","String","黑名单原因",false],
+        ["userId","user_id","Long","关联用户ID",false],
+        ["photo","photo","String","照片URL",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrEntry", "table": "biz_hr_entry", "path": "entry", "perms": "hr:entry", "title": "入职",
+      "pk": "entryId", "pkCol": "entry_id", "pkType": "Long",
+      "fields": [
+        ["entryNo","entry_no","String","入职单号",true],
+        ["employeeName","employee_name","String","姓名",true],
+        ["idCard","id_card","String","身份证号",false],
+        ["gender","gender","String","性别",false],
+        ["phone","phone","String","联系电话",false],
+        ["orgId","org_id","Long","组织ID",false],
+        ["orgName","org_name","String","组织名称",false],
+        ["positionId","position_id","Long","岗位ID",false],
+        ["positionName","position_name","String","岗位名称",false],
+        ["entryDate","entry_date","Date","入职日期",true],
+        ["probationMonths","probation_months","Integer","试用期月数",false],
+        ["probationSalary","probation_salary","BigDecimal","试用工资",false],
+        ["regularSalary","regular_salary","BigDecimal","转正工资",false],
+        ["contractType","contract_type","String","合同类型",false],
+        ["contractPeriod","contract_period","String","合同期限",false],
+        ["materialsStatus","materials_status","String","材料清单",false],
+        ["healthCheck","health_check","String","岗前体检",false],
+        ["safetyEducation","safety_education","String","三级安全教育",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["employeeId","employee_id","Long","员工档案ID",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrRegular", "table": "biz_hr_regular", "path": "regular", "perms": "hr:regular", "title": "转正",
+      "pk": "regularId", "pkCol": "regular_id", "pkType": "Long",
+      "fields": [
+        ["regularNo","regular_no","String","转正单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["orgName","org_name","String","组织名称",false],
+        ["positionName","position_name","String","岗位名称",false],
+        ["entryDate","entry_date","Date","入职日期",false],
+        ["regularDate","regular_date","Date","拟转正日期",false],
+        ["workPerformance","work_performance","String","工作表现",false],
+        ["skillAssessment","skill_assessment","String","技能达标",false],
+        ["attendanceRecord","attendance_record","String","出勤情况",false],
+        ["safetyViolation","safety_violation","String","安全违规",false],
+        ["evaluationResult","evaluation_result","String","评估结果",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrTransfer", "table": "biz_hr_transfer", "path": "transfer", "perms": "hr:transfer", "title": "调动",
+      "pk": "transferId", "pkCol": "transfer_id", "pkType": "Long",
+      "fields": [
+        ["transferNo","transfer_no","String","调动单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["transferType","transfer_type","String","调动类型",false],
+        ["fromOrgId","from_org_id","Long","原组织ID",false],
+        ["fromOrgName","from_org_name","String","原组织名称",false],
+        ["toOrgId","to_org_id","Long","目标组织ID",false],
+        ["toOrgName","to_org_name","String","目标组织名称",false],
+        ["fromPosition","from_position","String","原岗位",false],
+        ["toPosition","to_position","String","目标岗位",false],
+        ["fromSalary","from_salary","BigDecimal","原薪资",false],
+        ["toSalary","to_salary","BigDecimal","目标薪资",false],
+        ["effectiveDate","effective_date","Date","生效日期",true],
+        ["reason","reason","String","调动原因",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrLeave", "table": "biz_hr_leave", "path": "leave", "perms": "hr:leave", "title": "离职",
+      "pk": "leaveId", "pkCol": "leave_id", "pkType": "Long",
+      "fields": [
+        ["leaveNo","leave_no","String","离职单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["leaveType","leave_type","String","离职类型",false],
+        ["leaveDate","leave_date","Date","离职日期",true],
+        ["reason","reason","String","离职原因",false],
+        ["handoverStatus","handover_status","String","交接状态",false],
+        ["handoverRemark","handover_remark","String","交接清单",false],
+        ["healthCheck","health_check","String","离岗体检",false],
+        ["compensationType","compensation_type","String","补偿类型",false],
+        ["compensationAmount","compensation_amount","BigDecimal","补偿金额",false],
+        ["annualLeaveBalance","annual_leave_balance","BigDecimal","未休年假天数",false],
+        ["annualLeaveAmount","annual_leave_amount","BigDecimal","年假折算金额",false],
+        ["settlementAmount","settlement_amount","BigDecimal","结算总金额",false],
+        ["certificateNo","certificate_no","String","离职证明编号",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrContract", "table": "biz_hr_contract", "path": "contract", "perms": "hr:contract", "title": "劳动合同",
+      "pk": "contractId", "pkCol": "contract_id", "pkType": "Long",
+      "fields": [
+        ["contractNo","contract_no","String","合同编号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["contractType","contract_type","String","合同类型",false],
+        ["startDate","start_date","Date","开始日期",true],
+        ["endDate","end_date","Date","结束日期",false],
+        ["signDate","sign_date","Date","签订日期",false],
+        ["probationMonths","probation_months","Integer","试用期月数",false],
+        ["probationSalary","probation_salary","BigDecimal","试用期工资",false],
+        ["regularSalary","regular_salary","BigDecimal","转正工资",false],
+        ["renewCount","renew_count","Integer","续签次数",false],
+        ["remindStatus","remind_status","String","预警状态",false],
+        ["attachmentUrl","attachment_url","String","附件URL",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrShift", "table": "biz_hr_shift", "path": "shift", "perms": "hr:shift", "title": "班次",
+      "pk": "shiftId", "pkCol": "shift_id", "pkType": "Long",
+      "fields": [
+        ["shiftCode","shift_code","String","班次编码",true],
+        ["shiftName","shift_name","String","班次名称",true],
+        ["startTime","start_time","String","开始时间",true],
+        ["endTime","end_time","String","结束时间",true],
+        ["crossMidnight","cross_midnight","Integer","跨零点",false],
+        ["workHours","work_hours","BigDecimal","工作时长",false],
+        ["restHours","rest_hours","BigDecimal","休息时长",false],
+        ["mealMinutes","meal_minutes","Integer","用餐时间",false],
+        ["nightShift","night_shift","Integer","夜班",false],
+        ["nightAllowance","night_allowance","BigDecimal","夜班津贴",false],
+        ["applicableTo","applicable_to","String","适用场景",false],
+        ["orderNum","order_num","Integer","排序号",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrSchedule", "table": "biz_hr_schedule", "path": "schedule", "perms": "hr:schedule", "title": "排班",
+      "pk": "scheduleId", "pkCol": "schedule_id", "pkType": "Long",
+      "fields": [
+        ["scheduleDate","schedule_date","Date","排班日期",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["orgId","org_id","Long","组织ID",false],
+        ["shiftId","shift_id","Long","班次ID",false],
+        ["shiftName","shift_name","String","班次名称",false],
+        ["restDay","rest_day","Integer","休息日",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrAttendanceRecord", "table": "biz_hr_attendance_record", "path": "attendance", "perms": "hr:attendance", "title": "考勤记录",
+      "pk": "recordId", "pkCol": "record_id", "pkType": "Long",
+      "fields": [
+        ["recordDate","record_date","Date","考勤日期",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["orgId","org_id","Long","组织ID",false],
+        ["shiftId","shift_id","Long","班次ID",false],
+        ["shiftName","shift_name","String","班次名称",false],
+        ["clockIn","clock_in","Date","上班打卡",false],
+        ["clockOut","clock_out","Date","下班打卡",false],
+        ["clockInSource","clock_in_source","String","上班来源",false],
+        ["clockOutSource","clock_out_source","String","下班来源",false],
+        ["lateMinutes","late_minutes","Integer","迟到分钟",false],
+        ["earlyMinutes","early_minutes","Integer","早退分钟",false],
+        ["attendanceStatus","attendance_status","String","考勤状态",false],
+        ["overtimeHours","overtime_hours","BigDecimal","加班小时",false],
+        ["nightShift","night_shift","Integer","夜班",false],
+        ["remark","remark","String","备注",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrLeaveRequest", "table": "biz_hr_leave_request", "path": "leaveRequest", "perms": "hr:leaveRequest", "title": "请假",
+      "pk": "leaveReqId", "pkCol": "leave_req_id", "pkType": "Long",
+      "fields": [
+        ["leaveReqNo","leave_req_no","String","请假单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["leaveType","leave_type","String","假别",true],
+        ["startTime","start_time","Date","开始时间",true],
+        ["endTime","end_time","Date","结束时间",true],
+        ["leaveDays","leave_days","BigDecimal","请假天数",true],
+        ["reason","reason","String","请假原因",false],
+        ["attachmentUrl","attachment_url","String","附件URL",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrOvertime", "table": "biz_hr_overtime", "path": "overtime", "perms": "hr:overtime", "title": "加班",
+      "pk": "overtimeId", "pkCol": "overtime_id", "pkType": "Long",
+      "fields": [
+        ["overtimeNo","overtime_no","String","加班单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["overtimeDate","overtime_date","Date","加班日期",true],
+        ["overtimeType","overtime_type","String","加班类型",false],
+        ["startTime","start_time","Date","开始时间",true],
+        ["endTime","end_time","Date","结束时间",true],
+        ["overtimeHours","overtime_hours","BigDecimal","加班小时",true],
+        ["multiplier","multiplier","BigDecimal","倍率",false],
+        ["compensationType","compensation_type","String","补偿方式",false],
+        ["reason","reason","String","加班原因",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrAttendanceMonthly", "table": "biz_hr_attendance_monthly", "path": "monthly", "perms": "hr:monthly", "title": "考勤月报",
+      "pk": "monthlyId", "pkCol": "monthly_id", "pkType": "Long",
+      "fields": [
+        ["yearMonth","year_month","String","年月",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["orgId","org_id","Long","组织ID",false],
+        ["attendDays","attend_days","BigDecimal","出勤天数",false],
+        ["lateCount","late_count","Integer","迟到次数",false],
+        ["earlyCount","early_count","Integer","早退次数",false],
+        ["absentDays","absent_days","BigDecimal","旷工天数",false],
+        ["leaveDays","leave_days","BigDecimal","请假天数",false],
+        ["overtimeHours","overtime_hours","BigDecimal","加班小时",false],
+        ["nightShiftCount","night_shift_count","Integer","夜班次数",false],
+        ["highTempDays","high_temp_days","BigDecimal","高温天数",false],
+        ["sealedStatus","sealed_status","String","封账状态",false],
+        ["sealedBy","sealed_by","String","封账人",false],
+        ["sealedTime","sealed_time","Date","封账时间",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrLeaveBalance", "table": "biz_hr_leave_balance", "path": "leaveBalance", "perms": "hr:leaveBalance", "title": "假期余额",
+      "pk": "balanceId", "pkCol": "balance_id", "pkType": "Long",
+      "fields": [
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["leaveType","leave_type","String","假别",true],
+        ["year","year","Integer","年度",true],
+        ["totalDays","total_days","BigDecimal","总额度",false],
+        ["usedDays","used_days","BigDecimal","已休天数",false],
+        ["remainingDays","remaining_days","BigDecimal","剩余天数",false],
+        ["frozenDays","frozen_days","BigDecimal","冻结天数",false],
+        ["expireDate","expire_date","Date","过期日期",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrSalaryItem", "table": "biz_hr_salary_item", "path": "salaryItem", "perms": "hr:salaryItem", "title": "薪资项字典",
+      "pk": "itemId", "pkCol": "item_id", "pkType": "Long",
+      "fields": [
+        ["itemCode","item_code","String","编码",true],
+        ["itemName","item_name","String","名称",true],
+        ["itemCategory","item_category","String","类别",false],
+        ["calcRule","calc_rule","String","计算规则",false],
+        ["isAdd","is_add","Integer","加项",false],
+        ["industryTag","industry_tag","String","行业标签",false],
+        ["orderNum","order_num","Integer","排序号",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrSalaryPlan", "table": "biz_hr_salary_plan", "path": "salaryPlan", "perms": "hr:salaryPlan", "title": "定薪调薪",
+      "pk": "planId", "pkCol": "plan_id", "pkType": "Long",
+      "fields": [
+        ["planNo","plan_no","String","定薪单号",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["planType","plan_type","String","类型",false],
+        ["effectiveDate","effective_date","Date","生效日期",true],
+        ["basicSalary","basic_salary","BigDecimal","基本工资",false],
+        ["positionSalary","position_salary","BigDecimal","岗位工资",false],
+        ["skillAllowance","skill_allowance","BigDecimal","技能津贴",false],
+        ["seniorityPay","seniority_pay","BigDecimal","工龄工资",false],
+        ["nightAllowance","night_allowance","BigDecimal","夜班津贴标准",false],
+        ["highTempAllowance","high_temp_allowance","BigDecimal","高温津贴标准",false],
+        ["hazardAllowance","hazard_allowance","BigDecimal","有毒有害津贴",false],
+        ["mealAllowance","meal_allowance","BigDecimal","餐补标准",false],
+        ["transportAllowance","transport_allowance","BigDecimal","交通补贴",false],
+        ["fullAttendanceBonus","full_attendance_bonus","BigDecimal","全勤奖",false],
+        ["performanceBonus","performance_bonus","BigDecimal","绩效奖金",false],
+        ["otherAllowance","other_allowance","BigDecimal","其他补贴",false],
+        ["totalSalary","total_salary","BigDecimal","薪资合计",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["auditBy","audit_by","String","审批人",false],
+        ["auditTime","audit_time","Date","审批时间",false],
+        ["auditRemark","audit_remark","String","审批意见",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrPayslip", "table": "biz_hr_payslip", "path": "payslip", "perms": "hr:payslip", "title": "工资条",
+      "pk": "payslipId", "pkCol": "payslip_id", "pkType": "Long",
+      "fields": [
+        ["yearMonth","year_month","String","年月",true],
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["orgId","org_id","Long","组织ID",false],
+        ["basicSalary","basic_salary","BigDecimal","基本工资",false],
+        ["positionSalary","position_salary","BigDecimal","岗位工资",false],
+        ["skillAllowance","skill_allowance","BigDecimal","技能津贴",false],
+        ["seniorityPay","seniority_pay","BigDecimal","工龄工资",false],
+        ["nightAllowance","night_allowance","BigDecimal","夜班津贴",false],
+        ["highTempAllowance","high_temp_allowance","BigDecimal","高温津贴",false],
+        ["hazardAllowance","hazard_allowance","BigDecimal","有毒有害津贴",false],
+        ["mealAllowance","meal_allowance","BigDecimal","餐补",false],
+        ["transportAllowance","transport_allowance","BigDecimal","交通补贴",false],
+        ["fullAttendanceBonus","full_attendance_bonus","BigDecimal","全勤奖",false],
+        ["pieceworkPay","piecework_pay","BigDecimal","计件工资",false],
+        ["overtimePay","overtime_pay","BigDecimal","加班费",false],
+        ["performanceBonus","performance_bonus","BigDecimal","绩效奖金",false],
+        ["absenceDeduction","absence_deduction","BigDecimal","缺勤扣款",false],
+        ["otherAdd","other_add","BigDecimal","其他加项",false],
+        ["otherDeduct","other_deduct","BigDecimal","其他扣项",false],
+        ["grossSalary","gross_salary","BigDecimal","应发合计",false],
+        ["socialInsurance","social_insurance","BigDecimal","社保个人",false],
+        ["houseFund","house_fund","BigDecimal","公积金个人",false],
+        ["incomeTax","income_tax","BigDecimal","个人所得税",false],
+        ["otherDeduction","other_deduction","BigDecimal","其他扣款",false],
+        ["netSalary","net_salary","BigDecimal","实发工资",false],
+        ["calcStatus","calc_status","String","状态",false],
+        ["sealedBy","sealed_by","String","锁定人",false],
+        ["sealedTime","sealed_time","Date","锁定时间",false],
+        ["payDate","pay_date","Date","发放日期",false],
+        ["bankReceiptNo","bank_receipt_no","String","银行回单号",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrPieceworkPlan", "table": "biz_hr_piecework_plan", "path": "pieceworkPlan", "perms": "hr:piecework", "title": "计件方案",
+      "pk": "pwPlanId", "pkCol": "pw_plan_id", "pkType": "Long",
+      "fields": [
+        ["pwCode","pw_code","String","计件编码",true],
+        ["pwName","pw_name","String","计件名称",true],
+        ["pwType","pw_type","String","计件类型",false],
+        ["unit","unit","String","单位",false],
+        ["unitPrice","unit_price","BigDecimal","计件单价",true],
+        ["productId","product_id","Long","产品ID",false],
+        ["processId","process_id","Long","工序ID",false],
+        ["orgId","org_id","Long","适用组织ID",false],
+        ["baseSalary","base_salary","BigDecimal","保底工资",false],
+        ["effectiveDate","effective_date","Date","生效日期",true],
+        ["expiryDate","expiry_date","Date","失效日期",false],
+        ["auditStatus","audit_status","String","审批状态",false],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrPieceworkRecord", "table": "biz_hr_piecework_record", "path": "pieceworkRecord", "perms": "hr:piecework", "title": "计件报工",
+      "pk": "pwRecordId", "pkCol": "pw_record_id", "pkType": "Long",
+      "fields": [
+        ["pwRecordNo","pw_record_no","String","报工单号",true],
+        ["recordDate","record_date","Date","报工日期",true],
+        ["employeeId","employee_id","Long","员工ID",false],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["orgId","org_id","Long","班组组织ID",false],
+        ["pwPlanId","pw_plan_id","Long","计件方案ID",true],
+        ["pwName","pw_name","String","计件名称",false],
+        ["qualifiedQty","qualified_qty","BigDecimal","合格数量",true],
+        ["unqualifiedQty","unqualified_qty","BigDecimal","不合格数量",false],
+        ["unitPrice","unit_price","BigDecimal","单价",false],
+        ["totalAmount","total_amount","BigDecimal","计件总额",false],
+        ["confirmStatus","confirm_status","String","确认状态",false],
+        ["confirmBy","confirm_by","String","确认人",false],
+        ["confirmTime","confirm_time","Date","确认时间",false],
+        ["source","source","String","来源",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrSocialSecurity", "table": "biz_hr_social_security", "path": "socialSecurity", "perms": "hr:socialSecurity", "title": "社保公积金",
+      "pk": "ssId", "pkCol": "ss_id", "pkType": "Long",
+      "fields": [
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["year","year","Integer","年度",true],
+        ["baseAmount","base_amount","BigDecimal","缴费基数",true],
+        ["pensionEmployer","pension_employer","BigDecimal","养老单位比例",false],
+        ["pensionEmployee","pension_employee","BigDecimal","养老个人比例",false],
+        ["medicalEmployer","medical_employer","BigDecimal","医疗单位比例",false],
+        ["medicalEmployee","medical_employee","BigDecimal","医疗个人比例",false],
+        ["unemploymentEmployer","unemployment_employer","BigDecimal","失业单位比例",false],
+        ["unemploymentEmployee","unemployment_employee","BigDecimal","失业个人比例",false],
+        ["injuryEmployer","injury_employer","BigDecimal","工伤单位比例",false],
+        ["maternityEmployer","maternity_employer","BigDecimal","生育单位比例",false],
+        ["fundEmployer","fund_employer","BigDecimal","公积金单位比例",false],
+        ["fundEmployee","fund_employee","BigDecimal","公积金个人比例",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrTaxRate", "table": "biz_hr_tax_rate", "path": "taxRate", "perms": "hr:taxRate", "title": "个税税率",
+      "pk": "taxRateId", "pkCol": "tax_rate_id", "pkType": "Long",
+      "fields": [
+        ["level","level","Integer","级数",true],
+        ["minAmount","min_amount","BigDecimal","下限",true],
+        ["maxAmount","max_amount","BigDecimal","上限",false],
+        ["rate","rate","BigDecimal","税率",true],
+        ["quickDeduction","quick_deduction","BigDecimal","速算扣除数",true],
+        ["effectiveDate","effective_date","Date","生效日期",true],
+        ["status","status","String","状态",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+      "cls": "HrSpecialDeduction", "table": "biz_hr_special_deduction", "path": "specialDeduction", "perms": "hr:specialDeduction", "title": "专项附加扣除",
+      "pk": "sdId", "pkCol": "sd_id", "pkType": "Long",
+      "fields": [
+        ["employeeId","employee_id","Long","员工ID",true],
+        ["employeeName","employee_name","String","员工姓名",false],
+        ["employeeNo","employee_no","String","工号",false],
+        ["deductionType","deduction_type","String","扣除项目",true],
+        ["deductionAmount","deduction_amount","BigDecimal","月扣除金额",false],
+        ["effectiveDate","effective_date","Date","生效日期",true],
+        ["expiryDate","expiry_date","Date","失效日期",false],
+        ["delFlag","del_flag","String","删除标志",false]
+      ]
+    },
+    {
+    "cls": "HrPayrollBatch",
+    "table": "biz_hr_payroll_batch",
+    "path": "payroll",
+    "perms": "hr:payroll",
+    "title": "薪酬发放",
+    "pk": "batchId",
+    "pkCol": "batch_id",
+    "pkType": "Long",
+    "fields": [
+        [
+            "batchNo",
+            "batch_no",
+            "String",
+            "批次编号",
+            true
+        ],
+        [
+            "yearMonth",
+            "year_month",
+            "String",
+            "年月",
+            true
+        ],
+        [
+            "batchName",
+            "batch_name",
+            "String",
+            "批次名称",
+            false
+        ],
+        [
+            "payDate",
+            "pay_date",
+            "Date",
+            "发放日期",
+            false
+        ],
+        [
+            "bankName",
+            "bank_name",
+            "String",
+            "发薪银行",
+            false
+        ],
+        [
+            "totalCount",
+            "total_count",
+            "Integer",
+            "总人数",
+            false
+        ],
+        [
+            "totalAmount",
+            "total_amount",
+            "BigDecimal",
+            "总金额",
+            false
+        ],
+        [
+            "auditStatus",
+            "audit_status",
+            "String",
+            "审批状态",
+            false
+        ],
+        [
+            "auditBy",
+            "audit_by",
+            "String",
+            "审批人",
+            false
+        ],
+        [
+            "auditTime",
+            "audit_time",
+            "Date",
+            "审批时间",
+            false
+        ],
+        [
+            "auditRemark",
+            "audit_remark",
+            "String",
+            "审批意见",
+            false
+        ],
+        [
+            "bankReceiptNo",
+            "bank_receipt_no",
+            "String",
+            "银行回单号",
+            false
+        ],
+        [
+            "sealedStatus",
+            "sealed_status",
+            "String",
+            "封账状态",
+            false
+        ],
+        [
+            "delFlag",
+            "del_flag",
+            "String",
+            "删除标志",
+            false
+        ]
+    ]
+},
+    {
+    "cls": "HrCertificate",
+    "table": "biz_hr_certificate",
+    "path": "certificate",
+    "perms": "hr:certificate",
+    "title": "证书台账",
+    "pk": "certId",
+    "pkCol": "cert_id",
+    "pkType": "Long",
+    "fields": [
+        [
+            "employeeId",
+            "employee_id",
+            "Long",
+            "员工ID",
+            true
+        ],
+        [
+            "employeeName",
+            "employee_name",
+            "String",
+            "员工姓名",
+            false
+        ],
+        [
+            "employeeNo",
+            "employee_no",
+            "String",
+            "工号",
+            false
+        ],
+        [
+            "certType",
+            "cert_type",
+            "String",
+            "证书类别",
+            true
+        ],
+        [
+            "certName",
+            "cert_name",
+            "String",
+            "证书名称",
+            true
+        ],
+        [
+            "certNo",
+            "cert_no",
+            "String",
+            "证书编号",
+            false
+        ],
+        [
+            "issueDate",
+            "issue_date",
+            "Date",
+            "发证日期",
+            false
+        ],
+        [
+            "validFrom",
+            "valid_from",
+            "Date",
+            "有效起始日",
+            false
+        ],
+        [
+            "validTo",
+            "valid_to",
+            "Date",
+            "有效期至",
+            true
+        ],
+        [
+            "reviewDate",
+            "review_date",
+            "Date",
+            "复审日期",
+            false
+        ],
+        [
+            "issueOrg",
+            "issue_org",
+            "String",
+            "发证机构",
+            false
+        ],
+        [
+            "attachmentUrl",
+            "attachment_url",
+            "String",
+            "附件URL",
+            false
+        ],
+        [
+            "remindStatus",
+            "remind_status",
+            "String",
+            "预警状态",
+            false
+        ],
+        [
+            "status",
+            "status",
+            "String",
+            "状态",
+            false
+        ],
+        [
+            "delFlag",
+            "del_flag",
+            "String",
+            "删除标志",
+            false
+        ]
+    ]
+},
+    {
+    "cls": "HrHealthCheck",
+    "table": "biz_hr_health_check",
+    "path": "healthCheck",
+    "perms": "hr:healthCheck",
+    "title": "职业健康体检",
+    "pk": "healthId",
+    "pkCol": "health_id",
+    "pkType": "Long",
+    "fields": [
+        [
+            "employeeId",
+            "employee_id",
+            "Long",
+            "员工ID",
+            true
+        ],
+        [
+            "employeeName",
+            "employee_name",
+            "String",
+            "员工姓名",
+            false
+        ],
+        [
+            "employeeNo",
+            "employee_no",
+            "String",
+            "工号",
+            false
+        ],
+        [
+            "checkType",
+            "check_type",
+            "String",
+            "体检类型",
+            true
+        ],
+        [
+            "checkDate",
+            "check_date",
+            "Date",
+            "体检日期",
+            true
+        ],
+        [
+            "checkOrg",
+            "check_org",
+            "String",
+            "体检机构",
+            false
+        ],
+        [
+            "hazardType",
+            "hazard_type",
+            "String",
+            "职业危害因素",
+            false
+        ],
+        [
+            "checkResult",
+            "check_result",
+            "String",
+            "结论",
+            false
+        ],
+        [
+            "conclusion",
+            "conclusion",
+            "String",
+            "体检结论",
+            false
+        ],
+        [
+            "attachmentUrl",
+            "attachment_url",
+            "String",
+            "附件URL",
+            false
+        ],
+        [
+            "nextCheckDate",
+            "next_check_date",
+            "Date",
+            "下次体检日期",
+            false
+        ],
+        [
+            "delFlag",
+            "del_flag",
+            "String",
+            "删除标志",
+            false
+        ]
+    ]
+},
+    {
+    "cls": "HrLaborWorker",
+    "table": "biz_hr_labor_worker",
+    "path": "laborWorker",
+    "perms": "hr:laborWorker",
+    "title": "劳务用工",
+    "pk": "laborId",
+    "pkCol": "labor_id",
+    "pkType": "Long",
+    "fields": [
+        [
+            "workerName",
+            "worker_name",
+            "String",
+            "姓名",
+            true
+        ],
+        [
+            "idCard",
+            "id_card",
+            "String",
+            "身份证号",
+            false
+        ],
+        [
+            "phone",
+            "phone",
+            "String",
+            "联系电话",
+            false
+        ],
+        [
+            "workerType",
+            "worker_type",
+            "String",
+            "用工形态",
+            false
+        ],
+        [
+            "dispatchCompany",
+            "dispatch_company",
+            "String",
+            "派遣公司",
+            false
+        ],
+        [
+            "bankName",
+            "bank_name",
+            "String",
+            "开户银行",
+            false
+        ],
+        [
+            "bankAccount",
+            "bank_account",
+            "String",
+            "银行卡号",
+            false
+        ],
+        [
+            "orgId",
+            "org_id",
+            "Long",
+            "分配组织ID",
+            false
+        ],
+        [
+            "positionName",
+            "position_name",
+            "String",
+            "岗位",
+            false
+        ],
+        [
+            "startDate",
+            "start_date",
+            "Date",
+            "用工开始日期",
+            true
+        ],
+        [
+            "endDate",
+            "end_date",
+            "Date",
+            "用工结束日期",
+            false
+        ],
+        [
+            "payType",
+            "pay_type",
+            "String",
+            "结算方式",
+            false
+        ],
+        [
+            "dailyWage",
+            "daily_wage",
+            "BigDecimal",
+            "日薪标准",
+            false
+        ],
+        [
+            "agreementNo",
+            "agreement_no",
+            "String",
+            "协议编号",
+            false
+        ],
+        [
+            "toRegular",
+            "to_regular",
+            "String",
+            "是否转正",
+            false
+        ],
+        [
+            "employeeId",
+            "employee_id",
+            "Long",
+            "转正后员工ID",
+            false
+        ],
+        [
+            "status",
+            "status",
+            "String",
+            "状态",
+            false
+        ],
+        [
+            "delFlag",
+            "del_flag",
+            "String",
+            "删除标志",
+            false
+        ]
+    ]
+},
+    {
+    "cls": "HrTempDailySettlement",
+    "table": "biz_hr_temp_daily_settlement",
+    "path": "tempSettlement",
+    "perms": "hr:tempSettlement",
+    "title": "临时工日结",
+    "pk": "settlementId",
+    "pkCol": "settlement_id",
+    "pkType": "Long",
+    "fields": [
+        [
+            "settlementNo",
+            "settlement_no",
+            "String",
+            "结算单号",
+            true
+        ],
+        [
+            "settlementDate",
+            "settlement_date",
+            "Date",
+            "结算日期",
+            true
+        ],
+        [
+            "laborId",
+            "labor_id",
+            "Long",
+            "劳务工ID",
+            true
+        ],
+        [
+            "workerName",
+            "worker_name",
+            "String",
+            "姓名",
+            false
+        ],
+        [
+            "attendDays",
+            "attend_days",
+            "BigDecimal",
+            "出勤天数",
+            false
+        ],
+        [
+            "dailyWage",
+            "daily_wage",
+            "BigDecimal",
+            "日薪",
+            false
+        ],
+        [
+            "pieceworkAmount",
+            "piecework_amount",
+            "BigDecimal",
+            "计件金额",
+            false
+        ],
+        [
+            "totalAmount",
+            "total_amount",
+            "BigDecimal",
+            "结算总额",
+            false
+        ],
+        [
+            "payStatus",
+            "pay_status",
+            "String",
+            "支付状态",
+            false
+        ],
+        [
+            "payDate",
+            "pay_date",
+            "Date",
+            "支付日期",
+            false
+        ],
+        [
+            "payMethod",
+            "pay_method",
+            "String",
+            "支付方式",
+            false
+        ],
+        [
+            "delFlag",
+            "del_flag",
+            "String",
+            "删除标志",
+            false
+        ]
+    ]
+}
+    
+  ]
+}

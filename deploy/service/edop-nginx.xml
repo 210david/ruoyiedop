@@ -1,0 +1,25 @@
+<service>
+  <id>EDOP-Nginx</id>
+  <name>EDOP Nginx服务</name>
+  <description>企业数字化运营平台 - Nginx 前端代理服务 (端口8005)</description>
+  
+  <executable>D:\EDOP\nginx\nginx.exe</executable>
+  <arguments></arguments>
+  
+  <workingdirectory>D:\EDOP\nginx</workingdirectory>
+  
+  <logpath>D:\EDOP\nginx\logs\winsw</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  
+  <stopexecutable>D:\EDOP\nginx\nginx.exe</stopexecutable>
+  <stoparguments>-s quit</stoparguments>
+  
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+  
+  <startmode>Automatic</startmode>
+  <delayedstart>true</delayedstart>
+</service>

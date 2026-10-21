@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  ============================================================
+  跨模块只读数据访问
+
+  【强制约束 · 零侵入】
+  本文件对既有模块的表只允许 SELECT，严禁 INSERT / UPDATE / DELETE。
+  严禁通过 @Autowired 注入既有模块 Service 或 Mapper Bean。
+
+  交付前校验：
+    grep -rlE "(INSERT INTO|UPDATE|DELETE FROM)\s+(pms_|wms_|mk_|mms_|qms_|biz_hr_)" \
+      ruoyi-fin/src/main/resources/mapper/ && echo "违规" || echo "通过"
+
+  【状态值 · 已与生产库字典核对 2026-10-04】
+    pms_invoice.status   : 0草稿 1待审核 2已审核 3已付款 4已作废 5已驳回 6部分付款
+    mk_shipment.status   : 0待发货 1已发货 2已签收 3已取消（字典 marketing_shipment_status）
+    biz_hr_payroll_batch.audit_status : 0待审 1HR复核 2总经理批准 3已发放 4已驳回
+  ============================================================
+-->
+<mapper namespace="com.ruoyi.fin.mapper.FinRefMapper">
+
+    <resultMap id="InvoiceRefResult" type="com.ruoyi.fin.domain.vo.InvoiceRefVO">
+        <result property="id"            column="id"/>
+        <result property="billNo"        column="bill_no"/>
+        <result property="partnerId"     column="partner_id"/>
+        <result property="partnerName"   column="partner_name"/>
+        <result property="amountExclTax" column="amount_excl_tax"/>
+        <result property="taxAmount"     column="tax_amount"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="billDate"      column="bill_date"/>
+        <result property="paymentDays"   column="payment_days"/>
+        <result property="settlementType" column="settlement_type"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="materialName"  column="material_name"/>
+    </resultMap>
+
+    <resultMap id="ShipmentRefResult" type="com.ruoyi.fin.domain.vo.ShipmentRefVO">
+        <result property="shipmentId"   column="shipment_id"/>
+        <result property="shipmentNo"   column="shipment_no"/>
+        <result property="orderId"      column="order_id"/>
+        <result property="contractId"   column="contract_id"/>
+        <result property="customerId"   column="customer_id"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="totalAmount"  column="total_amount"/>
+        <result property="totalQty"     column="total_qty"/>
+        <result property="shipmentDate" column="shipment_date"/>
+    </resultMap>
+
+    <resultMap id="PayrollBatchRefResult" type="com.ruoyi.fin.domain.vo.PayrollBatchRefVO">
+        <result property="batchId"        column="batch_id"/>
+        <result property="batchNo"        column="batch_no"/>
+        <result property="yearMonth"      column="year_month"/>
+        <result property="payDate"        column="pay_date"/>
+        <result property="totalCount"     column="total_count"/>
+        <result property="totalAmount"    column="total_amount"/>
+        <result property="bankName"       column="bank_name"/>
+        <result property="bankReceiptNo"  column="bank_receipt_no"/>
+    </resultMap>
+
+    <!--
+      扫描已审核但未记账的进项发票。
+      NOT EXISTS 判断已记账，幂等第一重保障；第二重为 fin_voucher.uk_source 唯一索引。
+      注意：finance.auto-voucher=false 时不自动记账，此时靠前置校验拦截。
+    -->
+    <select id="selectUnbookedInvoices" resultMap="InvoiceRefResult">
+        SELECT i.invoice_id        AS id,
+               i.invoice_no        AS bill_no,
+               i.supplier_id       AS partner_id,
+               i.supplier_name     AS partner_name,
+               i.invoice_amount    AS amount_excl_tax,
+               i.tax_amount        AS tax_amount,
+               i.total_amount      AS total_amount,
+               i.invoice_date      AS bill_date
+        FROM pms_invoice i
+        WHERE i.status = '2'
+          AND i.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_voucher v
+              WHERE v.source_module = 'pms'
+                AND v.source_type   = 'invoice'
+                AND v.source_id     = i.invoice_id
+                AND v.del_flag      = '0'
+          )
+        ORDER BY i.invoice_date, i.invoice_id
+        LIMIT #{limit}
+    </select>
+
+    <!-- 扫描已发货但未记账的发货单（应收来源） -->
+    <select id="selectUnbookedShipments" resultMap="ShipmentRefResult">
+        SELECT s.shipment_id     AS shipment_id,
+               s.shipment_no     AS shipment_no,
+               s.order_id        AS order_id,
+               s.contract_id     AS contract_id,
+               s.customer_id      AS customer_id,
+               s.customer_name    AS customer_name,
+               s.total_amount     AS total_amount,
+               s.total_qty        AS total_qty,
+               s.shipment_date    AS shipment_date
+        FROM mk_shipment s
+        WHERE s.status = '1'
+          AND s.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_voucher v
+              WHERE v.source_module = 'mk'
+                AND v.source_type   = 'shipment'
+                AND v.source_id     = s.shipment_id
+                AND v.del_flag      = '0'
+          )
+        ORDER BY s.shipment_date, s.shipment_id
+        LIMIT #{limit}
+    </select>
+
+    <!-- 扫描已发放但未记账的薪酬批次（应付职工薪酬来源） -->
+    <select id="selectUnbookedPayrolls" resultMap="PayrollBatchRefResult">
+        SELECT b.batch_id        AS batch_id,
+               b.batch_no        AS batch_no,
+               b.`year_month`      AS `year_month`,
+               b.pay_date        AS pay_date,
+               b.total_count     AS total_count,
+               b.total_amount    AS total_amount,
+               b.bank_name       AS bank_name,
+               b.bank_receipt_no AS bank_receipt_no
+        FROM biz_hr_payroll_batch b
+        WHERE b.audit_status = '3'
+          AND b.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_voucher v
+              WHERE v.source_module = 'hr'
+                AND v.source_type   = 'payroll'
+                AND v.source_id     = b.batch_id
+                AND v.del_flag      = '0'
+          )
+        ORDER BY b.pay_date, b.batch_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      查询供应商主数据（只读）。
+      wms_supplier 是 WMS/PMS 共用全量供应商主数据，已含银行、账期、税号、开票信息。
+      对应 unified-development-standards.md 6.2.1。
+    -->
+    <select id="selectSupplierInfo" resultMap="InvoiceRefResult">
+        SELECT s.supplier_id     AS id,
+               s.supplier_code   AS bill_no,
+               s.supplier_name   AS partner_name,
+               s.payment_days    AS payment_days,
+               s.settlement_type AS settlement_type
+        FROM wms_supplier s
+        WHERE s.supplier_id = #{supplierId}
+          AND s.del_flag = '0'
+    </select>
+
+    <!-- 查询物料基础信息（只读，不含成本字段，成本由 fin_inventory_cost 维护） -->
+    <select id="selectMaterialInfo" resultMap="InvoiceRefResult">
+        SELECT m.material_id   AS id,
+               m.material_code AS material_code,
+               m.material_name AS material_name
+        FROM wms_material m
+        WHERE m.material_code = #{materialCode}
+          AND m.del_flag = '0'
+    </select>
+
+    <resultMap id="InboundCostResult" type="com.ruoyi.fin.domain.vo.InboundCostRefVO">
+        <result property="detailId"        column="detail_id"/>
+        <result property="inboundOrderId"  column="inbound_order_id"/>
+        <result property="inboundOrderNo"  column="inbound_order_no"/>
+        <result property="inboundDate"     column="inbound_date"/>
+        <result property="warehouseId"     column="warehouse_id"/>
+        <result property="materialId"      column="material_id"/>
+        <result property="materialCode"    column="material_code"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="batchNo"         column="batch_no"/>
+        <result property="locationId"      column="location_id"/>
+        <result property="receivedQty"     column="received_qty"/>
+        <result property="unitPrice"       column="unit_price"/>
+    </resultMap>
+
+    <resultMap id="OutboundCostResult" type="com.ruoyi.fin.domain.vo.OutboundCostRefVO">
+        <result property="detailId"        column="detail_id"/>
+        <result property="outboundOrderId" column="outbound_order_id"/>
+        <result property="outboundOrderNo" column="outbound_order_no"/>
+        <result property="orderType"       column="order_type"/>
+        <result property="outboundDate"    column="outbound_date"/>
+        <result property="warehouseId"     column="warehouse_id"/>
+        <result property="materialId"      column="material_id"/>
+        <result property="materialCode"    column="material_code"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="batchNo"         column="batch_no"/>
+        <result property="locationId"      column="location_id"/>
+        <result property="actualQty"       column="actual_qty"/>
+    </resultMap>
+
+    <!--
+      扫描已入库（status='3' 已完成）但尚未计价的入库明细。
+      幂等：NOT EXISTS 判断该入库单+物料是否已在成本台账建档。
+      注意：生产库中约 43 条明细 unit_price 为 0/NULL，此处不过滤，
+      由 Service 层逐条校验并给出明确错误提示（错误码 10029）。
+    -->
+    <select id="selectUnpricedInbound" resultMap="InboundCostResult">
+        SELECT d.detail_id            AS detail_id,
+               o.order_id             AS inbound_order_id,
+               o.order_no             AS inbound_order_no,
+               o.inbound_date         AS inbound_date,
+               o.warehouse_id         AS warehouse_id,
+               d.material_id          AS material_id,
+               m.material_code        AS material_code,
+               m.material_name        AS material_name,
+               IFNULL(d.batch_no, '')  AS batch_no,
+               IFNULL(d.location_id, 0) AS location_id,
+               IFNULL(d.received_qty, 0) AS received_qty,
+               d.unit_price           AS unit_price
+        FROM wms_inbound_order_detail d
+        JOIN wms_inbound_order o ON o.order_id = d.order_id AND o.del_flag = '0'
+        LEFT JOIN wms_material m ON m.material_id = d.material_id
+        WHERE o.status = '3'
+          AND d.del_flag = '0'
+          AND d.received_qty &gt; 0
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_inventory_cost c
+              WHERE c.material_id  = d.material_id
+                AND c.warehouse_id = o.warehouse_id
+                AND c.location_id  = IFNULL(d.location_id, 0)
+                AND c.batch_no     = IFNULL(d.batch_no, '')
+                AND c.inbound_order_id = o.order_id
+                AND c.del_flag = '0'
+          )
+        ORDER BY o.inbound_date, d.detail_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      扫描已出库（status='3' 已完成）但尚未结转成本的出库明细。
+      幂等：NOT EXISTS 判断是否已在成本结转流水中。
+      出库成本目标：order_type 决定走销售成本还是生产成本（P5 扩展）。
+    -->
+    <select id="selectUncarriedOutbound" resultMap="OutboundCostResult">
+        SELECT d.detail_id           AS detail_id,
+               o.order_id            AS outbound_order_id,
+               o.order_no            AS outbound_order_no,
+               o.order_type          AS order_type,
+               o.outbound_date       AS outbound_date,
+               o.warehouse_id        AS warehouse_id,
+               d.material_id         AS material_id,
+               m.material_code       AS material_code,
+               m.material_name       AS material_name,
+               IFNULL(d.batch_no, '') AS batch_no,
+               IFNULL(d.location_id, 0) AS location_id,
+               IFNULL(d.actual_qty, 0) AS actual_qty
+        FROM wms_outbound_order_detail d
+        JOIN wms_outbound_order o ON o.order_id = d.order_id AND o.del_flag = '0'
+        LEFT JOIN wms_material m ON m.material_id = d.material_id
+        WHERE o.status = '3'
+          AND d.del_flag = '0'
+          AND d.actual_qty &gt; 0
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_cost_carry_forward cf
+              WHERE cf.source_module = 'wms'
+                AND cf.source_type   = 'outbound'
+                AND cf.source_id     = d.detail_id
+                AND cf.del_flag = '0'
+          )
+        ORDER BY o.outbound_date, d.detail_id
+        LIMIT #{limit}
+    </select>
+
+    <resultMap id="ApInvoiceResult" type="com.ruoyi.fin.domain.vo.ApInvoiceRefVO">
+        <result property="invoiceId"      column="invoice_id"/>
+        <result property="invoiceNo"      column="invoice_no"/>
+        <result property="invoiceCode"    column="invoice_code"/>
+        <result property="invoiceDate"    column="invoice_date"/>
+        <result property="supplierId"     column="supplier_id"/>
+        <result property="supplierName"   column="supplier_name"/>
+        <result property="invoiceAmount"  column="invoice_amount"/>
+        <result property="taxAmount"      column="tax_amount"/>
+        <result property="totalAmount"    column="total_amount"/>
+        <result property="paymentAmount"  column="payment_amount"/>
+        <result property="taxRate"        column="tax_rate"/>
+        <result property="paymentDays"    column="payment_days"/>
+        <result property="partnerId"      column="partner_id"/>
+    </resultMap>
+
+<!--
+      扫描已审核（status='2'）但尚未生成应付单的进项发票。
+      实测：pms_invoice.invoice_no 实为「结算单号」，无独立发票代码列，
+            tax_rate 存百分数数值（13.00 / 6.00 / 1.00），此处除以 100 归一为小数。
+      幂等：NOT EXISTS 判断是否已生成应付单。
+    -->
+    <select id="selectUnmatchedInvoice" resultMap="ApInvoiceResult">
+        SELECT i.invoice_id        AS invoice_id,
+               i.invoice_no        AS invoice_no,
+               NULL                AS invoice_code,
+               i.invoice_date      AS invoice_date,
+               i.supplier_id       AS supplier_id,
+               i.supplier_name     AS supplier_name,
+               i.invoice_amount    AS invoice_amount,
+               i.tax_amount        AS tax_amount,
+               i.total_amount      AS total_amount,
+               IFNULL(i.payment_amount, 0) AS payment_amount,
+               IFNULL(i.tax_rate, 0) / 100 AS tax_rate,
+               IFNULL(s.payment_days, 0)   AS payment_days,
+               p.partner_id        AS partner_id
+        FROM pms_invoice i
+        LEFT JOIN wms_supplier s ON s.supplier_id = i.supplier_id AND s.del_flag = '0'
+        LEFT JOIN fin_partner p  ON p.source_module = 'wms'
+                                 AND p.source_id = i.supplier_id
+                                 AND p.del_flag = '0'
+        WHERE i.status = '2'
+          AND i.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_ap_order a
+              WHERE a.source_module = 'pms'
+                AND a.source_type   = 'invoice'
+                AND a.source_id     = i.invoice_id
+                AND a.del_flag      = '0'
+          )
+        ORDER BY i.invoice_date, i.invoice_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      查询发票已付金额（只读 pms_invoice + pms_invoice_payment）。
+      pms_invoice.payment_amount 为主，未维护时回退累加 pms_invoice_payment，
+      两处口径不一致时以明细表为准并记日志（Service 层处理）。
+    -->
+    <select id="selectInvoicePaidAmount" resultMap="ApInvoiceResult">
+        SELECT i.invoice_id       AS invoice_id,
+               i.invoice_no       AS invoice_no,
+               i.invoice_date     AS invoice_date,
+               i.supplier_id      AS supplier_id,
+               i.supplier_name    AS supplier_name,
+               i.invoice_amount   AS invoice_amount,
+               i.tax_amount       AS tax_amount,
+               i.total_amount     AS total_amount,
+               GREATEST(
+                   IFNULL(i.payment_amount, 0),
+                   IFNULL(pay.sum_paid, 0)
+               )                  AS payment_amount,
+               IFNULL(i.tax_rate, 0) / 100 AS tax_rate
+        FROM pms_invoice i
+        LEFT JOIN (
+            SELECT invoice_id, SUM(payment_amount) AS sum_paid
+            FROM pms_invoice_payment
+            WHERE del_flag = '0'
+            GROUP BY invoice_id
+        ) pay ON pay.invoice_id = i.invoice_id
+        WHERE i.invoice_id IN
+        <foreach collection="invoiceIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND i.del_flag = '0'
+    </select>
+
+<resultMap id="ArShipmentResult" type="com.ruoyi.fin.domain.vo.ArShipmentRefVO">
+        <result property="shipmentId"    column="shipment_id"/>
+        <result property="shipmentNo"    column="shipment_no"/>
+        <result property="shipmentDate"  column="shipment_date"/>
+        <result property="customerId"    column="customer_id"/>
+        <result property="customerName"  column="customer_name"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="paymentDays"   column="payment_days"/>
+        <result property="partnerId"     column="partner_id"/>
+    </resultMap>
+
+    <resultMap id="ArReceiptResult" type="com.ruoyi.fin.domain.vo.ArReceiptRefVO">
+        <result property="customerId"     column="customer_id"/>
+        <result property="receivedAmount" column="received_amount"/>
+        <result property="receiptCount"   column="receipt_count"/>
+    </resultMap>
+
+    <!--
+      扫描已审核/已出库/已签收（status IN 2,3,4）但尚未生成应收单的发货单。
+      账期：实测 mk_customer 无账期字段，账期统一由 fin_partner.payment_days 维护，
+            未建档的客户取 0（现结）。
+      幂等：NOT EXISTS 判断是否已生成应收单。
+    -->
+    <select id="selectUnmatchedShipment" resultMap="ArShipmentResult">
+        SELECT s.shipment_id       AS shipment_id,
+               s.shipment_no       AS shipment_no,
+               s.shipment_date     AS shipment_date,
+               s.customer_id       AS customer_id,
+               s.customer_name     AS customer_name,
+               IFNULL(s.total_amount, 0) AS total_amount,
+               IFNULL(p.payment_days, 0) AS payment_days,
+               p.partner_id        AS partner_id
+        FROM mk_shipment s
+        LEFT JOIN fin_partner p ON p.source_module = 'mk'
+                                AND p.source_id = s.customer_id
+                                AND p.del_flag = '0'
+        WHERE s.status IN ('2', '3', '4')
+          AND s.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_ar_order a
+              WHERE a.source_module = 'mk'
+                AND a.source_type   = 'shipment'
+                AND a.source_id     = s.shipment_id
+                AND a.del_flag      = '0'
+          )
+        ORDER BY s.shipment_date, s.shipment_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      客户维度收款汇总（只读 mk_payment_record + mk_payment_plan）。
+      仅取 confirm_status='1'（已确认收款），未确认的不计入应收核销。
+      注意：mk_payment_record 无 del_flag（物理删除），故不按 del_flag 过滤。
+    -->
+    <select id="selectCustomerReceivedAmount" resultMap="ArReceiptResult">
+        SELECT pl.customer_id             AS customer_id,
+               SUM(r.this_amount)         AS received_amount,
+               COUNT(*)                   AS receipt_count
+        FROM mk_payment_record r
+        JOIN mk_payment_plan pl ON pl.plan_id = r.plan_id
+        WHERE r.confirm_status = '1'
+          AND pl.customer_id IN
+        <foreach collection="customerIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY pl.customer_id
+    </select>
+
+</mapper>

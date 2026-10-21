@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidCrawlSourceMapper">
+
+    <resultMap type="BidCrawlSource" id="BidCrawlSourceResult">
+        <result property="sourceId"       column="source_id"/>
+        <result property="sourceName"     column="source_name"/>
+        <result property="sourceType"     column="source_type"/>
+        <result property="baseUrl"        column="base_url"/>
+        <result property="parserCode"     column="parser_code"/>
+        <result property="parseConfig"    column="parse_config"/>
+        <result property="crawlInterval"  column="crawl_interval"/>
+        <result property="enabled"        column="enabled"/>
+        <result property="lastRunTime"    column="last_run_time"/>
+        <result property="lastRunStatus"  column="last_run_status"/>
+        <result property="lastRunMsg"     column="last_run_msg"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectSourceVo">
+        SELECT s.source_id, s.source_name, s.source_type, s.base_url, s.parser_code, s.parse_config,
+               s.crawl_interval, s.enabled, s.last_run_time, s.last_run_status, s.last_run_msg,
+               s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
+        FROM bid_crawl_source s
+    </sql>
+
+    <select id="selectSourceList" parameterType="BidCrawlSource" resultMap="BidCrawlSourceResult">
+        <include refid="selectSourceVo"/>
+        <where>
+            s.del_flag = '0'
+            <if test="sourceName != null and sourceName != ''"> AND s.source_name LIKE CONCAT('%', #{sourceName}, '%')</if>
+            <if test="baseUrl != null and baseUrl != ''"> AND s.base_url LIKE CONCAT('%', #{baseUrl}, '%')</if>
+            <if test="sourceType != null and sourceType != ''"> AND s.source_type = #{sourceType}</if>
+            <if test="enabled != null and enabled != ''"> AND s.enabled = #{enabled}</if>
+            <if test="lastRunStatus != null and lastRunStatus != ''"> AND s.last_run_status = #{lastRunStatus}</if>
+            <if test="params.beginLastRunTime != null and params.beginLastRunTime != ''"> AND s.last_run_time &gt;= #{params.beginLastRunTime}</if>
+            <if test="params.endLastRunTime != null and params.endLastRunTime != ''"> AND s.last_run_time &lt;= #{params.endLastRunTime}</if>
+        </where>
+        ORDER BY s.source_id DESC
+    </select>
+
+    <select id="selectSourceById" parameterType="Long" resultMap="BidCrawlSourceResult">
+        <include refid="selectSourceVo"/>
+        WHERE s.source_id = #{sourceId}
+    </select>
+
+    <select id="selectEnabledSources" resultMap="BidCrawlSourceResult">
+        <include refid="selectSourceVo"/>
+        WHERE s.del_flag = '0' AND s.enabled = '0'
+    </select>
+
+    <insert id="insertSource" parameterType="BidCrawlSource" useGeneratedKeys="true" keyProperty="sourceId">
+        INSERT INTO bid_crawl_source (source_name, source_type, base_url, parser_code, parse_config,
+            crawl_interval, enabled, del_flag, create_by, create_time, remark)
+        VALUES (#{sourceName}, #{sourceType}, #{baseUrl}, #{parserCode}, #{parseConfig},
+            #{crawlInterval}, #{enabled}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateSource" parameterType="BidCrawlSource">
+        UPDATE bid_crawl_source
+        <set>
+            <if test="sourceName != null and sourceName != ''">source_name = #{sourceName},</if>
+            <if test="sourceType != null and sourceType != ''">source_type = #{sourceType},</if>
+            <if test="baseUrl != null and baseUrl != ''">base_url = #{baseUrl},</if>
+            <if test="parserCode != null and parserCode != ''">parser_code = #{parserCode},</if>
+            <if test="parseConfig != null">parse_config = #{parseConfig},</if>
+            <if test="crawlInterval != null">crawl_interval = #{crawlInterval},</if>
+            <if test="enabled != null and enabled != ''">enabled = #{enabled},</if>
+            <if test="lastRunTime != null">last_run_time = #{lastRunTime},</if>
+            <if test="lastRunStatus != null">last_run_status = #{lastRunStatus},</if>
+            <if test="lastRunMsg != null">last_run_msg = #{lastRunMsg},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE source_id = #{sourceId}
+    </update>
+
+    <delete id="deleteSourceByIds" parameterType="Long">
+        UPDATE bid_crawl_source SET del_flag = '2' WHERE source_id IN
+        <foreach item="sourceId" collection="array" open="(" separator="," close=")">#{sourceId}</foreach>
+    </delete>
+
+</mapper>

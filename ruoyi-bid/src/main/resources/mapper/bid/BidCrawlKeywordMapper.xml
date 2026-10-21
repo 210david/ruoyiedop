@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidCrawlKeywordMapper">
+
+    <resultMap type="BidCrawlKeyword" id="BidCrawlKeywordResult">
+        <result property="keywordId"     column="keyword_id"/>
+        <result property="keyword"       column="keyword"/>
+        <result property="synonymWords"  column="synonym_words"/>
+        <result property="excludeWords"  column="exclude_words"/>
+        <result property="matchType"     column="match_type"/>
+        <result property="regionCode"    column="region_code"/>
+        <result property="industry"      column="industry"/>
+        <result property="minAmount"     column="min_amount"/>
+        <result property="noticeTypes"   column="notice_types"/>
+        <result property="notifyEnabled" column="notify_enabled"/>
+        <result property="enabled"       column="enabled"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectKeywordVo">
+        SELECT k.keyword_id, k.keyword, k.synonym_words, k.exclude_words, k.match_type, k.region_code,
+               k.industry, k.min_amount, k.notice_types, k.notify_enabled, k.enabled, k.del_flag,
+               k.create_by, k.create_time, k.update_by, k.update_time, k.remark
+        FROM bid_crawl_keyword k
+    </sql>
+
+    <select id="selectKeywordList" parameterType="BidCrawlKeyword" resultMap="BidCrawlKeywordResult">
+        <include refid="selectKeywordVo"/>
+        <where>
+            k.del_flag = '0'
+            <if test="keyword != null and keyword != ''"> AND k.keyword LIKE CONCAT('%', #{keyword}, '%')</if>
+            <if test="matchType != null and matchType != ''"> AND k.match_type = #{matchType}</if>
+            <if test="regionCode != null and regionCode != ''"> AND k.region_code LIKE CONCAT(#{regionCode}, '%')</if>
+            <if test="industry != null and industry != ''"> AND k.industry = #{industry}</if>
+            <if test="enabled != null and enabled != ''"> AND k.enabled = #{enabled}</if>
+        </where>
+        ORDER BY k.keyword_id DESC
+    </select>
+
+    <select id="selectKeywordById" parameterType="Long" resultMap="BidCrawlKeywordResult">
+        <include refid="selectKeywordVo"/>
+        WHERE k.keyword_id = #{keywordId}
+    </select>
+
+    <select id="selectEnabledKeywords" resultMap="BidCrawlKeywordResult">
+        <include refid="selectKeywordVo"/>
+        WHERE k.del_flag = '0' AND k.enabled = '0'
+    </select>
+
+    <insert id="insertKeyword" parameterType="BidCrawlKeyword" useGeneratedKeys="true" keyProperty="keywordId">
+        INSERT INTO bid_crawl_keyword (keyword, synonym_words, exclude_words, match_type, region_code,
+            industry, min_amount, notice_types, notify_enabled, enabled, del_flag, create_by, create_time, remark)
+        VALUES (#{keyword}, #{synonymWords}, #{excludeWords}, #{matchType}, #{regionCode},
+            #{industry}, #{minAmount}, #{noticeTypes}, #{notifyEnabled}, #{enabled}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateKeyword" parameterType="BidCrawlKeyword">
+        UPDATE bid_crawl_keyword
+        <set>
+            <if test="keyword != null and keyword != ''">keyword = #{keyword},</if>
+            <if test="synonymWords != null">synonym_words = #{synonymWords},</if>
+            <if test="excludeWords != null">exclude_words = #{excludeWords},</if>
+            <if test="matchType != null and matchType != ''">match_type = #{matchType},</if>
+            <if test="regionCode != null">region_code = #{regionCode},</if>
+            <if test="industry != null">industry = #{industry},</if>
+            <if test="minAmount != null">min_amount = #{minAmount},</if>
+            <if test="noticeTypes != null">notice_types = #{noticeTypes},</if>
+            <if test="notifyEnabled != null and notifyEnabled != ''">notify_enabled = #{notifyEnabled},</if>
+            <if test="enabled != null and enabled != ''">enabled = #{enabled},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE keyword_id = #{keywordId}
+    </update>
+
+    <delete id="deleteKeywordByIds" parameterType="Long">
+        UPDATE bid_crawl_keyword SET del_flag = '2' WHERE keyword_id IN
+        <foreach item="keywordId" collection="array" open="(" separator="," close=")">#{keywordId}</foreach>
+    </delete>
+
+    <select id="selectScopeByKeywordId" parameterType="Long" resultType="BidKeywordScope">
+        SELECT scope_id AS "scopeId", keyword_id AS "keywordId", scope_type AS "scopeType",
+               dept_id AS "deptId", user_id AS "userId"
+        FROM bid_keyword_scope WHERE keyword_id = #{keywordId}
+    </select>
+
+    <insert id="insertScope" parameterType="BidKeywordScope" useGeneratedKeys="true" keyProperty="scopeId">
+        INSERT INTO bid_keyword_scope (keyword_id, scope_type, dept_id, user_id)
+        VALUES (#{keywordId}, #{scopeType}, #{deptId}, #{userId})
+    </insert>
+
+    <delete id="deleteScopeByKeywordId" parameterType="Long">
+        DELETE FROM bid_keyword_scope WHERE keyword_id = #{keywordId}
+    </delete>
+
+</mapper>

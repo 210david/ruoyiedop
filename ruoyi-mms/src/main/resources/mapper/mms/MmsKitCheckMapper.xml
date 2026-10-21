@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsKitCheckMapper">
+
+    <resultMap type="MmsKitCheck" id="MmsKitCheckResult">
+                <id property="kitId" column="kit_id"/>
+<result property="kitNo"     column="kit_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="mpsId"     column="mps_id"/>
+        <result property="mpsNo"     column="mps_no"/>
+        <result property="bomId"     column="bom_id"/>
+        <result property="bomNo"      column="bom_no"/>
+        <result property="checkTime"     column="check_time"/>
+        <result property="kitRate"     column="kit_rate"/>
+        <result property="isComplete"     column="is_complete"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectKitCheckVo">
+        SELECT k.kit_id, k.kit_no, k.work_order_id, k.work_order_no, k.mps_id, k.mps_no, k.bom_id, b.bom_no, k.check_time, k.kit_rate, k.is_complete, k.status, k.del_flag, k.create_by, k.create_time, k.update_by, k.update_time, k.remark
+        FROM mms_kit_check k
+        LEFT JOIN mms_bom b ON k.bom_id = b.bom_id
+    </sql>
+
+    <select id="selectKitCheckList" parameterType="MmsKitCheck" resultMap="MmsKitCheckResult">
+        <include refid="selectKitCheckVo"/>
+        <where>
+            k.del_flag = '0'
+            <if test="kitNo != null and kitNo != ''"> AND k.kit_no LIKE CONCAT('%', #{kitNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND k.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="mpsNo != null and mpsNo != ''"> AND k.mps_no LIKE CONCAT('%', #{mpsNo}, '%')</if>
+            <if test="isComplete != null and isComplete != ''"> AND k.is_complete = #{isComplete}</if>
+            <if test="status != null and status != ''"> AND k.status = #{status}</if>
+            <if test="bomNo != null and bomNo != ''"> AND b.bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(k.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(k.create_time) &lt;= #{params.endTime}</if>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
+        ORDER BY k.kit_id DESC
+    </select>
+
+    <select id="selectKitCheckById" parameterType="Long" resultMap="MmsKitCheckResult">
+        <include refid="selectKitCheckVo"/>
+        WHERE k.kit_id = #{kitId} AND k.del_flag = '0'
+    </select>
+
+    <insert id="insertKitCheck" parameterType="MmsKitCheck" useGeneratedKeys="true" keyProperty="kitId">
+        INSERT INTO mms_kit_check (
+            kit_no,
+            work_order_id,
+            work_order_no,
+            mps_id,
+            mps_no,
+            bom_id,
+            check_time,
+            kit_rate,
+            is_complete,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{kitNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{mpsId},
+            #{mpsNo},
+            #{bomId},
+            #{checkTime},
+            #{kitRate},
+            #{isComplete},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateKitCheck" parameterType="MmsKitCheck">
+        UPDATE mms_kit_check SET
+            kit_no = #{kitNo},
+            work_order_id = #{workOrderId},
+            work_order_no = #{workOrderNo},
+            mps_id = #{mpsId},
+            mps_no = #{mpsNo},
+            bom_id = #{bomId},
+            check_time = #{checkTime},
+            kit_rate = #{kitRate},
+            is_complete = #{isComplete},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE kit_id = #{kitId}
+    </update>
+
+    <delete id="deleteKitCheckByIds" parameterType="Long">
+        UPDATE mms_kit_check SET del_flag = '2' WHERE kit_id IN
+        <foreach collection="array" item="kitId" open="(" separator="," close=")">
+            #{kitId}
+        </foreach>
+    </delete>
+
+    <!-- ============ 齐套检查明细 ============ -->
+
+    <resultMap type="MmsKitCheckDetail" id="MmsKitCheckDetailResult">
+        <id property="detailId"     column="detail_id"/>
+        <result property="kitId"       column="kit_id"/>
+        <result property="materialId"  column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel"   column="spec_model"/>
+        <result property="unit"        column="unit"/>
+        <result property="requiredQty" column="required_qty"/>
+        <result property="availableQty" column="available_qty"/>
+        <result property="shortageQty" column="shortage_qty"/>
+        <result property="isComplete" column="is_complete"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"    column="create_by"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateBy"    column="update_by"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="remark"      column="remark"/>
+    </resultMap>
+
+    <select id="selectKitCheckDetailByKitId" parameterType="Long" resultMap="MmsKitCheckDetailResult">
+        SELECT detail_id, kit_id, material_id, material_code, material_name, spec_model, unit,
+               required_qty, available_qty, shortage_qty, is_complete, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM mms_kit_check_detail
+        WHERE kit_id = #{kitId} AND del_flag = '0'
+        ORDER BY detail_id
+    </select>
+
+    <insert id="insertKitCheckDetail" parameterType="MmsKitCheckDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO mms_kit_check_detail (
+            kit_id, material_id, material_code, material_name, spec_model, unit,
+            required_qty, available_qty, shortage_qty, is_complete, del_flag,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{kitId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{requiredQty}, #{availableQty}, #{shortageQty}, #{isComplete}, #{delFlag},
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateKitCheckDetail" parameterType="MmsKitCheckDetail">
+        UPDATE mms_kit_check_detail SET
+            available_qty = #{availableQty},
+            shortage_qty  = #{shortageQty},
+            is_complete   = #{isComplete},
+            update_by      = #{updateBy},
+            update_time    = #{updateTime}
+        WHERE detail_id = #{detailId}
+    </update>
+
+    <delete id="deleteKitCheckDetailByKitId" parameterType="Long">
+        UPDATE mms_kit_check_detail SET del_flag = '2' WHERE kit_id = #{kitId}
+    </delete>
+
+    <!-- 查询物料可用库存总量（跨模块查询 wms_inventory） -->
+    <select id="selectAvailableQtyByMaterialId" parameterType="Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(i.qty - i.lock_qty), 0)
+        FROM wms_inventory i
+        WHERE i.material_id = #{materialId} AND i.del_flag = '0'
+    </select>
+</mapper>

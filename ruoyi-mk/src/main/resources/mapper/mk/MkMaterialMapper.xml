@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkMaterialMapper">
+
+    <resultMap type="MkMaterial" id="MkMaterialResult">
+        <result property="materialId"     column="material_id"/>
+        <result property="materialNo"      column="material_no"/>
+        <result property="materialType"    column="material_type"/>
+        <result property="title"           column="title"/>
+        <result property="content"         column="content"/>
+        <result property="fileUrl"         column="file_url"/>
+        <result property="fileName"        column="file_name"/>
+        <result property="fileSize"        column="file_size"/>
+        <result property="tags"            column="tags"/>
+        <result property="activityId"      column="activity_id"/>
+        <result property="useCount"       column="use_count"/>
+        <result property="userId"         column="user_id"/>
+        <result property="materialStatus"  column="material_status"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+        <result property="activityName"    column="activity_name"/>
+        <result property="userName"       column="user_name"/>
+    </resultMap>
+
+    <sql id="selectMaterialVo">
+        SELECT m.material_id, m.material_no, m.material_type, m.title, m.content, m.file_url,
+               m.file_name, m.file_size, m.tags, m.activity_id, m.use_count, m.user_id,
+               m.material_status, m.del_flag, m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               a.activity_name, u.nick_name as user_name
+        FROM mk_material m
+        LEFT JOIN mk_activity a ON m.activity_id = a.activity_id
+        LEFT JOIN sys_user u ON m.user_id = u.user_id
+    </sql>
+
+    <select id="selectMaterialList" parameterType="MkMaterial" resultMap="MkMaterialResult">
+        <include refid="selectMaterialVo"/>
+        <where>
+            m.del_flag = '0'
+            <if test="materialNo != null and materialNo != ''"> AND m.material_no LIKE CONCAT('%', #{materialNo}, '%')</if>
+            <if test="materialType != null and materialType != ''"> AND m.material_type = #{materialType}</if>
+            <if test="title != null and title != ''"> AND m.title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="tags != null and tags != ''"> AND m.tags LIKE CONCAT('%', #{tags}, '%')</if>
+            <if test="activityId != null"> AND m.activity_id = #{activityId}</if>
+            <if test="userId != null"> AND m.user_id = #{userId}</if>
+            <if test="materialStatus != null and materialStatus != ''"> AND m.material_status = #{materialStatus}</if>
+        </where>
+        ORDER BY m.material_id DESC
+    </select>
+
+    <select id="selectMaterialById" parameterType="Long" resultMap="MkMaterialResult">
+        <include refid="selectMaterialVo"/> WHERE m.material_id = #{materialId}
+    </select>
+
+    <insert id="insertMaterial" parameterType="MkMaterial" useGeneratedKeys="true" keyProperty="materialId">
+        INSERT INTO mk_material (material_no, material_type, title, content, file_url, file_name,
+            file_size, tags, activity_id, use_count, user_id, material_status, create_by, create_time, remark)
+        VALUES (#{materialNo}, #{materialType}, #{title}, #{content}, #{fileUrl}, #{fileName},
+            #{fileSize}, #{tags}, #{activityId}, IFNULL(#{useCount}, 0), #{userId}, #{materialStatus}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateMaterial" parameterType="MkMaterial">
+        UPDATE mk_material
+        <set>
+            <if test="materialNo != null and materialNo != ''">material_no = #{materialNo},</if>
+            <if test="materialType != null and materialType != ''">material_type = #{materialType},</if>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="useCount != null">use_count = #{useCount},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="materialStatus != null and materialStatus != ''">material_status = #{materialStatus},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE material_id = #{materialId}
+    </update>
+
+    <update id="deleteMaterialByIds" parameterType="Long">
+        UPDATE mk_material SET del_flag = '2' WHERE material_id IN
+        <foreach item="materialId" collection="array" open="(" separator="," close=")">#{materialId}</foreach>
+    </update>
+
+    <update id="updateUseCount">
+        UPDATE mk_material SET use_count = GREATEST(IFNULL(use_count, 0) + #{delta}, 0), update_time = sysdate()
+        WHERE material_id IN
+        <foreach item="materialId" collection="materialIds" open="(" separator="," close=")">#{materialId}</foreach>
+    </update>
+
+</mapper>

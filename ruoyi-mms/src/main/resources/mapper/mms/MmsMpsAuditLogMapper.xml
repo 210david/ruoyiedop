@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsMpsAuditLogMapper">
+
+    <resultMap type="MmsMpsAuditLog" id="MmsMpsAuditLogResult">
+        <result property="logId"        column="log_id"/>
+        <result property="mpsId"        column="mps_id"/>
+        <result property="auditAction"  column="audit_action"/>
+        <result property="auditBy"      column="audit_by"/>
+        <result property="auditTime"    column="audit_time"/>
+        <result property="auditRemark"  column="audit_remark"/>
+    </resultMap>
+
+    <select id="selectAuditLogByMpsId" parameterType="Long" resultMap="MmsMpsAuditLogResult">
+        SELECT log_id, mps_id, audit_action, audit_by, audit_time, audit_remark
+        FROM mms_mps_audit_log
+        WHERE mps_id = #{mpsId}
+        ORDER BY log_id ASC
+    </select>
+
+    <insert id="insertAuditLog" parameterType="MmsMpsAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mms_mps_audit_log (mps_id, audit_action, audit_by, audit_time, audit_remark)
+        VALUES (#{mpsId}, #{auditAction}, #{auditBy}, sysdate(), #{auditRemark})
+    </insert>
+
+</mapper>

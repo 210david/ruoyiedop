@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsAqlPlanMapper">
+    <resultMap type="QmsAqlPlan" id="QmsAqlPlanResult">
+        <id property="planId" column="plan_id"/>
+        <result property="aqlLevel" column="aql_level"/>
+        <result property="codeLetter" column="code_letter"/>
+        <result property="sampleSize" column="sample_size"/>
+        <result property="acVal" column="ac_val"/>
+        <result property="reVal" column="re_val"/>
+        <result property="inspectLevel" column="inspect_level"/>
+        <result property="batchMin" column="batch_min"/>
+        <result property="batchMax" column="batch_max"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select plan_id, aql_level, code_letter, sample_size, ac_val, re_val, inspect_level, batch_min, batch_max, status, del_flag, create_by, create_time, update_by, update_time, remark from qms_aql_plan</sql>
+
+    <select id="selectAqlPlanList" parameterType="QmsAqlPlan" resultMap="QmsAqlPlanResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="aqlLevel != null and aqlLevel != ''">and aql_level = #{aqlLevel}</if>
+            <if test="codeLetter != null and codeLetter != ''">and code_letter = #{codeLetter}</if>
+            <if test="inspectLevel != null and inspectLevel != ''">and inspect_level = #{inspectLevel}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by aql_level, code_letter
+    </select>
+
+    <select id="selectAqlPlanById" parameterType="Long" resultMap="QmsAqlPlanResult">
+        <include refid="selectVo"/> where plan_id = #{planId} and del_flag = '0'
+    </select>
+
+    <select id="selectByAqlAndCode" resultMap="QmsAqlPlanResult">
+        <include refid="selectVo"/> where aql_level = #{aqlLevel} and code_letter = #{codeLetter} and inspect_level = #{inspectLevel} and del_flag = '0' and status = '0'
+    </select>
+
+    <insert id="insertAqlPlan" parameterType="QmsAqlPlan" useGeneratedKeys="true" keyProperty="planId">
+        insert into qms_aql_plan(aql_level, code_letter, sample_size, ac_val, re_val, inspect_level, batch_min, batch_max, status, del_flag, create_by, create_time, remark)
+        values(#{aqlLevel}, #{codeLetter}, #{sampleSize}, #{acVal}, #{reVal}, #{inspectLevel}, #{batchMin}, #{batchMax}, #{status}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateAqlPlan" parameterType="QmsAqlPlan">
+        update qms_aql_plan
+        <set>
+            <if test="aqlLevel != null">aql_level = #{aqlLevel},</if>
+            <if test="codeLetter != null">code_letter = #{codeLetter},</if>
+            <if test="sampleSize != null">sample_size = #{sampleSize},</if>
+            <if test="acVal != null">ac_val = #{acVal},</if>
+            <if test="reVal != null">re_val = #{reVal},</if>
+            <if test="inspectLevel != null">inspect_level = #{inspectLevel},</if>
+            <if test="batchMin != null">batch_min = #{batchMin},</if>
+            <if test="batchMax != null">batch_max = #{batchMax},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where plan_id = #{planId}
+    </update>
+
+    <delete id="deleteAqlPlanByIds" parameterType="Long">
+        update qms_aql_plan set del_flag = '1' where plan_id in
+        <foreach item="planId" collection="array" open="(" separator="," close=")">#{planId}</foreach>
+    </delete>
+</mapper>

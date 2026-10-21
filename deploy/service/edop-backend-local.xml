@@ -1,0 +1,22 @@
+<service>
+  <id>EDOP-Backend</id>
+  <name>EDOP Backend Service</name>
+  <description>EDOP Spring Boot backend (port 8081)</description>
+
+  <executable>E:\Java\jdk-17.0.4\bin\java.exe</executable>
+  <arguments>-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Xms512m -Xmx1024m -jar "E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin\target\ruoyi-admin.jar"</arguments>
+
+  <workingdirectory>E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin</workingdirectory>
+
+  <logpath>E:\AIcode\EDOP\RuoYi\RuoYi-Vue3\ruoyi-admin\winsw-logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+
+  <startmode>Manual</startmode>
+</service>

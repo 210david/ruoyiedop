@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmSchemeMapper">
+
+    <resultMap type="PdmScheme" id="PdmSchemeResult">
+        <result property="schemeId"     column="scheme_id"/>
+        <result property="schemeNo"     column="scheme_no"/>
+        <result property="schemeName"   column="scheme_name"/>
+        <result property="productId"    column="product_id"/>
+        <result property="productCode"  column="product_code"/>
+        <result property="productName"  column="product_name"/>
+        <result property="designGoal"   column="design_goal"/>
+        <result property="mainParams"   column="main_params"/>
+        <result property="fileUrl"      column="file_url"/>
+        <result property="schemeStatus" column="scheme_status"/>
+        <result property="finalTime"    column="final_time"/>
+        <result property="finalBy"      column="final_by"/>
+        <result property="deptId"       column="dept_id"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <resultMap type="PdmSchemeFormula" id="PdmSchemeFormulaResult">
+        <result property="formulaId" column="formula_id"/>
+        <result property="schemeId"  column="scheme_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="itemName"  column="item_name"/>
+        <result property="ratio"     column="ratio"/>
+        <result property="unit"      column="unit"/>
+        <result property="tolerance" column="tolerance"/>
+        <result property="orderNum"  column="order_num"/>
+        <result property="remark"    column="remark"/>
+    </resultMap>
+
+    <sql id="selectSchemeVo">
+        SELECT scheme_id, scheme_no, scheme_name, product_id, product_code, product_name,
+               design_goal, main_params, file_url, scheme_status, final_time, final_by,
+               dept_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pdm_scheme
+    </sql>
+
+    <select id="selectSchemeList" parameterType="PdmScheme" resultMap="PdmSchemeResult">
+        <include refid="selectSchemeVo"/>
+        <where>
+            del_flag = '0'
+            <if test="schemeNo != null and schemeNo != ''"> AND scheme_no LIKE CONCAT('%', #{schemeNo}, '%')</if>
+            <if test="schemeName != null and schemeName != ''"> AND scheme_name LIKE CONCAT('%', #{schemeName}, '%')</if>
+            <if test="productId != null"> AND product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="schemeStatus != null and schemeStatus != ''"> AND scheme_status = #{schemeStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND create_time &lt;= #{params.endTime}</if>
+            <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+        </where>
+        ORDER BY scheme_id DESC
+    </select>
+
+    <select id="selectSchemeById" parameterType="Long" resultMap="PdmSchemeResult">
+        <include refid="selectSchemeVo"/> WHERE scheme_id = #{schemeId} AND del_flag = '0'
+    </select>
+
+    <select id="selectFormulaBySchemeId" parameterType="Long" resultMap="PdmSchemeFormulaResult">
+        SELECT formula_id, scheme_id, material_id, item_name, ratio, unit, tolerance, order_num, remark
+        FROM pdm_scheme_formula WHERE scheme_id = #{schemeId} ORDER BY order_num ASC, formula_id ASC
+    </select>
+
+    <insert id="insertScheme" parameterType="PdmScheme" useGeneratedKeys="true" keyProperty="schemeId">
+        INSERT INTO pdm_scheme (scheme_no, scheme_name, product_id, product_code, product_name,
+            design_goal, main_params, file_url, scheme_status, create_by, create_time, remark)
+        VALUES (#{schemeNo}, #{schemeName}, #{productId}, #{productCode}, #{productName},
+            #{designGoal}, #{mainParams}, #{fileUrl}, #{schemeStatus}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <insert id="batchInsertFormula" parameterType="java.util.List">
+        INSERT INTO pdm_scheme_formula (scheme_id, material_id, item_name, ratio, unit, tolerance, order_num, remark)
+        VALUES
+        <foreach item="item" collection="list" separator=",">
+            (#{item.schemeId}, #{item.materialId}, #{item.itemName}, #{item.ratio}, #{item.unit}, #{item.tolerance}, #{item.orderNum}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <update id="updateScheme" parameterType="PdmScheme">
+        UPDATE pdm_scheme
+        <set>
+            <if test="schemeName != null and schemeName != ''">scheme_name = #{schemeName},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productCode != null and productCode != ''">product_code = #{productCode},</if>
+            <if test="productName != null and productName != ''">product_name = #{productName},</if>
+            <if test="designGoal != null">design_goal = #{designGoal},</if>
+            <if test="mainParams != null">main_params = #{mainParams},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="schemeStatus != null and schemeStatus != ''">scheme_status = #{schemeStatus},</if>
+            <if test="finalTime != null">final_time = #{finalTime},</if>
+            <if test="finalBy != null and finalBy != ''">final_by = #{finalBy},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE scheme_id = #{schemeId}
+    </update>
+
+    <delete id="deleteSchemeByIds" parameterType="Long">
+        UPDATE pdm_scheme SET del_flag = '2' WHERE scheme_id IN
+        <foreach item="schemeId" collection="array" open="(" separator="," close=")">#{schemeId}</foreach>
+    </delete>
+
+    <delete id="deleteFormulaBySchemeId" parameterType="Long">
+        DELETE FROM pdm_scheme_formula WHERE scheme_id = #{schemeId}
+    </delete>
+
+</mapper>

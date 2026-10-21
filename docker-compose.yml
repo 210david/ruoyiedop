@@ -1,0 +1,122 @@
+# ===================================================
+#  RuoYi-Vue Docker Compose 编排
+#  包含：后端服务 + MySQL + Redis
+#
+#  使用方法：
+#    docker-compose up -d           # 后台启动所有服务
+#    docker-compose down            # 停止并删除所有服务
+#    docker-compose logs -f ruoyi   # 查看后端日志
+#    docker-compose restart ruoyi   # 重启后端服务
+# ===================================================
+
+version: '3.8'
+
+services:
+  # ==================== RuoYi 后端服务 ====================
+  ruoyi-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ruoyi-server
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: >-
+        -Xms256m -Xmx512m
+        -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=256m
+        -XX:+UseG1GC
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/opt/ruoyi/logs/
+      # Spring 数据源配置（覆盖 application-druid.yml）
+      SPRING_DATASOURCE_DRUID_MASTER_URL: jdbc:mysql://mysql:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_DRUID_MASTER_USERNAME: root
+      SPRING_DATASOURCE_DRUID_MASTER_PASSWORD: 123456
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    volumes:
+      - ruoyi-logs:/opt/ruoyi/logs
+      - ruoyi-upload:/opt/ruoyi/uploadPath
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ruoyi-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+
+  # ==================== MySQL 数据库 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: ruoyi-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: ry-vue
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_general_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - mysql-conf:/etc/mysql/conf.d
+      # 初始化 SQL 脚本（首次启动时自动导入）
+      - ./sql:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --default-time-zone=+08:00
+      - --max_connections=200
+      - --innodb_buffer_pool_size=256M
+    networks:
+      - ruoyi-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== Redis 缓存 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: ruoyi-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - ruoyi-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ==================== 网络 ====================
+networks:
+  ruoyi-net:
+    driver: bridge
+    name: ruoyi-net
+
+# ==================== 数据卷 ====================
+volumes:
+  mysql-data:
+    name: ruoyi-mysql-data
+  mysql-conf:
+    name: ruoyi-mysql-conf
+  redis-data:
+    name: ruoyi-redis-data
+  ruoyi-logs:
+    name: ruoyi-logs
+  ruoyi-upload:
+    name: ruoyi-upload

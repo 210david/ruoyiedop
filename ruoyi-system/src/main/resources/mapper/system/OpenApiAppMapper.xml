@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.OpenApiAppMapper">
+
+    <resultMap type="OpenApiApp" id="OpenApiAppResult">
+        <result property="appId"          column="app_id"          />
+        <result property="appName"        column="app_name"        />
+        <result property="appKey"         column="app_key"         />
+        <result property="allowedModules" column="allowed_modules" />
+        <result property="status"         column="status"          />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectOpenApiAppVo">
+        select app_id, app_name, app_key, allowed_modules, status, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from openapi_app
+    </sql>
+
+    <select id="selectOpenApiAppList" parameterType="OpenApiApp" resultMap="OpenApiAppResult">
+        <include refid="selectOpenApiAppVo"/>
+        <where>
+            del_flag = '0'
+            <if test="appName != null and appName != ''"> and app_name like concat('%', #{appName}, '%')</if>
+            <if test="appKey != null and appKey != ''"> and app_key = #{appKey}</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+        </where>
+        order by app_id desc
+    </select>
+
+    <select id="selectOpenApiAppById" parameterType="Long" resultMap="OpenApiAppResult">
+        <include refid="selectOpenApiAppVo"/>
+        where app_id = #{appId} and del_flag = '0'
+    </select>
+
+    <select id="selectOpenApiAppByKey" parameterType="String" resultMap="OpenApiAppResult">
+        <include refid="selectOpenApiAppVo"/>
+        where app_key = #{appKey} and del_flag = '0' and status = '0'
+    </select>
+
+    <insert id="insertOpenApiApp" parameterType="OpenApiApp" useGeneratedKeys="true" keyProperty="appId">
+        insert into openapi_app
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="appName != null">app_name,</if>
+            <if test="appKey != null">app_key,</if>
+            <if test="allowedModules != null">allowed_modules,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="appName != null">#{appName},</if>
+            <if test="appKey != null">#{appKey},</if>
+            <if test="allowedModules != null">#{allowedModules},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateOpenApiApp" parameterType="OpenApiApp">
+        update openapi_app
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="appName != null">app_name = #{appName},</if>
+            <if test="appKey != null">app_key = #{appKey},</if>
+            <if test="allowedModules != null">allowed_modules = #{allowedModules},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where app_id = #{appId}
+    </update>
+
+    <update id="deleteOpenApiAppByIds" parameterType="Long">
+        update openapi_app set del_flag = '1' where app_id in
+        <foreach item="appId" collection="array" open="(" separator="," close=")">
+            #{appId}
+        </foreach>
+    </update>
+
+</mapper>

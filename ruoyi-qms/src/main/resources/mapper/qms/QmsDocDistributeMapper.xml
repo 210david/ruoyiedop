@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsDocDistributeMapper">
+    <resultMap type="QmsDocDistribute" id="QmsDocDistributeResult">
+        <id property="distributeId" column="distribute_id"/>
+        <result property="docId" column="doc_id"/>
+        <result property="docNo" column="doc_no"/>
+        <result property="versionNo" column="version_no"/>
+        <result property="distributeType" column="distribute_type"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="receiveTime" column="receive_time"/>
+        <result property="borrowDeadline" column="borrow_deadline"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="distStatus" column="dist_status"/>
+        <result property="watermark" column="watermark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select distribute_id, doc_id, doc_no, version_no, distribute_type, dept_id, dept_name, user_id, user_name, receive_time, borrow_deadline, return_time, dist_status, watermark, create_by, create_time, update_by, update_time, remark from qms_doc_distribute</sql>
+
+    <select id="selectDocDistributeList" parameterType="QmsDocDistribute" resultMap="QmsDocDistributeResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="docId != null">and doc_id = #{docId}</if>
+            <if test="docNo != null and docNo != ''">and doc_no = #{docNo}</if>
+            <if test="distributeType != null and distributeType != ''">and distribute_type = #{distributeType}</if>
+            <if test="distStatus != null and distStatus != ''">and dist_status = #{distStatus}</if>
+            <if test="userName != null and userName != ''">and user_name like concat('%', #{userName}, '%')</if>
+        </where>
+        order by distribute_id desc
+    </select>
+
+    <select id="selectByDocId" parameterType="Long" resultMap="QmsDocDistributeResult">
+        <include refid="selectVo"/> where doc_id = #{docId} order by distribute_id desc
+    </select>
+
+    <select id="selectDocDistributeById" parameterType="Long" resultMap="QmsDocDistributeResult">
+        <include refid="selectVo"/> where distribute_id = #{distributeId}
+    </select>
+
+    <select id="selectExpiredBorrows" resultMap="QmsDocDistributeResult">
+        <include refid="selectVo"/> where distribute_type = 'borrow' and dist_status = '1' and borrow_deadline &lt; sysdate()
+    </select>
+
+    <insert id="insertDocDistribute" parameterType="QmsDocDistribute" useGeneratedKeys="true" keyProperty="distributeId">
+        insert into qms_doc_distribute(doc_id, doc_no, version_no, distribute_type, dept_id, dept_name, user_id, user_name, receive_time, borrow_deadline, dist_status, watermark, create_by, create_time, remark)
+        values(#{docId}, #{docNo}, #{versionNo}, #{distributeType}, #{deptId}, #{deptName}, #{userId}, #{userName}, #{receiveTime}, #{borrowDeadline}, #{distStatus}, #{watermark}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateDocDistribute" parameterType="QmsDocDistribute">
+        update qms_doc_distribute
+        <set>
+            <if test="receiveTime != null">receive_time = #{receiveTime},</if>
+            <if test="returnTime != null">return_time = #{returnTime},</if>
+            <if test="distStatus != null">dist_status = #{distStatus},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where distribute_id = #{distributeId}
+    </update>
+
+    <delete id="deleteDocDistributeByIds" parameterType="Long">
+        delete from qms_doc_distribute where distribute_id in
+        <foreach item="distributeId" collection="array" open="(" separator="," close=")">#{distributeId}</foreach>
+    </delete>
+</mapper>

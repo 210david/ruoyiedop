@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrEntryAuditLogMapper">
+
+    <resultMap type="HrEntryAuditLog" id="HrEntryAuditLogResult">
+        <result property="logId"    column="log_id"    />
+        <result property="entryId"    column="entry_id"    />
+        <result property="auditAction"    column="audit_action"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditTime"    column="audit_time"    />
+        <result property="auditRemark"    column="audit_remark"    />
+    </resultMap>
+
+    <sql id="selectHrEntryAuditLogVo">
+        select log_id, entry_id, audit_action, audit_by, audit_time, audit_remark from biz_hr_entry_audit_log
+    </sql>
+
+    <select id="selectHrEntryAuditLogByLogId" parameterType="Long" resultMap="HrEntryAuditLogResult">
+        <include refid="selectHrEntryAuditLogVo"/>
+        where log_id = #{logId}
+    </select>
+
+    <select id="selectHrEntryAuditLogByEntryId" parameterType="Long" resultMap="HrEntryAuditLogResult">
+        <include refid="selectHrEntryAuditLogVo"/>
+        where entry_id = #{entryId}
+        order by audit_time asc, log_id asc
+    </select>
+
+    <insert id="insertHrEntryAuditLog" parameterType="HrEntryAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_hr_entry_audit_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="entryId != null">entry_id,</if>
+            <if test="auditAction != null">audit_action,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditTime != null">audit_time,</if>
+            <if test="auditRemark != null">audit_remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="entryId != null">#{entryId},</if>
+            <if test="auditAction != null">#{auditAction},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+            <if test="auditRemark != null">#{auditRemark},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteHrEntryAuditLogByLogId" parameterType="Long">
+        delete from biz_hr_entry_audit_log where log_id = #{logId}
+    </delete>
+
+    <delete id="deleteHrEntryAuditLogByEntryId" parameterType="Long">
+        delete from biz_hr_entry_audit_log where entry_id = #{entryId}
+    </delete>
+
+</mapper>

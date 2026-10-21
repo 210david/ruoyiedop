@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsNcrApproveLogMapper">
+
+    <resultMap type="QmsNcrApproveLog" id="QmsNcrApproveLogResult">
+        <result property="logId"           column="log_id"/>
+        <result property="ncrId"           column="ncr_id"/>
+        <result property="nodeSeq"         column="node_seq"/>
+        <result property="nodeName"        column="node_name"/>
+        <result property="approverRole"    column="approver_role"/>
+        <result property="actionType"      column="action_type"/>
+        <result property="approveOpinion"  column="approve_opinion"/>
+        <result property="approverId"      column="approver_id"/>
+        <result property="approverName"    column="approver_name"/>
+        <result property="approveTime"     column="approve_time"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+    </resultMap>
+
+    <sql id="selectApproveLogVo">
+        SELECT log_id, ncr_id, node_seq, node_name, approver_role, action_type, approve_opinion,
+               approver_id, approver_name, approve_time, create_by, create_time
+        FROM qms_ncr_approve_log
+    </sql>
+
+    <select id="selectApproveLogByNcrId" parameterType="Long" resultMap="QmsNcrApproveLogResult">
+        <include refid="selectApproveLogVo"/>
+        WHERE ncr_id = #{ncrId}
+        ORDER BY log_id ASC
+    </select>
+
+    <insert id="insertApproveLog" parameterType="QmsNcrApproveLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO qms_ncr_approve_log (
+            ncr_id, node_seq, node_name, approver_role, action_type, approve_opinion,
+            approver_id, approver_name, approve_time, create_by, create_time
+        ) VALUES (
+            #{ncrId}, #{nodeSeq}, #{nodeName}, #{approverRole}, #{actionType}, #{approveOpinion},
+            #{approverId}, #{approverName}, #{approveTime}, #{createBy}, sysdate()
+        )
+    </insert>
+
+    <delete id="deleteApproveLogByNcrId" parameterType="Long">
+        DELETE FROM qms_ncr_approve_log WHERE ncr_id = #{ncrId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysDataChangeLogMapper">
+
+	<resultMap type="SysDataChangeLog" id="SysDataChangeLogResult">
+		<id     property="id"          column="id"           />
+		<result property="entityName"  column="entity_name"  />
+		<result property="entityId"    column="entity_id"    />
+		<result property="fieldName"   column="field_name"   />
+		<result property="oldValue"    column="old_value"    />
+		<result property="newValue"    column="new_value"    />
+		<result property="changeType"  column="change_type"  />
+		<result property="operateBy"   column="operate_by"   />
+		<result property="operateTime" column="operate_time" />
+		<result property="remark"      column="remark"       />
+	</resultMap>
+
+	<insert id="insertChangeLog" parameterType="SysDataChangeLog">
+		insert into sys_data_change_log (entity_name, entity_id, field_name, old_value, new_value, change_type, operate_by, operate_time, remark)
+		values (#{entityName}, #{entityId}, #{fieldName}, #{oldValue}, #{newValue}, #{changeType}, #{operateBy}, sysdate(), #{remark})
+	</insert>
+
+	<insert id="batchInsertChangeLog" parameterType="list">
+		insert into sys_data_change_log (entity_name, entity_id, field_name, old_value, new_value, change_type, operate_by, operate_time, remark)
+		values
+		<foreach collection="list" item="item" separator=",">
+			(#{item.entityName}, #{item.entityId}, #{item.fieldName}, #{item.oldValue}, #{item.newValue}, #{item.changeType}, #{item.operateBy}, sysdate(), #{item.remark})
+		</foreach>
+	</insert>
+
+	<select id="selectByEntity" resultMap="SysDataChangeLogResult">
+		select id, entity_name, entity_id, field_name, old_value, new_value, change_type, operate_by, operate_time, remark
+		from sys_data_change_log
+		where entity_name = #{entityName} and entity_id = #{entityId}
+		order by operate_time desc
+	</select>
+
+</mapper>

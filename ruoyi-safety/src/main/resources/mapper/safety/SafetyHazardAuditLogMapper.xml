@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyHazardAuditLogMapper">
+
+    <resultMap type="SafetyHazardAuditLog" id="SafetyHazardAuditLogResult">
+        <result property="logId"        column="log_id"/>
+        <result property="hazardId"     column="hazard_id"/>
+        <result property="auditAction"  column="audit_action"/>
+        <result property="auditBy"      column="audit_by"/>
+        <result property="auditTime"    column="audit_time"/>
+        <result property="auditRemark"  column="audit_remark"/>
+    </resultMap>
+
+    <select id="selectAuditLogByHazardId" parameterType="Long" resultMap="SafetyHazardAuditLogResult">
+        SELECT log_id, hazard_id, audit_action, audit_by, audit_time, audit_remark
+        FROM biz_safety_hazard_audit_log
+        WHERE hazard_id = #{hazardId}
+        ORDER BY log_id ASC
+    </select>
+
+    <insert id="insertAuditLog" parameterType="SafetyHazardAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO biz_safety_hazard_audit_log (hazard_id, audit_action, audit_by, audit_time, audit_remark)
+        VALUES (#{hazardId}, #{auditAction}, #{auditBy}, sysdate(), #{auditRemark})
+    </insert>
+
+</mapper>

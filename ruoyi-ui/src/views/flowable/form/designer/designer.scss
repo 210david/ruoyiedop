@@ -1,0 +1,225 @@
+/* ============================================================
+   泛微式 Excel 表单设计器 — 命名空间样式（P0）
+   顶栏深蓝 #2F3C8E 为泛微参考图同款色值（用户已确认直接复刻）
+   仅在 .wm-designer 命名空间内生效，不污染 EDOP 全局规范
+   ============================================================ */
+.wm-designer {
+  --wm-blue: #2F3C8E;
+  --wm-blue-hov: #3D4AA0;
+  --wm-line: #dbe3ec;
+  --wm-head: #f1f5f9;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 560px;
+  user-select: none;
+}
+.wm-designer .wm-body { display: flex; gap: 10px; align-items: stretch; flex: 1; min-height: 0; }
+.wm-designer .wm-canvas-wrap { flex: 1; min-width: 0; border: none; border-radius: 8px; background: #fff; overflow: auto; max-height: 560px; }
+/* 画布表格撑满容器，消除大片空白 */
+.wm-designer .wm-canvas { padding: 4px 4px 8px; min-width: 100%; }
+.wm-designer table.wm-grid { border-collapse: collapse; table-layout: fixed; width: 100%; }
+/* 末尾弹性填充列：吸收多余宽度，用户列宽精确锁定（对齐 Excel 网格右延） */
+.wm-designer .wm-fill-col { width: auto; }
+.wm-designer .wm-fill-cell { background: #fbfcfe; }
+.wm-designer table.wm-grid th, .wm-designer table.wm-grid td { border: 1px solid var(--wm-line); }
+/* 边框冲突修复：collapse 模式下相邻格边框冲突裁决中，行号列右框会压过最左数据格的自定义左框、
+   表头下框会压过首行格的自定义上框（同宽同样式时左/上侧格胜出）。
+   将行号列右框与表头下框置为 none（none 优先级低于 solid，数据格边框总能在裁决中胜出）；
+   默认浅色网格线仍由数据格自身边框渲染，默认视觉无回归。
+   已通过像素级复现验证：修复前最左列左框缺失，修复后完整渲染。 */
+.wm-designer table.wm-grid .wm-rowhead { border-right: none; }
+.wm-designer table.wm-grid thead th { border-bottom: none; }
+/* 尾列弹性伸缩：已定义列宽之外的空间由尾列吸收 */
+.wm-designer table.wm-grid col.wm-fill { width: auto !important; }
+.wm-designer table.wm-grid td.wm-cell { height: 30px; }
+.wm-designer table.wm-grid thead th {
+  background: var(--wm-head); color: #475569; font-size: 11px; font-weight: 600;
+  text-align: center; padding: 2px 4px; position: sticky; top: 0; z-index: 2; cursor: pointer;
+  font-family: Consolas, monospace;
+}
+.wm-designer thead th.on, .wm-designer .wm-rowhead.on { background: #e0e7ff; color: var(--wm-blue); }
+.wm-designer .wm-corner { cursor: pointer; position: sticky; left: 0; z-index: 4; background: var(--wm-head); }
+.wm-designer .wm-rowhead {
+  background: var(--wm-head); color: #64748b; font-size: 11px; text-align: center;
+  width: 34px; min-width: 34px; cursor: pointer; position: sticky; left: 0; z-index: 1;
+  font-family: Consolas, monospace;
+}
+.wm-designer .wm-rowhead-inner { position: relative; padding: 2px 0; }
+/* 行高/列宽拖拽热区：以网格线为中心 12px，仅悬停线上才出现把手（其他位置不显示） */
+.wm-designer .wm-rz-v { position: absolute; right: -6px; top: 0; width: 12px; height: 100%; cursor: col-resize; z-index: 6; }
+.wm-designer .wm-rz-h { position: absolute; left: 0; bottom: -6px; height: 12px; width: 100%; cursor: row-resize; z-index: 6; }
+.wm-designer .wm-rz-v::before, .wm-designer .wm-rz-h::before {
+  content: ''; position: absolute; background: transparent; opacity: 0; transition: opacity .1s;
+}
+.wm-designer .wm-rz-v::before { top: 25%; left: 50%; transform: translateX(-50%); width: 3px; height: 50%; border-radius: 1px; }
+.wm-designer .wm-rz-h::before { left: 25%; top: 50%; transform: translateY(-50%); height: 3px; width: 50%; border-radius: 1px; }
+.wm-designer .wm-rz-v:hover, .wm-designer .wm-rz-h:hover { background: rgba(47, 60, 142, .14); }
+.wm-designer .wm-rz-v:hover::before, .wm-designer .wm-rz-h:hover::before { opacity: 1; background: #2F3C8E; }
+/* 行高/列宽弹窗：泛微式蓝色标题栏（容器样式，全局） */
+.wm-rz-dialog .el-dialog__header { background: #2F3C8E; padding: 10px 16px; margin-right: 0; border-radius: 8px 8px 0 0; }
+.wm-rz-dialog .el-dialog__header .wm-rz-head { display: flex; align-items: center; gap: 6px; color: #fff; font-weight: 600; font-size: 14px; }
+.wm-rz-dialog .el-dialog__headerbtn .el-dialog__close { color: #fff; }
+.wm-rz-dialog .el-dialog__headerbtn:hover .el-dialog__close { color: #ffd04b; }
+.wm-rz-dialog .el-dialog__body { padding: 16px 18px 4px; }
+.wm-rz-dialog .el-dialog__footer { padding: 6px 18px 14px; }
+/* 单元格 */
+.wm-designer .wm-cell { position: relative; padding: 3px 8px; font-size: 12px; background: #fff; vertical-align: middle; min-width: 0; }
+/* 泛微式多格选区：选区内统一浅灰底；外框用单层细线选框叠加层（.wm-selbox），四边必然完整 */
+.wm-designer .wm-cell.band { background: #e2e2e2 !important; }
+.wm-designer .wm-cell.band.sel { outline: none; box-shadow: none; }
+.wm-designer .wm-canvas { position: relative; }
+.wm-designer .wm-selbox { position: absolute; border: 1px solid #333; pointer-events: none; z-index: 3; box-sizing: border-box; }
+/* 单格选中：蓝色描边线框 */
+.wm-designer .wm-cell.sel { outline: 2px solid var(--wm-blue); outline-offset: -2px; box-shadow: 0 0 0 3px rgba(47, 60, 142, .10); z-index: 1; }
+.wm-designer .wm-cell.t-title { font-weight: 600; }
+.wm-designer .wm-cell.t-note { color: #e0342b; }
+/* 泛微式标签格默认浅蓝底：选中变白底+黑框时对比明显（泛微同款配色） */
+.wm-designer .wm-cell.t-text { background: #dbe9f6; }
+.wm-designer .ph { color: #b6c2d2; }
+.wm-designer .wm-t { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+/* 下划线/删除线修复：text-decoration 不穿透 inline-block 子元素，
+   .wm-t 因省略号需求为 inline-block，导致 td 上的 textDecoration 不生效；
+   通过 inherit 让内层文本块继承单元格的下划线/删除线样式 */
+.wm-designer .wm-cell .wm-t, .wm-designer .wm-cell .wm-ctrl b { text-decoration: inherit; }
+/* 泛微式字段格：标签列浅黄底 + 右侧控件区，画布视觉密度提升 */
+.wm-designer .wm-f { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; }
+.wm-designer .wm-f em {
+  font-style: normal; color: #5a5040; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 45%; flex: none; background: #fdf6e3; border-right: 1px solid #eadfbf;
+  padding: 2px 8px; border-radius: 2px; align-self: stretch; display: flex; align-items: center;
+}
+.wm-designer .wm-ctrl { flex: 1; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.wm-designer .wm-box { flex: 1; height: 18px; border: 1px solid var(--wm-line); border-radius: 2px; background: #fbfcfe; display: inline-block; }
+.wm-designer .wm-ico { font-style: normal; font-size: 11px; color: #94a3b8; flex: none; }
+/* 图片格：图片铺满格子、object-fit contain 等比缩放，行高列宽拖动完全不受图片限制
+   （table 单元格内 max-height:100% 不生效会按原图高撑行，必须用绝对定位方案）；
+   对齐用 object-position（左/中/右） */
+.wm-designer .wm-img-wrap { position: relative; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+.wm-designer .wm-img { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; object-fit: contain; object-position: center; display: block; }
+.wm-designer .img-left .wm-img { object-position: left center; }
+.wm-designer .img-right .wm-img { object-position: right center; }
+/* 泛微式：行列号覆盖范围内的空白格保留淡格线；仅末尾弹性填充区（行列号之外）无线 */
+.wm-designer table.wm-grid .wm-fill-cell { background: #fff; border-color: transparent; }
+/* 字段控件只做展示，不接收鼠标事件：按下/拖拽/双击统一落到单元格，保证从控件上也能框选 */
+.wm-designer .wm-f, .wm-designer .wm-f * { pointer-events: none; }
+/* 设计态字段控件聚焦态样式禁用：控件不接收焦点，选区样式统一由单元格呈现 */
+.wm-designer .wm-f * { outline: none !important; box-shadow: none !important; }
+/* 字段格属性标记：必填红星 / 编辑无标记；只读仅以控件置灰区分（虚线灰边+灰底+灰字），不加图标 */
+.wm-designer .wm-attr {
+  font-style: normal; flex: none; margin-right: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 3px;
+}
+.wm-designer .wm-attr.req { color: #f56c6c; font-weight: 700; font-size: 13px; width: 12px; }
+/* 只读字段控件置灰：虚线灰边 + 灰底 + 斜体灰字，与可编辑控件一眼区分 */
+.wm-designer .wm-f.attr-ro .wm-box { border: 1px dashed #c9d4de; background: #f4f6f8; }
+.wm-designer .wm-f.attr-ro .wm-box b { color: #9aa8b5; font-style: italic; font-weight: 400; }
+.wm-designer .wm-f.attr-ro .wm-ico { color: #b9c4cf; }
+/* 必填字段控件：浅红提示边，呼应红星 */
+.wm-designer .wm-f.attr-req .wm-box { border-color: #f3c1c1; }
+.wm-designer .wm-edit { display: block; width: 100%; height: 100%; min-height: 22px; border: 1px solid var(--wm-blue); outline: none; font-family: inherit; font-size: 12px; text-align: inherit; padding: 0 8px; box-sizing: border-box; background: #fff; }
+/* 编辑态：清零单元格内边距，输入框撑满整格、与外框贴合（泛微同款） */
+.wm-designer .wm-cell.editing { padding: 0; }
+.wm-designer.no-lines table.wm-grid th, .wm-designer.no-lines table.wm-grid td { border-color: transparent; }
+/* 右键菜单（fixed 定位） */
+.wm-ctx { position: fixed; z-index: 3000; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .14); padding: 4px; min-width: 150px; }
+.wm-ctx-i { font-size: 12px; color: #334155; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
+.wm-ctx-i:hover { background: #f1f5f9; }
+.wm-ctx-i.dis { color: #cbd5e1; cursor: not-allowed; }
+.wm-ctx-i.dis:hover { background: transparent; }
+.wm-ctx-i.danger { color: #ef4444; }
+.wm-ctx-i.danger:hover { background: #fef2f2; }
+/* 全屏预览弹窗（泛微式）：白色表单页面居中，背景灰底 */
+.wm-preview-dialog .el-dialog__body { background: #f0f2f7; height: calc(100vh - 54px); overflow: auto; padding: 12px; }
+.wm-preview-page { background: #fff; margin: 0 auto; padding: 20px 24px; border-radius: 8px; width: 100%; box-sizing: border-box; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
+.wm-preview-actions { display: flex; justify-content: center; gap: 10px; padding: 16px 0 4px; }
+/* 顶栏下拉菜单弹层（挂 body） */
+.wm-menu-popper .el-dropdown-menu__item { font-size: 12px; padding: 6px 14px; }
+.wm-menu-popper .wm-tag { margin-left: 6px; font-size: 10px; color: #94a3b8; }
+/* 最大化（泛微同款窗口控制）：画布随视口撑高，内容区尽量多展示（工具条已合并单行） */
+.wm-designer.wm-full .wm-canvas-wrap { max-height: calc(100vh - 248px); }
+.wm-designer.wm-full { min-height: calc(100vh - 230px); }
+/* 全屏时右侧面板同步撑高，消除面板下方空白 */
+.wm-designer.wm-full .wm-pp { max-height: calc(100vh - 248px) !important; }
+/* 泛微式：网格设计页无底部保存/取消（保存走顶栏），关闭走右上 X */
+.rd-no-footer .el-dialog__footer { display: none; }
+/* 全屏时压缩弹窗留白，内容区尽量多展示 */
+.el-dialog.is-fullscreen .el-dialog__body { padding: 8px 12px 10px; }
+/* 帮助抽屉内容 */
+.wm-help-list { font-size: 13px; color: #334155; line-height: 2; padding: 0 4px; }
+.wm-help-list b { color: #2F3C8E; }
+
+/* ===== 明细表占位块（参照泛微 e-cology：黄色表头 + 空白行 + Σ 合计行） ===== */
+.wm-designer .wm-detail-mini { display: flex; flex-direction: column; width: 100%; height: 100%; font-size: 11px; overflow: hidden; }
+.wm-designer .wdm-bar { display: flex; align-items: center; justify-content: space-between; background: #2F3C8E; color: #fff; font-weight: 600; padding: 3px 8px; }
+.wm-designer .wdm-bar em { font-style: normal; font-size: 10px; font-weight: 400; color: #c7d2fe; }
+.wm-designer .wdm-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-top: none; }
+.wm-designer .wdm-th { flex: 1; padding: 3px 6px; color: #92400e; font-weight: 600; border-right: 1px solid #fde68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wm-designer .wdm-th:last-child { border-right: none; }
+.wm-designer .wdm-tr { display: flex; border: 1px solid #e2e8f0; border-top: none; background: #fff; flex: 1; }
+.wm-designer .wdm-td { flex: 1; padding: 2px 6px; border-right: 1px dashed #eef2f7; text-align: center; }
+.wm-designer .wdm-td:last-child { border-right: none; }
+.wm-designer .wdm-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
+.wm-designer .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; margin-top: 4px; }
+
+/* ===== 明细表单行占位条（泛微式：画布中不展开，双击进入明细表编辑） ===== */
+.wm-designer .wm-cell .wdm-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; background: #2F3C8E; color: #fff; font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 3px; cursor: pointer; }
+.wm-designer .wm-cell .wdm-bar em { font-style: normal; font-weight: 400; font-size: 11px; color: #c7d2fe; }
+/* 明细表编辑弹窗 */
+.wm-designer .wdm-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.wm-designer .wdm-toolbar .wdm-tip { font-size: 12px; color: #94a3b8; width: 220px; line-height: 1.4; }
+.wm-designer .wdm-field-table { margin-bottom: 4px; }
+
+/* ===== 明细表展开网格（泛微式：画布内展开，列宽拖拽/列选中/必填星号/Σ 合计） ===== */
+.wm-designer .wdm-grid { display: flex; flex-direction: column; width: 100%; height: 100%; font-size: 11px; overflow: hidden; border-radius: 3px; }
+.wm-designer .wdm-bar-title { border-radius: 3px 3px 0 0; }
+.wm-designer .wdm-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-top: none; }
+.wm-designer .wdm-head .wdm-th { flex: 1 1 0; min-width: 0; position: relative; padding: 3px 6px; color: #92400e; font-weight: 600; border-right: 1px solid #fde68a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; cursor: pointer; }
+.wm-designer .wdm-head .wdm-th:last-child { border-right: none; }
+.wm-designer .wdm-head .wdm-th.sel { background: #fde68a; outline: 1px solid #d97706; }
+.wm-designer .wdm-req { color: #e0342b; font-style: normal; margin-left: 2px; }
+.wm-designer .wdm-sumi { color: #7c3aed; font-style: normal; margin-left: 2px; }
+.wm-designer .wdm-col-rz { position: absolute; right: -3px; top: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 2; }
+.wm-designer .wdm-col-rz:hover { background: rgba(217, 119, 6, .35); }
+.wm-designer .wdm-tr { display: flex; border: 1px solid #e2e8f0; border-top: none; background: #fff; flex: 1; }
+.wm-designer .wdm-td { flex: 1 1 0; min-width: 0; padding: 2px 6px; border-right: 1px dashed #eef2f7; text-align: center; }
+.wm-designer .wdm-td:last-child { border-right: none; }
+.wm-designer .wdm-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
+/* 明细表编辑弹窗：画布操作说明 */
+.wm-designer .wdm-canvas-tip { font-size: 13px; color: #334155; line-height: 1.9; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
+.wm-designer .wdm-canvas-tip b { color: #2F3C8E; }
+.wm-designer .wdm-canvas-tip .wdm-tip { margin-top: 4px; }
+
+/* ===== 独立明细编辑视图（泛微式：格式工具栏 + 返回 + 明细网格） ===== */
+/* 明细表编辑弹窗：序号拖动排序 */
+.wdm-drag-idx { display: inline-flex; align-items: center; gap: 4px; cursor: grab; color: #475569; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+.wdm-drag-idx:hover { background: #f1f5f9; }
+.wdm-drag-idx.over { background: #fef3c7; outline: 1px dashed #d97706; }
+/* 明细表编辑弹窗：名称/数据来源 */
+.wdm-head-form { padding: 0 8px; }
+
+/* ===== 明细编辑视图布局与属性面板（泛微勾选项同款） ===== */
+/* 明细表编辑弹窗：序号拖动排序 */
+.wm-designer .wdm-prop { font-size: 12px; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.wm-designer .wdm-prop .el-checkbox { margin-right: 0; }
+/* 明细字段行占位（与主表字段格同款控件占位） */
+/* 明细表编辑弹窗：序号拖动排序 */
+
+/* ===== 明细表编辑弹窗：行拖动整行高亮（弹窗 append-to-body，用普通选择器） ===== */
+.el-table .dt-row-dragging td { background: #dbe4ff !important; opacity: 1; box-shadow: inset 3px 0 0 #4f46e5; }
+.el-table .dt-row-over td { background: #fef3c7 !important; box-shadow: inset 0 2px 0 #d97706; }
+/* 明细表编辑弹窗：整行可拖手感（hover 时抓手光标 + 淡高亮） */
+.el-table.wdm-field-table .el-table__row { cursor: grab; transition: background-color .18s ease; }
+.el-table.wdm-field-table .el-table__row:hover td { background: #f5f7ff !important; }
+.el-dialog .wdm-drag-idx { display: inline-flex; align-items: center; gap: 4px; cursor: grab; color: #475569; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
+.el-dialog .wdm-drag-idx:hover { background: #f1f5f9; }
+.el-dialog .wdm-drag-idx.dragging { background: #e0e7ff; color: #4f46e5; }
+.el-dialog .wdm-head-form { padding: 0 8px; }
+.el-dialog .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+
+/* ===== 明细表编辑弹窗：拖动动画过渡（背景高亮平滑过渡 + 行位移过渡） ===== */
+.el-table.wdm-field-table td { transition: background-color .18s ease, box-shadow .18s ease; }
+.el-table.wdm-field-table .el-table__row { transition: transform .2s ease, opacity .2s ease; }
+.el-table.wdm-field-table .dt-row-over td { box-shadow: inset 0 2px 0 #d97706; }

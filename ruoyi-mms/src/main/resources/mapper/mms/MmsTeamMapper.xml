@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsTeamMapper">
+
+    <resultMap type="MmsTeam" id="MmsTeamResult">
+        <id property="teamId" column="team_id"/>
+        <result property="teamCode"     column="team_code"/>
+        <result property="teamName"     column="team_name"/>
+        <result property="resourceId"     column="resource_id"/>
+        <result property="resourceName"     column="resource_name"/>
+        <result property="leader"     column="leader"/>
+        <result property="phone"     column="phone"/>
+        <result property="memberCount"     column="member_count"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectTeamVo">
+        SELECT t.team_id, t.team_code, t.team_name, t.resource_id, t.leader, t.phone, t.member_count,
+               t.status, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+               r.resource_name
+        FROM mms_team t
+        LEFT JOIN mms_resource r ON t.resource_id = r.resource_id
+    </sql>
+
+    <select id="selectTeamList" parameterType="MmsTeam" resultMap="MmsTeamResult">
+        <include refid="selectTeamVo"/>
+        <where>
+            t.del_flag = '0'
+            <if test="teamCode != null and teamCode != ''"> AND t.team_code LIKE CONCAT('%', #{teamCode}, '%')</if>
+            <if test="teamName != null and teamName != ''"> AND t.team_name LIKE CONCAT('%', #{teamName}, '%')</if>
+            <if test="resourceId != null"> AND t.resource_id = #{resourceId}</if>
+            <if test="resourceName != null and resourceName != ''"> AND r.resource_name LIKE CONCAT('%', #{resourceName}, '%')</if>
+            <if test="leader != null and leader != ''"> AND t.leader LIKE CONCAT('%', #{leader}, '%')</if>
+            <if test="status != null and status != ''"> AND t.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(t.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(t.create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY t.team_id DESC
+    </select>
+
+    <select id="selectTeamById" parameterType="Long" resultMap="MmsTeamResult">
+        <include refid="selectTeamVo"/>
+        WHERE t.team_id = #{teamId}
+    </select>
+
+    <insert id="insertTeam" parameterType="MmsTeam" useGeneratedKeys="true" keyProperty="teamId">
+        INSERT INTO mms_team (
+            team_code,
+            team_name,
+            resource_id,
+            leader,
+            phone,
+            member_count,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{teamCode},
+            #{teamName},
+            #{resourceId},
+            #{leader},
+            #{phone},
+            #{memberCount},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateTeam" parameterType="MmsTeam">
+        UPDATE mms_team SET
+            team_name = #{teamName},
+            resource_id = #{resourceId},
+            leader = #{leader},
+            phone = #{phone},
+            member_count = #{memberCount},
+            status = #{status},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE team_id = #{teamId}
+    </update>
+
+    <delete id="deleteTeamByIds" parameterType="Long">
+        UPDATE mms_team SET del_flag = '2' WHERE team_id IN
+        <foreach collection="array" item="teamId" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </delete>
+</mapper>

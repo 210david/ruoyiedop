@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkActivityStatusLogMapper">
+
+    <resultMap type="MkActivityStatusLog" id="MkActivityStatusLogResult">
+        <result property="logId"          column="log_id"/>
+        <result property="activityId"     column="activity_id"/>
+        <result property="fromStatus"     column="from_status"/>
+        <result property="toStatus"       column="to_status"/>
+        <result property="operatorId"     column="operator_id"/>
+        <result property="operatorName"   column="operator_name"/>
+        <result property="activityName"   column="activity_name"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <select id="selectStatusLogList" resultMap="MkActivityStatusLogResult">
+        SELECT l.log_id, l.activity_id, l.from_status, l.to_status, l.operator_id, l.operator_name,
+               l.create_time, l.remark, a.activity_name
+        FROM mk_activity_status_log l
+        LEFT JOIN mk_activity a ON l.activity_id = a.activity_id
+        WHERE l.activity_id = #{activityId}
+        ORDER BY l.log_id DESC
+    </select>
+
+    <insert id="insertStatusLog" parameterType="MkActivityStatusLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_activity_status_log (activity_id, from_status, to_status, operator_id, operator_name, create_time, remark)
+        VALUES (#{activityId}, #{fromStatus}, #{toStatus}, #{operatorId}, #{operatorName}, sysdate(), #{remark})
+    </insert>
+
+</mapper>

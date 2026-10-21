@@ -1,0 +1,65 @@
+# 数据源配置
+spring:
+    datasource:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        druid:
+            # 主库数据源
+            master:
+                url: jdbc:mysql://localhost:3306/ruoyi_lyjs?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+                username: root
+                # Druid 加密密码（明文 ZBrj@2026，与生产一致；更换方式: java -cp druid-1.2.28.jar com.alibaba.druid.filter.config.ConfigTools 新密码）
+                password: fBCDoozBjsSnNKAVF5kdOPGdIVn23UESJuY4uFsiiP5ETlKHBaxTC6itcV3Vjo9BRToDYfHFGp7KFwvZE1n2kw==
+            # 从库数据源
+            slave:
+                # 从数据源开关/默认关闭
+                enabled: false
+                url: 
+                username: 
+                password: 
+            # 初始连接数（2核4G轻量化优化）
+            initialSize: 3
+            # 最小连接池数量
+            minIdle: 3
+            # 最大连接池数量
+            maxActive: 10
+            # 配置获取连接等待超时的时间
+            maxWait: 30000
+            # 配置连接超时时间
+            connectTimeout: 30000
+            # 配置网络超时时间
+            socketTimeout: 60000
+            # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+            timeBetweenEvictionRunsMillis: 60000
+            # 配置一个连接在池中最小生存的时间，单位是毫秒
+            minEvictableIdleTimeMillis: 300000
+            # 配置一个连接在池中最大生存的时间，单位是毫秒
+            maxEvictableIdleTimeMillis: 900000
+            # 配置检测连接是否有效
+            validationQuery: SELECT 1 FROM DUAL
+            testWhileIdle: true
+            testOnBorrow: false
+            testOnReturn: false
+            webStatFilter: 
+                enabled: true
+            statViewServlet:
+                enabled: true
+                # 设置白名单，不填则允许所有访问
+                allow:
+                url-pattern: /druid/*
+                # 控制台管理用户名和密码
+                login-username: ruoyi
+                # Druid 控制台独立密码（与数据库密码不同，控制台不支持加密存储）
+                login-password: RSFC8cfmnmfdI5i42nkn
+            filter:
+                stat:
+                    enabled: true
+                    # 慢SQL记录
+                    log-slow-sql: true
+                    slow-sql-millis: 1000
+                    merge-sql: true
+                wall:
+                    config:
+                        multi-statement-allow: true
+            # 连接属性配置（Druid 密码解密，公钥与上方加密串配对）
+            connection-properties: config.decrypt=true;config.decrypt.key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJK2bmc59PYLpRURKa5WFlV7DOx+uJhywChPt2LpJVTWxYkqE7jWc3QsamD8A0ISz+BIepBLXV7CGUtyhmwDWFsCAwEAAQ==

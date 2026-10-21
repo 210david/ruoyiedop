@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinCostCarryForwardMapper">
+
+    <resultMap id="FinCostCarryForwardResult" type="com.ruoyi.fin.domain.FinCostCarryForward">
+        <result property="cfId"         column="cf_id"/>
+        <result property="cfNo"         column="cf_no"/>
+        <result property="companyId"    column="company_id"/>
+        <result property="costDate"     column="cost_date"/>
+        <result property="period"       column="period"/>
+        <result property="sourceModule" column="source_module"/>
+        <result property="sourceType"   column="source_type"/>
+        <result property="sourceId"     column="source_id"/>
+        <result property="materialId"   column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="qty"          column="qty"/>
+        <result property="unitCost"     column="unit_cost"/>
+        <result property="totalCost"    column="total_cost"/>
+        <result property="targetType"   column="target_type"/>
+        <result property="targetKey"    column="target_key"/>
+        <result property="voucherId"    column="voucher_id"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectCarryVo">
+        SELECT cf_id, cf_no, company_id, cost_date, period,
+               source_module, source_type, source_id, material_id, material_code,
+               qty, unit_cost, total_cost, target_type, target_key, voucher_id,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_cost_carry_forward
+    </sql>
+
+    <select id="selectCarryList" parameterType="com.ruoyi.fin.domain.FinCostCarryForward"
+            resultMap="FinCostCarryForwardResult">
+        <include refid="selectCarryVo"/>
+        <where>
+            <if test="period != null and period != ''">
+                AND period = #{period}
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND source_type = #{sourceType}
+            </if>
+            <if test="targetType != null and targetType != ''">
+                AND target_type = #{targetType}
+            </if>
+            <if test="materialCode != null and materialCode != ''">
+                AND material_code LIKE CONCAT('%', #{materialCode}, '%')
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY cost_date DESC, cf_id DESC
+    </select>
+
+    <!-- 幂等回查：唯一索引冲突后用此定位已存在流水 -->
+    <select id="selectBySource" resultMap="FinCostCarryForwardResult">
+        <include refid="selectCarryVo"/>
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_id     = #{sourceId}
+          AND material_id   = #{materialId}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertCarry" parameterType="com.ruoyi.fin.domain.FinCostCarryForward"
+            useGeneratedKeys="true" keyProperty="cfId">
+        INSERT INTO fin_cost_carry_forward (
+            cf_no, cost_date, period, source_module, source_type, source_id,
+            material_id, material_code, qty, unit_cost, total_cost,
+            target_type, target_key, create_by, create_time, remark
+        ) VALUES (
+            #{cfNo}, #{costDate}, #{period}, #{sourceModule}, #{sourceType}, #{sourceId},
+            #{materialId}, #{materialCode}, #{qty}, #{unitCost}, #{totalCost},
+            #{targetType}, #{targetKey}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <!-- 期间结转汇总：总账成本科目取数来源 -->
+    <select id="sumByPeriod" resultType="java.util.LinkedHashMap">
+        SELECT target_type AS targetType,
+               SUM(qty) AS totalQty,
+               SUM(total_cost) AS totalCost
+        FROM fin_cost_carry_forward
+        WHERE period = #{period}
+          AND del_flag = '0'
+        GROUP BY target_type
+    </select>
+
+</mapper>

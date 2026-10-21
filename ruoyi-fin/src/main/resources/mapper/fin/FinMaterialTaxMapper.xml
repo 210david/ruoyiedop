@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinMaterialTaxMapper">
+
+    <resultMap id="FinMaterialTaxResult" type="com.ruoyi.fin.domain.FinMaterialTax">
+        <result property="materialTaxId"  column="material_tax_id"/>
+        <result property="materialId"    column="material_id"/>
+        <result property="materialCode"  column="material_code"/>
+        <result property="taxRate"       column="tax_rate"/>
+        <result property="taxIncluded"   column="tax_included"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expireDate"    column="expire_date"/>
+        <result property="companyId"     column="company_id"/>
+        <result property="status"        column="status"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectTaxVo">
+        SELECT material_tax_id, material_id, material_code, tax_rate, tax_included,
+               effective_date, expire_date, company_id, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_material_tax
+    </sql>
+
+    <select id="selectEffectiveByMaterial" parameterType="java.lang.String" resultMap="FinMaterialTaxResult">
+        <include refid="selectTaxVo"/>
+        WHERE material_code = #{materialCode}
+          AND del_flag = '0'
+          AND status = '0'
+          AND effective_date &lt;= CURDATE()
+          AND (expire_date IS NULL OR expire_date &gt;= CURDATE())
+        ORDER BY effective_date DESC
+        LIMIT 1
+    </select>
+
+    <!--
+      【P0-2 并发控制】成本写入时锁定税率档案，避免读改写竞态导致除税基数不一致。
+      对应工程既有做法：WmsInventoryMapper 的 FOR UPDATE。
+    -->
+    <select id="selectEffectiveByMaterialForUpdate" parameterType="java.lang.String" resultMap="FinMaterialTaxResult">
+        <include refid="selectTaxVo"/>
+        WHERE material_code = #{materialCode}
+          AND del_flag = '0'
+          AND status = '0'
+          AND effective_date &lt;= CURDATE()
+          AND (expire_date IS NULL OR expire_date &gt;= CURDATE())
+        ORDER BY effective_date DESC
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <!-- ========== 维护功能（税率档案页） ========== -->
+
+    <select id="selectTaxList" parameterType="com.ruoyi.fin.domain.FinMaterialTax" resultMap="FinMaterialTaxResult">
+        <include refid="selectTaxVo"/>
+        <where>
+            <if test="materialCode != null and materialCode != ''">
+                AND material_code LIKE CONCAT('%', #{materialCode}, '%')
+            </if>
+            <if test="taxRate != null">
+                AND tax_rate = #{taxRate}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY material_code, effective_date DESC
+    </select>
+
+    <select id="selectTaxById" parameterType="java.lang.Long" resultMap="FinMaterialTaxResult">
+        <include refid="selectTaxVo"/>
+        WHERE material_tax_id = #{materialTaxId} AND del_flag = '0'
+    </select>
+
+    <!-- 同一物料同一生效日不得重复建档，否则取税率时不确定取哪条 -->
+    <select id="checkDuplicate" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_material_tax
+        WHERE material_code = #{materialCode}
+          AND effective_date = #{effectiveDate}
+          AND del_flag = '0'
+        <if test="taxId != null">AND material_tax_id != #{taxId}</if>
+    </select>
+
+    <insert id="insertTax" parameterType="com.ruoyi.fin.domain.FinMaterialTax"
+            useGeneratedKeys="true" keyProperty="materialTaxId">
+        INSERT INTO fin_material_tax (
+            material_id, material_code, tax_rate, tax_included,
+            effective_date, expire_date, company_id, status,
+            create_by, create_time, remark
+        ) VALUES (
+            #{materialId}, #{materialCode}, #{taxRate}, #{taxIncluded},
+            #{effectiveDate}, #{expireDate}, #{companyId}, #{status},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateTax" parameterType="com.ruoyi.fin.domain.FinMaterialTax">
+        UPDATE fin_material_tax
+        <set>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="taxRate != null">tax_rate = #{taxRate},</if>
+            <if test="taxIncluded != null">tax_included = #{taxIncluded},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE material_tax_id = #{materialTaxId}
+    </update>
+
+    <update id="deleteTaxByIds" parameterType="java.lang.Long">
+        UPDATE fin_material_tax SET del_flag = '2', update_time = sysdate()
+        WHERE material_tax_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectTaxedMaterialCodes" resultType="java.lang.String">
+        SELECT DISTINCT material_code FROM fin_material_tax
+        WHERE del_flag = '0'
+        ORDER BY material_code
+    </select>
+
+    <!--
+      未建税率档案的物料（跨模块只读 wms_material）。
+      用于维护页提示「还有哪些物料没配税率」，避免漏配导致计价时抛 10008。
+    -->
+    <select id="selectUntaxedMaterials" resultType="java.util.LinkedHashMap">
+        SELECT m.material_id     AS materialId,
+               m.material_code   AS materialCode,
+               m.material_name   AS materialName,
+               m.spec_model      AS specModel,
+               m.unit            AS unit
+        FROM wms_material m
+        WHERE m.del_flag = '0'
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_material_tax t
+              WHERE t.material_code = m.material_code
+                AND t.del_flag = '0'
+          )
+        ORDER BY m.material_code
+        LIMIT #{limit}
+    </select>
+
+    <select id="countEffective" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_material_tax
+        WHERE del_flag = '0' AND status = '0'
+    </select>
+
+</mapper>

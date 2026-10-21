@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinBankAccountMapper">
+
+    <resultMap id="FinBankAccountResult" type="com.ruoyi.fin.domain.FinBankAccount">
+        <result property="accountId"            column="account_id"/>
+        <result property="companyId"            column="company_id"/>
+        <result property="accountCode"          column="account_code"/>
+        <result property="accountName"          column="account_name"/>
+        <result property="accountType"          column="account_type"/>
+        <result property="deptId"               column="dept_id"/>
+        <result property="bankName"             column="bank_name"/>
+        <result property="bankBranch"           column="bank_branch"/>
+        <result property="accountNumberEncrypt" column="account_number_encrypt"/>
+        <result property="accountTail"          column="account_tail"/>
+        <result property="currency"             column="currency"/>
+        <result property="openingBalance"       column="opening_balance"/>
+        <result property="currentBalance"       column="current_balance"/>
+        <result property="status"               column="status"/>
+        <result property="createBy"             column="create_by"/>
+        <result property="createTime"           column="create_time"/>
+        <result property="updateBy"             column="update_by"/>
+        <result property="updateTime"           column="update_time"/>
+        <result property="remark"               column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinCashFlowResult" type="com.ruoyi.fin.domain.FinCashFlow">
+        <result property="flowId"           column="flow_id"/>
+        <result property="flowNo"           column="flow_no"/>
+        <result property="companyId"        column="company_id"/>
+        <result property="accountId"        column="account_id"/>
+        <result property="accountName"      column="account_name"/>
+        <result property="flowDate"         column="flow_date"/>
+        <result property="period"           column="period"/>
+        <result property="deptId"           column="dept_id"/>
+        <result property="direction"        column="direction"/>
+        <result property="bizType"          column="biz_type"/>
+        <result property="amount"           column="amount"/>
+        <result property="balanceAfter"     column="balance_after"/>
+        <result property="sourceModule"     column="source_module"/>
+        <result property="sourceType"       column="source_type"/>
+        <result property="sourceId"         column="source_id"/>
+        <result property="sourceKey"        column="source_key"/>
+        <result property="voucherId"        column="voucher_id"/>
+        <result property="reconcileStatus"  column="reconcile_status"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectAccountVo">
+        SELECT account_id, company_id, account_code, account_name, account_type,
+               dept_id, bank_name, bank_branch, account_number_encrypt, account_tail,
+               currency, opening_balance, current_balance, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_bank_account
+    </sql>
+
+    <!--
+      数据权限（unified-development-standards.md 3.5.3）：
+      资金账户属主数据，共享性弱但仍需按部门可见性过滤，
+      故 Service 侧 @DataScope(deptAlias="b", userAlias="b")
+    -->
+    <select id="selectAccountList" parameterType="com.ruoyi.fin.domain.FinBankAccount" resultMap="FinBankAccountResult">
+        SELECT b.account_id, b.company_id, b.account_code, b.account_name, b.account_type,
+               b.dept_id, b.bank_name, b.bank_branch, b.account_number_encrypt, b.account_tail,
+               b.currency, b.opening_balance, b.current_balance, b.status,
+               b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM fin_bank_account b
+        <where>
+            <if test="accountName != null and accountName != ''">
+                AND b.account_name LIKE CONCAT('%', #{accountName}, '%')
+            </if>
+            <if test="accountCode != null and accountCode != ''">
+                AND b.account_code LIKE CONCAT('%', #{accountCode}, '%')
+            </if>
+            <if test="accountType != null and accountType != ''">
+                AND b.account_type = #{accountType}
+            </if>
+            <if test="status != null and status != ''">
+                AND b.status = #{status}
+            </if>
+            <if test="accountTail != null and accountTail != ''">
+                AND b.account_tail = #{accountTail}
+            </if>
+            AND b.del_flag = '0'
+            <if test="params.dataScope != null and params.dataScope != ''">
+                AND ${params.dataScope}
+            </if>
+        </where>
+        ORDER BY b.account_type, b.account_code
+    </select>
+
+    <select id="selectAccountById" parameterType="java.lang.Long" resultMap="FinBankAccountResult">
+        <include refid="selectAccountVo"/>
+        WHERE account_id = #{accountId} AND del_flag = '0'
+    </select>
+
+    <select id="selectByCode" parameterType="java.lang.String" resultMap="FinBankAccountResult">
+        <include refid="selectAccountVo"/>
+        WHERE account_code = #{accountCode} AND del_flag = '0'
+    </select>
+
+    <insert id="insertAccount" parameterType="com.ruoyi.fin.domain.FinBankAccount"
+            useGeneratedKeys="true" keyProperty="accountId">
+        INSERT INTO fin_bank_account (
+            account_code, account_name, account_type, dept_id, bank_name, bank_branch,
+            account_number_encrypt, account_tail, currency,
+            opening_balance, current_balance, status, create_by, create_time, remark
+        ) VALUES (
+            #{accountCode}, #{accountName}, #{accountType}, #{deptId}, #{bankName}, #{bankBranch},
+            #{accountNumberEncrypt}, #{accountTail}, #{currency},
+            #{openingBalance}, #{currentBalance}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateAccount" parameterType="com.ruoyi.fin.domain.FinBankAccount">
+        UPDATE fin_bank_account
+        <set>
+            <if test="accountName != null and accountName != ''">account_name = #{accountName},</if>
+            <if test="accountType != null and accountType != ''">account_type = #{accountType},</if>
+            <if test="bankName != null">bank_name = #{bankName},</if>
+            <if test="bankBranch != null">bank_branch = #{bankBranch},</if>
+            <if test="accountNumberEncrypt != null">account_number_encrypt = #{accountNumberEncrypt},</if>
+            <if test="accountTail != null">account_tail = #{accountTail},</if>
+            <if test="currency != null">currency = #{currency},</if>
+            <if test="openingBalance != null">opening_balance = #{openingBalance},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE account_id = #{accountId}
+    </update>
+
+    <!-- 有流水的账户不删除（保留流水可追溯性），Service 层据此拦截 -->
+    <update id="deleteAccountByIds" parameterType="java.lang.Long">
+        UPDATE fin_bank_account SET del_flag = '2', update_time = sysdate()
+        WHERE account_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND current_balance = 0
+    </update>
+
+    <!--
+      原子增减余额：用 SQL 内计算替代「读-改-写」。
+      delta 传带符号金额（收正付负），从根本上避免并发丢更新。
+    -->
+    <update id="updateBalance">
+        UPDATE fin_bank_account
+        SET current_balance = current_balance + #{delta},
+            update_time = sysdate()
+        WHERE account_id = #{accountId}
+          AND del_flag = '0'
+    </update>
+
+    <!-- 流水登记时锁定账户行，保证 balance_after 与余额一致 -->
+    <select id="selectAccountForUpdate" parameterType="java.lang.Long" resultMap="FinBankAccountResult">
+        <include refid="selectAccountVo"/>
+        WHERE account_id = #{accountId} AND del_flag = '0'
+        FOR UPDATE
+    </select>
+
+    <select id="selectFlowList" parameterType="com.ruoyi.fin.domain.FinCashFlow" resultMap="FinCashFlowResult">
+        SELECT f.flow_id, f.flow_no, f.company_id, f.account_id,
+               (SELECT account_name FROM fin_bank_account a WHERE a.account_id = f.account_id) AS account_name,
+               f.flow_date, f.period, f.dept_id, f.direction, f.biz_type, f.amount,
+               f.balance_after, f.source_module, f.source_type, f.source_id, f.source_key,
+               f.voucher_id, f.reconcile_status,
+               f.create_by, f.create_time, f.update_by, f.update_time, f.remark
+        FROM fin_cash_flow f
+        <where>
+            <if test="accountId != null">
+                AND f.account_id = #{accountId}
+            </if>
+            <if test="period != null and period != ''">
+                AND f.period = #{period}
+            </if>
+            <if test="direction != null and direction != ''">
+                AND f.direction = #{direction}
+            </if>
+            <if test="bizType != null and bizType != ''">
+                AND f.biz_type = #{bizType}
+            </if>
+            <if test="reconcileStatus != null and reconcileStatus != ''">
+                AND f.reconcile_status = #{reconcileStatus}
+            </if>
+            <if test="params.beginFlowDate != null and params.beginFlowDate != ''">
+                AND f.flow_date &gt;= #{params.beginFlowDate}
+            </if>
+            <if test="params.endFlowDate != null and params.endFlowDate != ''">
+                AND f.flow_date &lt;= #{params.endFlowDate}
+            </if>
+            AND f.del_flag = '0'
+        </where>
+        ORDER BY f.flow_date DESC, f.flow_id DESC
+    </select>
+
+    <insert id="insertFlow" parameterType="com.ruoyi.fin.domain.FinCashFlow"
+            useGeneratedKeys="true" keyProperty="flowId">
+        INSERT INTO fin_cash_flow (
+            flow_no, account_id, flow_date, period, dept_id,
+            direction, biz_type, amount, balance_after,
+            source_module, source_type, source_id, source_key, voucher_id, reconcile_status,
+            create_by, create_time, remark
+        ) VALUES (
+            #{flowNo}, #{accountId}, #{flowDate}, #{period}, #{deptId},
+            #{direction}, #{bizType}, #{amount}, #{balanceAfter},
+            #{sourceModule}, #{sourceType}, #{sourceId}, #{sourceKey}, #{voucherId}, #{reconcileStatus},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <select id="selectFlowBySource" resultMap="FinCashFlowResult">
+        SELECT flow_id, flow_no, account_id, flow_date, period, direction, biz_type,
+               amount, balance_after, source_module, source_type, source_id, source_key,
+               reconcile_status, create_time
+        FROM fin_cash_flow
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_id     = #{sourceId}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <!-- 资金日报：各账户当日收付 -->
+    <select id="selectDailyReport" resultType="java.util.LinkedHashMap">
+        SELECT f.account_id,
+               (SELECT account_name FROM fin_bank_account a WHERE a.account_id = f.account_id) AS accountName,
+               SUM(CASE WHEN f.direction = 'IN'  THEN f.amount ELSE 0 END) AS inAmount,
+               SUM(CASE WHEN f.direction = 'OUT' THEN f.amount ELSE 0 END) AS outAmount,
+               SUM(CASE WHEN f.direction = 'IN'  THEN f.amount ELSE -f.amount END) AS netAmount,
+               COUNT(*) AS flowCount
+        FROM fin_cash_flow f
+        WHERE f.del_flag = '0'
+          AND f.flow_date = #{date}
+        GROUP BY f.account_id
+        ORDER BY netAmount DESC
+    </select>
+
+    <!-- 期间资金汇总（总账银行存款科目取数） -->
+    <select id="sumFlowByPeriod" resultType="java.util.LinkedHashMap">
+        SELECT SUM(CASE WHEN direction = 'IN'  THEN amount ELSE 0 END) AS inAmount,
+               SUM(CASE WHEN direction = 'OUT' THEN amount ELSE 0 END) AS outAmount,
+               SUM(CASE WHEN direction = 'IN'  THEN amount ELSE -amount END) AS netAmount,
+               COUNT(*) AS flowCount
+        FROM fin_cash_flow
+        WHERE period = #{period}
+          AND del_flag = '0'
+    </select>
+
+    <update id="markFlowReconciled" parameterType="java.lang.Long">
+        UPDATE fin_cash_flow
+        SET reconcile_status = '1',
+            update_time = sysdate()
+        WHERE flow_id = #{flowId}
+          AND del_flag = '0'
+          AND reconcile_status != '1'
+    </update>
+
+    <select id="countFlowByAccount" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_cash_flow WHERE account_id = #{accountId} AND del_flag = '0'
+    </select>
+
+    <select id="sumAllBalance" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(current_balance), 0) FROM fin_bank_account WHERE del_flag = '0'
+    </select>
+
+</mapper>

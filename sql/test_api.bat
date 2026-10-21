@@ -1,0 +1,2 @@
+@echo off
+powershell -ExecutionPolicy Bypass -Command "try { $resp = Invoke-WebRequest -Uri 'http://localhost:8081/qms/dashboard/summary' -Method Get -TimeoutSec 5 -UseBasicParsing; Write-Host ('Status: ' + $resp.StatusCode); Write-Host ('Body: ' + $resp.Content.Substring(0, [Math]::Min(300, $resp.Content.Length))) } catch { Write-Host ('Error: ' + $_.Exception.Message); if ($_.Exception.Response) { Write-Host ('StatusCode: ' + [int]$_.Exception.Response.StatusCode) } }"

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkNumberRulePrefixMapper">
+
+    <resultMap type="MkNumberRulePrefix" id="MkNumberRulePrefixResult">
+        <result property="prefixId"        column="prefix_id"/>
+        <result property="ruleId"          column="rule_id"/>
+        <result property="fieldValue"      column="field_value"/>
+        <result property="fieldLabel"      column="field_label"/>
+        <result property="prefix"          column="prefix"/>
+        <result property="enabled"         column="enabled"/>
+        <result property="currentSeq"      column="current_seq"/>
+        <result property="currentDateStr"  column="current_date_str"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+    </resultMap>
+
+    <sql id="selectPrefixVo">
+        SELECT prefix_id, rule_id, field_value, field_label, prefix, enabled,
+               current_seq, current_date_str,
+               create_by, create_time, update_by, update_time
+        FROM mk_number_rule_prefix
+    </sql>
+
+    <select id="selectPrefixListByRuleId" parameterType="Long" resultMap="MkNumberRulePrefixResult">
+        <include refid="selectPrefixVo"/>
+        WHERE rule_id = #{ruleId}
+        ORDER BY prefix_id
+    </select>
+
+    <insert id="insertPrefix" parameterType="MkNumberRulePrefix" useGeneratedKeys="true" keyProperty="prefixId">
+        INSERT INTO mk_number_rule_prefix (
+            rule_id, field_value, field_label, prefix, enabled, current_seq, current_date_str, create_by, create_time
+        ) VALUES (
+            #{ruleId}, #{fieldValue}, #{fieldLabel}, #{prefix}, #{enabled}, 0, '', #{createBy}, sysdate()
+        )
+    </insert>
+
+    <delete id="deletePrefixByRuleId" parameterType="Long">
+        DELETE FROM mk_number_rule_prefix WHERE rule_id = #{ruleId}
+    </delete>
+
+    <select id="selectEnabledPrefix" resultMap="MkNumberRulePrefixResult">
+        <include refid="selectPrefixVo"/>
+        WHERE rule_id = #{ruleId}
+          AND field_value = #{fieldValue}
+          AND enabled = '1'
+        LIMIT 1
+    </select>
+
+    <select id="selectEnabledPrefixForUpdate" resultMap="MkNumberRulePrefixResult">
+        <include refid="selectPrefixVo"/>
+        WHERE rule_id = #{ruleId}
+          AND field_value = #{fieldValue}
+          AND enabled = '1'
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
+    <update id="updatePrefixSeq" parameterType="MkNumberRulePrefix">
+        UPDATE mk_number_rule_prefix
+        SET current_seq = #{currentSeq},
+            current_date_str = #{currentDateStr},
+            update_time = sysdate()
+        WHERE prefix_id = #{prefixId}
+    </update>
+
+</mapper>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsRequestAuditLogMapper">
+
+    <resultMap type="PmsRequestAuditLog" id="PmsRequestAuditLogResult">
+        <result property="logId"        column="log_id"/>
+        <result property="requestId"    column="request_id"/>
+        <result property="auditAction"  column="audit_action"/>
+        <result property="auditBy"      column="audit_by"/>
+        <result property="auditTime"    column="audit_time"/>
+        <result property="auditRemark"  column="audit_remark"/>
+    </resultMap>
+
+    <select id="selectAuditLogByRequestId" parameterType="Long" resultMap="PmsRequestAuditLogResult">
+        SELECT log_id, request_id, audit_action, audit_by, audit_time, audit_remark
+        FROM pms_request_audit_log
+        WHERE request_id = #{requestId}
+        ORDER BY log_id ASC
+    </select>
+
+    <insert id="insertAuditLog" parameterType="PmsRequestAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO pms_request_audit_log (request_id, audit_action, audit_by, audit_time, audit_remark)
+        VALUES (#{requestId}, #{auditAction}, #{auditBy}, sysdate(), #{auditRemark})
+    </insert>
+
+</mapper>

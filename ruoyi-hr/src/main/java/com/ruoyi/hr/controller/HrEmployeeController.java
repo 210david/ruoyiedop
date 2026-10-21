@@ -1,0 +1,102 @@
+package com.ruoyi.hr.controller;
+
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.hr.domain.HrEmployee;
+import com.ruoyi.hr.service.IHrEmployeeService;
+import jakarta.servlet.http.HttpServletResponse;
+
+@RestController
+@RequestMapping("/hr/employee")
+public class HrEmployeeController extends BaseController
+{
+    @Autowired
+    private IHrEmployeeService hrEmployeeService;
+
+    @PreAuthorize("@ss.hasPermi('hr:employee:list')")
+    @GetMapping("/list")
+    public TableDataInfo list(HrEmployee hrEmployee)
+    {
+        startPage();
+        List<HrEmployee> list = hrEmployeeService.selectHrEmployeeList(hrEmployee);
+        return getDataTable(list);
+    }
+
+    @Log(title = "员工档案", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('hr:employee:export')")
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, HrEmployee hrEmployee)
+    {
+        List<HrEmployee> list = hrEmployeeService.selectHrEmployeeList(hrEmployee);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, hrEmployee);
+        ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
+        util.exportExcel(response, list, "员工档案");
+    }
+
+    @Log(title = "员工档案", businessType = BusinessType.IMPORT)
+    @PreAuthorize("@ss.hasPermi('hr:employee:import')")
+    @PostMapping("/importData")
+    public AjaxResult importData(MultipartFile file, boolean updateSupport,
+            @RequestParam(value = "updateKey", required = false, defaultValue = "employeeNo") String updateKey) throws Exception
+    {
+        ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
+        List<HrEmployee> list = util.importExcel(file.getInputStream());
+        if (list == null || list.isEmpty() || list.stream().allMatch(java.util.Objects::isNull))
+        {
+            return AjaxResult.error("导入失败！请使用系统提供的标准模板填写数据，不要使用非模板格式的文件。");
+        }
+        list.removeIf(java.util.Objects::isNull);
+        String operName = getUsername();
+        return hrEmployeeService.importHrEmployee(list, updateSupport, updateKey, operName);
+    }
+
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<HrEmployee> util = new ExcelUtil<>(HrEmployee.class);
+        // 排除黑名单/关联用户/照片等无需导入的字段，使导入模板与新建表单一致
+        util.excludeFields = new String[]{"blacklistFlag", "blacklistReason", "userId", "photo", "status", "delFlag"};
+        util.importTemplateExcel(response, "员工档案数据");
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:employee:query')")
+    @GetMapping(value = "/{employeeId}")
+    public AjaxResult getInfo(@PathVariable("employeeId") Long employeeId)
+    {
+        return AjaxResult.success(hrEmployeeService.selectHrEmployeeById(employeeId));
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:employee:add')")
+    @Log(title = "员工档案", businessType = BusinessType.INSERT)
+    @PostMapping
+    public AjaxResult add(@Validated @RequestBody HrEmployee hrEmployee)
+    {
+        return toAjax(hrEmployeeService.insertHrEmployee(hrEmployee));
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:employee:edit')")
+    @Log(title = "员工档案", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@Validated @RequestBody HrEmployee hrEmployee)
+    {
+        return toAjax(hrEmployeeService.updateHrEmployee(hrEmployee));
+    }
+
+    @PreAuthorize("@ss.hasPermi('hr:employee:remove')")
+    @Log(title = "员工档案", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{employeeIds}")
+    public AjaxResult remove(@PathVariable Long[] employeeIds)
+    {
+        return toAjax(hrEmployeeService.deleteHrEmployeeByIds(employeeIds));
+    }
+}

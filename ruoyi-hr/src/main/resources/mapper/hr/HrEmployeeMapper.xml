@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrEmployeeMapper">
+
+    <resultMap type="HrEmployee" id="HrEmployeeResult">
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="gender" column="gender"/>
+        <result property="idCard" column="id_card"/>
+        <result property="birthday" column="birthday"/>
+        <result property="nation" column="nation"/>
+        <result property="politicsStatus" column="politics_status"/>
+        <result property="maritalStatus" column="marital_status"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="emergencyContact" column="emergency_contact"/>
+        <result property="emergencyPhone" column="emergency_phone"/>
+        <result property="nativePlace" column="native_place"/>
+        <result property="address" column="address"/>
+        <result property="eduLevel" column="edu_level"/>
+        <result property="graduationSchool" column="graduation_school"/>
+        <result property="major" column="major"/>
+        <result property="graduationDate" column="graduation_date"/>
+        <result property="socialWorkYears" column="social_work_years"/>
+        <result property="companyWorkYears" column="company_work_years"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="positionId" column="position_id"/>
+        <result property="positionName" column="position_name"/>
+        <result property="skillLevel" column="skill_level"/>
+        <result property="workType" column="work_type"/>
+        <result property="employeeType" column="employee_type"/>
+        <result property="entryDate" column="entry_date"/>
+        <result property="regularDate" column="regular_date"/>
+        <result property="leaveDate" column="leave_date"/>
+        <result property="employeeStatus" column="employee_status"/>
+        <result property="bankName" column="bank_name"/>
+        <result property="bankAccount" column="bank_account"/>
+        <result property="socialSecurityNo" column="social_security_no"/>
+        <result property="socialSecurityStatus" column="social_security_status"/>
+        <result property="houseFundNo" column="house_fund_no"/>
+        <result property="leaveReason" column="leave_reason"/>
+        <result property="blacklistFlag" column="blacklist_flag"/>
+        <result property="blacklistReason" column="blacklist_reason"/>
+        <result property="userId" column="user_id"/>
+        <result property="userNickName" column="user_nick_name"/>
+        <result property="userName" column="user_name"/>
+        <result property="userStatus" column="user_status"/>
+        <result property="userRoles" column="user_roles"/>
+        <result property="userLoginIp" column="user_login_ip"/>
+        <result property="userLoginDate" column="user_login_date"/>
+        <result property="userCreateTime" column="user_create_time"/>
+        <result property="photo" column="photo"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT e.*, d.dept_name AS org_name
+        FROM biz_hr_employee e
+        LEFT JOIN sys_dept d ON e.org_id = d.dept_id
+    </sql>
+
+    <select id="selectHrEmployeeList" parameterType="HrEmployee" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/>
+        <where>
+            (e.del_flag IS NULL OR e.del_flag = '0')
+            <if test="params != null and params.activeOnly != null and &quot;true&quot;.equals(params.activeOnly)"> AND e.employee_status IN ('0', '1') AND (blacklist_flag IS NULL OR e.blacklist_flag = '0')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND e.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="employeeName != null and employeeName != ''"> AND e.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="gender != null and gender != ''"> AND e.gender LIKE CONCAT('%', #{gender}, '%')</if>
+            <if test="idCard != null and idCard != ''"> AND e.id_card LIKE CONCAT('%', #{idCard}, '%')</if>
+            <if test="birthday != null"> AND e.birthday = #{birthday}</if>
+            <if test="nation != null and nation != ''"> AND e.nation LIKE CONCAT('%', #{nation}, '%')</if>
+            <if test="politicsStatus != null and politicsStatus != ''"> AND e.politics_status LIKE CONCAT('%', #{politicsStatus}, '%')</if>
+            <if test="maritalStatus != null and maritalStatus != ''"> AND e.marital_status LIKE CONCAT('%', #{maritalStatus}, '%')</if>
+            <if test="phone != null and phone != ''"> AND e.phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="email != null and email != ''"> AND e.email LIKE CONCAT('%', #{email}, '%')</if>
+            <if test="emergencyContact != null and emergencyContact != ''"> AND e.emergency_contact LIKE CONCAT('%', #{emergencyContact}, '%')</if>
+            <if test="emergencyPhone != null and emergencyPhone != ''"> AND e.emergency_phone LIKE CONCAT('%', #{emergencyPhone}, '%')</if>
+            <if test="nativePlace != null and nativePlace != ''"> AND e.native_place LIKE CONCAT('%', #{nativePlace}, '%')</if>
+            <if test="address != null and address != ''"> AND e.address LIKE CONCAT('%', #{address}, '%')</if>
+            <if test="eduLevel != null and eduLevel != ''"> AND e.edu_level LIKE CONCAT('%', #{eduLevel}, '%')</if>
+            <if test="graduationSchool != null and graduationSchool != ''"> AND e.graduation_school LIKE CONCAT('%', #{graduationSchool}, '%')</if>
+            <if test="major != null and major != ''"> AND e.major LIKE CONCAT('%', #{major}, '%')</if>
+            <if test="graduationDate != null"> AND e.graduation_date = #{graduationDate}</if>
+            <if test="socialWorkYears != null"> AND e.social_work_years = #{socialWorkYears}</if>
+            <if test="companyWorkYears != null"> AND e.company_work_years = #{companyWorkYears}</if>
+            <if test="orgId != null"> AND e.org_id = #{orgId}</if>
+            <if test="positionId != null"> AND e.position_id = #{positionId}</if>
+            <if test="positionName != null and positionName != ''"> AND e.position_name LIKE CONCAT('%', #{positionName}, '%')</if>
+            <if test="skillLevel != null and skillLevel != ''"> AND e.skill_level LIKE CONCAT('%', #{skillLevel}, '%')</if>
+            <if test="workType != null and workType != ''"> AND e.work_type LIKE CONCAT('%', #{workType}, '%')</if>
+            <if test="employeeType != null and employeeType != ''"> AND e.employee_type LIKE CONCAT('%', #{employeeType}, '%')</if>
+            <if test="entryDate != null"> AND e.entry_date = #{entryDate}</if>
+            <if test="params.beginEntryDate != null and params.beginEntryDate != ''"> AND e.entry_date &gt;= #{params.beginEntryDate}</if>
+            <if test="params.endEntryDate != null and params.endEntryDate != ''"> AND e.entry_date &lt;= #{params.endEntryDate}</if>
+            <if test="regularDate != null"> AND e.regular_date = #{regularDate}</if>
+            <if test="leaveDate != null"> AND e.leave_date = #{leaveDate}</if>
+            <if test="employeeStatus != null and employeeStatus != ''"> AND e.employee_status LIKE CONCAT('%', #{employeeStatus}, '%')</if>
+            <if test="bankName != null and bankName != ''"> AND e.bank_name LIKE CONCAT('%', #{bankName}, '%')</if>
+            <if test="bankAccount != null and bankAccount != ''"> AND e.bank_account LIKE CONCAT('%', #{bankAccount}, '%')</if>
+            <if test="socialSecurityNo != null and socialSecurityNo != ''"> AND e.social_security_no LIKE CONCAT('%', #{socialSecurityNo}, '%')</if>
+            <if test="socialSecurityStatus != null and socialSecurityStatus != ''"> AND e.social_security_status LIKE CONCAT('%', #{socialSecurityStatus}, '%')</if>
+            <if test="houseFundNo != null and houseFundNo != ''"> AND e.house_fund_no LIKE CONCAT('%', #{houseFundNo}, '%')</if>
+            <if test="leaveReason != null and leaveReason != ''"> AND e.leave_reason LIKE CONCAT('%', #{leaveReason}, '%')</if>
+            <if test="blacklistFlag != null and blacklistFlag != ''"> AND e.blacklist_flag LIKE CONCAT('%', #{blacklistFlag}, '%')</if>
+            <if test="blacklistReason != null and blacklistReason != ''"> AND e.blacklist_reason LIKE CONCAT('%', #{blacklistReason}, '%')</if>
+            <if test="userId != null"> AND e.user_id = #{userId}</if>
+            <if test="photo != null and photo != ''"> AND e.photo LIKE CONCAT('%', #{photo}, '%')</if>
+            <if test="status != null and status != ''"> AND e.status LIKE CONCAT('%', #{status}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND e.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
+        ORDER BY e.create_time DESC
+    </select>
+
+    <select id="selectHrEmployeeById" parameterType="Long" resultMap="HrEmployeeResult">
+        SELECT e.*, d.dept_name AS org_name,
+               u.user_name AS user_name, u.nick_name AS user_nick_name, u.status AS user_status,
+               u.login_ip AS user_login_ip, u.login_date AS user_login_date, u.create_time AS user_create_time,
+               (SELECT GROUP_CONCAT(r.role_name SEPARATOR '、') FROM sys_user_role ur
+                 JOIN sys_role r ON ur.role_id = r.role_id
+                 WHERE ur.user_id = e.user_id AND (r.del_flag IS NULL OR r.del_flag = '0')) AS user_roles
+        FROM biz_hr_employee e
+        LEFT JOIN sys_dept d ON e.org_id = d.dept_id
+        LEFT JOIN sys_user u ON e.user_id = u.user_id
+        WHERE e.employee_id = #{employeeId}
+    </select>
+
+    <select id="selectHrEmployeeByEmployeeNo" parameterType="String" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/> WHERE e.employee_no = #{employeeNo} AND (e.del_flag IS NULL OR e.del_flag = '0')
+    </select>
+
+    <select id="selectHrEmployeeByIdCard" parameterType="String" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/> WHERE e.id_card = #{idCard} AND (e.del_flag IS NULL OR e.del_flag = '0')
+    </select>
+
+    <insert id="insertHrEmployee" parameterType="HrEmployee" useGeneratedKeys="true" keyProperty="employeeId">
+        INSERT INTO biz_hr_employee (
+            employee_no, employee_name, gender, id_card, birthday, nation, politics_status, marital_status, phone, email, emergency_contact, emergency_phone, native_place, address, edu_level, graduation_school, major, graduation_date, social_work_years, company_work_years, org_id, position_id, position_name, skill_level, work_type, employee_type, entry_date, regular_date, leave_date, employee_status, bank_name, bank_account, social_security_no, social_security_status, house_fund_no, leave_reason, blacklist_flag, blacklist_reason, user_id, photo, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{employeeNo}, #{employeeName}, #{gender}, #{idCard}, #{birthday}, #{nation}, #{politicsStatus}, #{maritalStatus}, #{phone}, #{email}, #{emergencyContact}, #{emergencyPhone}, #{nativePlace}, #{address}, #{eduLevel}, #{graduationSchool}, #{major}, #{graduationDate}, #{socialWorkYears}, #{companyWorkYears}, #{orgId}, #{positionId}, #{positionName}, #{skillLevel}, #{workType}, #{employeeType}, #{entryDate}, #{regularDate}, #{leaveDate}, #{employeeStatus}, #{bankName}, #{bankAccount}, #{socialSecurityNo}, #{socialSecurityStatus}, #{houseFundNo}, #{leaveReason}, #{blacklistFlag}, #{blacklistReason}, #{userId}, #{photo}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrEmployee" parameterType="HrEmployee">
+        UPDATE biz_hr_employee
+        <set>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="gender != null and gender != ''">gender = #{gender},</if>
+            <if test="idCard != null and idCard != ''">id_card = #{idCard},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="nation != null and nation != ''">nation = #{nation},</if>
+            <if test="politicsStatus != null and politicsStatus != ''">politics_status = #{politicsStatus},</if>
+            <if test="maritalStatus != null and maritalStatus != ''">marital_status = #{maritalStatus},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="email != null and email != ''">email = #{email},</if>
+            <if test="emergencyContact != null and emergencyContact != ''">emergency_contact = #{emergencyContact},</if>
+            <if test="emergencyPhone != null and emergencyPhone != ''">emergency_phone = #{emergencyPhone},</if>
+            <if test="nativePlace != null and nativePlace != ''">native_place = #{nativePlace},</if>
+            <if test="address != null and address != ''">address = #{address},</if>
+            <if test="eduLevel != null and eduLevel != ''">edu_level = #{eduLevel},</if>
+            <if test="graduationSchool != null and graduationSchool != ''">graduation_school = #{graduationSchool},</if>
+            <if test="major != null and major != ''">major = #{major},</if>
+            <if test="graduationDate != null">graduation_date = #{graduationDate},</if>
+            <if test="socialWorkYears != null">social_work_years = #{socialWorkYears},</if>
+            <if test="companyWorkYears != null">company_work_years = #{companyWorkYears},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="positionId != null">position_id = #{positionId},</if>
+            <if test="positionName != null and positionName != ''">position_name = #{positionName},</if>
+            <if test="skillLevel != null and skillLevel != ''">skill_level = #{skillLevel},</if>
+            <if test="workType != null and workType != ''">work_type = #{workType},</if>
+            <if test="employeeType != null and employeeType != ''">employee_type = #{employeeType},</if>
+            <if test="entryDate != null">entry_date = #{entryDate},</if>
+            <if test="regularDate != null">regular_date = #{regularDate},</if>
+            <if test="leaveDate != null">leave_date = #{leaveDate},</if>
+            <if test="employeeStatus != null and employeeStatus != ''">employee_status = #{employeeStatus},</if>
+            <if test="bankName != null and bankName != ''">bank_name = #{bankName},</if>
+            <if test="bankAccount != null and bankAccount != ''">bank_account = #{bankAccount},</if>
+            <if test="socialSecurityNo != null and socialSecurityNo != ''">social_security_no = #{socialSecurityNo},</if>
+            <if test="socialSecurityStatus != null and socialSecurityStatus != ''">social_security_status = #{socialSecurityStatus},</if>
+            <if test="houseFundNo != null and houseFundNo != ''">house_fund_no = #{houseFundNo},</if>
+            <if test="leaveReason != null and leaveReason != ''">leave_reason = #{leaveReason},</if>
+            <if test="blacklistFlag != null and blacklistFlag != ''">blacklist_flag = #{blacklistFlag},</if>
+            <if test="blacklistReason != null and blacklistReason != ''">blacklist_reason = #{blacklistReason},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="photo != null and photo != ''">photo = #{photo},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE employee_id = #{employeeId}
+    </update>
+
+    <delete id="deleteHrEmployeeById" parameterType="Long">
+        UPDATE biz_hr_employee SET del_flag = '2' WHERE employee_id = #{employeeId}
+    </delete>
+
+    <delete id="deleteHrEmployeeByIds" parameterType="Long">
+        UPDATE biz_hr_employee SET del_flag = '2' WHERE employee_id IN
+        <foreach item="employeeId" collection="array" open="(" separator="," close=")">#{employeeId}</foreach>
+    </delete>
+
+</mapper>

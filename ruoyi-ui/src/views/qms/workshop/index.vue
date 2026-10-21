@@ -1,0 +1,562 @@
+<template>
+  <div class="app-container qms-workshop-page">
+    <!-- ===== Table Section ===== -->
+    <div class="table-layout">
+      <!-- 左侧产线结构树 -->
+      <div class="surface tree-panel" v-show="showTreePanel">
+        <div class="tree-head">
+          <div class="tree-title"><span class="glyph"></span> 产线结构</div>
+          <div class="tree-head-actions">
+            <el-tooltip content="展开/折叠" placement="top"><el-icon class="tree-act" @click="toggleTreeExpand"><Sort /></el-icon></el-tooltip>
+            <el-tooltip content="收起栏目" placement="top"><el-icon class="tree-act" @click="showTreePanel = false"><Fold /></el-icon></el-tooltip>
+          </div>
+        </div>
+        <div class="tree-search">
+          <el-input v-model="treeFilterName" placeholder="搜索名称/编码" clearable>
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+        </div>
+        <div class="tree-body">
+          <el-tree
+            ref="deptTreeRef"
+            :data="treeData"
+            node-key="workshopId"
+            :props="defaultProps"
+            default-expand-all
+            :expand-on-click-node="false"
+            :filter-node-method="filterNode"
+            highlight-current
+            @node-click="handleNodeClick">
+            <template #default="{ data }">
+              <span class="tree-node">
+                <span class="tree-icon lv1" v-if="data.nodeType === '1'"><el-icon><OfficeBuilding /></el-icon></span>
+                <span class="tree-icon lv2" v-else-if="data.nodeType === '2'"><el-icon><Share /></el-icon></span>
+                <span class="tree-icon lv3" v-else-if="data.nodeType === '3'"><el-icon><Position /></el-icon></span>
+                <span class="tree-icon lv4" v-else><el-icon><CircleCheck /></el-icon></span>
+                <span class="tree-node-name">{{ data.workshopName }}</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+      </div>
+      <button v-if="!showTreePanel" type="button" class="tree-toggle btn-soft is-outline" @click="showTreePanel = true">
+        <el-icon><Expand /></el-icon> 产线结构
+      </button>
+      <!-- 右侧表格 -->
+      <div class="table-main">
+        <!-- ===== Filter Card ===== -->
+        <div class="surface filter-card" v-show="showSearch">
+          <div class="filter-head">
+            <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+          </div>
+          <div class="filter-bar">
+            <div class="field">
+              <label>节点编码</label>
+              <div class="control">
+                <el-input v-model="queryParams.workshopCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <template #prefix><el-icon><Search /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
+            <div class="field">
+              <label>节点名称</label>
+              <div class="control">
+                <el-input v-model="queryParams.workshopName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+              </div>
+            </div>
+            <div class="field">
+              <label>层级类型</label>
+              <div class="control is-select">
+                <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in qms_workshop_node_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </div>
+            </div>
+            <div class="field">
+              <label>状态</label>
+              <div class="control is-select">
+                <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                  <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>
+            <div class="filter-buttons">
+              <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Table Section ===== -->
+        <div class="surface">
+          <div class="toolbar">
+            <div class="left">
+              <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['qms:workshop:add']">新增</el-button>
+              <button type="button" class="btn-soft is-outline" @click="toggleExpandAll">
+                <el-icon><Sort /></el-icon> 展开/折叠
+              </button>
+            </div>
+            <div class="right">
+              <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="qms_workshop_columns" />
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <el-table ref="tableRef" v-if="refreshTable" v-loading="loading" :data="workshopList" row-key="workshopId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" border @header-dragend="onHeaderDragEnd" class="app-table">
+              <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
+              <el-table-column prop="workshopName" label="节点名称" key="workshopName" :min-width="colWidth('workshopName', 220)" show-overflow-tooltip resizable v-if="columns.workshopName.visible" />
+              <el-table-column prop="workshopCode" label="节点编码" key="workshopCode" :width="colWidth('workshopCode', 160)" resizable align="center" v-if="columns.workshopCode.visible" />
+              <el-table-column label="层级类型" prop="nodeType" align="center" key="nodeType" :width="colWidth('nodeType', 120)" resizable v-if="columns.nodeType.visible">
+                <template #default="scope">
+                  <span class="badge violet"><span class="dot"></span>{{ nodeTypeLabel(scope.row.nodeType) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="工位类型" prop="stationType" align="center" key="stationType" :width="colWidth('stationType', 100)" resizable v-if="columns.stationType.visible">
+                <template #default="scope">
+                  <span v-if="scope.row.nodeType === '3'" class="badge" :class="stationTypeBadge(scope.row.stationType).cls"><span class="dot"></span>{{ stationTypeBadge(scope.row.stationType).label }}</span>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="orderNum" label="排序" key="orderNum" align="center" :width="colWidth('orderNum', 80)" resizable v-if="columns.orderNum.visible" />
+              <el-table-column label="状态" prop="status" align="center" key="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
+                <template #default="scope">
+                  <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ scope.row.status === '0' ? '正常' : '停用' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建时间" align="center" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable v-if="columns.createTime.visible">
+                <template #default="scope">
+                  <span>{{ parseTime(scope.row.createTime) }}</span>
+                </template>
+              </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['qms:workshop:add']">新增</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['qms:workshop:edit']">修改</el-button>
+                <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['qms:workshop:remove']">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+            </el-table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加或修改对话框 -->
+    <el-dialog v-model="open" width="816px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+        </div>
+      </template>
+      <el-form ref="workshopRef" :model="form" :rules="rules" label-width="100px">
+        <div class="rd-page">
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('e_basic')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>基本信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_basic }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_basic">
+              <el-form-item label="上级节点" prop="parentId" v-if="form.parentId !== 0">
+                <el-tree-select v-model="form.parentId" :data="workshopTreeOptions" :props="{ value: 'workshopId', label: 'workshopName', children: 'children' }" value-key="workshopId" placeholder="选择上级节点" check-strictly style="width: 100%" />
+              </el-form-item>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="节点编码" prop="workshopCode">
+                    <el-input v-model="form.workshopCode" placeholder="请输入节点编码" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="节点名称" prop="workshopName">
+                    <el-input v-model="form.workshopName" placeholder="请输入节点名称" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <!-- 工位特有字段 -->
+              <el-form-item v-if="form.nodeType === '3'" label="工位类型" prop="stationType" :rules="[{ required: true, message: '工位类型不能为空', trigger: 'change' }]">
+                <el-select v-model="form.stationType" placeholder="请选择" style="width: 100%">
+                  <el-option label="加工" value="0" />
+                  <el-option label="检验" value="1" />
+                  <el-option label="包装" value="2" />
+                  <el-option label="暂存" value="3" />
+                </el-select>
+              </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('e_config')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>配置信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_config }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_config">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="层级类型" prop="nodeType">
+                    <el-select v-model="form.nodeType" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="dict in qms_workshop_node_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="排序号" prop="orderNum">
+                    <el-input-number v-model="form.orderNum" controls-position="right" :min="0" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-form-item label="状态" prop="status">
+                <el-radio-group v-model="form.status">
+                  <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('e_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_other">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" />
+              </el-form-item>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup name="QmsWorkshop">
+import { listWorkshop, workshopTree, getWorkshop, addWorkshop, updateWorkshop, delWorkshop } from '@/api/qms/workshop'
+import { useColumnResize } from '@/composables/useColumnResize'
+import { useDetailCard } from '@/composables/useDetailCard'
+
+const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_workshop_index')
+const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_config', 'e_other'])
+const { sys_normal_disable, qms_workshop_node_type } = proxy.useDict('sys_normal_disable', 'qms_workshop_node_type')
+
+const workshopList = ref([])
+const treeData = ref([])
+const workshopTreeOptions = ref([])
+const deptTreeRef = ref(null)
+const open = ref(false)
+const loading = ref(true)
+const showSearch = ref(true)
+const title = ref('')
+const isExpandAll = ref(true)
+const refreshTable = ref(true)
+const treeFilterName = ref('')
+const showTreePanel = ref(true)
+const currentWorkshopId = ref(undefined)
+const defaultProps = { children: 'children', label: 'workshopName' }
+const defaultColumns = { workshopName: { label: '节点名称', visible: true }, workshopCode: { label: '节点编码', visible: true }, nodeType: { label: '层级类型', visible: true }, stationType: { label: '工位类型', visible: true }, orderNum: { label: '排序', visible: true }, status: { label: '状态', visible: true }, createTime: { label: '创建时间', visible: true } }
+function loadColumnVisibility() { try { const saved = localStorage.getItem('qms_workshop_columns'); if (saved) { const parsed = JSON.parse(saved); const result = {}; Object.keys(defaultColumns).forEach(key => { result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible } }); return result } } catch (e) {} return { ...defaultColumns } }
+const columns = ref(loadColumnVisibility())
+
+const data = reactive({
+  form: {},
+  queryParams: { workshopCode: undefined, workshopName: undefined, nodeType: undefined, status: undefined, params: {} },
+  rules: {
+    workshopCode: [{ required: true, message: '节点编码不能为空', trigger: 'blur' }],
+    workshopName: [{ required: true, message: '节点名称不能为空', trigger: 'blur' }],
+    nodeType: [{ required: true, message: '层级类型不能为空', trigger: 'change' }]
+  }
+})
+
+const { queryParams, form, rules } = toRefs(data)
+
+function nodeTypeLabel(val) { const item = qms_workshop_node_type.value.find(d => d.value == val); return item ? item.label : '-' }
+function stationTypeBadge(val) { const map = { '0': { cls: 'blue', label: '加工' }, '1': { cls: 'amber', label: '检验' }, '2': { cls: 'green', label: '包装' }, '3': { cls: 'gray', label: '暂存' } }; return map[val] || { cls: 'gray', label: '-' }; }
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.workshopCode) count++
+  if (queryParams.value.workshopName) count++
+  if (queryParams.value.nodeType) count++
+  if (queryParams.value.status) count++
+  return count
+})
+
+/** 查询列表 */
+function getList() {
+  loading.value = true
+  const params = { ...queryParams.value }
+  delete params.parentId
+  workshopTree(params).then(response => {
+    let allTree = response.data
+    if (currentWorkshopId.value) {
+      // 左侧树选中了某个节点，只显示该节点及其子树
+      workshopList.value = filterTreeById(allTree, currentWorkshopId.value) || []
+    } else {
+      workshopList.value = allTree
+    }
+    loading.value = false
+    applySavedWidths()
+  })
+}
+
+/** 从树中查找指定ID的节点及其子树 */
+function filterTreeById(tree, targetId) {
+  for (let node of tree) {
+    if (node.workshopId === targetId) {
+      return [node]
+    }
+    if (node.children && node.children.length) {
+      let result = filterTreeById(node.children, targetId)
+      if (result) return result
+    }
+  }
+  return null
+}
+
+/** 查询树 */
+function getTreeselect() {
+  workshopTree().then(response => {
+    workshopTreeOptions.value = [{ workshopId: 0, workshopName: '顶级节点', children: response.data }]
+  })
+}
+
+/** 查询产线结构树（左侧树，不包根节点） */
+function getTreeData() {
+  workshopTree().then(response => {
+    treeData.value = response.data || []
+  })
+}
+
+/** 筛选节点（支持名称/编码） */
+function filterNode(value, data) {
+  if (!value) return true
+  const v = value.toLowerCase()
+  return (data.workshopName || '').toLowerCase().includes(v) || (data.workshopCode || '').toLowerCase().includes(v)
+}
+
+/** 树展开/折叠 */
+function toggleTreeExpand() {
+  const nodes = deptTreeRef.value?.store?.nodesMap || {}
+  const first = Object.values(nodes)[0]
+  const expand = first ? !first.expanded : false
+  Object.values(nodes).forEach(n => { n.expanded = expand })
+}
+
+/** 节点单击事件 */
+function handleNodeClick(data) {
+  currentWorkshopId.value = data.workshopId
+  getList()
+}
+
+/** 搜索按钮 */
+function handleQuery() {
+  getList()
+}
+
+/** 重置按钮 */
+function resetQuery() {
+  queryParams.value.workshopCode = undefined
+  queryParams.value.workshopName = undefined
+  queryParams.value.nodeType = undefined
+  queryParams.value.status = undefined
+  currentWorkshopId.value = undefined
+  proxy.$refs['deptTreeRef'].setCurrentKey(null)
+  handleQuery()
+}
+
+/** 新增按钮 */
+function handleAdd(row) {
+  reset()
+  getTreeselect()
+  if (row != null && row.workshopId) {
+    form.value.parentId = row.workshopId
+  } else if (currentWorkshopId.value) {
+    form.value.parentId = currentWorkshopId.value
+  } else {
+    form.value.parentId = 0
+  }
+  open.value = true
+  title.value = '添加节点'
+}
+
+/** 修改按钮 */
+function handleUpdate(row) {
+  reset()
+  getTreeselect()
+  getWorkshop(row.workshopId).then(response => {
+    form.value = response.data
+    open.value = true
+    title.value = '修改节点'
+  })
+}
+
+/** 提交 */
+function submitForm() {
+  proxy.$refs['workshopRef'].validate(valid => {
+    if (valid) {
+      if (form.value.workshopId != null) {
+        updateWorkshop(form.value).then(response => {
+          proxy.$modal.msgSuccess('修改成功')
+          open.value = false
+          getList()
+          getTreeData()
+          getTreeselect()
+        })
+      } else {
+        addWorkshop(form.value).then(response => {
+          proxy.$modal.msgSuccess('新增成功')
+          open.value = false
+          getList()
+          getTreeData()
+          getTreeselect()
+        })
+      }
+    }
+  })
+}
+
+/** 删除按钮 */
+function handleDelete(row) {
+  proxy.$modal.confirm('是否确认删除节点"' + row.workshopName + '"？').then(function () {
+    return delWorkshop(row.workshopId)
+  }).then(() => {
+    // 若删除的是当前树中选中的节点，清除过滤状态并取消高亮，避免右侧表格空白
+    if (currentWorkshopId.value === row.workshopId) {
+      currentWorkshopId.value = undefined
+      deptTreeRef.value?.setCurrentKey(null)
+    }
+    getList()
+    getTreeData()
+    getTreeselect()
+    proxy.$modal.msgSuccess('删除成功')
+  }).catch(() => {})
+}
+
+/** 展开/折叠 */
+function toggleExpandAll() {
+  refreshTable.value = false
+  isExpandAll.value = !isExpandAll.value
+  nextTick(() => { refreshTable.value = true })
+}
+
+/** 表单重置 */
+function reset() {
+  form.value = {
+    workshopId: null,
+    parentId: 0,
+    workshopCode: undefined,
+    workshopName: undefined,
+    nodeType: undefined,
+    stationType: undefined,
+    orderNum: 0,
+    status: '0',
+    remark: undefined
+  }
+  proxy.resetForm('workshopRef')
+}
+
+/** 取消 */
+function cancel() {
+  open.value = false
+  reset()
+}
+
+watch(treeFilterName, val => {
+  deptTreeRef.value?.filter(val)
+})
+
+getList()
+getTreeselect()
+getTreeData()
+</script>
+
+<style scoped>
+.qms-workshop-page { padding-top: 10px; --violet-50:#f5f3ff; --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8; --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309; --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc; --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857; --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c; --r-sm:6px; --r-md:10px; --r-lg:14px; --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04); --ease-out:cubic-bezier(.16,.84,.44,1); color: var(--ink-900); }
+.qms-workshop-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+/* ===== 产线结构树（对齐仓库管理样式） ===== */
+.qms-workshop-page .table-layout { display:flex; gap:8px; align-items:flex-start; }
+.qms-workshop-page .tree-panel { flex:0 0 260px; margin-bottom:0; position:sticky; top:10px; }
+.qms-workshop-page .tree-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.qms-workshop-page .tree-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.qms-workshop-page .tree-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.qms-workshop-page .tree-head-actions { display:flex; gap:10px; }
+.qms-workshop-page .tree-act { color:var(--ink-500); cursor:pointer; font-size:16px; transition:color .15s; }
+.qms-workshop-page .tree-act:hover { color:var(--brand-600); }
+.qms-workshop-page .tree-search { padding:10px 12px 6px; }
+.qms-workshop-page .tree-body { padding:4px 8px 10px; max-height:calc(100vh - 280px); overflow-y:auto; }
+.qms-workshop-page .tree-body :deep(.el-tree) { background:transparent; }
+.qms-workshop-page .tree-body :deep(.el-tree-node__content) { height:32px; border-radius:6px; }
+.qms-workshop-page .tree-node { display:inline-flex; align-items:center; gap:7px; overflow:hidden; }
+.qms-workshop-page .tree-icon { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; flex-shrink:0; font-size:14px; }
+.qms-workshop-page .tree-icon.lv1 { background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-200); }
+.qms-workshop-page .tree-icon.lv2 { background:var(--blue-50); color:var(--blue-700); border:1px solid #bfdbfe; }
+.qms-workshop-page .tree-icon.lv3 { background:var(--amber-50); color:var(--amber-700); border:1px solid #fde68a; }
+.qms-workshop-page .tree-icon.lv4 { background:var(--green-50); color:var(--green-700); border:1px solid #a7f3d0; }
+.qms-workshop-page .tree-node-name { font-size:14px; color:var(--ink-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qms-workshop-page .tree-toggle { margin-bottom:8px; height:36px; }
+.qms-workshop-page .table-main { flex:1; min-width:0; }
+.qms-workshop-page .filter-card { padding:14px 20px 16px; }
+.qms-workshop-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.qms-workshop-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.qms-workshop-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.qms-workshop-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.qms-workshop-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.qms-workshop-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.qms-workshop-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.qms-workshop-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.qms-workshop-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.qms-workshop-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.qms-workshop-page .filter-card .filter-buttons { display:flex; gap:8px; }
+.qms-workshop-page .field { display:flex; flex-direction:column; gap:6px; }
+.qms-workshop-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.qms-workshop-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.qms-workshop-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.qms-workshop-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.qms-workshop-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.qms-workshop-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.qms-workshop-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.qms-workshop-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+.qms-workshop-page .field .control :deep(.el-select) { width:100%; }
+.qms-workshop-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.qms-workshop-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.qms-workshop-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+.qms-workshop-page .field .control :deep(.el-date-editor) { width:100%; }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range-input) { background:transparent; border:0; font-size:14px; color:var(--ink-900); }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range-separator) { color:var(--ink-400); }
+.qms-workshop-page .field .control :deep(.el-date-editor .el-range__icon) { color:var(--ink-400); }
+.qms-workshop-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.qms-workshop-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.qms-workshop-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.qms-workshop-page .btn-soft { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:14px; font-weight:500; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; user-select:none; transition:all .15s var(--ease-out); }
+.qms-workshop-page .btn-soft .el-icon { font-size:14px; }
+.qms-workshop-page .btn-soft.is-outline { background:#fff; color:var(--ink-700); border-color:var(--ink-200); }
+.qms-workshop-page .btn-soft.is-outline:hover { background:var(--ink-50); border-color:var(--ink-300); color:var(--ink-900); }
+.qms-workshop-page .table-wrap { overflow-x:auto; }
+.qms-workshop-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.qms-workshop-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.qms-workshop-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.qms-workshop-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.qms-workshop-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.qms-workshop-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.qms-workshop-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+.qms-workshop-page .badge .dot { width:6px; height:6px; border-radius:50%; }
+.qms-workshop-page .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.qms-workshop-page .badge.green .dot { background:var(--green-500); }
+.qms-workshop-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+.qms-workshop-page .badge.gray .dot { background:var(--ink-400); }
+.qms-workshop-page .badge.violet { background:var(--violet-50); color:#7c3aed; border-color:#ddd6fe; }
+.qms-workshop-page .badge.violet .dot { background:#8b5cf6; }
+.qms-workshop-page .badge.blue { background:var(--brand-50); color:var(--brand-700); border-color:#c7d2fe; }
+.qms-workshop-page .badge.blue .dot { background:var(--brand-500); }
+.qms-workshop-page .badge.amber { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.qms-workshop-page .badge.amber .dot { background:#f59e0b; }
+@media (max-width:1100px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .qms-workshop-page .filter-card .filter-bar { grid-template-columns:1fr; } .qms-workshop-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+</style>

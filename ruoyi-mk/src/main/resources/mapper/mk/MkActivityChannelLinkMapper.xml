@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkActivityChannelLinkMapper">
+
+    <resultMap type="MkActivityChannelLink" id="MkActivityChannelLinkResult">
+        <result property="linkId"       column="link_id"/>
+        <result property="activityId"   column="activity_id"/>
+        <result property="channelId"    column="channel_id"/>
+        <result property="channelCode"   column="channel_code"/>
+        <result property="clickCount"   column="click_count"/>
+        <result property="signupCount"   column="signup_count"/>
+        <result property="leadCount"    column="lead_count"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+        <result property="activityName" column="activity_name"/>
+        <result property="channelName"  column="channel_name"/>
+        <result property="channelTypeQuery" column="channel_type_query"/>
+    </resultMap>
+
+    <sql id="selectActivityChannelLinkVo">
+        SELECT l.link_id, l.activity_id, l.channel_id, l.channel_code, l.click_count, l.signup_count,
+               l.lead_count, l.del_flag, l.create_by, l.create_time, l.update_by, l.update_time, l.remark,
+               a.activity_name, c.account_name as channel_name, c.channel_type as channel_type_query
+        FROM mk_activity_channel_link l
+        LEFT JOIN mk_activity a ON l.activity_id = a.activity_id
+        LEFT JOIN mk_channel c ON l.channel_id = c.channel_id
+    </sql>
+
+    <select id="selectActivityChannelLinkList" parameterType="MkActivityChannelLink" resultMap="MkActivityChannelLinkResult">
+        <include refid="selectActivityChannelLinkVo"/>
+        <where>
+            l.del_flag = '0'
+            <if test="activityId != null"> AND l.activity_id = #{activityId}</if>
+            <if test="channelId != null"> AND l.channel_id = #{channelId}</if>
+            <if test="channelCode != null and channelCode != ''"> AND l.channel_code = #{channelCode}</if>
+        </where>
+        ORDER BY l.link_id DESC
+    </select>
+
+    <select id="selectActivityChannelLinkById" parameterType="Long" resultMap="MkActivityChannelLinkResult">
+        <include refid="selectActivityChannelLinkVo"/> WHERE l.link_id = #{linkId}
+    </select>
+
+    <select id="selectByChannelCode" resultMap="MkActivityChannelLinkResult">
+        <include refid="selectActivityChannelLinkVo"/>
+        WHERE l.channel_code = #{channelCode} AND l.del_flag = '0' LIMIT 1
+    </select>
+
+    <insert id="insertActivityChannelLink" parameterType="MkActivityChannelLink" useGeneratedKeys="true" keyProperty="linkId">
+        INSERT INTO mk_activity_channel_link (activity_id, channel_id, channel_code, click_count,
+            signup_count, lead_count, create_by, create_time, remark)
+        VALUES (#{activityId}, #{channelId}, #{channelCode}, IFNULL(#{clickCount}, 0),
+            IFNULL(#{signupCount}, 0), IFNULL(#{leadCount}, 0), #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateActivityChannelLink" parameterType="MkActivityChannelLink">
+        UPDATE mk_activity_channel_link
+        <set>
+            <if test="activityId != null">activity_id = #{activityId},</if>
+            <if test="channelId != null">channel_id = #{channelId},</if>
+            <if test="channelCode != null and channelCode != ''">channel_code = #{channelCode},</if>
+            <if test="clickCount != null">click_count = #{clickCount},</if>
+            <if test="signupCount != null">signup_count = #{signupCount},</if>
+            <if test="leadCount != null">lead_count = #{leadCount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE link_id = #{linkId}
+    </update>
+
+    <delete id="deleteActivityChannelLinkByIds" parameterType="Long">
+        DELETE FROM mk_activity_channel_link WHERE link_id IN
+        <foreach item="linkId" collection="array" open="(" separator="," close=")">#{linkId}</foreach>
+    </delete>
+
+    <update id="increaseClickCount">
+        UPDATE mk_activity_channel_link SET click_count = IFNULL(click_count, 0) + 1, update_time = sysdate()
+        WHERE link_id = #{linkId}
+    </update>
+
+    <update id="increaseSignupCount">
+        UPDATE mk_activity_channel_link SET signup_count = IFNULL(signup_count, 0) + 1, update_time = sysdate()
+        WHERE link_id = #{linkId}
+    </update>
+
+    <update id="increaseLeadCount">
+        UPDATE mk_activity_channel_link SET lead_count = IFNULL(lead_count, 0) + 1, update_time = sysdate()
+        WHERE link_id = #{linkId}
+    </update>
+
+</mapper>

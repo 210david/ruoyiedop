@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinVoucherRuleMapper">
+
+    <resultMap id="FinVoucherRuleResult" type="com.ruoyi.fin.domain.FinVoucherRule">
+        <result property="ruleId"        column="rule_id"/>
+        <result property="ruleKey"       column="rule_key"/>
+        <result property="ruleName"      column="rule_name"/>
+        <result property="sourceModule"  column="source_module"/>
+        <result property="sourceType"    column="source_type"/>
+        <result property="triggerStatus" column="trigger_status"/>
+        <result property="accountCode"   column="account_code"/>
+        <result property="direction"     column="direction"/>
+        <result property="amountExpr"    column="amount_expr"/>
+        <result property="auxType"       column="aux_type"/>
+        <result property="summaryTpl"    column="summary_tpl"/>
+        <result property="priority"      column="priority"/>
+        <result property="status"        column="status"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinPeriodResult" type="com.ruoyi.fin.domain.FinPeriod">
+        <result property="periodId"     column="period_id"/>
+        <result property="companyId"    column="company_id"/>
+        <result property="yearMonth"    column="year_month"/>
+        <result property="periodName"   column="period_name"/>
+        <result property="status"       column="status"/>
+        <result property="closeBy"      column="close_by"/>
+        <result property="closeTime"    column="close_time"/>
+        <result property="unlockBy"     column="unlock_by"/>
+        <result property="unlockTime"   column="unlock_time"/>
+        <result property="unlockReason" column="unlock_reason"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinClosingResult" type="com.ruoyi.fin.domain.FinClosing">
+        <result property="closingId"   column="closing_id"/>
+        <result property="companyId"   column="company_id"/>
+        <result property="yearMonth"   column="year_month"/>
+        <result property="deptId"      column="dept_id"/>
+        <result property="checkCode"   column="check_code"/>
+        <result property="checkName"   column="check_name"/>
+        <result property="checkResult" column="check_result"/>
+        <result property="checkDetail" column="check_detail"/>
+        <result property="checkBy"     column="check_by"/>
+        <result property="checkTime"   column="check_time"/>
+    </resultMap>
+
+    <!-- ==================== 凭证规则 ==================== -->
+
+    <select id="selectRulesBySourceType" resultMap="FinVoucherRuleResult">
+        SELECT rule_id, rule_key, rule_name, source_module, source_type, trigger_status,
+               account_code, direction, amount_expr, aux_type, summary_tpl, priority, status,
+               update_by, update_time, remark
+        FROM fin_voucher_rule
+        WHERE source_type = #{sourceType}
+          AND status = '0'
+          AND del_flag = '0'
+        ORDER BY priority, rule_id
+    </select>
+
+    <select id="selectAllRules" resultMap="FinVoucherRuleResult">
+        SELECT rule_id, rule_key, rule_name, source_module, source_type, trigger_status,
+               account_code, direction, amount_expr, aux_type, summary_tpl, priority, status,
+               update_by, update_time, remark
+        FROM fin_voucher_rule
+        WHERE del_flag = '0'
+        ORDER BY source_type, priority, rule_id
+    </select>
+
+    <select id="selectByRuleKey" resultMap="FinVoucherRuleResult">
+        SELECT rule_id, rule_key, rule_name, source_module, source_type, trigger_status,
+               account_code, direction, amount_expr, aux_type, summary_tpl, priority, status,
+               update_by, update_time, remark
+        FROM fin_voucher_rule
+        WHERE rule_key = #{ruleKey} AND del_flag = '0'
+    </select>
+
+    <update id="updateRule" parameterType="com.ruoyi.fin.domain.FinVoucherRule">
+        UPDATE fin_voucher_rule
+        <set>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            <if test="triggerStatus != null">trigger_status = #{triggerStatus},</if>
+            <if test="accountCode != null">account_code = #{accountCode},</if>
+            <if test="direction != null">direction = #{direction},</if>
+            <if test="amountExpr != null">amount_expr = #{amountExpr},</if>
+            <if test="auxType != null">aux_type = #{auxType},</if>
+            <if test="summaryTpl != null">summary_tpl = #{summaryTpl},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE rule_key = #{ruleKey}
+    </update>
+
+    <!--
+      取来源单据金额，供引擎按 amount_expr 组装配分录。
+      按 source_module 分派到不同表（跨模块只读）。
+    -->
+    <select id="selectSourceAmount" resultType="java.util.LinkedHashMap">
+        <choose>
+            <when test="sourceModule == 'pms'">
+                SELECT invoice_id      AS sourceId,
+                       invoice_no      AS sourceKey,
+                       invoice_date    AS sourceDate,
+                       total_amount    AS total_amount,
+                       invoice_amount  AS amount_excl_tax,
+                       tax_amount      AS tax_amount,
+                       supplier_id     AS partnerId,
+                       supplier_name   AS partnerName,
+                       status          AS sourceStatus
+                FROM pms_invoice
+                WHERE invoice_id = #{sourceId} AND del_flag = '0'
+            </when>
+            <when test="sourceModule == 'mk'">
+                SELECT shipment_id    AS sourceId,
+                       shipment_no    AS sourceKey,
+                       shipment_date  AS sourceDate,
+                       total_amount   AS total_amount,
+                       0              AS amount_excl_tax,
+                       0              AS tax_amount,
+                       customer_id    AS partnerId,
+                       customer_name  AS partnerName,
+                       status         AS sourceStatus
+                FROM mk_shipment
+                WHERE shipment_id = #{sourceId} AND del_flag = '0'
+            </when>
+            <otherwise>
+                SELECT NULL AS sourceId
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- ==================== 期末结账 ==================== -->
+
+    <select id="selectPeriodList" resultMap="FinPeriodResult">
+        SELECT period_id, company_id, `year_month`, period_name, status,
+               close_by, close_time, unlock_by, unlock_time, unlock_reason,
+               create_by, create_time, remark
+        FROM fin_period
+        WHERE del_flag = '0'
+        ORDER BY `year_month` DESC
+    </select>
+
+    <select id="selectPeriodByMonth" resultMap="FinPeriodResult">
+        SELECT period_id, company_id, `year_month`, period_name, status,
+               close_by, close_time, unlock_by, unlock_time, unlock_reason,
+               create_by, create_time, remark
+        FROM fin_period
+        WHERE `year_month` = #{yearMonth} AND del_flag = '0'
+    </select>
+
+    <!-- 上一期间（按年月排序的前一个），用于检查「上期已结账」 -->
+    <select id="selectPrevPeriod" resultMap="FinPeriodResult">
+        SELECT period_id, `year_month`, period_name, status
+        FROM fin_period
+        WHERE `year_month` &lt; #{yearMonth}
+          AND del_flag = '0'
+        ORDER BY `year_month` DESC
+        LIMIT 1
+    </select>
+
+    <update id="closePeriod">
+        UPDATE fin_period
+        SET status    = 'CLOSED',
+            close_by  = #{closeBy},
+            close_time = sysdate(),
+            update_time = sysdate()
+        WHERE `year_month` = #{yearMonth}
+          AND status = 'OPEN'
+          AND del_flag = '0'
+    </update>
+
+    <update id="unlockPeriod">
+        UPDATE fin_period
+        SET status        = 'OPEN',
+            unlock_by     = #{unlockBy},
+            unlock_time   = sysdate(),
+            unlock_reason = #{unlockReason},
+            update_time   = sysdate()
+        WHERE `year_month` = #{yearMonth}
+          AND status = 'CLOSED'
+          AND del_flag = '0'
+    </update>
+
+    <!-- 期间未审核凭证数（结账前置：草稿凭证必须先处理） -->
+    <select id="countDraftVoucher" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_voucher
+        WHERE period = #{yearMonth}
+          AND status = 'DRAFT'
+          AND del_flag = '0'
+    </select>
+
+    <!--
+      生成账簿：把本期发生额物化到 fin_ledger。
+      opening 取上期期末（period = prevPeriod，由 Service 计算传入，避免 SQL 里拼月份易错），
+      无上期账簿则为 0。
+    -->
+    <insert id="generateLedger">
+        INSERT INTO fin_ledger (
+            account_code, period, aux_type, aux_id,
+            opening_debit, opening_credit, period_debit, period_credit,
+            closing_debit, closing_credit, create_by, create_time, remark
+        )
+        SELECT cur.account_code,
+               #{yearMonth},
+               NULL,
+               NULL,
+               COALESCE(prev.closing_debit, 0),
+               COALESCE(prev.closing_credit, 0),
+               COALESCE(cur.debitAmount, 0),
+               COALESCE(cur.creditAmount, 0),
+               COALESCE(prev.closing_debit, 0) + COALESCE(cur.debitAmount, 0),
+               COALESCE(prev.closing_credit, 0) + COALESCE(cur.creditAmount, 0),
+               #{user}, sysdate(), '期末结账自动生成'
+        FROM (
+            SELECT e.account_code,
+                   SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+                   SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount
+            FROM fin_voucher_entry e
+            JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+            WHERE e.del_flag = '0'
+              AND v.status IN ('AUDITED', 'POSTED')
+              AND e.period = #{yearMonth}
+            GROUP BY e.account_code
+        ) cur
+        LEFT JOIN (
+            SELECT account_code, closing_debit, closing_credit
+            FROM fin_ledger
+            WHERE period = #{prevPeriod}
+              AND del_flag = '0'
+        ) prev ON prev.account_code = cur.account_code
+        WHERE NOT EXISTS (
+            SELECT 1 FROM fin_ledger l2
+            WHERE l2.account_code = cur.account_code
+              AND l2.period = #{yearMonth}
+              AND l2.del_flag = '0'
+        )
+    </insert>
+
+    <!--
+      结转损益：本期损益类科目余额归零，全部转入 4103 本年利润。
+      返回生成的结转凭证ID，0 表示本期无损益发生额。
+    -->
+    <!--
+      结转损益分录：与 insertCarryForwardVoucher 配套。
+    -->
+    <insert id="insertCarryForwardVoucher" parameterType="java.util.Map">
+        INSERT INTO fin_voucher (
+            voucher_no, voucher_date, period, voucher_type,
+            source_module, source_type, source_id, source_key, rule_key,
+            user_id, total_amount, entry_count, status, create_by, create_time, remark
+        ) VALUES (
+            #{voucherNo}, #{voucherDate}, #{yearMonth}, 'MANUAL',
+            'fin', 'carry_forward', 0, '结转损益', 'carry_forward_profit',
+            1, #{totalAmount}, #{entryCount}, 'AUDITED', #{user}, sysdate(), '期末自动结转损益'
+        )
+    </insert>
+
+    <!--
+      结转损益的分录：与carryForwardProfit 配套，需在凭证插入后按 voucher_id 写分录。
+      说明：分录需按科目逐行生成且需 voucher_id，故此处只提供「本期损益科目余额」查询，
+      由 Service 负责组装分录并调用 FinVoucherMapper.insertEntries 批量写入。
+    -->
+    <select id="selectProfitBalance" resultType="java.util.LinkedHashMap">
+        SELECT s.subject_code  AS accountCode,
+               s.subject_name  AS accountName,
+               s.direction      AS direction,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END)
+                   - SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS balance
+        FROM fin_subject s
+        JOIN fin_voucher_entry e ON e.account_code = s.subject_code AND e.del_flag = '0'
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+        WHERE s.del_flag = '0'
+          AND s.status = '0'
+          AND s.category IN ('INCOME', 'COST')
+          AND v.status IN ('AUDITED', 'POSTED')
+          AND e.period = #{yearMonth}
+        GROUP BY s.subject_code, s.subject_name, s.direction
+        HAVING balance != 0
+        ORDER BY s.subject_code
+    </select>
+
+    <insert id="insertClosing" parameterType="com.ruoyi.fin.domain.FinClosing"
+            useGeneratedKeys="true" keyProperty="closingId">
+        INSERT INTO fin_closing (
+            `year_month`, dept_id, check_code, check_name, check_result,
+            check_detail, check_by, check_time, create_by, create_time
+        ) VALUES (
+            #{yearMonth}, #{deptId}, #{checkCode}, #{checkName}, #{checkResult},
+            #{checkDetail}, #{checkBy}, sysdate(), #{checkBy}, sysdate()
+        )
+    </insert>
+
+    <select id="selectClosingList" resultMap="FinClosingResult">
+        SELECT closing_id, company_id, `year_month`, dept_id, check_code, check_name,
+               check_result, check_detail, check_by, check_time
+        FROM fin_closing
+        WHERE `year_month` = #{yearMonth} AND del_flag = '0'
+        ORDER BY closing_id
+    </select>
+
+    <update id="deleteClosingByPeriod" parameterType="java.lang.String">
+        UPDATE fin_closing SET del_flag = '2' WHERE `year_month` = #{yearMonth}
+    </update>
+
+    <select id="selectPeriodStatus" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT status FROM fin_period WHERE `year_month` = #{yearMonth} AND del_flag = '0'
+    </select>
+
+    <!-- 反结账时清理该期间账簿，避免重新结账重复生成 -->
+    <update id="deleteLedgerByPeriod" parameterType="java.lang.String">
+        UPDATE fin_ledger SET del_flag = '2', update_time = sysdate()
+        WHERE period = #{yearMonth}
+    </update>
+
+</mapper>

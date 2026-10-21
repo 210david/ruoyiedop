@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>ruoyi</artifactId>
+        <groupId>com.ruoyi</groupId>
+        <version>3.9.2</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-fin</artifactId>
+
+    <description>
+        fin 财务管理模块
+    </description>
+
+    <dependencies>
+
+        <!-- 通用工具 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-common</artifactId>
+        </dependency>
+
+        <!-- 系统模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-system</artifactId>
+        </dependency>
+
+        <!--
+          以下依赖为「只读数据源」用途。
+          【约束条款】财务模块不得调用这些模块的 Service，也不得修改其任何代码与表结构。
+          仅允许在 ruoyi-fin 自身的 FinRefMapper.xml 中以 SELECT 方式读取既有表。
+          交付前须通过 grep 校验：跨模块（fin_* 以外表）的 XML 中不得出现 INSERT/UPDATE/DELETE。
+        -->
+        <!-- 仓库管理：只读 wms_supplier / wms_material / wms_inventory / wms_inbound_order_detail -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-wms</artifactId>
+        </dependency>
+
+        <!-- 采购管理：只读 pms_invoice / pms_purchase_order / pms_receive -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-pms</artifactId>
+        </dependency>
+
+        <!-- 营销管理：只读 mk_customer / mk_shipment / mk_payment_plan -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-mk</artifactId>
+        </dependency>
+
+        <!--
+          营销管理模块：编号规则服务（IMkNumberRuleService）。
+          【已获批跨模块调用】2026-10-08 经项目负责人确认，允许调用 MK 的编号规则服务生成
+          财务单据号（凭证号/单据号）。此为「调用既有 Service」，不修改 MK 任何代码与表结构，
+          符合 unified-development-standards.md 2.6「编号规则跨模块共享」。
+          实现内部已用 SELECT ... FOR UPDATE 行锁 + @Transactional，并发安全。
+        -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-mk</artifactId>
+        </dependency>
+
+        <!-- 人力资源：只读 biz_hr_payroll_batch / biz_hr_payslip -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-hr</artifactId>
+        </dependency>
+
+        <!-- 单元测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>

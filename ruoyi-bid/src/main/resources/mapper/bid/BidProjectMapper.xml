@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bid.mapper.BidProjectMapper">
+
+    <resultMap type="BidProject" id="BidProjectResult">
+        <result property="projectId"      column="project_id"/>
+        <result property="bidNo"          column="bid_no"/>
+        <result property="noticeId"       column="notice_id"/>
+        <result property="projectName"    column="project_name"/>
+        <result property="tenderee"       column="tenderee"/>
+        <result property="agent"          column="agent"/>
+        <result property="regionCode"     column="region_code"/>
+        <result property="industry"       column="industry"/>
+        <result property="budgetAmount"   column="budget_amount"/>
+        <result property="bidAmount"      column="bid_amount"/>
+        <result property="status"         column="status"/>
+        <result property="joinType"       column="join_type"/>
+        <result property="partner"        column="partner"/>
+        <result property="applyDeadline"  column="apply_deadline"/>
+        <result property="submitDeadline" column="submit_deadline"/>
+        <result property="openTime"       column="open_time"/>
+        <result property="resultTime"     column="result_time"/>
+        <result property="failReason"     column="fail_reason"/>
+        <result property="ownerUserId"    column="owner_user_id"/>
+        <result property="ownerName"      column="owner_name"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <resultMap type="BidProjectNode" id="BidProjectNodeResult">
+        <result property="nodeId"       column="node_id"/>
+        <result property="projectId"    column="project_id"/>
+        <result property="nodeType"     column="node_type"/>
+        <result property="nodeName"     column="node_name"/>
+        <result property="planTime"     column="plan_time"/>
+        <result property="actualTime"   column="actual_time"/>
+        <result property="handlerId"    column="handler_id"/>
+        <result property="handlerName"  column="handler_name"/>
+        <result property="blockDesc"    column="block_desc"/>
+        <result property="finishFlag"   column="finish_flag"/>
+        <result property="sortOrder"    column="sort_order"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectProjectVo">
+        SELECT p.project_id, p.bid_no, p.notice_id, p.project_name, p.tenderee, p.agent, p.region_code,
+               p.industry, p.budget_amount, p.bid_amount, p.status, p.join_type, p.partner,
+               p.apply_deadline, p.submit_deadline, p.open_time, p.result_time, p.fail_reason,
+               p.owner_user_id, p.owner_name, p.dept_id, p.del_flag,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark
+        FROM bid_project p
+    </sql>
+
+    <select id="selectProjectList" parameterType="BidProject" resultMap="BidProjectResult">
+        <include refid="selectProjectVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="noticeId != null"> AND p.notice_id = #{noticeId}</if>
+            <if test="bidNo != null and bidNo != ''"> AND p.bid_no LIKE CONCAT('%', #{bidNo}, '%')</if>
+            <if test="projectName != null and projectName != ''"> AND p.project_name LIKE CONCAT('%', #{projectName}, '%')</if>
+            <if test="tenderee != null and tenderee != ''"> AND p.tenderee LIKE CONCAT('%', #{tenderee}, '%')</if>
+            <if test="status != null and status != ''"> AND p.status = #{status}</if>
+            <if test="regionCode != null and regionCode != ''"> AND p.region_code LIKE CONCAT(#{regionCode}, '%')</if>
+            <if test="industry != null and industry != ''"> AND p.industry = #{industry}</if>
+            <if test="joinType != null and joinType != ''"> AND p.join_type = #{joinType}</if>
+            <if test="ownerUserId != null"> AND p.owner_user_id = #{ownerUserId}</if>
+            <if test="ownerName != null and ownerName != ''"> AND p.owner_name LIKE CONCAT('%', #{ownerName}, '%')</if>
+            <if test="params.beginSubmitDeadline != null and params.beginSubmitDeadline != ''"> AND p.submit_deadline &gt;= #{params.beginSubmitDeadline}</if>
+            <if test="params.endSubmitDeadline != null and params.endSubmitDeadline != ''"> AND p.submit_deadline &lt;= #{params.endSubmitDeadline}</if>
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
+        </where>
+        ORDER BY p.project_id DESC
+    </select>
+
+    <select id="selectActiveProjectByNoticeId" parameterType="Long" resultMap="BidProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.notice_id = #{noticeId} AND p.del_flag = '0'
+        ORDER BY p.project_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectProjectById" parameterType="Long" resultMap="BidProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.project_id = #{projectId}
+    </select>
+
+    <insert id="insertProject" parameterType="BidProject" useGeneratedKeys="true" keyProperty="projectId">
+        INSERT INTO bid_project (bid_no, notice_id, project_name, tenderee, agent, region_code, industry,
+            budget_amount, bid_amount, status, join_type, partner, apply_deadline, submit_deadline,
+            open_time, result_time, fail_reason, owner_user_id, owner_name, dept_id, del_flag,
+            create_by, create_time, remark)
+        VALUES (#{bidNo}, #{noticeId}, #{projectName}, #{tenderee}, #{agent}, #{regionCode}, #{industry},
+            #{budgetAmount}, #{bidAmount}, #{status}, #{joinType}, #{partner}, #{applyDeadline}, #{submitDeadline},
+            #{openTime}, #{resultTime}, #{failReason}, #{ownerUserId}, #{ownerName}, #{deptId}, '0',
+            #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateProject" parameterType="BidProject">
+        UPDATE bid_project
+        <set>
+            <if test="noticeId != null">notice_id = #{noticeId},</if>
+            <if test="projectName != null and projectName != ''">project_name = #{projectName},</if>
+            <if test="tenderee != null">tenderee = #{tenderee},</if>
+            <if test="agent != null">agent = #{agent},</if>
+            <if test="regionCode != null">region_code = #{regionCode},</if>
+            <if test="industry != null">industry = #{industry},</if>
+            <if test="budgetAmount != null">budget_amount = #{budgetAmount},</if>
+            <if test="bidAmount != null">bid_amount = #{bidAmount},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="joinType != null and joinType != ''">join_type = #{joinType},</if>
+            <if test="partner != null">partner = #{partner},</if>
+            <if test="applyDeadline != null">apply_deadline = #{applyDeadline},</if>
+            <if test="submitDeadline != null">submit_deadline = #{submitDeadline},</if>
+            <if test="openTime != null">open_time = #{openTime},</if>
+            <if test="resultTime != null">result_time = #{resultTime},</if>
+            <if test="failReason != null">fail_reason = #{failReason},</if>
+            <if test="ownerUserId != null">owner_user_id = #{ownerUserId},</if>
+            <if test="ownerName != null">owner_name = #{ownerName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE project_id = #{projectId}
+    </update>
+
+    <delete id="deleteProjectByIds" parameterType="Long">
+        UPDATE bid_project SET del_flag = '2' WHERE project_id IN
+        <foreach item="projectId" collection="array" open="(" separator="," close=")">#{projectId}</foreach>
+    </delete>
+
+    <select id="selectNodeByProjectId" parameterType="Long" resultMap="BidProjectNodeResult">
+        SELECT n.node_id, n.project_id, n.node_type, n.node_name, n.plan_time, n.actual_time,
+               n.handler_id, n.handler_name, n.block_desc, n.finish_flag, n.sort_order, n.del_flag,
+               n.create_by, n.create_time, n.update_by, n.update_time, n.remark
+        FROM bid_project_node n
+        WHERE n.project_id = #{projectId} AND n.del_flag = '0'
+        ORDER BY n.sort_order ASC, n.node_id ASC
+    </select>
+
+    <select id="selectNodeById" parameterType="Long" resultMap="BidProjectNodeResult">
+        SELECT n.node_id, n.project_id, n.node_type, n.node_name, n.plan_time, n.actual_time,
+               n.handler_id, n.handler_name, n.block_desc, n.finish_flag, n.sort_order, n.del_flag,
+               n.create_by, n.create_time, n.update_by, n.update_time, n.remark
+        FROM bid_project_node n WHERE n.node_id = #{nodeId}
+    </select>
+
+    <insert id="insertNode" parameterType="BidProjectNode" useGeneratedKeys="true" keyProperty="nodeId">
+        INSERT INTO bid_project_node (project_id, node_type, node_name, plan_time, actual_time,
+            handler_id, handler_name, block_desc, finish_flag, sort_order, del_flag, create_by, create_time, remark)
+        VALUES (#{projectId}, #{nodeType}, #{nodeName}, #{planTime}, #{actualTime},
+            #{handlerId}, #{handlerName}, #{blockDesc}, #{finishFlag}, #{sortOrder}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateNode" parameterType="BidProjectNode">
+        UPDATE bid_project_node
+        <set>
+            <if test="nodeType != null and nodeType != ''">node_type = #{nodeType},</if>
+            <if test="nodeName != null">node_name = #{nodeName},</if>
+            <if test="planTime != null">plan_time = #{planTime},</if>
+            <if test="actualTime != null">actual_time = #{actualTime},</if>
+            <if test="handlerId != null">handler_id = #{handlerId},</if>
+            <if test="handlerName != null">handler_name = #{handlerName},</if>
+            <if test="blockDesc != null">block_desc = #{blockDesc},</if>
+            <if test="finishFlag != null and finishFlag != ''">finish_flag = #{finishFlag},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE node_id = #{nodeId}
+    </update>
+
+    <delete id="deleteNodeByProjectId" parameterType="Long">
+        UPDATE bid_project_node SET del_flag = '2' WHERE project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteNodeByIds" parameterType="Long">
+        UPDATE bid_project_node SET del_flag = '2' WHERE node_id IN
+        <foreach item="nodeId" collection="array" open="(" separator="," close=")">#{nodeId}</foreach>
+    </delete>
+
+    <select id="selectDeadlineWarnProjects" resultMap="BidProjectResult">
+        <include refid="selectProjectVo"/>
+        WHERE p.del_flag = '0' AND p.status IN ('1','2','3','4','5')
+        AND (
+            (p.apply_deadline IS NOT NULL AND p.apply_deadline BETWEEN sysdate() AND DATE_ADD(NOW(), INTERVAL #{days} DAY))
+            OR (p.submit_deadline IS NOT NULL AND p.submit_deadline BETWEEN sysdate() AND DATE_ADD(NOW(), INTERVAL #{days} DAY))
+            OR (p.open_time IS NOT NULL AND p.open_time BETWEEN sysdate() AND DATE_ADD(NOW(), INTERVAL #{days} DAY))
+        )
+    </select>
+
+    <select id="selectStatusCount" resultType="java.util.HashMap">
+        SELECT p.status AS "status", COUNT(1) AS "cnt" FROM bid_project p
+        WHERE p.del_flag = '0' GROUP BY p.status
+    </select>
+
+    <select id="selectMonthlyTrend" resultType="java.util.HashMap">
+        SELECT DATE_FORMAT(p.create_time, '%Y-%m') AS "month", COUNT(1) AS "total",
+               SUM(CASE WHEN p.status = '7' THEN 1 ELSE 0 END) AS "won",
+               COALESCE(SUM(p.bid_amount), 0) AS "bidAmount",
+               COALESCE(SUM(CASE WHEN p.status = '7' THEN p.bid_amount ELSE 0 END), 0) AS "wonAmount"
+        FROM bid_project p
+        WHERE p.del_flag = '0' AND p.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+        GROUP BY DATE_FORMAT(p.create_time, '%Y-%m') ORDER BY "month"
+    </select>
+
+    <select id="selectFailReasonCount" resultType="java.util.HashMap">
+        SELECT p.fail_reason AS "failReason", COUNT(1) AS "cnt" FROM bid_project p
+        WHERE p.del_flag = '0' AND p.fail_reason IS NOT NULL AND p.fail_reason != ''
+        GROUP BY p.fail_reason
+    </select>
+
+    <select id="selectOverview" resultType="java.util.HashMap">
+        SELECT COUNT(1) AS "totalProjects",
+               SUM(CASE WHEN p.status IN ('1','2','3','4','5','6') THEN 1 ELSE 0 END) AS "ongoing",
+               SUM(CASE WHEN p.status = '7' THEN 1 ELSE 0 END) AS "won",
+               SUM(CASE WHEN p.status IN ('8','9') THEN 1 ELSE 0 END) AS "lost",
+               SUM(CASE WHEN p.status = '7' THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN p.status IN ('7','8','9') THEN 1 ELSE 0 END), 0) AS "winRate"
+        FROM bid_project p WHERE p.del_flag = '0'
+    </select>
+
+</mapper>

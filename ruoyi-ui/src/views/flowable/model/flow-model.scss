@@ -1,0 +1,258 @@
+/* ===== Design Tokens（与 pms-return 一致） ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card { padding:14px 20px 16px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .adv-link:hover { color:var(--brand-600); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field { display:flex; flex-direction:column; gap:6px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field label { font-size:14px; font-weight:500; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-select) { width:100%; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Toolbar ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .toolbar .left { display:flex; gap:8px; align-items:center; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .toolbar .right { display:flex; gap:8px; align-items:center; }
+
+/* ===== Table ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .table-wrap { overflow-x:auto; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table .col-mono { font-family:ui-monospace,"JetBrains Mono",Menlo,monospace; font-size:14px; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table .col-strong { color:var(--ink-900); font-weight:500; }
+/* 列表版本列：当前活动版本标记（小圆点，hover 提示） */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table .version-active-dot { color:var(--green-500); font-size:10px; margin-left:3px; vertical-align:middle; cursor:help; }
+/* 列表版本列：版本号 + 已挂起标记（与版本编辑弹框口径统一） */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table .version-no { font-weight:600; color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .app-table .version-suspended { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:600; line-height:16px; background:var(--ink-100); color:var(--ink-500); border:1px solid var(--ink-200); cursor:help; vertical-align:middle; }
+
+/* ===== 弹框选择器字段（开发规范：业务实体选择为只读输入 + 点击打开弹框，禁止 el-select） ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .picker-suffix-icon { color:var(--ink-400); cursor:pointer; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .el-input.is-readonly .el-input__inner { cursor:pointer; }
+
+/* ===== Badges ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge .dot { width:6px; height:6px; border-radius:50%; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.green { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.green .dot { background:var(--green-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.blue { background:var(--blue-50); color:var(--blue-700); border-color:#bfdbfe; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.blue .dot { background:var(--blue-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.gray .dot { background:var(--ink-400); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
+/* 紧急程度徽标：紧急(amber) / 特急(red)，用于待办与我的请求列表 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.amber { background:var(--amber-50, #fffbeb); color:var(--amber-700, #b45309); border-color:#fde68a; margin-right:6px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .badge.red { background:var(--red-50, #fef2f2); color:var(--red-700, #b91c1c); border-color:#fecaca; margin-right:6px; }
+
+/* ===== Status Tabs（对齐 list-page-style-guide 第3章规范） ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tabs { display:flex; align-items:center; gap:12px; padding:6px 10px 6px 12px; border-bottom:1px solid var(--ink-200); background:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tabs .tabs-track { display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow-x:auto; scrollbar-width:none; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tabs .tabs-track::-webkit-scrollbar { display:none; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:var(--r-sm); font-size:14px; color:var(--ink-500); cursor:pointer; user-select:none; transition:all .15s var(--ease-out); white-space:nowrap; border:1px solid transparent; background:transparent; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab .dot { width:6px; height:6px; border-radius:50%; background:var(--ink-300); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab .count { font-size:12px; font-weight:600; padding:1px 6px; border-radius:999px; background:var(--ink-100); color:var(--ink-500); min-width:18px; text-align:center; line-height:1.4; font-feature-settings:"tnum" 1; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab:hover { background:var(--ink-50); color:var(--ink-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active { background:var(--brand-50); color:var(--brand-700); font-weight:600; border-color:var(--brand-200); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active .count { background:var(--brand-600); color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active .dot { background:var(--brand-500); }
+
+/* 状态颜色映射 - 审核中 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-audit .dot { background:var(--blue-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-audit .count { background:var(--blue-50); color:var(--blue-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-audit .count { background:var(--blue-500); color:#fff; }
+
+/* 已通过/已完成 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-approved .dot,
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-done .dot { background:var(--green-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-approved .count,
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-done .count { background:var(--green-50); color:var(--green-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-approved .count,
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-done .count { background:var(--green-500); color:#fff; }
+
+/* 已驳回 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-reject .dot { background:var(--red-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-reject .count { background:var(--red-50); color:var(--red-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-reject .count { background:var(--red-500); color:#fff; }
+
+/* 已作废 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-void .dot { background:var(--ink-400); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-void .count { background:var(--ink-100); color:var(--ink-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-void .count { background:var(--ink-400); color:#fff; }
+
+/* 草稿/待处理 */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-draft .dot { background:var(--amber-500); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.tab-draft .count { background:var(--amber-50); color:var(--amber-700); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .status-tab.is-active.tab-draft .count { background:var(--amber-500); color:#fff; }
+
+/* ===== Pagination ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+
+/* ===== 操作列 ===== */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; }
+
+/* ===== 详情弹窗头部（rd-detail-header，全局类 + 补充样式） ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header) { display:flex; align-items:center; gap:12px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header-icon) { width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,.2); display:grid; place-items:center; color:#fff; backdrop-filter:blur(4px); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header-title) { font-size:18px; font-weight:700; color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header-sub) { display:flex; align-items:center; gap:10px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header-divider) { width:1px; height:14px; background:rgba(255,255,255,.4); }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-detail-header-no) { font-size:13px; color:rgba(255,255,255,.8); font-feature-settings:"tnum" 1; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-dialog .el-dialog__header) { background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%); margin-right:0; border-radius:6px 6px 0 0; padding:14px 20px; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.rd-dialog .el-dialog__body) { background:linear-gradient(#f8fafc,#f1f5f9); }
+
+/* ===== 流程设计器 ===== */
+.designer-dialog { }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.designer-dialog .el-dialog__header) { background:var(--ink-900); padding:10px 20px; margin-right:0; }
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.designer-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
+.designer-header { display:flex; align-items:center; justify-content:space-between; width:100%; padding-right:30px; }
+.designer-title { display:flex; align-items:center; gap:10px; color:#fff; font-size:16px; font-weight:600; }
+.designer-title .glyph { width:4px; height:16px; background:#6366f1; border-radius:2px; }
+.designer-model-name { color:#cbd5e1; font-weight:400; font-size:14px; }
+.designer-actions { display:flex; gap:8px; }
+.designer-body { display:flex; height:calc(100vh - 140px); background:#fff; border-radius:0 0 6px 6px; overflow:hidden; }
+.designer-canvas { flex:1; position:relative; background:linear-gradient(90deg,#f1f5f9 1px,transparent 1px),linear-gradient(#f1f5f9 1px,transparent 1px); background-size:20px 20px; }
+.designer-props { width:300px; border-left:1px solid var(--ink-200); background:#fff; padding:16px; overflow-y:auto; }
+.props-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); margin-bottom:14px; }
+.props-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.props-form { padding:0 4px; }
+.props-tip { font-size:12px; color:var(--ink-400); line-height:1.5; margin-top:2px; }
+.props-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; height:200px; color:var(--ink-400); font-size:13px; text-align:center; }
+.props-help { margin-top:20px; padding:12px; background:var(--ink-50); border-radius:var(--r-md); border:1px solid var(--ink-100); }
+.props-help-title { font-size:13px; font-weight:600; color:var(--ink-700); margin-bottom:8px; }
+.props-help ul { margin:0; padding-left:16px; font-size:12px; color:var(--ink-500); line-height:1.8; }
+
+/* bpmn-js 画布基础样式（含调色板/上下文菜单定位） */
+.designer-canvas :deep(.bjs-powered-by) { display:none; }
+.designer-canvas :deep(.djs-palette) { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); box-shadow:var(--shadow-card); }
+
+/* ===== 流程图预览 ===== */
+.viewer-wrap { background:var(--ink-50); border:1px solid var(--ink-200); border-radius:var(--r-md); min-height:420px; }
+.viewer-canvas { height:480px; }
+
+/* ===== 流程图与时间线（详情弹窗） ===== */
+:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .diagram-wrap, .flowable-task-page .diagram-wrap, .flowable-process-page .diagram-wrap {
+  background: var(--ink-50); border: 1px solid var(--ink-200); border-radius: var(--r-md);
+  min-height: 260px; display: flex; align-items: center; justify-content: center; padding: 12px;
+  overflow: auto;
+}
+.flowable-task-page .diagram-wrap .diagram-img, .flowable-process-page .diagram-wrap .diagram-img {
+  max-width: 100%; height: auto;
+}
+.flowable-task-page .diagram-wrap .diagram-empty, .flowable-process-page .diagram-wrap .diagram-empty {
+  color: var(--ink-400); font-size: 13px;
+}
+.flowable-task-page .rd-timeline, .flowable-process-page .rd-timeline {
+  position: relative; padding-left: 24px;
+}
+.flowable-task-page .rd-timeline::before, .flowable-process-page .rd-timeline::before {
+  content: ''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--ink-200); border-radius: 2px;
+}
+.flowable-task-page .rd-timeline-item, .flowable-process-page .rd-timeline-item {
+  position: relative; padding-bottom: 20px;
+}
+.flowable-task-page .rd-timeline-dot, .flowable-process-page .rd-timeline-dot {
+  position: absolute; left: -24px; top: 4px; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--ink-300);
+}
+.flowable-task-page .rd-timeline-dot--success, .flowable-process-page .rd-timeline-dot--success { border-color: var(--green-500); }
+.flowable-task-page .rd-timeline-dot--active, .flowable-process-page .rd-timeline-dot--active { border-color: var(--blue-500); box-shadow: 0 0 0 4px rgba(59,130,246,.2); }
+.flowable-task-page .rd-timeline-content, .flowable-process-page .rd-timeline-content {
+  background: var(--ink-50); border: 1px solid var(--ink-100); border-radius: var(--r-md); padding: 12px 16px;
+}
+.flowable-task-page .rd-timeline-header, .flowable-process-page .rd-timeline-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+}
+.flowable-task-page .rd-timeline-title, .flowable-process-page .rd-timeline-title { font-weight: 600; color: var(--ink-900); font-size: 14px; }
+.flowable-task-page .rd-timeline-time, .flowable-process-page .rd-timeline-time { font-size: 12px; color: var(--ink-400); font-feature-settings: "tnum" 1; }
+.flowable-task-page .rd-timeline-comment, .flowable-process-page .rd-timeline-comment {
+  margin-top: 8px; padding: 8px 12px; border-left: 3px solid #f59e0b; background: #fffbeb;
+  border-radius: 6px; font-size: 13px; color: #374151;
+}
+.flowable-task-page .rd-grid, .flowable-process-page .rd-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 24px;
+}
+.flowable-task-page .rd-item, .flowable-process-page .rd-item { display: flex; flex-direction: column; gap: 4px; }
+.flowable-task-page .rd-label, .flowable-process-page .rd-label { font-size: 12px; color: var(--ink-500); font-weight: 500; }
+.flowable-task-page .rd-value, .flowable-process-page .rd-value { font-size: 14px; color: var(--ink-900); font-weight: 500; }
+.flowable-task-page .rd-card, .flowable-process-page .rd-card {
+  background: #fff; border: 1px solid var(--ink-200); border-radius: var(--r-lg); margin-bottom: 16px; overflow: hidden;
+}
+.flowable-task-page .rd-card-header, .flowable-process-page .rd-card-header {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+  background: linear-gradient(#f9fafb,#fff); border-bottom: 1px solid var(--ink-100);
+}
+.flowable-task-page .rd-card-title, .flowable-process-page .rd-card-title {
+  display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--ink-900);
+}
+.flowable-task-page .rd-card-icon, .flowable-process-page .rd-card-icon {
+  width: 26px; height: 26px; border-radius: 8px; background: var(--brand-50); color: var(--brand-600);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; font-style: normal;
+}
+.flowable-task-page .rd-card-body, .flowable-process-page .rd-card-body { padding: 16px; }
+.flowable-task-page .rd-empty, .flowable-process-page .rd-empty { text-align: center; color: var(--ink-400); padding: 24px; }
+.flowable-task-page .rd-empty-text, .flowable-process-page .rd-empty-text { font-size: 13px; }
+/* 详情弹窗头部渐变（task/process 页复用） */
+.flowable-task-page :deep(.rd-dialog .el-dialog__header),
+.flowable-process-page :deep(.rd-dialog .el-dialog__header) {
+  background: linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%); margin-right:0; border-radius:6px 6px 0 0; padding:14px 20px;
+}
+.flowable-task-page :deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close),
+.flowable-process-page :deep(.rd-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
+.flowable-task-page :deep(.rd-dialog .el-dialog__body),
+.flowable-process-page :deep(.rd-dialog .el-dialog__body) { background: linear-gradient(#f8fafc,#f1f5f9); }
+.flowable-task-page :deep(.rd-detail-header), .flowable-process-page :deep(.rd-detail-header) { display:flex; align-items:center; gap:12px; }
+.flowable-task-page :deep(.rd-detail-header-icon), .flowable-process-page :deep(.rd-detail-header-icon) {
+  width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,.2); display:grid; place-items:center; color:#fff; backdrop-filter:blur(4px);
+}
+.flowable-task-page :deep(.rd-detail-header-title), .flowable-process-page :deep(.rd-detail-header-title) { font-size:18px; font-weight:700; color:#fff; }
+.flowable-task-page :deep(.rd-detail-header-sub), .flowable-process-page :deep(.rd-detail-header-sub) { display:flex; align-items:center; gap:10px; }
+.flowable-task-page :deep(.rd-detail-header-divider), .flowable-process-page :deep(.rd-detail-header-divider) { width:1px; height:14px; background:rgba(255,255,255,.4); }
+.flowable-task-page :deep(.rd-detail-header-no), .flowable-process-page :deep(.rd-detail-header-no) { font-size:13px; color:rgba(255,255,255,.8); }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { :is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { :is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) .filter-card .filter-bar { grid-template-columns:1fr; } }
+

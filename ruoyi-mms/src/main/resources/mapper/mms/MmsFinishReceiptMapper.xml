@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsFinishReceiptMapper">
+
+    <resultMap type="MmsFinishReceipt" id="MmsFinishReceiptResult">
+                <id property="finishId" column="finish_id"/>
+<result property="finishNo"     column="finish_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="planQty"     column="plan_qty"/>
+        <result property="finishQty"     column="finish_qty"/>
+        <result property="qualifiedQty"     column="qualified_qty"/>
+        <result property="batchNo"     column="batch_no"/>
+        <result property="finishTime"     column="finish_time"/>
+        <result property="finishBy"     column="finish_by"/>
+                <result property="isOnTime"     column="is_on_time"/>
+        <result property="status"     column="status"/>
+        <result property="inboundTime"     column="inbound_time"/>
+        <result property="inboundBy"     column="inbound_by"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+    </resultMap>
+
+    <sql id="selectFinishReceiptVo">
+        SELECT finish_id, finish_no, work_order_id, work_order_no, product_id, product_code, product_name, spec_model, unit, plan_qty, finish_qty, qualified_qty, batch_no, finish_time, finish_by, is_on_time, status, inbound_time, inbound_by, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mms_finish_receipt
+    </sql>
+
+    <select id="selectFinishReceiptList" parameterType="MmsFinishReceipt" resultMap="MmsFinishReceiptResult">
+        <include refid="selectFinishReceiptVo"/>
+        <where>
+            del_flag = '0'
+            <if test="finishNo != null and finishNo != ''"> AND finish_no LIKE CONCAT('%', #{finishNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="batchNo != null and batchNo != ''"> AND batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="finishBy != null and finishBy != ''"> AND finish_by LIKE CONCAT('%', #{finishBy}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(create_time) &lt;= #{params.endTime}</if>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
+        ORDER BY finish_id DESC
+    </select>
+
+    <select id="selectFinishReceiptById" parameterType="Long" resultMap="MmsFinishReceiptResult">
+        <include refid="selectFinishReceiptVo"/>
+        WHERE finish_id = #{finishId}
+    </select>
+
+    <insert id="insertFinishReceipt" parameterType="MmsFinishReceipt" useGeneratedKeys="true" keyProperty="finishId">
+        INSERT INTO mms_finish_receipt (
+            finish_no,
+            work_order_id,
+            work_order_no,
+            product_id,
+            product_code,
+            product_name,
+            spec_model,
+            unit,
+            plan_qty,
+            finish_qty,
+            qualified_qty,
+            batch_no,
+            finish_time,
+            finish_by,
+            is_on_time,
+            status,
+            inbound_time,
+            inbound_by,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{finishNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{productId},
+            #{productCode},
+            #{productName},
+            #{specModel},
+            #{unit},
+            #{planQty},
+            #{finishQty},
+            #{qualifiedQty},
+            #{batchNo},
+            #{finishTime},
+            #{finishBy},
+            #{isOnTime},
+            #{status},
+            #{inboundTime},
+            #{inboundBy},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateFinishReceipt" parameterType="MmsFinishReceipt">
+        UPDATE mms_finish_receipt
+        <set>
+            <if test="finishNo != null">finish_no = #{finishNo},</if>
+            <if test="workOrderId != null">work_order_id = #{workOrderId},</if>
+            <if test="workOrderNo != null">work_order_no = #{workOrderNo},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="productCode != null">product_code = #{productCode},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="planQty != null">plan_qty = #{planQty},</if>
+            <if test="finishQty != null">finish_qty = #{finishQty},</if>
+            <if test="qualifiedQty != null">qualified_qty = #{qualifiedQty},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="finishBy != null">finish_by = #{finishBy},</if>
+            <if test="isOnTime != null">is_on_time = #{isOnTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="inboundTime != null">inbound_time = #{inboundTime},</if>
+            <if test="inboundBy != null">inbound_by = #{inboundBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE finish_id = #{finishId}
+    </update>
+
+    <delete id="deleteFinishReceiptByIds" parameterType="Long">
+        UPDATE mms_finish_receipt SET del_flag = '2' WHERE finish_id IN
+        <foreach collection="array" item="finishId" open="(" separator="," close=")">
+            #{finishId}
+        </foreach>
+    </delete>
+</mapper>

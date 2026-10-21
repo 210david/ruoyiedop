@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmMbomReleaseMapper">
+
+    <resultMap type="PdmMbomRelease" id="PdmMbomReleaseResult">
+        <result property="releaseId"     column="release_id"/>
+        <result property="bomId"         column="bom_id"/>
+        <result property="bomNo"         column="bom_no"/>
+        <result property="productId"     column="product_id"/>
+        <result property="productCode"   column="product_code"/>
+        <result property="productName"   column="product_name"/>
+        <result property="ebomVersion"   column="ebom_version"/>
+        <result property="mmsBomId"      column="mms_bom_id"/>
+        <result property="mmsBomNo"      column="mms_bom_no"/>
+        <result property="mmsVersion"    column="mms_version"/>
+        <result property="itemCount"     column="item_count"/>
+        <result property="releaseStatus" column="release_status"/>
+        <result property="releaseBy"     column="release_by"/>
+        <result property="releaseTime"   column="release_time"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectReleaseVo">
+        SELECT release_id, bom_id, bom_no, product_id, product_code, product_name, ebom_version,
+               mms_bom_id, mms_bom_no, mms_version, item_count, release_status, release_by, release_time,
+               create_by, create_time, update_by, update_time, remark
+        FROM pdm_mbom_release
+    </sql>
+
+    <select id="selectReleaseList" parameterType="PdmMbomRelease" resultMap="PdmMbomReleaseResult">
+        <include refid="selectReleaseVo"/>
+        <where>
+            <if test="bomId != null"> AND bom_id = #{bomId}</if>
+            <if test="productId != null"> AND product_id = #{productId}</if>
+            <if test="bomNo != null and bomNo != ''"> AND bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="releaseStatus != null and releaseStatus != ''"> AND release_status = #{releaseStatus}</if>
+        </where>
+        ORDER BY release_id DESC
+    </select>
+
+    <select id="selectReleaseById" parameterType="Long" resultMap="PdmMbomReleaseResult">
+        <include refid="selectReleaseVo"/> WHERE release_id = #{releaseId}
+    </select>
+
+    <insert id="insertRelease" parameterType="PdmMbomRelease" useGeneratedKeys="true" keyProperty="releaseId">
+        INSERT INTO pdm_mbom_release (
+            bom_id, bom_no, product_id, product_code, product_name, ebom_version,
+            mms_bom_id, mms_bom_no, mms_version, item_count, release_status, release_by, release_time,
+            create_by, create_time, remark
+        )VALUES(
+            #{bomId}, #{bomNo}, #{productId}, #{productCode}, #{productName}, #{ebomVersion},
+            #{mmsBomId}, #{mmsBomNo}, #{mmsVersion}, #{itemCount}, #{releaseStatus}, #{releaseBy}, #{releaseTime},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateRelease" parameterType="PdmMbomRelease">
+        UPDATE pdm_mbom_release
+        <set>
+            <if test="releaseStatus != null">release_status = #{releaseStatus},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE release_id = #{releaseId}
+    </update>
+
+    <!-- D3口径：同产品旧下发记录置为已替代 -->
+    <update id="markReplacedByProductId" parameterType="PdmMbomRelease">
+        UPDATE pdm_mbom_release SET
+            release_status = '1',
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        WHERE product_id = #{productId} AND release_status = '0'
+    </update>
+
+</mapper>
