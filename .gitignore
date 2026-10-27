@@ -60,3 +60,13 @@ logs/
 **/backend-err.log
 sql/*backup*.sql
 
+
+# ===== AI session temp artifacts (not tracked) =====
+.box-agent-scratch/
+.workbuddy/
+logs/
+output/
+image-*.png
+image-*.webp
+managed-browser-*.png
+*.artifact.json
