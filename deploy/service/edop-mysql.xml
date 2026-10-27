@@ -1,0 +1,25 @@
+<service>
+  <id>EDOP-MySQL</id>
+  <name>EDOP MySQL服务</name>
+  <description>企业数字化运营平台 - MySQL 数据库服务 (端口3306)</description>
+
+  <executable>D:\EDOP\mysql\bin\mysqld.exe</executable>
+  <arguments>--defaults-file="D:\EDOP\mysql\my.ini"</arguments>
+
+  <workingdirectory>D:\EDOP\mysql</workingdirectory>
+
+  <logpath>D:\EDOP\mysql\logs\winsw</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <stopexecutable>D:\EDOP\mysql\bin\mysqladmin.exe</stopexecutable>
+  <stoparguments>-u root shutdown</stoparguments>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+
+  <startmode>Automatic</startmode>
+  <delayedstart>true</delayedstart>
+</service>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinPeriodMapper">
+
+    <resultMap id="FinPeriodResult" type="com.ruoyi.fin.domain.FinPeriod">
+        <result property="periodId"       column="period_id"/>
+        <result property="companyId"      column="company_id"/>
+        <result property="yearMonth"      column="year_month"/>
+        <result property="periodName"     column="period_name"/>
+        <result property="status"         column="status"/>
+        <result property="closeBy"        column="close_by"/>
+        <result property="closeTime"      column="close_time"/>
+        <result property="unlockBy"       column="unlock_by"/>
+        <result property="unlockTime"     column="unlock_time"/>
+        <result property="unlockReason"   column="unlock_reason"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectPeriodVo">
+        SELECT period_id, company_id, `year_month`, period_name, status,
+               close_by, close_time, unlock_by, unlock_time, unlock_reason,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_period
+    </sql>
+
+    <select id="selectByPeriod" parameterType="java.lang.String" resultMap="FinPeriodResult">
+        <include refid="selectPeriodVo"/>
+        WHERE `year_month` = #{yearMonth} AND del_flag = '0'
+    </select>
+
+    <!--
+      【P0-2 并发控制】结账/解锁时锁定期间行，防止结账与凭证写入并发竞态。
+      与 FinPeriodGuard.checkWritable 配合使用。
+    -->
+    <select id="selectByPeriodForUpdate" parameterType="java.lang.String" resultMap="FinPeriodResult">
+        <include refid="selectPeriodVo"/>
+        WHERE `year_month` = #{yearMonth} AND del_flag = '0'
+        FOR UPDATE
+    </select>
+
+    <select id="countSubject" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_subject WHERE del_flag = '0'
+    </select>
+
+</mapper>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrAttendanceRecordMapper">
+
+    <resultMap type="HrAttendanceRecord" id="HrAttendanceRecordResult">
+        <result property="recordId" column="record_id"/>
+        <result property="recordDate" column="record_date"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="shiftId" column="shift_id"/>
+        <result property="shiftName" column="shift_name"/>
+        <result property="shiftStartTime" column="shift_start_time"/>
+        <result property="shiftEndTime" column="shift_end_time"/>
+        <result property="clockIn" column="clock_in"/>
+        <result property="clockOut" column="clock_out"/>
+        <result property="clockInSource" column="clock_in_source"/>
+        <result property="clockOutSource" column="clock_out_source"/>
+        <result property="lateMinutes" column="late_minutes"/>
+        <result property="earlyMinutes" column="early_minutes"/>
+        <result property="attendanceStatus" column="attendance_status"/>
+        <result property="overtimeHours" column="overtime_hours"/>
+        <result property="nightShift" column="night_shift"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT t.record_id, t.record_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.clock_in, t.clock_out, t.clock_in_source, t.clock_out_source, t.late_minutes, t.early_minutes, t.attendance_status, t.overtime_hours, t.night_shift, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time,
+        d.dept_name AS org_name,
+        s.start_time AS shift_start_time,
+        s.end_time AS shift_end_time
+        FROM biz_hr_attendance_record t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
+        LEFT JOIN biz_hr_shift s ON t.shift_id = s.shift_id
+    </sql>
+
+    <select id="selectHrAttendanceRecordList" parameterType="HrAttendanceRecord" resultMap="HrAttendanceRecordResult">
+        <include refid="selectVo"/>
+        <where>
+            (t.del_flag IS NULL OR t.del_flag = '0')
+            <if test="recordDate != null"> AND t.record_date = #{recordDate}</if>
+            <if test="params.beginRecordDate != null and params.beginRecordDate != ''"> AND t.record_date &gt;= #{params.beginRecordDate}</if>
+            <if test="params.endRecordDate != null and params.endRecordDate != ''"> AND t.record_date &lt;= #{params.endRecordDate}</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="shiftId != null"> AND t.shift_id = #{shiftId}</if>
+            <if test="shiftName != null and shiftName != ''"> AND t.shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="clockIn != null"> AND t.clock_in = #{clockIn}</if>
+            <if test="clockOut != null"> AND t.clock_out = #{clockOut}</if>
+            <if test="clockInSource != null and clockInSource != ''"> AND t.clock_in_source LIKE CONCAT('%', #{clockInSource}, '%')</if>
+            <if test="clockOutSource != null and clockOutSource != ''"> AND t.clock_out_source LIKE CONCAT('%', #{clockOutSource}, '%')</if>
+            <if test="lateMinutes != null"> AND t.late_minutes = #{lateMinutes}</if>
+            <if test="earlyMinutes != null"> AND t.early_minutes = #{earlyMinutes}</if>
+            <if test="attendanceStatus != null and attendanceStatus != ''"> AND t.attendance_status LIKE CONCAT('%', #{attendanceStatus}, '%')</if>
+            <if test="overtimeHours != null"> AND t.overtime_hours = #{overtimeHours}</if>
+            <if test="nightShift != null"> AND t.night_shift = #{nightShift}</if>
+            <if test="remark != null and remark != ''"> AND t.remark LIKE CONCAT('%', #{remark}, '%')</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+        </where>
+        ORDER BY t.create_time DESC
+    </select>
+
+    <select id="selectHrAttendanceRecordById" parameterType="Long" resultMap="HrAttendanceRecordResult">
+        <include refid="selectVo"/> WHERE t.record_id = #{recordId}
+    </select>
+
+    <insert id="insertHrAttendanceRecord" parameterType="HrAttendanceRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO biz_hr_attendance_record (
+            record_date, employee_id, employee_name, employee_no, org_id, shift_id, shift_name, clock_in, clock_out, clock_in_source, clock_out_source, late_minutes, early_minutes, attendance_status, overtime_hours, night_shift, remark, del_flag, create_by, create_time
+        ) VALUES (
+            #{recordDate}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{shiftId}, #{shiftName}, #{clockIn}, #{clockOut}, #{clockInSource}, #{clockOutSource}, #{lateMinutes}, #{earlyMinutes}, #{attendanceStatus}, #{overtimeHours}, #{nightShift}, #{remark}, #{delFlag}, #{createBy}, sysdate()
+        )
+    </insert>
+
+    <update id="updateHrAttendanceRecord" parameterType="HrAttendanceRecord">
+        UPDATE biz_hr_attendance_record
+        <set>
+            <if test="recordDate != null">record_date = #{recordDate},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="shiftId != null">shift_id = #{shiftId},</if>
+            <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
+            clock_in = #{clockIn},
+            clock_out = #{clockOut},
+            <if test="clockInSource != null and clockInSource != ''">clock_in_source = #{clockInSource},</if>
+            <if test="clockOutSource != null and clockOutSource != ''">clock_out_source = #{clockOutSource},</if>
+            <if test="lateMinutes != null">late_minutes = #{lateMinutes},</if>
+            <if test="earlyMinutes != null">early_minutes = #{earlyMinutes},</if>
+            <if test="attendanceStatus != null and attendanceStatus != ''">attendance_status = #{attendanceStatus},</if>
+            <if test="overtimeHours != null">overtime_hours = #{overtimeHours},</if>
+            <if test="nightShift != null">night_shift = #{nightShift},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+
+    <!-- 根据工号+日期查询已有考勤记录（导入时判重） -->
+    <select id="selectByEmployeeNoAndDate" resultMap="HrAttendanceRecordResult">
+        SELECT t.record_id, t.record_date, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.shift_id, t.shift_name, t.clock_in, t.clock_out, t.clock_in_source, t.clock_out_source, t.late_minutes, t.early_minutes, t.attendance_status, t.overtime_hours, t.night_shift, t.remark, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time
+        FROM biz_hr_attendance_record t
+        WHERE t.employee_no = #{employeeNo} AND t.record_date = #{recordDate}
+          AND (t.del_flag IS NULL OR t.del_flag = '0')
+        LIMIT 1
+    </select>
+
+    <delete id="deleteHrAttendanceRecordById" parameterType="Long">
+        UPDATE biz_hr_attendance_record SET del_flag = '2' WHERE record_id = #{recordId}
+    </delete>
+
+    <delete id="deleteHrAttendanceRecordByIds" parameterType="Long">
+        UPDATE biz_hr_attendance_record SET del_flag = '2' WHERE record_id IN
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">#{recordId}</foreach>
+    </delete>
+
+</mapper>

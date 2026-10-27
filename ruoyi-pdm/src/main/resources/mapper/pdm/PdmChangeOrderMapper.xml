@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pdm.mapper.PdmChangeOrderMapper">
+
+    <resultMap type="PdmChangeOrder" id="PdmChangeOrderResult">
+        <result property="changeId"       column="change_id"/>
+        <result property="changeNo"       column="change_no"/>
+        <result property="changeName"     column="change_name"/>
+        <result property="productId"      column="product_id"/>
+        <result property="productCode"    column="product_code"/>
+        <result property="productName"    column="product_name"/>
+        <result property="changeLevel"    column="change_level"/>
+        <result property="urgentLevel"    column="urgent_level"/>
+        <result property="changeContent"  column="change_content"/>
+        <result property="changeReason"   column="change_reason"/>
+        <result property="effectAnalysis" column="effect_analysis"/>
+        <result property="changeStatus"   column="change_status"/>
+        <result property="submitTime"     column="submit_time"/>
+        <result property="auditBy"        column="audit_by"/>
+        <result property="auditTime"      column="audit_time"/>
+        <result property="auditOpinion"   column="audit_opinion"/>
+        <result property="closeTime"      column="close_time"/>
+        <result property="closeBy"        column="close_by"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <resultMap type="PdmChangeOrderItem" id="PdmChangeOrderItemResult">
+        <result property="itemId"         column="item_id"/>
+        <result property="changeId"       column="change_id"/>
+        <result property="docType"        column="doc_type"/>
+        <result property="bizId"          column="biz_id"/>
+        <result property="bizNo"          column="biz_no"/>
+        <result property="bizName"        column="biz_name"/>
+        <result property="currentVersion" column="current_version"/>
+        <result property="newVersion"     column="new_version"/>
+        <result property="itemStatus"     column="item_status"/>
+        <result property="effectTime"     column="effect_time"/>
+        <result property="effectBy"       column="effect_by"/>
+        <result property="orderNum"       column="order_num"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectChangeVo">
+        SELECT change_id, change_no, change_name, product_id, product_code, product_name, change_level, urgent_level,
+               change_content, change_reason, effect_analysis, change_status, submit_time, audit_by, audit_time,
+               audit_opinion, close_time, close_by, dept_id, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pdm_change_order
+    </sql>
+
+    <sql id="selectItemVo">
+        SELECT item_id, change_id, doc_type, biz_id, biz_no, biz_name, current_version, new_version,
+               item_status, effect_time, effect_by, order_num, remark
+        FROM pdm_change_order_item
+    </sql>
+
+    <select id="selectChangeList" parameterType="PdmChangeOrder" resultMap="PdmChangeOrderResult">
+        <include refid="selectChangeVo"/>
+        <where>
+            del_flag = '0'
+            <if test="changeNo != null and changeNo != ''"> AND change_no LIKE CONCAT('%', #{changeNo}, '%')</if>
+            <if test="changeName != null and changeName != ''"> AND change_name LIKE CONCAT('%', #{changeName}, '%')</if>
+            <if test="productName != null and productName != ''"> AND product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="productCode != null and productCode != ''"> AND product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="changeLevel != null and changeLevel != ''"> AND change_level = #{changeLevel}</if>
+            <if test="urgentLevel != null and urgentLevel != ''"> AND urgent_level = #{urgentLevel}</if>
+            <if test="changeStatus != null and changeStatus != ''"> AND change_status = #{changeStatus}</if>
+            <if test="productId != null"> AND product_id = #{productId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND create_time &lt;= #{params.endTime}</if>
+            <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+        </where>
+        ORDER BY change_id DESC
+    </select>
+
+    <select id="selectChangeById" parameterType="Long" resultMap="PdmChangeOrderResult">
+        <include refid="selectChangeVo"/> WHERE change_id = #{changeId} AND del_flag = '0'
+    </select>
+
+    <select id="selectItemsByChangeId" parameterType="Long" resultMap="PdmChangeOrderItemResult">
+        <include refid="selectItemVo"/>
+        WHERE change_id = #{changeId}
+        ORDER BY order_num, item_id
+    </select>
+
+    <select id="selectItemById" parameterType="Long" resultMap="PdmChangeOrderItemResult">
+        <include refid="selectItemVo"/> WHERE item_id = #{itemId}
+    </select>
+
+    <insert id="insertChange" parameterType="PdmChangeOrder" useGeneratedKeys="true" keyProperty="changeId">
+        INSERT INTO pdm_change_order (
+            change_no, change_name, product_id, product_code, product_name, change_level, urgent_level,
+            change_content, change_reason, effect_analysis, change_status, submit_time, dept_id,
+            create_by, create_time, remark
+        )VALUES(
+            #{changeNo}, #{changeName}, #{productId}, #{productCode}, #{productName}, #{changeLevel}, #{urgentLevel},
+            #{changeContent}, #{changeReason}, #{effectAnalysis}, #{changeStatus}, #{submitTime}, #{deptId},
+            #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateChange" parameterType="PdmChangeOrder">
+        UPDATE pdm_change_order
+        <set>
+            <if test="changeName != null">change_name = #{changeName},</if>
+            <if test="changeLevel != null">change_level = #{changeLevel},</if>
+            <if test="urgentLevel != null">urgent_level = #{urgentLevel},</if>
+            <if test="changeContent != null">change_content = #{changeContent},</if>
+            <if test="changeReason != null">change_reason = #{changeReason},</if>
+            <if test="effectAnalysis != null">effect_analysis = #{effectAnalysis},</if>
+            <if test="changeStatus != null">change_status = #{changeStatus},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="closeTime != null">close_time = #{closeTime},</if>
+            <if test="closeBy != null">close_by = #{closeBy},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE change_id = #{changeId}
+    </update>
+
+    <delete id="deleteChangeByIds" parameterType="Long">
+        UPDATE pdm_change_order SET del_flag = '2' WHERE change_id IN
+        <foreach collection="array" item="changeId" open="(" separator="," close=")">
+            #{changeId}
+        </foreach>
+    </delete>
+
+    <insert id="insertItem" parameterType="PdmChangeOrderItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO pdm_change_order_item (
+            change_id, doc_type, biz_id, biz_no, biz_name, current_version, item_status, order_num, remark
+        )VALUES(
+            #{changeId}, #{docType}, #{bizId}, #{bizNo}, #{bizName}, #{currentVersion}, #{itemStatus}, #{orderNum}, #{remark}
+        )
+    </insert>
+
+    <update id="updateItem" parameterType="PdmChangeOrderItem">
+        UPDATE pdm_change_order_item
+        <set>
+            <if test="newVersion != null">new_version = #{newVersion},</if>
+            <if test="itemStatus != null">item_status = #{itemStatus},</if>
+            <if test="effectTime != null">effect_time = #{effectTime},</if>
+            <if test="effectBy != null">effect_by = #{effectBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE item_id = #{itemId}
+    </update>
+
+    <delete id="deleteItemsByChangeId" parameterType="Long">
+        DELETE FROM pdm_change_order_item WHERE change_id = #{changeId}
+    </delete>
+
+</mapper>

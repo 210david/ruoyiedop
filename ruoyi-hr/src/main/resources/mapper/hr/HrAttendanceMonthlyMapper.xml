@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrAttendanceMonthlyMapper">
+
+    <resultMap type="HrAttendanceMonthly" id="HrAttendanceMonthlyResult">
+        <result property="monthlyId" column="monthly_id"/>
+        <result property="yearMonth" column="year_month"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="attendDays" column="attend_days"/>
+        <result property="lateCount" column="late_count"/>
+        <result property="earlyCount" column="early_count"/>
+        <result property="absentDays" column="absent_days"/>
+        <result property="leaveDays" column="leave_days"/>
+        <result property="outingDays" column="outing_days"/>
+        <result property="tripDays" column="trip_days"/>
+        <result property="requiredDays" column="required_days"/>
+        <result property="actualDays" column="actual_days"/>
+        <result property="overtimeHours" column="overtime_hours"/>
+        <result property="nightShiftCount" column="night_shift_count"/>
+        <result property="highTempDays" column="high_temp_days"/>
+        <result property="sealedStatus" column="sealed_status"/>
+        <result property="sealedBy" column="sealed_by"/>
+        <result property="sealedTime" column="sealed_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT t.monthly_id, t.`year_month`, t.employee_id, t.employee_name, t.employee_no, t.org_id, t.attend_days, t.late_count, t.early_count, t.absent_days, t.leave_days, t.outing_days, t.trip_days, t.required_days, t.actual_days, t.overtime_hours, t.night_shift_count, t.high_temp_days, t.sealed_status, t.sealed_by, t.sealed_time, t.del_flag, t.create_by, t.create_time, t.update_by, t.update_time, t.remark,
+        t.dept_id, t.dept_name,
+        d.dept_name AS org_name
+        FROM biz_hr_attendance_monthly t
+        LEFT JOIN sys_dept d ON t.org_id = d.dept_id
+    </sql>
+
+    <select id="selectHrAttendanceMonthlyList" parameterType="HrAttendanceMonthly" resultMap="HrAttendanceMonthlyResult">
+        <include refid="selectVo"/>
+        <where>
+            (t.del_flag IS NULL OR t.del_flag = '0')
+            <if test="yearMonth != null and yearMonth != ''"> AND t.`year_month` LIKE CONCAT('%', #{yearMonth}, '%')</if>
+            <if test="employeeId != null"> AND t.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND t.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND t.employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="orgId != null"> AND t.org_id = #{orgId}</if>
+            <if test="deptId != null"> AND t.dept_id = #{deptId}</if>
+            <if test="attendDays != null"> AND t.attend_days = #{attendDays}</if>
+            <if test="lateCount != null"> AND t.late_count = #{lateCount}</if>
+            <if test="earlyCount != null"> AND t.early_count = #{earlyCount}</if>
+            <if test="absentDays != null"> AND t.absent_days = #{absentDays}</if>
+            <if test="leaveDays != null"> AND t.leave_days = #{leaveDays}</if>
+            <if test="overtimeHours != null"> AND t.overtime_hours = #{overtimeHours}</if>
+            <if test="nightShiftCount != null"> AND t.night_shift_count = #{nightShiftCount}</if>
+            <if test="highTempDays != null"> AND t.high_temp_days = #{highTempDays}</if>
+            <if test="sealedStatus != null and sealedStatus != ''"> AND t.sealed_status LIKE CONCAT('%', #{sealedStatus}, '%')</if>
+            <if test="sealedBy != null and sealedBy != ''"> AND t.sealed_by LIKE CONCAT('%', #{sealedBy}, '%')</if>
+            <if test="sealedTime != null"> AND t.sealed_time = #{sealedTime}</if>
+            <if test="delFlag != null and delFlag != ''"> AND t.del_flag LIKE CONCAT('%', #{delFlag}, '%')</if>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
+        ORDER BY t.create_time DESC
+    </select>
+
+    <select id="selectHrAttendanceMonthlyById" parameterType="Long" resultMap="HrAttendanceMonthlyResult">
+        <include refid="selectVo"/> WHERE t.monthly_id = #{monthlyId}
+    </select>
+
+    <insert id="insertHrAttendanceMonthly" parameterType="HrAttendanceMonthly" useGeneratedKeys="true" keyProperty="monthlyId">
+        INSERT INTO biz_hr_attendance_monthly (
+            `year_month`, employee_id, employee_name, employee_no, org_id, dept_id, dept_name, attend_days, late_count, early_count, absent_days, leave_days, outing_days, trip_days, required_days, actual_days, overtime_hours, night_shift_count, high_temp_days, sealed_status, sealed_by, sealed_time, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{yearMonth}, #{employeeId}, #{employeeName}, #{employeeNo}, #{orgId}, #{deptId}, #{deptName}, #{attendDays}, #{lateCount}, #{earlyCount}, #{absentDays}, #{leaveDays}, #{outingDays}, #{tripDays}, #{requiredDays}, #{actualDays}, #{overtimeHours}, #{nightShiftCount}, #{highTempDays}, #{sealedStatus}, #{sealedBy}, #{sealedTime}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateHrAttendanceMonthly" parameterType="HrAttendanceMonthly">
+        UPDATE biz_hr_attendance_monthly
+        <set>
+            <if test="yearMonth != null and yearMonth != ''">`year_month` = #{yearMonth},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
+            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
+            <if test="attendDays != null">attend_days = #{attendDays},</if>
+            <if test="lateCount != null">late_count = #{lateCount},</if>
+            <if test="earlyCount != null">early_count = #{earlyCount},</if>
+            <if test="absentDays != null">absent_days = #{absentDays},</if>
+            <if test="leaveDays != null">leave_days = #{leaveDays},</if>
+            <if test="outingDays != null">outing_days = #{outingDays},</if>
+            <if test="tripDays != null">trip_days = #{tripDays},</if>
+            <if test="requiredDays != null">required_days = #{requiredDays},</if>
+            <if test="actualDays != null">actual_days = #{actualDays},</if>
+            <if test="overtimeHours != null">overtime_hours = #{overtimeHours},</if>
+            <if test="nightShiftCount != null">night_shift_count = #{nightShiftCount},</if>
+            <if test="highTempDays != null">high_temp_days = #{highTempDays},</if>
+            <if test="sealedStatus != null and sealedStatus != ''">sealed_status = #{sealedStatus},</if>
+            <if test="sealedBy != null and sealedBy != ''">sealed_by = #{sealedBy},</if>
+            <if test="sealedTime != null">sealed_time = #{sealedTime},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE monthly_id = #{monthlyId}
+    </update>
+
+    <delete id="deleteHrAttendanceMonthlyById" parameterType="Long">
+        UPDATE biz_hr_attendance_monthly SET del_flag = '2' WHERE monthly_id = #{monthlyId}
+    </delete>
+
+    <delete id="deleteHrAttendanceMonthlyByIds" parameterType="Long">
+        UPDATE biz_hr_attendance_monthly SET del_flag = '2' WHERE monthly_id IN
+        <foreach item="monthlyId" collection="array" open="(" separator="," close=")">#{monthlyId}</foreach>
+    </delete>
+
+</mapper>

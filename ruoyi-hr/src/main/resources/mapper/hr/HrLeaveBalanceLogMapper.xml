@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLeaveBalanceLogMapper">
+
+    <resultMap type="HrLeaveBalanceLog" id="HrLeaveBalanceLogResult">
+        <result property="logId" column="log_id"/>
+        <result property="balanceId" column="balance_id"/>
+        <result property="leaveReqId" column="leave_req_id"/>
+        <result property="leaveReqNo" column="leave_req_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="leaveType" column="leave_type"/>
+        <result property="year" column="year"/>
+        <result property="changeDays" column="change_days"/>
+        <result property="beforeUsed" column="before_used"/>
+        <result property="afterUsed" column="after_used"/>
+        <result property="beforeRemaining" column="before_remaining"/>
+        <result property="afterRemaining" column="after_remaining"/>
+        <result property="beforeFrozen" column="before_frozen"/>
+        <result property="afterFrozen" column="after_frozen"/>
+        <result property="changeType" column="change_type"/>
+        <result property="changeReason" column="change_reason"/>
+        <result property="operator" column="operator"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT log_id, balance_id, leave_req_id, leave_req_no, employee_id, employee_name, leave_type, year,
+               change_days, before_used, after_used, before_remaining, after_remaining, before_frozen, after_frozen, change_type, change_reason,
+               operator, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_leave_balance_log
+    </sql>
+
+    <select id="selectHrLeaveBalanceLogList" parameterType="HrLeaveBalanceLog" resultMap="HrLeaveBalanceLogResult">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag IS NULL OR del_flag = '0')
+            <if test="balanceId != null"> AND balance_id = #{balanceId}</if>
+            <if test="leaveReqId != null"> AND leave_req_id = #{leaveReqId}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="leaveType != null and leaveType != ''"> AND leave_type = #{leaveType}</if>
+            <if test="year != null"> AND year = #{year}</if>
+            <if test="changeType != null and changeType != ''"> AND change_type = #{changeType}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insertHrLeaveBalanceLog" parameterType="HrLeaveBalanceLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO biz_hr_leave_balance_log (
+            balance_id, leave_req_id, leave_req_no, employee_id, employee_name, leave_type, year,
+            change_days, before_used, after_used, before_remaining, after_remaining, before_frozen, after_frozen,
+            change_type, change_reason, operator, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{balanceId}, #{leaveReqId}, #{leaveReqNo}, #{employeeId}, #{employeeName}, #{leaveType}, #{year},
+            #{changeDays}, #{beforeUsed}, #{afterUsed}, #{beforeRemaining}, #{afterRemaining}, #{beforeFrozen}, #{afterFrozen},
+            #{changeType}, #{changeReason}, #{operator}, '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+</mapper>

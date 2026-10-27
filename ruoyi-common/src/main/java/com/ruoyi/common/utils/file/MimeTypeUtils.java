@@ -1,0 +1,130 @@
+package com.ruoyi.common.utils.file;
+
+/**
+ * 媒体类型工具类
+ * 
+ * @author ruoyi
+ */
+public class MimeTypeUtils
+{
+    public static final String IMAGE_PNG = "image/png";
+
+    public static final String IMAGE_JPG = "image/jpg";
+
+    public static final String IMAGE_JPEG = "image/jpeg";
+
+    public static final String IMAGE_BMP = "image/bmp";
+
+    public static final String IMAGE_GIF = "image/gif";
+    
+    public static final String[] IMAGE_EXTENSION = { "bmp", "gif", "jpg", "jpeg", "png" };
+
+    public static final String[] FLASH_EXTENSION = { "swf", "flv" };
+
+    public static final String[] MEDIA_EXTENSION = { "swf", "flv", "mp3", "wav", "wma", "wmv", "mid", "avi", "mpg",
+            "asf", "rm", "rmvb" };
+
+    public static final String[] VIDEO_EXTENSION = { "mp4", "avi", "rmvb" };
+
+    public static final String[] DEFAULT_ALLOWED_EXTENSION = {
+            // 图片
+            "bmp", "gif", "jpg", "jpeg", "png",
+            // word excel powerpoint
+            "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt",
+            // 压缩文件
+            "rar", "zip", "gz", "bz2",
+            // 视频格式
+            "mp4", "avi", "rmvb",
+            // pdf
+            "pdf" };
+
+    /**
+     * 禁止上传的文件扩展名（可执行/脚本文件）
+     */
+    public static final String[] FORBIDDEN_EXTENSION = { "exe", "bat", "sh", "jsp", "php", "py", "dll", "so", "cmd", "com", "vbs", "ps1", "jar", "class" };
+
+    /**
+     * 判断是否为禁止上传的扩展名
+     *
+     * @param extension 扩展名
+     * @return 是否被禁止
+     */
+    public static boolean isForbiddenExtension(String extension)
+    {
+        if (extension == null || extension.isEmpty())
+        {
+            return false;
+        }
+        for (String forbidden : FORBIDDEN_EXTENSION)
+        {
+            if (forbidden.equalsIgnoreCase(extension))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断是否为图片扩展名
+     *
+     * @param extension 扩展名
+     * @return 是否为图片
+     */
+    public static boolean isImageExtension(String extension)
+    {
+        if (extension == null || extension.isEmpty())
+        {
+            return false;
+        }
+        for (String imageExt : IMAGE_EXTENSION)
+        {
+            if (imageExt.equalsIgnoreCase(extension))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static String getExtension(String prefix)
+    {
+        switch (prefix)
+        {
+            case IMAGE_PNG:
+                return "png";
+            case IMAGE_JPG:
+            case IMAGE_JPEG:
+                return "jpg";
+            case IMAGE_BMP:
+                return "bmp";
+            case IMAGE_GIF:
+                return "gif";
+            default:
+                return "";
+        }
+    }
+
+    /**
+     * 判断两个扩展名是否等价（如 jpg 与 jpeg 等价）
+     *
+     * @param ext1 扩展名1
+     * @param ext2 扩展名2
+     * @return 是否等价
+     */
+    public static boolean isEquivalentExtension(String ext1, String ext2)
+    {
+        if (ext1 == null || ext2 == null)
+        {
+            return false;
+        }
+        if (ext1.equalsIgnoreCase(ext2))
+        {
+            return true;
+        }
+        // jpg 与 jpeg 等价
+        String norm1 = ext1.equalsIgnoreCase("jpeg") ? "jpg" : ext1.toLowerCase();
+        String norm2 = ext2.equalsIgnoreCase("jpeg") ? "jpg" : ext2.toLowerCase();
+        return norm1.equals(norm2);
+    }
+}

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.SysModuleMapper">
+
+	<resultMap type="SysModule" id="SysModuleResult">
+		<id     property="moduleId"    column="module_id"    />
+		<result property="moduleName"  column="module_name"  />
+		<result property="moduleKey"   column="module_key"   />
+		<result property="rootMenuId"  column="root_menu_id" />
+		<result property="status"      column="status"       />
+		<result property="isCore"      column="is_core"      />
+		<result property="orderNum"    column="order_num"    />
+		<result property="createBy"    column="create_by"    />
+		<result property="createTime"  column="create_time"  />
+		<result property="updateBy"    column="update_by"    />
+		<result property="updateTime"  column="update_time"  />
+		<result property="remark"      column="remark"       />
+		<result property="roleCount"   column="role_count"   />
+		<result property="jobCount"    column="job_count"    />
+	</resultMap>
+
+	<sql id="selectModuleVo">
+		select m.module_id, m.module_name, m.module_key, m.root_menu_id, m.status, m.is_core, m.order_num,
+		       m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+		       (select count(*) from sys_role r where r.module_key = m.module_key and r.del_flag = '0') as role_count,
+		       (select count(*) from sys_job j where j.module_key = m.module_key) as job_count
+		from sys_module m
+	</sql>
+
+	<select id="selectModuleList" parameterType="SysModule" resultMap="SysModuleResult">
+		<include refid="selectModuleVo"/>
+		<where>
+			<if test="moduleName != null and moduleName != ''">
+				AND m.module_name like concat('%', #{moduleName}, '%')
+			</if>
+			<if test="moduleKey != null and moduleKey != ''">
+				AND m.module_key = #{moduleKey}
+			</if>
+			<if test="status != null and status != ''">
+				AND m.status = #{status}
+			</if>
+			<if test="isCore != null and isCore != ''">
+				AND m.is_core = #{isCore}
+			</if>
+		</where>
+		order by m.order_num
+	</select>
+
+	<select id="selectModuleById" parameterType="Long" resultMap="SysModuleResult">
+		<include refid="selectModuleVo"/>
+		where m.module_id = #{moduleId}
+	</select>
+
+	<select id="selectModuleByKey" parameterType="String" resultMap="SysModuleResult">
+		<include refid="selectModuleVo"/>
+		where m.module_key = #{moduleKey}
+	</select>
+
+	<update id="updateModuleStatusConditional">
+		update sys_module
+		   set status = #{newStatus},
+		       update_by = #{updateBy},
+		       update_time = sysdate()
+		 where module_id = #{moduleId}
+		   and status = #{oldStatus}
+	</update>
+
+	<!-- 递归查询菜单及其全部子孙菜单ID（含自身） -->
+	<select id="selectMenuChildIds" parameterType="Long" resultType="Long">
+		WITH RECURSIVE sub_menu AS (
+			SELECT menu_id FROM sys_menu WHERE menu_id = #{menuId}
+			UNION ALL
+			SELECT cm.menu_id FROM sys_menu cm INNER JOIN sub_menu sm ON cm.parent_id = sm.menu_id
+		)
+		SELECT menu_id FROM sub_menu
+	</select>
+
+	<update id="updateMenuStatusByMenuIds">
+		update sys_menu set status = #{status}, update_time = sysdate()
+		 where menu_id in
+		<foreach collection="menuIds" item="menuId" open="(" separator="," close=")">
+			#{menuId}
+		</foreach>
+	</update>
+
+	<!-- 停用模块角色：仅处理启用中的角色并追加停用标记，已单独停用的角色保持原状（避免启用时被误恢复） -->
+	<update id="disableModuleRoles" parameterType="String">
+		update sys_role
+		   set status = '1',
+		       remark = concat(ifnull(remark, ''), ' [模块停用:', #{moduleKey}, ']')
+		 where module_key = #{moduleKey}
+		   and del_flag = '0'
+		   and status = '0'
+		   and ifnull(remark, '') not like concat('%[模块停用:', #{moduleKey}, ']%')
+	</update>
+
+	<!-- 恢复模块角色：仅恢复带停用标记的角色并移除标记 -->
+	<update id="enableModuleRoles" parameterType="String">
+		update sys_role
+		   set status = '0',
+		       remark = replace(ifnull(remark, ''), concat(' [模块停用:', #{moduleKey}, ']'), '')
+		 where module_key = #{moduleKey}
+		   and ifnull(remark, '') like concat('%[模块停用:', #{moduleKey}, ']%')
+	</update>
+
+	<!-- 暂停模块任务：仅处理正常状态的任务并追加停用标记，已单独暂停的任务保持原状 -->
+	<update id="disableModuleJobs" parameterType="String">
+		update sys_job
+		   set status = '1',
+		       remark = concat(ifnull(remark, ''), ' [模块停用:', #{moduleKey}, ']')
+		 where module_key = #{moduleKey}
+		   and status = '0'
+		   and ifnull(remark, '') not like concat('%[模块停用:', #{moduleKey}, ']%')
+	</update>
+
+	<!-- 恢复模块任务：仅恢复带停用标记的任务并移除标记 -->
+	<update id="enableModuleJobs" parameterType="String">
+		update sys_job
+		   set status = '0',
+		       remark = replace(ifnull(remark, ''), concat(' [模块停用:', #{moduleKey}, ']'), '')
+		 where module_key = #{moduleKey}
+		   and ifnull(remark, '') like concat('%[模块停用:', #{moduleKey}, ']%')
+	</update>
+
+</mapper>

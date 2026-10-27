@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsCapaRootCauseMapper">
+    <resultMap type="QmsCapaRootCause" id="QmsCapaRootCauseResult">
+        <id property="rootCauseId" column="root_cause_id"/>
+        <result property="capaId" column="capa_id"/>
+        <result property="capaNo" column="capa_no"/>
+        <result property="analysisType" column="analysis_type"/>
+        <result property="why1" column="why1"/>
+        <result property="why2" column="why2"/>
+        <result property="why3" column="why3"/>
+        <result property="why4" column="why4"/>
+        <result property="why5" column="why5"/>
+        <result property="rootCause" column="root_cause"/>
+        <result property="fishboneData" column="fishbone_data"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select root_cause_id, capa_id, capa_no, analysis_type, why1, why2, why3, why4, why5, root_cause, fishbone_data, create_by, create_time, update_by, update_time, remark from qms_capa_root_cause</sql>
+
+    <select id="selectRootCauseList" parameterType="QmsCapaRootCause" resultMap="QmsCapaRootCauseResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="capaId != null">and capa_id = #{capaId}</if>
+            <if test="capaNo != null and capaNo != ''">and capa_no = #{capaNo}</if>
+            <if test="analysisType != null and analysisType != ''">and analysis_type = #{analysisType}</if>
+        </where>
+        order by root_cause_id desc
+    </select>
+
+    <select id="selectByCapaId" parameterType="Long" resultMap="QmsCapaRootCauseResult">
+        <include refid="selectVo"/> where capa_id = #{capaId}
+    </select>
+
+    <select id="selectRootCauseById" parameterType="Long" resultMap="QmsCapaRootCauseResult">
+        <include refid="selectVo"/> where root_cause_id = #{rootCauseId}
+    </select>
+
+    <insert id="insertRootCause" parameterType="QmsCapaRootCause" useGeneratedKeys="true" keyProperty="rootCauseId">
+        insert into qms_capa_root_cause(capa_id, capa_no, analysis_type, why1, why2, why3, why4, why5, root_cause, fishbone_data, create_by, create_time, remark)
+        values(#{capaId}, #{capaNo}, #{analysisType}, #{why1}, #{why2}, #{why3}, #{why4}, #{why5}, #{rootCause}, #{fishboneData}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateRootCause" parameterType="QmsCapaRootCause">
+        update qms_capa_root_cause
+        <set>
+            <if test="analysisType != null">analysis_type = #{analysisType},</if>
+            <if test="why1 != null">why1 = #{why1},</if>
+            <if test="why2 != null">why2 = #{why2},</if>
+            <if test="why3 != null">why3 = #{why3},</if>
+            <if test="why4 != null">why4 = #{why4},</if>
+            <if test="why5 != null">why5 = #{why5},</if>
+            <if test="rootCause != null">root_cause = #{rootCause},</if>
+            <if test="fishboneData != null">fishbone_data = #{fishboneData},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where root_cause_id = #{rootCauseId}
+    </update>
+
+    <delete id="deleteRootCauseByIds" parameterType="Long">
+        delete from qms_capa_root_cause where root_cause_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

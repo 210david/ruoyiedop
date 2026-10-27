@@ -1,0 +1,295 @@
+package com.ruoyi.web.controller.system;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.constant.UserConstants;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.entity.SysMenu;
+import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.system.service.ISysMenuService;
+
+/**
+ * 菜单信息
+ * 
+ * @author ruoyi
+ */
+@RestController
+@RequestMapping("/system/menu")
+public class SysMenuController extends BaseController
+{
+    private static final Logger log = LoggerFactory.getLogger(SysMenuController.class);
+
+    @Autowired
+    private ISysMenuService menuService;
+
+    /**
+     * 获取菜单列表
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:list')")
+    @GetMapping("/list")
+    public AjaxResult list(SysMenu menu)
+    {
+        List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
+        return success(menus);
+    }
+
+    /**
+     * 根据菜单编号获取详细信息
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:query')")
+    @GetMapping(value = "/{menuId}")
+    public AjaxResult getInfo(@PathVariable Long menuId)
+    {
+        return success(menuService.selectMenuById(menuId));
+    }
+
+    /**
+     * 获取菜单下拉树列表（过滤停用菜单及其子菜单）
+     */
+    @GetMapping("/treeselect")
+    public AjaxResult treeselect(SysMenu menu)
+    {
+        List<SysMenu> menus = menuService.selectMenuList(menu, getUserId());
+        return success(menuService.buildMenuTreeSelect(filterDisabledMenus(menus)));
+    }
+
+    /**
+     * 加载对应角色菜单列表树（过滤停用菜单及其子菜单）
+     */
+    @GetMapping(value = "/roleMenuTreeselect/{roleId}")
+    public AjaxResult roleMenuTreeselect(@PathVariable("roleId") Long roleId)
+    {
+        List<SysMenu> menus = filterDisabledMenus(menuService.selectMenuList(getUserId()));
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("checkedKeys", menuService.selectMenuListByRoleId(roleId));
+        ajax.put("menus", menuService.buildMenuTreeSelect(menus));
+        return ajax;
+    }
+
+    /**
+     * 过滤停用菜单及其全部子菜单
+     * 
+     * @param menus 菜单列表
+     * @return 仅含正常状态菜单及其上级链路的菜单列表
+     */
+    private List<SysMenu> filterDisabledMenus(List<SysMenu> menus)
+    {
+        Map<Long, SysMenu> menuMap = new HashMap<>();
+        for (SysMenu menu : menus)
+        {
+            menuMap.put(menu.getMenuId(), menu);
+        }
+        List<SysMenu> result = new ArrayList<>();
+        for (SysMenu menu : menus)
+        {
+            if (isEnabledWithAncestors(menu, menuMap))
+            {
+                result.add(menu);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 判断菜单及其所有上级菜单是否均为正常状态
+     * 
+     * @param menu 当前菜单
+     * @param menuMap 列表内全部菜单（menuId -> SysMenu）
+     * @return true 表示菜单本身及上级链路均未停用
+     */
+    private boolean isEnabledWithAncestors(SysMenu menu, Map<Long, SysMenu> menuMap)
+    {
+        // sys_menu.status：0=正常，1=停用
+        if ("1".equals(menu.getStatus()))
+        {
+            return false;
+        }
+        Long parentId = menu.getParentId();
+        if (parentId == null || parentId.longValue() == 0L)
+        {
+            return true;
+        }
+        SysMenu parent = menuMap.get(parentId);
+        if (parent == null)
+        {
+            return true;
+        }
+        return isEnabledWithAncestors(parent, menuMap);
+    }
+
+    /**
+     * 新增菜单
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:add')")
+    @Log(title = "菜单管理", businessType = BusinessType.INSERT)
+    @PostMapping
+    public AjaxResult add(@Validated @RequestBody SysMenu menu)
+    {
+        if (!menuService.checkMenuNameUnique(menu))
+        {
+            return error("新增菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
+        }
+        else if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath()))
+        {
+            return error("新增菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
+        }
+        else if (!menuService.checkRouteConfigUnique(menu))
+        {
+            return error("新增菜单'" + menu.getMenuName() + "'失败，路由名称或地址已存在");
+        }
+        menu.setCreateBy(getUsername());
+        return toAjax(menuService.insertMenu(menu));
+    }
+
+    /**
+     * 修改菜单
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@Validated @RequestBody SysMenu menu)
+    {
+        if (!menuService.checkMenuNameUnique(menu))
+        {
+            return error("修改菜单'" + menu.getMenuName() + "'失败，菜单名称已存在");
+        }
+        else if (UserConstants.YES_FRAME.equals(menu.getIsFrame()) && !StringUtils.ishttp(menu.getPath()))
+        {
+            return error("修改菜单'" + menu.getMenuName() + "'失败，地址必须以http(s)://开头");
+        }
+        else if (menu.getMenuId().equals(menu.getParentId()))
+        {
+            return error("修改菜单'" + menu.getMenuName() + "'失败，上级菜单不能选择自己");
+        }
+        else if (!menuService.checkRouteConfigUnique(menu))
+        {
+            return error("修改菜单'" + menu.getMenuName() + "'失败，路由名称或地址已存在");
+        }
+        menu.setUpdateBy(getUsername());
+        return toAjax(menuService.updateMenu(menu));
+    }
+
+    /**
+     * 保存菜单排序
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "保存菜单排序", businessType = BusinessType.UPDATE)
+    @PutMapping("/updateSort")
+    public AjaxResult updateSort(@RequestBody Map<String, String> params)
+    {
+        String[] menuIds = params.get("menuIds").split(",");
+        String[] orderNums = params.get("orderNums").split(",");
+        menuService.updateMenuSort(menuIds, orderNums);
+        return success();
+    }
+
+    /**
+     * 删除菜单
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:remove')")
+    @Log(title = "菜单管理", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{menuId}")
+    public AjaxResult remove(@PathVariable("menuId") Long menuId)
+    {
+        if (menuService.hasChildByMenuId(menuId))
+        {
+            return warn("存在子菜单,不允许删除");
+        }
+        if (menuService.checkMenuExistRole(menuId))
+        {
+            return warn("菜单已分配,不允许删除");
+        }
+        return toAjax(menuService.deleteMenuById(menuId));
+    }
+
+    /**
+     * 上传自定义菜单图标（SVG格式）
+     * 将SVG文件保存到服务器指定目录，同时返回SVG内容供前端动态注册到sprite
+     */
+    @PreAuthorize("@ss.hasPermi('system:menu:edit')")
+    @Log(title = "菜单图标上传", businessType = BusinessType.IMPORT)
+    @PostMapping("/icon/upload")
+    public AjaxResult uploadIcon(MultipartFile file)
+    {
+        try
+        {
+            // 校验文件
+            if (file == null || file.isEmpty())
+            {
+                return AjaxResult.error("文件不能为空");
+            }
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".svg"))
+            {
+                return AjaxResult.error("只能上传SVG格式文件");
+            }
+            // 文件大小校验（100KB）
+            if (file.getSize() > 100 * 1024)
+            {
+                return AjaxResult.error("SVG文件大小不能超过100KB");
+            }
+            // 提取图标名称（去掉.svg后缀）
+            String iconName = originalFilename.substring(0, originalFilename.length() - 4)
+                    .replaceAll("[^a-zA-Z0-9_-]", "-")
+                    .toLowerCase();
+            if (StringUtils.isEmpty(iconName))
+            {
+                return AjaxResult.error("图标名称无效");
+            }
+            // 读取SVG内容
+            String svgContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            // 基本安全校验：检查是否包含可疑内容
+            String lowerContent = svgContent.toLowerCase();
+            if (lowerContent.contains("<script") || lowerContent.contains("javascript:") || lowerContent.contains("onerror"))
+            {
+                return AjaxResult.error("SVG文件包含不安全的内容");
+            }
+            // 保存到 profile/icons/ 目录
+            String iconDir = RuoYiConfig.getProfile() + "/icons";
+            File dir = new File(iconDir);
+            if (!dir.exists())
+            {
+                dir.mkdirs();
+            }
+            String filePath = iconDir + "/" + iconName + ".svg";
+            Files.write(Paths.get(filePath), file.getBytes());
+            log.info("菜单图标上传成功: {}", filePath);
+            // 返回结果
+            AjaxResult ajax = AjaxResult.success();
+            ajax.put("iconName", iconName);
+            ajax.put("svgContent", svgContent);
+            return ajax;
+        }
+        catch (IOException e)
+        {
+            log.error("上传菜单图标失败", e);
+            return AjaxResult.error("上传失败：" + e.getMessage());
+        }
+    }
+}

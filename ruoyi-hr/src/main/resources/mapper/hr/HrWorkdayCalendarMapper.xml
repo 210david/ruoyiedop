@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrWorkdayCalendarMapper">
+
+    <resultMap type="HrWorkdayCalendar" id="HrWorkdayCalendarResult">
+        <result property="calendarId" column="calendar_id"/>
+        <result property="calendarDate" column="calendar_date"/>
+        <result property="year" column="year"/>
+        <result property="month" column="month"/>
+        <result property="weekDay" column="week_day"/>
+        <result property="dateType" column="date_type"/>
+        <result property="shiftId" column="shift_id"/>
+        <result property="shiftName" column="shift_name"/>
+        <result property="holidayName" column="holiday_name"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT calendar_id, calendar_date, year, month, week_day, date_type, shift_id, shift_name, holiday_name, status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_workday_calendar
+    </sql>
+
+    <select id="selectHrWorkdayCalendarList" parameterType="HrWorkdayCalendar" resultMap="HrWorkdayCalendarResult">
+        <include refid="selectVo"/>
+        <where>
+            (del_flag IS NULL OR del_flag = '0')
+            <if test="year != null"> AND year = #{year}</if>
+            <if test="month != null"> AND month = #{month}</if>
+            <if test="weekDay != null"> AND week_day = #{weekDay}</if>
+            <if test="dateType != null and dateType != ''"> AND date_type = #{dateType}</if>
+            <if test="shiftId != null"> AND shift_id = #{shiftId}</if>
+            <if test="shiftName != null and shiftName != ''"> AND shift_name LIKE CONCAT('%', #{shiftName}, '%')</if>
+            <if test="holidayName != null and holidayName != ''"> AND holiday_name LIKE CONCAT('%', #{holidayName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginCalendarDate != null and params.beginCalendarDate != ''"> AND calendar_date &gt;= #{params.beginCalendarDate}</if>
+            <if test="params.endCalendarDate != null and params.endCalendarDate != ''"> AND calendar_date &lt;= #{params.endCalendarDate}</if>
+        </where>
+        ORDER BY calendar_date ASC
+    </select>
+
+    <select id="selectHrWorkdayCalendarById" parameterType="Long" resultMap="HrWorkdayCalendarResult">
+        <include refid="selectVo"/> WHERE calendar_id = #{calendarId}
+    </select>
+
+    <select id="selectByDate" resultMap="HrWorkdayCalendarResult">
+        <include refid="selectVo"/>
+        WHERE calendar_date = #{calendarDate}
+          AND (del_flag IS NULL OR del_flag = '0')
+        LIMIT 1
+    </select>
+
+    <insert id="insertHrWorkdayCalendar" parameterType="HrWorkdayCalendar" useGeneratedKeys="true" keyProperty="calendarId">
+        INSERT INTO biz_hr_workday_calendar (
+            calendar_date, year, month, week_day, date_type, shift_id, shift_name, holiday_name, status, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{calendarDate}, #{year}, #{month}, #{weekDay}, #{dateType}, #{shiftId}, #{shiftName}, #{holidayName}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <insert id="batchInsertHrWorkdayCalendar" parameterType="java.util.List">
+        INSERT INTO biz_hr_workday_calendar (
+            calendar_date, year, month, week_day, date_type, shift_id, shift_name, holiday_name, status, del_flag, create_by, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.calendarDate}, #{item.year}, #{item.month}, #{item.weekDay}, #{item.dateType}, #{item.shiftId}, #{item.shiftName}, #{item.holidayName}, '0', '0', #{item.createBy}, sysdate())
+        </foreach>
+    </insert>
+
+    <update id="updateHrWorkdayCalendar" parameterType="HrWorkdayCalendar">
+        UPDATE biz_hr_workday_calendar
+        <set>
+            <if test="calendarDate != null">calendar_date = #{calendarDate},</if>
+            <if test="year != null">year = #{year},</if>
+            <if test="month != null">month = #{month},</if>
+            <if test="weekDay != null">week_day = #{weekDay},</if>
+            <if test="dateType != null and dateType != ''">date_type = #{dateType},</if>
+            <if test="shiftId != null">shift_id = #{shiftId},</if>
+            <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
+            <if test="holidayName != null">holiday_name = #{holidayName},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE calendar_id = #{calendarId}
+    </update>
+
+    <delete id="deleteHrWorkdayCalendarById" parameterType="Long">
+        UPDATE biz_hr_workday_calendar SET del_flag = '2' WHERE calendar_id = #{calendarId}
+    </delete>
+
+    <delete id="deleteHrWorkdayCalendarByIds" parameterType="Long">
+        UPDATE biz_hr_workday_calendar SET del_flag = '2' WHERE calendar_id IN
+        <foreach item="calendarId" collection="array" open="(" separator="," close=")">#{calendarId}</foreach>
+    </delete>
+
+    <update id="batchUpdateDateType">
+        UPDATE biz_hr_workday_calendar
+        SET date_type = #{dateType},
+            <if test="holidayName != null and holidayName != ''">holiday_name = #{holidayName},</if>
+            <if test="holidayName == null or holidayName == ''">holiday_name = NULL,</if>
+            update_by = #{updateBy},
+            update_time = sysdate()
+        WHERE calendar_id IN
+        <foreach item="cid" collection="calendarIds" open="(" separator="," close=")">#{cid}</foreach>
+    </update>
+
+    <select id="countByYear" resultType="int">
+        SELECT COUNT(*) FROM biz_hr_workday_calendar WHERE year = #{year} AND (del_flag IS NULL OR del_flag = '0')
+    </select>
+
+    <delete id="deleteByYear">
+        DELETE FROM biz_hr_workday_calendar WHERE year = #{year}
+    </delete>
+
+</mapper>

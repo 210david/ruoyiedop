@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkLeadLogMapper">
+
+    <resultMap type="MkLeadLog" id="MkLeadLogResult">
+        <result property="logId"         column="log_id"/>
+        <result property="leadId"        column="lead_id"/>
+        <result property="actionType"    column="action_type"/>
+        <result property="actionDesc"    column="action_desc"/>
+        <result property="operatorId"    column="operator_id"/>
+        <result property="operatorName"  column="operator_name"/>
+        <result property="operateTime"   column="operate_time"/>
+    </resultMap>
+
+    <select id="selectLeadLogList" parameterType="Long" resultMap="MkLeadLogResult">
+        SELECT log_id, lead_id, action_type, action_desc, operator_id, operator_name, operate_time
+        FROM mk_lead_log
+        WHERE lead_id = #{leadId}
+        ORDER BY operate_time ASC
+    </select>
+
+    <insert id="insertLeadLog" parameterType="MkLeadLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_lead_log (lead_id, action_type, action_desc, operator_id, operator_name, operate_time)
+        VALUES (#{leadId}, #{actionType}, #{actionDesc}, #{operatorId}, #{operatorName}, sysdate())
+    </insert>
+
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodBatchRuleMapper">
+
+    <resultMap type="FoodBatchRule" id="FoodBatchRuleResult">
+        <id     property="ruleId"      column="rule_id"      />
+        <result property="ruleName"    column="rule_name"    />
+        <result property="materialId"  column="material_id"  />
+        <result property="rulePattern" column="rule_pattern" />
+        <result property="currentSeq"  column="current_seq"  />
+        <result property="seqDate"     column="seq_date"     />
+        <result property="status"      column="status"       />
+        <result property="delFlag"     column="del_flag"     />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+        <result property="materialName" column="material_name" />
+    </resultMap>
+
+    <sql id="selectRuleVo">
+        select r.rule_id, r.rule_name, r.material_id, r.rule_pattern, r.current_seq, r.seq_date,
+               r.status, r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               mm.material_name
+        from food_batch_rule r
+        left join wms_material mm on mm.material_id = r.material_id
+    </sql>
+
+    <select id="selectRuleById" parameterType="Long" resultMap="FoodBatchRuleResult">
+        <include refid="selectRuleVo"/>
+        where r.rule_id = #{ruleId} and r.del_flag = '0'
+    </select>
+
+    <select id="selectRuleList" parameterType="FoodBatchRule" resultMap="FoodBatchRuleResult">
+        <include refid="selectRuleVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="ruleName != null and ruleName != ''">
+                AND r.rule_name like concat('%', #{ruleName}, '%')
+            </if>
+            <if test="materialId != null">
+                AND r.material_id = #{materialId}
+            </if>
+            <if test="status != null and status != ''">
+                AND r.status = #{status}
+            </if>
+        </where>
+        order by r.material_id, r.rule_id
+    </select>
+
+    <select id="selectRuleByMaterial" parameterType="Long" resultMap="FoodBatchRuleResult">
+        <include refid="selectRuleVo"/>
+        where r.material_id = #{materialId} and r.status = '0' and r.del_flag = '0'
+        limit 1
+    </select>
+
+    <insert id="insertRule" parameterType="FoodBatchRule" useGeneratedKeys="true" keyProperty="ruleId">
+        insert into food_batch_rule (rule_name, material_id, rule_pattern, current_seq, seq_date, status, create_by, create_time, remark)
+        values (#{ruleName}, #{materialId}, #{rulePattern}, 0, null, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateRule" parameterType="FoodBatchRule">
+        update food_batch_rule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="ruleName != null and ruleName != ''">rule_name = #{ruleName},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="rulePattern != null and rulePattern != ''">rule_pattern = #{rulePattern},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="currentSeq != null">current_seq = #{currentSeq},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where rule_id = #{ruleId}
+    </update>
+
+    <update id="deleteRuleByIds" parameterType="Long">
+        update food_batch_rule set del_flag = '2', update_time = sysdate() where rule_id in
+        <foreach collection="array" item="ruleId" open="(" separator="," close=")">
+            #{ruleId}
+        </foreach>
+    </update>
+
+    <!-- 原子取号：跨日重置+自增一步完成；LAST_INSERT_ID连接级隔离，需与selectLastSeq同事务同连接 -->
+    <update id="nextSeq" parameterType="FoodBatchRule">
+        update food_batch_rule
+           set current_seq = LAST_INSERT_ID(if(seq_date = #{seqDate}, current_seq + 1, 1)),
+               seq_date = #{seqDate}
+         where rule_id = #{ruleId}
+    </update>
+
+    <select id="selectLastSeq" resultType="Long">
+        select LAST_INSERT_ID()
+    </select>
+
+</mapper>

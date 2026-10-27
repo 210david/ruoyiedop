@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsBomMapper">
+
+    <resultMap type="MmsBom" id="MmsBomResult">
+        <id property="bomId" column="bom_id"/>
+        <result property="bomNo" column="bom_no"/>
+        <result property="bomName" column="bom_name"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="bomType" column="bom_type"/>
+        <result property="version" column="version"/>
+        <result property="baseQty" column="base_qty"/>
+        <result property="baseUnit" column="base_unit"/>
+        <result property="status" column="status"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap type="MmsBomDetail" id="MmsBomDetailResult">
+        <id property="detailId" column="detail_id"/>
+        <result property="bomId" column="bom_id"/>
+        <result property="seq" column="seq"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="unit" column="unit"/>
+        <result property="usageQty" column="usage_qty"/>
+        <result property="lossRate" column="loss_rate"/>
+        <result property="isKeyMaterial" column="is_key_material"/>
+        <result property="supplyType" column="supply_type"/>
+        <result property="pickStoreId" column="pick_store_id"/>
+        <result property="pickStoreName" column="pick_store_name"/>
+        <result property="isPhantom" column="is_phantom"/>
+        <result property="bomRefId" column="bom_ref_id"/>
+        <result property="bomRefNo" column="bom_ref_no"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectBomVo">
+        SELECT b.bom_id, b.bom_no, b.bom_name, b.product_id, b.product_code, b.product_name, b.bom_type, b.version, b.base_qty, b.base_unit, b.status, b.effective_date, b.expire_date, b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM mms_bom b
+    </sql>
+
+    <sql id="selectBomDetailVo">
+        SELECT d.detail_id, d.bom_id, d.seq, d.material_id, d.material_code, d.material_name, d.spec_model, d.unit, d.usage_qty, d.loss_rate, d.is_key_material, d.supply_type, d.pick_store_id, d.is_phantom, d.bom_ref_id, d.del_flag, d.create_by, d.create_time, d.update_by, d.update_time, d.remark,
+               b.bom_no AS bom_ref_no,
+               w.warehouse_name AS pick_store_name
+        FROM mms_bom_detail d
+        LEFT JOIN mms_bom b ON d.bom_ref_id = b.bom_id AND b.del_flag = '0'
+        LEFT JOIN wms_warehouse w ON d.pick_store_id = w.warehouse_id
+        WHERE d.del_flag = '0'
+    </sql>
+
+    <select id="selectBomList" parameterType="MmsBom" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        <where>
+            b.del_flag = '0'
+            <if test="bomNo != null and bomNo != ''"> AND b.bom_no LIKE CONCAT('%', #{bomNo}, '%')</if>
+            <if test="bomName != null and bomName != ''"> AND b.bom_name LIKE CONCAT('%', #{bomName}, '%')</if>
+            <if test="productId != null"> AND b.product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''"> AND b.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''"> AND b.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="bomType != null and bomType != ''"> AND b.bom_type = #{bomType}</if>
+            <if test="status != null and status != ''"> AND b.status = #{status}</if>
+            <if test="productMaterialType != null and productMaterialType != ''"> AND EXISTS (SELECT 1 FROM wms_material m WHERE m.material_id = b.product_id AND m.material_type = #{productMaterialType})</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(b.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(b.create_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY b.bom_id DESC
+    </select>
+
+    <select id="selectBomById" parameterType="Long" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.bom_id = #{bomId} AND b.del_flag = '0'
+    </select>
+
+    <insert id="insertBom" parameterType="MmsBom" useGeneratedKeys="true" keyProperty="bomId">
+        INSERT INTO mms_bom (
+            bom_no,
+            bom_name,
+            product_id,
+            product_code,
+            product_name,
+            bom_type,
+            version,
+            base_qty,
+            base_unit,
+            status,
+            effective_date,
+            expire_date,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{bomNo},
+            #{bomName},
+            <choose><when test="productId != null">#{productId}</when><otherwise>NULL</otherwise></choose>,
+            #{productCode},
+            #{productName},
+            #{bomType},
+            #{version},
+            #{baseQty},
+            #{baseUnit},
+            #{status},
+            #{effectiveDate},
+            #{expireDate},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateBom" parameterType="MmsBom">
+        UPDATE mms_bom SET
+            bom_no = #{bomNo},
+            bom_name = #{bomName},
+            product_id = #{productId},
+            product_code = #{productCode},
+            product_name = #{productName},
+            bom_type = #{bomType},
+            version = #{version},
+            base_qty = #{baseQty},
+            base_unit = #{baseUnit},
+            status = #{status},
+            effective_date = #{effectiveDate},
+            expire_date = #{expireDate},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE bom_id = #{bomId}
+    </update>
+
+    <delete id="deleteBomByIds" parameterType="Long">
+        UPDATE mms_bom SET del_flag = '2' WHERE bom_id IN
+        <foreach collection="array" item="bomId" open="(" separator="," close=")">
+            #{bomId}
+        </foreach>
+    </delete>
+
+    <!-- ============ BOM明细 ============ -->
+
+    <select id="selectBomDetailByBomId" parameterType="Long" resultMap="MmsBomDetailResult">
+        <include refid="selectBomDetailVo"/>
+        AND d.bom_id = #{bomId}
+        ORDER BY d.seq, d.detail_id
+    </select>
+
+    <insert id="insertBomDetail" parameterType="MmsBomDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO mms_bom_detail (
+            bom_id,
+            seq,
+            material_id,
+            material_code,
+            material_name,
+            spec_model,
+            unit,
+            usage_qty,
+            loss_rate,
+            is_key_material,
+            supply_type,
+            pick_store_id,
+            is_phantom,
+            bom_ref_id,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{bomId},
+            #{seq},
+            #{materialId},
+            #{materialCode},
+            #{materialName},
+            #{specModel},
+            #{unit},
+            #{usageQty},
+            #{lossRate},
+            #{isKeyMaterial},
+            #{supplyType},
+            #{pickStoreId},
+            #{isPhantom},
+            #{bomRefId},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <delete id="deleteBomDetailByBomId" parameterType="Long">
+        UPDATE mms_bom_detail SET del_flag = '2' WHERE bom_id = #{bomId}
+    </delete>
+
+    <!-- ============ BOM发布校验 ============ -->
+
+    <select id="countPublishedByProductId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM mms_bom WHERE product_id = #{productId} AND status = '1' AND del_flag = '0'
+    </select>
+
+    <select id="selectBomByProductId" parameterType="Long" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.product_id = #{productId} AND b.status = '1' AND b.del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <update id="updateBomStatus" parameterType="MmsBom">
+        UPDATE mms_bom SET
+            status = #{status},
+            effective_date = #{effectiveDate},
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        WHERE bom_id = #{bomId}
+    </update>
+
+    <!-- ============ 导入相关查询 ============ -->
+
+    <!-- 根据产品编码+版本号查询已存在的BOM -->
+    <select id="selectBomByProductCodeAndVersion" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.del_flag = '0' AND b.product_code = #{productCode} AND b.version = #{version}
+        LIMIT 1
+    </select>
+
+    <!-- 根据物料编码查询物料信息（跨模块查询 wms_material） -->
+    <select id="selectMaterialByCode" resultType="java.util.HashMap">
+        SELECT
+            material_id AS materialId,
+            material_code AS materialCode,
+            material_name AS materialName,
+            material_type AS materialType,
+            spec_model AS specModel,
+            unit
+        FROM wms_material
+        WHERE del_flag = '0' AND material_code = #{materialCode}
+        LIMIT 1
+    </select>
+
+    <!-- ============ 接收产品设计模块下发的MBOM（纯新增，跨模块衔接点一） ============ -->
+
+    <!-- 根据物料ID查询物料信息（校验产品物料有效） -->
+    <select id="selectMaterialById" resultType="java.util.HashMap">
+        SELECT
+            material_id AS materialId,
+            material_code AS materialCode,
+            material_name AS materialName,
+            material_type AS materialType,
+            spec_model AS specModel,
+            unit
+        FROM wms_material
+        WHERE del_flag = '0' AND material_id = #{materialId}
+        LIMIT 1
+    </select>
+
+    <!-- 查询产品当前已发布状态的BOM列表（停用旧版本，D3口径） -->
+    <select id="selectPublishedListByProductId" parameterType="Long" resultMap="MmsBomResult">
+        <include refid="selectBomVo"/>
+        WHERE b.product_id = #{productId} AND b.status = '1' AND b.del_flag = '0'
+    </select>
+
+    <!-- 停用BOM并记录失效日期 -->
+    <update id="disableBomWithExpire" parameterType="MmsBom">
+        UPDATE mms_bom SET
+            status = '2',
+            expire_date = #{expireDate},
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        WHERE bom_id = #{bomId}
+    </update>
+
+</mapper>

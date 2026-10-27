@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinReportMapper">
+
+    <!--
+      【报表取数公共条件】
+      1. 仅统计已审核/已记账凭证（DRAFT 不进报表），与 P1 试算平衡口径一致
+      2. 排除已作废分录（del_flag='0'）
+      3. 金额按 direction 区分借贷，不做净额预处理
+    -->
+    <sql id="reportCondition">
+        e.del_flag = '0'
+        AND v.del_flag = '0'
+        AND v.status IN ('AUDITED', 'POSTED')
+    </sql>
+
+    <!--
+      按科目类别汇总发生额。
+      yearToDate=true 时损益类取本年累计（利润表用），
+      否则取本期发生（资产负债表用）。
+    -->
+    <select id="sumByCategory" resultType="java.util.LinkedHashMap">
+        SELECT s.category                                  AS category,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE -e.amount END) AS netAmount
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+        JOIN fin_subject s ON s.subject_code = e.account_code AND s.del_flag = '0'
+        WHERE <include refid="reportCondition"/>
+        <choose>
+            <when test="yearToDate">
+                AND e.period LIKE CONCAT(#{yearPrefix}, '%')
+            </when>
+            <otherwise>
+                AND e.period = #{period}
+            </otherwise>
+        </choose>
+        GROUP BY s.category
+    </select>
+
+    <!--
+      资产负债表明细行。
+      期初取 fin_ledger（结账物化，上期期末），
+      本期发生取凭证分录，期末 = 期初 + 本期借贷差。
+      仅取明细科目（is_leaf='1'），按科目类别 + 编码排序。
+    -->
+    <select id="selectBalanceSheet" resultType="java.util.LinkedHashMap">
+        SELECT s.category                                    AS category,
+               s.subject_code                                AS accountCode,
+               s.subject_name                                AS accountName,
+               s.direction                                    AS direction,
+               COALESCE(l.opening_debit, 0)                  AS openingDebit,
+               COALESCE(l.opening_credit, 0)                 AS openingCredit,
+               COALESCE(t.debitAmount, 0)                    AS periodDebit,
+               COALESCE(t.creditAmount, 0)                   AS periodCredit,
+               COALESCE(l.opening_debit, 0) + COALESCE(t.debitAmount, 0)
+                   - COALESCE(l.opening_credit, 0) - COALESCE(t.creditAmount, 0) AS closingBalance
+        FROM fin_subject s
+        LEFT JOIN fin_ledger l
+               ON l.account_code = s.subject_code AND l.period = #{period} AND l.del_flag = '0'
+        LEFT JOIN (
+            SELECT e.account_code,
+                   SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+                   SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount
+            FROM fin_voucher_entry e
+            JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+            WHERE <include refid="reportCondition"/>
+              AND e.period = #{period}
+            GROUP BY e.account_code
+        ) t ON t.account_code = s.subject_code
+        WHERE s.del_flag = '0'
+          AND s.status = '0'
+          AND s.is_leaf = '1'
+          AND s.category IN ('ASSET', 'LIABILITY', 'EQUITY')
+        ORDER BY FIELD(s.category, 'ASSET', 'LIABILITY', 'EQUITY'), s.subject_code
+    </select>
+
+    <!--
+      利润表明细行。
+      损益类科目（category IN INCOME/COST）取本期发生 + 本年累计。
+      收入类科目方向为贷，费用类为借：
+        收入净额 = 贷方发生 - 借方发生（红字冲销场景）
+        费用净额 = 借方发生 - 贷方发生
+    -->
+    <select id="selectIncomeStatement" resultType="java.util.LinkedHashMap">
+        SELECT s.category                                    AS category,
+               s.subject_code                                AS accountCode,
+               s.subject_name                                AS accountName,
+               s.direction                                    AS direction,
+               COALESCE(cur.debitAmount, 0)                 AS periodDebit,
+               COALESCE(cur.creditAmount, 0)                AS periodCredit,
+               COALESCE(cur.debitAmount, 0)
+                   + COALESCE(cur.creditAmount, 0)          AS periodAmount,
+               COALESCE(ytd.debitAmount, 0)                 AS ytdDebit,
+               COALESCE(ytd.creditAmount, 0)                AS ytdCredit,
+               COALESCE(ytd.debitAmount, 0)
+                   + COALESCE(ytd.creditAmount, 0)          AS ytdAmount
+        FROM fin_subject s
+        LEFT JOIN (
+            SELECT e.account_code,
+                   SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+                   SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount
+            FROM fin_voucher_entry e
+            JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+            WHERE <include refid="reportCondition"/>
+              AND e.period = #{period}
+            GROUP BY e.account_code
+        ) cur ON cur.account_code = s.subject_code
+        LEFT JOIN (
+            SELECT e.account_code,
+                   SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+                   SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount
+            FROM fin_voucher_entry e
+            JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+            WHERE <include refid="reportCondition"/>
+              AND e.period LIKE CONCAT(#{yearPrefix}, '%')
+            GROUP BY e.account_code
+        ) ytd ON ytd.account_code = s.subject_code
+        WHERE s.del_flag = '0'
+          AND s.status = '0'
+          AND s.category IN ('INCOME', 'COST')
+        ORDER BY FIELD(s.category, 'INCOME', 'COST'), s.subject_code
+    </select>
+
+    <!--
+      现金流量表汇总：按科目现金流量分类统计本期发生额。
+      口径（简化版）：
+        经营活动净额 = 经营类科目借方发生 - 贷方发生 的反向，即净流量
+        收入类产生现金流入（贷方），费用类产生现金流出（借方）
+      为便于中小企业理解，此处直接输出三类科目的借贷发生额，
+      由Service 层按「流入 - 流出」计算净额。
+    -->
+    <select id="selectCashFlow" resultType="java.util.LinkedHashMap">
+        SELECT s.cash_flow_category                          AS cashFlowCategory,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS inflowAmount,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS outflowAmount,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount
+                        ELSE -e.amount END)                  AS netAmount
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+        JOIN fin_subject s ON s.subject_code = e.account_code AND s.del_flag = '0'
+        WHERE <include refid="reportCondition"/>
+          AND s.cash_flow_category IS NOT NULL
+          AND e.period LIKE CONCAT(#{yearPrefix}, '%')
+        GROUP BY s.cash_flow_category
+    </select>
+
+    <!-- 现金流量表明细（按科目列出，便于与账簿核对） -->
+    <select id="selectCashFlowDetail" resultType="java.util.LinkedHashMap">
+        SELECT s.cash_flow_category                          AS cashFlowCategory,
+               s.subject_code                                AS accountCode,
+               s.subject_name                                AS accountName,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS inflowAmount,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS outflowAmount,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount
+                        ELSE -e.amount END)                  AS netAmount
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id
+        JOIN fin_subject s ON s.subject_code = e.account_code AND s.del_flag = '0'
+        WHERE <include refid="reportCondition"/>
+          AND s.cash_flow_category IS NOT NULL
+          AND e.period = #{period}
+        GROUP BY s.cash_flow_category, s.subject_code, s.subject_name
+        ORDER BY s.cash_flow_category, s.subject_code
+    </select>
+
+    <!-- 往来对账：应收按客户汇总 -->
+    <select id="selectArBalance" resultType="java.util.LinkedHashMap">
+        SELECT ar.partner_id                                AS partnerId,
+               MAX(ar.partner_name)                          AS partnerName,
+               COUNT(*)                                      AS arCount,
+               SUM(ar.total_amount)                          AS totalAmount,
+               SUM(ar.received_amount)                       AS receivedAmount,
+               SUM(ar.total_amount - ar.received_amount)     AS unreceivedAmount,
+               SUM(ar.bad_debt_amount)                       AS badDebtAmount
+        FROM fin_ar_order ar
+        WHERE ar.del_flag = '0'
+          AND ar.status != 'VOID'
+          AND ar.total_amount - ar.received_amount &gt; 0
+        GROUP BY ar.partner_id
+        ORDER BY unreceivedAmount DESC
+    </select>
+
+    <!-- 往来对账：应付按供应商汇总 -->
+    <select id="selectApBalance" resultType="java.util.LinkedHashMap">
+        SELECT ap.partner_id                                AS partnerId,
+               MAX(ap.partner_name)                          AS partnerName,
+               COUNT(*)                                      AS apCount,
+               SUM(ap.total_amount)                          AS totalAmount,
+               SUM(ap.paid_amount)                           AS paidAmount,
+               SUM(ap.total_amount - ap.paid_amount)         AS unpaidAmount
+        FROM fin_ap_order ap
+        WHERE ap.del_flag = '0'
+          AND ap.status != 'VOID'
+          AND ap.total_amount - ap.paid_amount &gt; 0
+        GROUP BY ap.partner_id
+        ORDER BY unpaidAmount DESC
+    </select>
+
+    <!-- 应收账龄分析 -->
+    <select id="selectArAging" resultType="java.util.LinkedHashMap">
+        SELECT
+          CASE
+            WHEN ar.due_date IS NULL THEN '无到期日'
+            WHEN ar.status IN ('SETTLED','VOID') THEN '已核销'
+            WHEN ar.due_date &gt;= #{today} THEN '未到期'
+            WHEN DATEDIFF(#{today}, ar.due_date) &lt;= 30  THEN '逾期1-30天'
+            WHEN DATEDIFF(#{today}, ar.due_date) &lt;= 60  THEN '逾期31-60天'
+            WHEN DATEDIFF(#{today}, ar.due_date) &lt;= 90  THEN '逾期61-90天'
+            ELSE '逾期90天以上'
+          END AS bucket,
+          COUNT(*) AS cnt,
+          SUM(ar.total_amount) AS totalAmount,
+          SUM(ar.total_amount - ar.received_amount) AS unreceivedAmount
+        FROM fin_ar_order ar
+        WHERE ar.del_flag = '0'
+          AND ar.status NOT IN ('VOID')
+        GROUP BY bucket
+        ORDER BY FIELD(bucket, '未到期', '逾期1-30天', '逾期31-60天',
+                       '逾期61-90天', '逾期90天以上', '无到期日', '已核销')
+    </select>
+
+    <!-- 应付账龄分析 -->
+    <select id="selectApAging" resultType="java.util.LinkedHashMap">
+        SELECT
+          CASE
+            WHEN ap.due_date IS NULL THEN '无到期日'
+            WHEN ap.status IN ('SETTLED','VOID') THEN '已核销'
+            WHEN ap.due_date &gt;= #{today} THEN '未到期'
+            WHEN DATEDIFF(#{today}, ap.due_date) &lt;= 30  THEN '逾期1-30天'
+            WHEN DATEDIFF(#{today}, ap.due_date) &lt;= 60  THEN '逾期31-60天'
+            WHEN DATEDIFF(#{today}, ap.due_date) &lt;= 90  THEN '逾期61-90天'
+            ELSE '逾期90天以上'
+          END AS bucket,
+          COUNT(*) AS cnt,
+          SUM(ap.total_amount) AS totalAmount,
+          SUM(ap.total_amount - ap.paid_amount) AS unpaidAmount
+        FROM fin_ap_order ap
+        WHERE ap.del_flag = '0'
+          AND ap.status NOT IN ('VOID')
+        GROUP BY bucket
+        ORDER BY FIELD(bucket, '未到期', '逾期1-30天', '逾期31-60天',
+                       '逾期61-90天', '逾期90天以上', '无到期日', '已核销')
+    </select>
+
+    <!--
+      【会计恒等式校验】资产 = 负债 + 所有者权益
+      取本期期末余额（与 selectBalanceSheet 口径一致）。
+
+      口径说明（关键）：
+        资产类期末 = 期初借 - 期初贷 + 本期借 - 本期贷  → 正常为正
+        负债/权益类期末 = -(同上)                    → 正常为正（贷方余额）
+        若 diff≠0，说明凭证编制有问题（借贷不平或科目归属错误）。
+
+      注意：进项税额（22210101）虽category=LIABILITY，
+      但实际是借方余额的资产性质科目，本口径按其 category 归入负债侧，
+      会使负债侧出现负数——这属于科目分类配置问题，
+      应在 C1 科目评审时考虑将其归入 ASSET 或单列「应交税费（借方）」。
+    -->
+    <select id="checkBalanceEquation" resultType="java.util.LinkedHashMap">
+        SELECT
+          COALESCE(SUM(CASE WHEN s.category = 'ASSET' THEN bal.close_balance ELSE 0 END), 0) AS totalAsset,
+          COALESCE(SUM(CASE WHEN s.category = 'LIABILITY' THEN -bal.close_balance ELSE 0 END), 0) AS totalLiability,
+          COALESCE(SUM(CASE WHEN s.category = 'EQUITY' THEN -bal.close_balance ELSE 0 END), 0) AS totalEquity
+        FROM fin_subject s
+        JOIN (
+            SELECT acc.account_code,
+                   COALESCE(l.opening_debit, 0) - COALESCE(l.opening_credit, 0)
+                   + COALESCE(t.debitAmount, 0) - COALESCE(t.creditAmount, 0) AS close_balance
+            FROM (
+                SELECT account_code
+                FROM fin_voucher_entry e2
+                JOIN fin_voucher v2 ON v2.voucher_id = e2.voucher_id
+                WHERE e2.del_flag = '0'
+                  AND v2.del_flag = '0'
+                  AND v2.status IN ('AUDITED', 'POSTED')
+                  AND e2.period = #{period}
+                GROUP BY account_code
+            ) acc
+            LEFT JOIN fin_ledger l
+                   ON l.account_code = acc.account_code AND l.period = #{period} AND l.del_flag = '0'
+            LEFT JOIN (
+                SELECT e3.account_code,
+                       SUM(CASE WHEN e3.direction = 'DEBIT'  THEN e3.amount ELSE 0 END) AS debitAmount,
+                       SUM(CASE WHEN e3.direction = 'CREDIT' THEN e3.amount ELSE 0 END) AS creditAmount
+                FROM fin_voucher_entry e3
+                JOIN fin_voucher v3 ON v3.voucher_id = e3.voucher_id
+                WHERE e3.del_flag = '0'
+                  AND v3.del_flag = '0'
+                  AND v3.status IN ('AUDITED', 'POSTED')
+                  AND e3.period = #{period}
+                GROUP BY e3.account_code
+            ) t ON t.account_code = acc.account_code
+        ) bal ON bal.account_code = s.subject_code
+        WHERE s.del_flag = '0'
+          AND s.status = '0'
+          AND s.category IN ('ASSET', 'LIABILITY', 'EQUITY')
+    </select>
+
+</mapper>

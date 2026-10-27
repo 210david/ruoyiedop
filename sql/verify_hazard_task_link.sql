@@ -1,0 +1,1 @@
+SELECT hazard_code, task_id, hazard_desc, hazard_type, hazard_level, dept_name, person_name, rectify_req, rectify_deadline, hazard_status, source_type FROM biz_safety_hazard WHERE hazard_code = 'TEST-HZD-002';

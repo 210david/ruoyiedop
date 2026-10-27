@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContentPackageMapper">
+
+    <resultMap type="MkContentPackage" id="MkContentPackageResult">
+        <result property="packageId"     column="package_id"/>
+        <result property="contentId"     column="content_id"/>
+        <result property="channelId"     column="channel_id"/>
+        <result property="channelType"    column="channel_type"/>
+        <result property="packageTitle"  column="package_title"/>
+        <result property="packageBody"   column="package_body"/>
+        <result property="topicTags"     column="topic_tags"/>
+        <result property="coverUrl"     column="cover_url"/>
+        <result property="materialIds"   column="material_ids"/>
+        <result property="packageStatus" column="package_status"/>
+        <result property="publishUrl"    column="publish_url"/>
+        <result property="publishTime"   column="publish_time"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="channelName"   column="channel_name"/>
+        <result property="contentTitle" column="content_title"/>
+    </resultMap>
+
+    <sql id="selectContentPackageVo">
+        SELECT p.package_id, p.content_id, p.channel_id, p.channel_type, p.package_title, p.package_body,
+               p.topic_tags, p.cover_url, p.material_ids, p.package_status, p.publish_url, p.publish_time,
+               p.del_flag, p.create_by, p.create_time, p.update_by, p.update_time, p.remark,
+               c.account_name as channel_name, ct.title as content_title
+        FROM mk_content_package p
+        LEFT JOIN mk_channel c ON p.channel_id = c.channel_id
+        LEFT JOIN mk_content ct ON p.content_id = ct.content_id
+    </sql>
+
+    <select id="selectContentPackageList" parameterType="MkContentPackage" resultMap="MkContentPackageResult">
+        <include refid="selectContentPackageVo"/>
+        <where>
+            <if test="contentId != null"> AND p.content_id = #{contentId}</if>
+            <if test="channelId != null"> AND p.channel_id = #{channelId}</if>
+            <if test="channelType != null and channelType != ''"> AND p.channel_type = #{channelType}</if>
+            <if test="packageStatus != null and packageStatus != ''"> AND p.package_status = #{packageStatus}</if>
+        </where>
+        ORDER BY p.package_id DESC
+    </select>
+
+    <select id="selectContentPackageById" parameterType="Long" resultMap="MkContentPackageResult">
+        <include refid="selectContentPackageVo"/> WHERE p.package_id = #{packageId}
+    </select>
+
+    <select id="selectByContentId" resultMap="MkContentPackageResult">
+        <include refid="selectContentPackageVo"/> WHERE p.content_id = #{contentId}
+    </select>
+
+    <!-- 按标题精确查询（推广数据导入按标题匹配内容包；多条同名时由调用方判定不唯一） -->
+    <select id="selectByTitle" resultMap="MkContentPackageResult">
+        <include refid="selectContentPackageVo"/> WHERE p.package_title = #{packageTitle}
+    </select>
+
+    <insert id="insertContentPackage" parameterType="MkContentPackage" useGeneratedKeys="true" keyProperty="packageId">
+        INSERT INTO mk_content_package (content_id, channel_id, channel_type, package_title, package_body,
+            topic_tags, cover_url, material_ids, package_status, publish_url, publish_time, create_by, create_time, remark)
+        VALUES (#{contentId}, #{channelId}, #{channelType}, #{packageTitle}, #{packageBody},
+            #{topicTags}, #{coverUrl}, #{materialIds}, #{packageStatus}, #{publishUrl}, #{publishTime}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateContentPackage" parameterType="MkContentPackage">
+        UPDATE mk_content_package
+        <set>
+            <if test="contentId != null">content_id = #{contentId},</if>
+            <if test="channelId != null">channel_id = #{channelId},</if>
+            <if test="channelType != null and channelType != ''">channel_type = #{channelType},</if>
+            <if test="packageTitle != null and packageTitle != ''">package_title = #{packageTitle},</if>
+            <if test="packageBody != null">package_body = #{packageBody},</if>
+            <if test="topicTags != null">topic_tags = #{topicTags},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="materialIds != null">material_ids = #{materialIds},</if>
+            <if test="packageStatus != null and packageStatus != ''">package_status = #{packageStatus},</if>
+            <if test="publishUrl != null">publish_url = #{publishUrl},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE package_id = #{packageId}
+    </update>
+
+    <delete id="deleteContentPackageByIds" parameterType="Long">
+        DELETE FROM mk_content_package WHERE package_id IN
+        <foreach item="packageId" collection="array" open="(" separator="," close=")">#{packageId}</foreach>
+    </delete>
+
+    <delete id="deleteByContentId">
+        DELETE FROM mk_content_package WHERE content_id = #{contentId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOrderReturnMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.MkOrderReturn" id="MkOrderReturnResult">
+        <result property="returnId"           column="return_id"/>
+        <result property="returnNo"           column="return_no"/>
+        <result property="orderId"            column="order_id"/>
+        <result property="orderNo"            column="order_no"/>
+        <result property="customerId"         column="customer_id"/>
+        <result property="customerName"        column="customer_name"/>
+        <result property="returnAmount"       column="return_amount"/>
+        <result property="returnReason"       column="return_reason"/>
+        <result property="returnStatus"       column="return_status"/>
+        <result property="refundAmount"        column="refund_amount"/>
+        <result property="refundDate"         column="refund_date"/>
+        <result property="approveOpinion"     column="approve_opinion"/>
+        <result property="approveBy"          column="approve_by"/>
+        <result property="approveTime"        column="approve_time"/>
+        <result property="delFlag"            column="del_flag"/>
+        <result property="createBy"           column="create_by"/>
+        <result property="createTime"         column="create_time"/>
+        <result property="updateBy"           column="update_by"/>
+        <result property="updateTime"         column="update_time"/>
+        <result property="remark"             column="remark"/>
+    </resultMap>
+
+    <sql id="selectReturnVo">
+        SELECT r.return_id, r.return_no, r.order_id, r.customer_id, r.return_amount, r.return_reason,
+               r.return_status, r.refund_amount, r.refund_date, r.approve_opinion, r.approve_by, r.approve_time,
+               r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               c.customer_name, o.order_no
+        FROM mk_order_return r
+        LEFT JOIN mk_customer c ON r.customer_id = c.customer_id
+        LEFT JOIN mk_order o ON r.order_id = o.order_id
+    </sql>
+
+    <select id="selectReturnList" parameterType="com.ruoyi.mk.domain.MkOrderReturn" resultMap="MkOrderReturnResult">
+        <include refid="selectReturnVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="returnNo != null and returnNo != ''"> AND r.return_no LIKE CONCAT('%', #{returnNo}, '%')</if>
+            <if test="returnStatus != null and returnStatus != ''"> AND r.return_status = #{returnStatus}</if>
+            <if test="customerId != null"> AND r.customer_id = #{customerId}</if>
+            <if test="orderId != null"> AND r.order_id = #{orderId}</if>
+            <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="returnReason != null and returnReason != ''"> AND r.return_reason LIKE CONCAT('%', #{returnReason}, '%')</if>
+            <if test="params.beginRefund != null and params.beginRefund != ''"> AND date(r.refund_date) &gt;= #{params.beginRefund}</if>
+            <if test="params.endRefund != null and params.endRefund != ''"> AND date(r.refund_date) &lt;= #{params.endRefund}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''"> AND date(r.create_time) &gt;= #{params.beginCreateTime}</if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''"> AND date(r.create_time) &lt;= #{params.endCreateTime}</if>
+        </where>
+        ORDER BY r.return_id DESC
+    </select>
+
+    <select id="selectReturnById" parameterType="Long" resultMap="MkOrderReturnResult">
+        <include refid="selectReturnVo"/> WHERE r.return_id = #{returnId}
+    </select>
+
+    <insert id="insertReturn" parameterType="com.ruoyi.mk.domain.MkOrderReturn" useGeneratedKeys="true" keyProperty="returnId">
+        INSERT INTO mk_order_return (return_no, order_id, customer_id, return_amount, return_reason, return_status,
+            refund_amount, refund_date, approve_opinion, approve_by, approve_time, del_flag, create_by, create_time, remark)
+        VALUES (#{returnNo}, #{orderId}, #{customerId}, #{returnAmount}, #{returnReason}, #{returnStatus},
+            #{refundAmount}, #{refundDate}, #{approveOpinion}, #{approveBy}, #{approveTime}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateReturn" parameterType="com.ruoyi.mk.domain.MkOrderReturn">
+        UPDATE mk_order_return
+        <set>
+            <if test="returnNo != null and returnNo != ''">return_no = #{returnNo},</if>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="returnAmount != null">return_amount = #{returnAmount},</if>
+            <if test="returnReason != null">return_reason = #{returnReason},</if>
+            <if test="returnStatus != null">return_status = #{returnStatus},</if>
+            <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
+            <if test="refundDate != null">refund_date = #{refundDate},</if>
+            <if test="approveOpinion != null">approve_opinion = #{approveOpinion},</if>
+            <if test="approveBy != null">approve_by = #{approveBy},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE return_id = #{returnId}
+    </update>
+
+    <delete id="deleteReturnByIds" parameterType="Long">
+        UPDATE mk_order_return SET del_flag = '2' WHERE return_id IN
+        <foreach item="returnId" collection="array" open="(" separator="," close=")">#{returnId}</foreach>
+    </delete>
+
+    <!-- 退货明细 -->
+    <resultMap type="com.ruoyi.mk.domain.MkOrderReturnItem" id="MkOrderReturnItemResult">
+        <result property="itemId"        column="item_id"/>
+        <result property="returnId"      column="return_id"/>
+        <result property="orderItemId"   column="order_item_id"/>
+        <result property="productName"   column="product_name"/>
+        <result property="productSpec"   column="product_spec"/>
+        <result property="unit"          column="unit"/>
+        <result property="orderQty"      column="order_qty"/>
+        <result property="shipQty"       column="ship_qty"/>
+        <result property="returnQty"     column="return_qty"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="returnAmount"  column="return_amount"/>
+        <result property="returnReason"  column="return_reason"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <select id="selectReturnItemsByReturnId" parameterType="Long" resultMap="MkOrderReturnItemResult">
+        SELECT item_id, return_id, order_item_id, product_name, product_spec, unit,
+               order_qty, ship_qty, return_qty, unit_price, return_amount, return_reason,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM mk_order_return_item
+        WHERE return_id = #{returnId} AND del_flag = '0'
+        ORDER BY item_id ASC
+    </select>
+
+    <insert id="insertReturnItem" parameterType="com.ruoyi.mk.domain.MkOrderReturnItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO mk_order_return_item (
+            return_id, order_item_id, product_name, product_spec, unit,
+            order_qty, ship_qty, return_qty, unit_price, return_amount, return_reason,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{returnId}, #{orderItemId}, #{productName}, #{productSpec}, #{unit},
+            #{orderQty}, #{shipQty}, #{returnQty}, #{unitPrice}, #{returnAmount}, #{returnReason},
+            '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <delete id="deleteReturnItemsByReturnId" parameterType="Long">
+        UPDATE mk_order_return_item SET del_flag = '2' WHERE return_id = #{returnId}
+    </delete>
+
+</mapper>

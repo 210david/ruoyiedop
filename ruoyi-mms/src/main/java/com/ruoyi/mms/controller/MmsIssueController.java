@@ -1,0 +1,103 @@
+package com.ruoyi.mms.controller;
+
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.core.controller.BaseController;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+import com.ruoyi.mms.domain.MmsIssue;
+import com.ruoyi.mms.service.IMmsIssueService;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * Issue Controller
+ *
+ * @author ruoyi
+ */
+@RestController
+@RequestMapping("/mms/issue")
+public class MmsIssueController extends BaseController
+{
+    @Autowired
+    private IMmsIssueService mmsIssueService;
+
+    @PreAuthorize("@ss.hasPermi('mms:issue:list')")
+    @GetMapping("/list")
+    public TableDataInfo list(MmsIssue issue)
+    {
+        startPage();
+        List<MmsIssue> list = mmsIssueService.selectIssueList(issue);
+        return getDataTable(list);
+    }
+
+    /**
+     * 按工单号查询领料明细（按物料拆分，每条明细一行）
+     * 用于工单详情页的领料记录展示
+     * 注意：必须在 /{IssueId} 之前定义，否则路径会被通配匹配
+     */
+    @PreAuthorize("@ss.hasPermi('mms:issue:list')")
+    @GetMapping("/detailListByWorkOrder")
+    public AjaxResult detailListByWorkOrder(@RequestParam("workOrderNo") String workOrderNo)
+    {
+        return AjaxResult.success(mmsIssueService.selectIssueDetailListByWorkOrderNo(workOrderNo));
+    }
+
+    @Log(title = "Issue", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('mms:issue:export')")
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, MmsIssue issue)
+    {
+        List<MmsIssue> list = mmsIssueService.selectIssueList(issue);
+        list = com.ruoyi.common.utils.ExportIdFilter.filter(list, issue);
+        ExcelUtil<MmsIssue> util = new ExcelUtil<>(MmsIssue.class);
+        util.exportExcel(response, list, "Issue");
+    }
+
+    @PreAuthorize("@ss.hasPermi('mms:issue:query')")
+    @GetMapping(value = "/{IssueId}")
+    public AjaxResult getInfo(@PathVariable("IssueId") Long IssueId)
+    {
+        return AjaxResult.success(mmsIssueService.selectIssueById(IssueId));
+    }
+
+    @Log(title = "Issue", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('mms:issue:add')")
+    @PostMapping
+    public AjaxResult add(@RequestBody MmsIssue issue)
+    {
+        return toAjax(mmsIssueService.insertIssue(issue));
+    }
+
+    @Log(title = "Issue", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:issue:edit')")
+    @PutMapping
+    public AjaxResult edit(@RequestBody MmsIssue issue)
+    {
+        return toAjax(mmsIssueService.updateIssue(issue));
+    }
+
+    @Log(title = "Issue", businessType = BusinessType.DELETE)
+    @PreAuthorize("@ss.hasPermi('mms:issue:remove')")
+    @DeleteMapping("/{IssueIds}")
+    public AjaxResult remove(@PathVariable Long[] IssueIds)
+    {
+        return toAjax(mmsIssueService.deleteIssueByIds(IssueIds));
+    }
+
+    /**
+     * 确认领料
+     * 状态：0(待领料) → 1(已领料)，记录领料时间，可修改领料人和明细数量
+     */
+    @Log(title = "领料-确认领料", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('mms:issue:confirm')")
+    @PutMapping("/confirm")
+    public AjaxResult confirm(@RequestBody MmsIssue issue)
+    {
+        return toAjax(mmsIssueService.confirmIssue(issue));
+    }
+}

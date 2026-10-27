@@ -1,0 +1,180 @@
+/* ===== 财务模块列表页面共享样式 ===== */
+/* 全局共享样式，各页面只需在根容器添加 class="app-container fin-list-page" 即可生效 */
+/* 页面特定样式可通过 .fin-list-page.{page-class} 进行覆盖 */
+/* 参照 doc/开发规范-DMS-AI配置页面交互规范.md 第5条：分区独立操作，禁止共用底部操作区 */
+
+/* ===== Design Tokens ===== */
+.fin-list-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff; --violet-500:#8b5cf6;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.fin-list-page .surface {
+  background:#fff;
+  border:1px solid var(--ink-200);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-card);
+  overflow:hidden;
+  margin-bottom:8px;
+}
+
+/* ===== Filter Card ===== */
+.fin-list-page .filter-card { padding:14px 20px 16px; }
+.fin-list-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.fin-list-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.fin-list-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.fin-list-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.fin-list-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.fin-list-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.fin-list-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* 行内紧凑筛选（P7 报表页用的简版） */
+.fin-list-page .filter-row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.fin-list-page .filter-row-fields { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.fin-list-page .filter-row-buttons { display:flex; gap:8px; }
+.fin-list-page .field-inline { display:flex; align-items:center; gap:8px; }
+.fin-list-page .field-inline > label { font-size:13px; color:var(--ink-500); }
+
+/* ===== Form Field ===== */
+.fin-list-page .field { display:flex; flex-direction:column; gap:6px; }
+.fin-list-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.fin-list-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.fin-list-page .field .control.is-select { padding:0 8px; }
+.fin-list-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.fin-list-page .field .control .el-input__wrapper { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.fin-list-page .field .control .el-input__inner { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.fin-list-page .field .control .el-input__inner::placeholder { color:var(--ink-400); }
+
+/* ===== Toolbar（表格上方操作条） ===== */
+.fin-list-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.fin-list-page .toolbar .toolbar-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.fin-list-page .toolbar .toolbar-right { display:flex; align-items:center; gap:8px; }
+
+/* ===== Table Wrap ===== */
+.fin-list-page .table-wrap { overflow-x:auto; }
+
+/* ===== 分区配置卡片（规范第5条：分区独立操作） ===== */
+.fin-list-page .config-section { border:1px solid var(--ink-200); border-radius:var(--r-md); margin:0 0 12px; overflow:hidden; }
+.fin-list-page .config-section .cs-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.fin-list-page .config-section .cs-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.fin-list-page .config-section .cs-title .dot { width:8px; height:8px; border-radius:50%; flex:none; }
+.fin-list-page .config-section .cs-body { padding:16px; }
+.fin-list-page .config-section .cs-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px dashed var(--ink-200); }
+
+/* ===== Hint / Alert Text ===== */
+.fin-list-page .hint-text { font-size:12px; line-height:1.6; }
+
+/* ===== Form Tip ===== */
+.fin-list-page .form-tip { font-size:11px; color:var(--ink-400); line-height:1.4; margin-top:2px; }
+
+/* ===== Summary Bar（顶部汇总卡片，配合 .surface 使用） ===== */
+.fin-list-page .summary-bar { display:flex; gap:12px; padding:14px 20px; flex-wrap:wrap; }
+.fin-list-page .summary-item { flex:1; min-width:150px; padding:12px 16px; border:1px solid var(--ink-200); border-radius:var(--r-md); background:var(--ink-50); }
+.fin-list-page .summary-label { font-size:12px; color:var(--ink-500); }
+.fin-list-page .summary-value { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:4px; }
+
+/* ===== Text Colors ===== */
+.fin-list-page .text-muted { color:var(--ink-400); }
+.fin-list-page .text-danger { color:var(--red-700); font-weight:600; }
+.fin-list-page .text-success { color:var(--green-700); font-weight:600; }
+.fin-list-page .text-warning { color:var(--amber-700); font-weight:600; }
+.fin-list-page .text-received { color:var(--green-700); }
+.fin-list-page .text-unreceived { color:var(--red-700); }
+.fin-list-page .text-paid { color:var(--green-700); }
+.fin-list-page .text-in { color:var(--green-700); }
+.fin-list-page .text-out { color:var(--red-700); }
+.fin-list-page .asset { color:var(--blue-700); }
+
+/* ===== Amount Cell（等宽数字对齐） ===== */
+.fin-list-page .amount-cell { font-variant-numeric: tabular-nums; }
+.fin-list-page .amount-cell.strong { font-weight:600; }
+
+/* ===== Code / Key ===== */
+.fin-list-page .code-key { font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px; background:var(--ink-100); padding:2px 6px; border-radius:3px; }
+
+/* ===== 状态标记（借贷方向、匹配状态等） ===== */
+.fin-list-page .dir-badge { display:inline-block; width:26px; height:22px; line-height:22px; text-align:center; border-radius:3px; font-size:12px; font-weight:600; }
+.fin-list-page .dir-badge.is-debit { background:var(--blue-50); color:var(--blue-700); }
+.fin-list-page .dir-badge.is-credit { background:var(--red-50); color:var(--red-700); }
+
+/* ===== Summary Mini Cards ===== */
+.fin-list-page .mini-card { padding:12px 16px; border:1px solid var(--ink-200); border-radius:var(--r-md); }
+.fin-list-page .mini-card .mini-label { font-size:12px; color:var(--ink-500); }
+.fin-list-page .mini-card .mini-value { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:4px; }
+
+/* ===== Stat Row（报表合计行） ===== */
+.fin-list-page .stat-row { display:flex; justify-content:space-between; align-items:center; padding:9px 12px; font-size:13px; border-bottom:1px solid var(--ink-200); }
+.fin-list-page .stat-row b { font-variant-numeric:tabular-nums; }
+.fin-list-page .stat-row.total-row { font-weight:600; background:var(--ink-50); }
+.fin-list-page .stat-row.total-row.is-profit b { color:var(--green-700); }
+.fin-list-page .stat-row.total-row.is-loss b { color:var(--red-700); }
+
+/* ===== 分区参数行（配置页财务参数） ===== */
+.fin-list-page .param-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.fin-list-page .param-key { font-family:ui-monospace, Menlo, Consolas, monospace; font-size:11px; color:var(--ink-400); background:var(--ink-100); padding:2px 6px; border-radius:3px; }
+
+/* ===== Divider Text ===== */
+.fin-list-page .divider-text { font-size:13px; font-weight:500; color:var(--ink-500); }
+
+/* ===== 明细录入操作条（导入弹窗） ===== */
+.fin-list-page .item-actions { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+
+/* ===== 匹配统计条（对账明细弹窗） ===== */
+.fin-list-page .match-stat-bar { display:flex; align-items:center; gap:20px; padding:10px 14px; margin-bottom:10px; background:var(--ink-50); border:1px solid var(--ink-200); border-radius:var(--r-sm); font-size:13px; color:var(--ink-500); flex-wrap:wrap; }
+.fin-list-page .match-stat-bar b { font-variant-numeric:tabular-nums; }
+
+/* ===== 核对结果卡（余额核对弹窗） ===== */
+.fin-list-page .recon-result { border:1px solid var(--ink-200); border-radius:var(--r-md); overflow:hidden; }
+.fin-list-page .recon-result.is-balanced { border-color:var(--green-500); }
+.fin-list-page .recon-result.is-unbalanced { border-color:var(--amber-500); }
+.fin-list-page .recon-result .rr-row { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; font-size:13px; border-bottom:1px solid var(--ink-100); }
+.fin-list-page .recon-result .rr-row b { font-variant-numeric:tabular-nums; }
+.fin-list-page .recon-result .rr-row.is-diff { font-weight:600; background:var(--ink-50); }
+.fin-list-page .recon-result.is-balanced .rr-row.is-diff b { color:var(--green-700); }
+.fin-list-page .recon-result.is-unbalanced .rr-row.is-diff b { color:var(--amber-700); }
+.fin-list-page .recon-result .rr-divider { height:1px; background:var(--ink-200); }
+
+/* ===== 树工具图标（科目页 toolbar） ===== */
+.fin-list-page .tree-act { cursor: pointer; color: var(--brand-600); margin-left: 8px; transition: transform .2s var(--ease-out), color .15s; }
+.fin-list-page .tree-act:hover { color: var(--brand-700); }
+
+/* ===== Responsive ===== */
+@media (max-width: 720px) {
+  .fin-list-page .filter-card .filter-bar { grid-template-columns:1fr; }
+  .fin-list-page .toolbar { flex-wrap:wrap; gap:10px; }
+  .fin-list-page .config-section .cs-head { flex-wrap:wrap; }
+  .fin-list-page .param-row { gap:8px; }
+}
+/* ===== 业务操作说明（tip-pill 按钮与帮助弹框，样式与 wms-list-page 同范式） ===== */
+.app-container[class*='fin-'] .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s ease; flex-shrink:0; white-space:nowrap; }
+.app-container[class*='fin-'] .tip-pill:hover { background:#fffbeb; border-color:#f59e0b; color:#7c2d12; }
+.app-container[class*='fin-'] .tip-pill .el-icon { font-size:14px; color:#b45309; }
+.app-container[class*='fin-'] .status-help-content { max-height: 500px; overflow-y: auto; padding-right: 10px; }
+.app-container[class*='fin-'] .status-help-content h4 { margin: 20px 0 12px 0; color: #303133; font-weight: 600; border-left: 4px solid #409eff; padding-left: 10px; }
+.app-container[class*='fin-'] .status-help-content h4:first-child { margin-top: 0; }
+.app-container[class*='fin-'] .status-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 16px; background-color: #f5f7fa; border-radius: 8px; margin-bottom: 8px; }
+.app-container[class*='fin-'] .flow-item { display: flex; align-items: center; gap: 8px; }
+.app-container[class*='fin-'] .flow-arrow { color: #909399; font-size: 16px; font-weight: 600; }
+.app-container[class*='fin-'] .highlight-card { border-radius: 8px; padding: 16px; border: 1px solid; }
+.app-container[class*='fin-'] .highlight-success { background-color: #f0f9ff; border-color: #b3e19d; }
+.app-container[class*='fin-'] .highlight-danger { background-color: #fef0f0; border-color: #fbc4c4; }
+.app-container[class*='fin-'] .highlight-primary { background-color: #ecf5ff; border-color: #a0cfff; }
+.app-container[class*='fin-'] .highlight-warning { background-color: #fdf6ec; border-color: #f5dab1; }
+.app-container[class*='fin-'] .highlight-card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; }
+.app-container[class*='fin-'] .highlight-success .highlight-card-title { color: #67c23a; }
+.app-container[class*='fin-'] .highlight-danger .highlight-card-title { color: #f56c6c; }
+.app-container[class*='fin-'] .highlight-primary .highlight-card-title { color: #409eff; }
+.app-container[class*='fin-'] .highlight-warning .highlight-card-title { color: #e6a23c; }
+.app-container[class*='fin-'] .highlight-card-body { font-size: 13px; color: #606266; line-height: 1.6; }

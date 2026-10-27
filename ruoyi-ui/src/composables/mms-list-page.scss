@@ -1,0 +1,47 @@
+/**
+ * 生产管控模块列表页面通用样式
+ * 在各页面中通过 <style src="@/composables/mms-list-page.scss" scoped></style> 引入
+ * 或在 <style> 中通过 @import 引入
+ */
+
+// ===== Design Tokens =====
+$brand-50: #eef2ff;
+$brand-100: #e0e7ff;
+$brand-200: #c7d2fe;
+$brand-500: #6366f1;
+$brand-600: #4f46e5;
+$brand-700: #4338ca;
+
+$ink-900: #0f172a;
+$ink-700: #334155;
+$ink-500: #64748b;
+$ink-400: #94a3b8;
+$ink-300: #cbd5e1;
+$ink-200: #e2e8f0;
+$ink-100: #f1f5f9;
+$ink-50: #f8fafc;
+
+$amber-50: #fffbeb;
+$amber-500: #f59e0b;
+$amber-700: #b45309;
+
+$blue-50: #eff6ff;
+$blue-500: #3b82f6;
+$blue-700: #1d4ed8;
+
+$green-50: #ecfdf5;
+$green-500: #10b981;
+$green-700: #047857;
+
+$red-50: #fef2f2;
+$red-500: #ef4444;
+$red-700: #b91c1c;
+
+$violet-50: #f5f3ff;
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 14px;
+
+$shadow-card: 0 1px 0 rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+$ease-out: cubic-bezier(0.16, 0.84, 0.44, 1);

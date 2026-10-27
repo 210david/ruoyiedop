@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinSubjectMapper">
+
+    <resultMap id="FinSubjectResult" type="com.ruoyi.fin.domain.FinSubject">
+        <result property="subjectId"        column="subject_id"/>
+        <result property="subjectCode"      column="subject_code"/>
+        <result property="subjectName"      column="subject_name"/>
+        <result property="parentId"         column="parent_id"/>
+        <result property="parentCode"       column="parent_code"/>
+        <result property="level"            column="level"/>
+        <result property="category"         column="category"/>
+        <result property="direction"        column="direction"/>
+        <result property="isLeaf"           column="is_leaf"/>
+        <result property="isCashEquiv"      column="is_cash_equiv"/>
+        <result property="cashFlowCategory" column="cash_flow_category"/>
+        <result property="auxTypes"         column="aux_types"/>
+        <result property="companyId"        column="company_id"/>
+        <result property="sortOrder"        column="sort_order"/>
+        <result property="status"           column="status"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectSubjectVo">
+        SELECT subject_id, subject_code, subject_name, parent_id, parent_code, level,
+               category, direction, is_leaf, is_cash_equiv, cash_flow_category, aux_types,
+               company_id, sort_order, status,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_subject
+    </sql>
+
+    <!--
+      科目列表：不分页，返回平铺列表由前端 proxy.handleTree 组树。
+      科目总量通常在 300 行以内（4 级树），一次性返回可接受。
+    -->
+    <select id="selectSubjectList" parameterType="com.ruoyi.fin.domain.FinSubject" resultMap="FinSubjectResult">
+        <include refid="selectSubjectVo"/>
+        <where>
+            <if test="subjectCode != null and subjectCode != ''">
+                AND subject_code LIKE CONCAT('%', #{subjectCode}, '%')
+            </if>
+            <if test="subjectName != null and subjectName != ''">
+                AND subject_name LIKE CONCAT('%', #{subjectName}, '%')
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="parentId != null">
+                AND parent_id = #{parentId}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY level, sort_order, subject_code
+    </select>
+
+    <select id="selectAllEnabled" resultMap="FinSubjectResult">
+        <include refid="selectSubjectVo"/>
+        WHERE del_flag = '0' AND status = '0'
+        ORDER BY level, sort_order, subject_code
+    </select>
+
+    <select id="selectSubjectById" parameterType="java.lang.Long" resultMap="FinSubjectResult">
+        <include refid="selectSubjectVo"/>
+        WHERE subject_id = #{subjectId} AND del_flag = '0'
+    </select>
+
+    <select id="selectSubjectByCode" parameterType="java.lang.String" resultMap="FinSubjectResult">
+        <include refid="selectSubjectVo"/>
+        WHERE subject_code = #{subjectCode} AND del_flag = '0'
+    </select>
+
+    <select id="countChildren" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_subject
+        WHERE parent_id = #{subjectId} AND del_flag = '0'
+    </select>
+
+    <!-- 科目已有凭证分录时禁止删除，Service 层据此拦截 -->
+    <select id="countVoucherEntry" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_voucher_entry
+        WHERE account_code = #{subjectCode} AND del_flag = '0'
+    </select>
+
+    <insert id="insertSubject" parameterType="com.ruoyi.fin.domain.FinSubject" useGeneratedKeys="true" keyProperty="subjectId">
+        INSERT INTO fin_subject (
+            subject_code, subject_name, parent_id, parent_code, level,
+            category, direction, is_leaf, is_cash_equiv, cash_flow_category, aux_types,
+            company_id, sort_order, status,
+            create_by, create_time, remark
+        ) VALUES (
+            #{subjectCode}, #{subjectName}, #{parentId}, #{parentCode}, #{level},
+            #{category}, #{direction}, #{isLeaf}, #{isCashEquiv}, #{cashFlowCategory}, #{auxTypes},
+            #{companyId}, #{sortOrder}, #{status},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateSubject" parameterType="com.ruoyi.fin.domain.FinSubject">
+        UPDATE fin_subject
+        <set>
+            <if test="subjectCode != null and subjectCode != ''">subject_code = #{subjectCode},</if>
+            <if test="subjectName != null and subjectName != ''">subject_name = #{subjectName},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="parentCode != null">parent_code = #{parentCode},</if>
+            <if test="level != null">level = #{level},</if>
+            <if test="category != null and category != ''">category = #{category},</if>
+            <if test="direction != null and direction != ''">direction = #{direction},</if>
+            <if test="isLeaf != null">is_leaf = #{isLeaf},</if>
+            <if test="isCashEquiv != null">is_cash_equiv = #{isCashEquiv},</if>
+            <if test="cashFlowCategory != null">cash_flow_category = #{cashFlowCategory},</if>
+            <if test="auxTypes != null">aux_types = #{auxTypes},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE subject_id = #{subjectId}
+    </update>
+
+    <!-- 逻辑删除：停用已记账的科目会破坏报表追溯，此约束由 Service 层前置校验保证 -->
+    <update id="deleteSubjectByIds" parameterType="java.lang.Long">
+        UPDATE fin_subject
+        SET del_flag = '2', update_time = sysdate()
+        WHERE subject_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 返回同编码记录数：0=唯一，>0=重复（Service 层转换为布尔语义） -->
+    <select id="checkCodeUnique" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_subject
+        WHERE subject_code = #{subjectCode}
+          AND del_flag = '0'
+        <if test="subjectId != null">AND subject_id != #{subjectId}</if>
+    </select>
+
+</mapper>

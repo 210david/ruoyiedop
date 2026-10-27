@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodWipTransferMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodWipTransfer" id="FoodWipTransferResult">
+        <id property="transferId" column="transfer_id"/>
+        <result property="transferNo" column="transfer_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="wipId" column="wip_id"/>
+        <result property="wipNo" column="wip_no"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchCode" column="batch_code"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="fromStepSeq" column="from_step_seq"/>
+        <result property="fromProcessName" column="from_process_name"/>
+        <result property="toStepSeq" column="to_step_seq"/>
+        <result property="toProcessName" column="to_process_name"/>
+        <result property="transferQty" column="transfer_qty"/>
+        <result property="lossQty" column="loss_qty"/>
+        <result property="lossRate" column="loss_rate"/>
+        <result property="lossType" column="loss_type"/>
+        <result property="stdDays" column="std_days"/>
+        <result property="planStepEnd" column="plan_step_end"/>
+        <result property="transferTime" column="transfer_time"/>
+        <result property="transferBy" column="transfer_by"/>
+        <result property="moveNo" column="move_no"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectTransferVo">
+        SELECT t.transfer_id, t.transfer_no, t.work_order_id, t.work_order_no, t.wip_id, t.wip_no,
+               t.batch_id, t.batch_code, t.material_id, t.material_code, t.material_name,
+               t.from_step_seq, t.from_process_name, t.to_step_seq, t.to_process_name,
+               t.transfer_qty, t.loss_qty, t.loss_rate, t.loss_type, t.std_days, t.plan_step_end,
+               t.transfer_time, t.transfer_by, t.move_no, t.status, t.del_flag,
+               t.create_by, t.create_time, t.update_by, t.update_time, t.remark
+        FROM food_wip_transfer t
+    </sql>
+
+    <select id="selectTransferList" parameterType="com.ruoyi.food.domain.FoodWipTransfer" resultMap="FoodWipTransferResult">
+        <include refid="selectTransferVo"/>
+        <where>
+            t.del_flag = '0'
+            <if test="transferNo != null and transferNo != ''"> AND t.transfer_no LIKE CONCAT('%', #{transferNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND t.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="wipNo != null and wipNo != ''"> AND t.wip_no LIKE CONCAT('%', #{wipNo}, '%')</if>
+            <if test="batchCode != null and batchCode != ''"> AND t.batch_code LIKE CONCAT('%', #{batchCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND t.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="lossType != null and lossType != ''"> AND t.loss_type = #{lossType}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(t.transfer_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(t.transfer_time) &lt;= #{params.endTime}</if>
+        </where>
+        ORDER BY t.transfer_id DESC
+    </select>
+
+    <select id="selectTransferById" parameterType="Long" resultMap="FoodWipTransferResult">
+        <include refid="selectTransferVo"/>
+        WHERE t.transfer_id = #{transferId} AND t.del_flag = '0'
+    </select>
+
+    <insert id="insertTransfer" parameterType="com.ruoyi.food.domain.FoodWipTransfer" useGeneratedKeys="true" keyProperty="transferId">
+        INSERT INTO food_wip_transfer (
+            transfer_no, work_order_id, work_order_no, wip_id, wip_no, batch_id, batch_code,
+            material_id, material_code, material_name, from_step_seq, from_process_name,
+            to_step_seq, to_process_name, transfer_qty, loss_qty, loss_rate, loss_type,
+            std_days, plan_step_end, transfer_time, transfer_by, move_no, status,
+            del_flag, create_by, create_time, update_by, update_time, remark
+        )VALUES(
+            #{transferNo}, #{workOrderId}, #{workOrderNo}, #{wipId}, #{wipNo}, #{batchId}, #{batchCode},
+            #{materialId}, #{materialCode}, #{materialName}, #{fromStepSeq}, #{fromProcessName},
+            #{toStepSeq}, #{toProcessName}, #{transferQty}, #{lossQty}, #{lossRate}, #{lossType},
+            #{stdDays}, #{planStepEnd}, #{transferTime}, #{transferBy}, #{moveNo}, #{status},
+            '0', #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <delete id="deleteTransferByIds" parameterType="Long">
+        UPDATE food_wip_transfer SET del_flag = '2' WHERE transfer_id IN
+        <foreach collection="array" item="transferId" open="(" separator="," close=")">
+            #{transferId}
+        </foreach>
+    </delete>
+
+    <select id="countTransferByWip" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM food_wip_transfer WHERE wip_id = #{wipId} AND del_flag = '0'
+    </select>
+
+    <select id="selectNextTransferNo" resultType="String">
+        SELECT CONCAT('GZ', DATE_FORMAT(NOW(), '%Y%m%d'),
+               LPAD(IFNULL(MAX(CAST(RIGHT(t.transfer_no, 4) AS UNSIGNED)), 0) + 1, 4, '0'))
+        FROM food_wip_transfer t
+        WHERE t.transfer_no LIKE CONCAT('GZ', DATE_FORMAT(NOW(), '%Y%m%d'), '%')
+    </select>
+
+    <select id="sumLossByType" resultType="java.util.HashMap">
+        SELECT t.loss_type AS lossType, IFNULL(SUM(t.loss_qty), 0) AS lossQty, COUNT(*) AS cnt
+        FROM food_wip_transfer t
+        WHERE t.work_order_id = #{workOrderId} AND t.del_flag = '0' AND t.loss_type IS NOT NULL AND t.loss_type != ''
+        GROUP BY t.loss_type
+    </select>
+</mapper>

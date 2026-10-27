@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinArOrderMapper">
+
+    <resultMap id="FinArOrderResult" type="com.ruoyi.fin.domain.FinArOrder">
+        <result property="arId"            column="ar_id"/>
+        <result property="companyId"       column="company_id"/>
+        <result property="arNo"            column="ar_no"/>
+        <result property="sourceModule"    column="source_module"/>
+        <result property="sourceType"      column="source_type"/>
+        <result property="sourceId"        column="source_id"/>
+        <result property="sourceKey"       column="source_key"/>
+        <result property="partnerId"       column="partner_id"/>
+        <result property="partnerName"     column="partner_name"/>
+        <result property="customerId"      column="customer_id"/>
+        <result property="arDate"          column="ar_date"/>
+        <result property="period"          column="period"/>
+        <result property="amountExclTax"   column="amount_excl_tax"/>
+        <result property="taxAmount"       column="tax_amount"/>
+        <result property="totalAmount"     column="total_amount"/>
+        <result property="receivedAmount"  column="received_amount"/>
+        <result property="badDebtAmount"   column="bad_debt_amount"/>
+        <result property="taxRate"         column="tax_rate"/>
+        <result property="invoiceNo"       column="invoice_no"/>
+        <result property="invoiceCode"     column="invoice_code"/>
+        <result property="invoiceDate"     column="invoice_date"/>
+        <result property="dueDate"         column="due_date"/>
+        <result property="paymentDays"     column="payment_days"/>
+        <result property="status"          column="status"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="userId"          column="user_id"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectArVo">
+        SELECT ar_id, company_id, ar_no, source_module, source_type, source_id, source_key,
+               partner_id, partner_name, customer_id, ar_date, period,
+               amount_excl_tax, tax_amount, total_amount, received_amount, bad_debt_amount, tax_rate,
+               invoice_no, invoice_code, invoice_date, due_date, payment_days, status,
+               dept_id, user_id,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_ar_order
+    </sql>
+
+    <!--
+      数据权限（unified-development-standards.md 3.5.3）：
+      Service 侧 @DataScope(deptAlias="r", userAlias="r")
+    -->
+    <select id="selectArList" parameterType="com.ruoyi.fin.domain.FinArOrder" resultMap="FinArOrderResult">
+        SELECT r.ar_id, r.company_id, r.ar_no, r.source_module, r.source_type, r.source_id, r.source_key,
+               r.partner_id, r.partner_name, r.customer_id, r.ar_date, r.period,
+               r.amount_excl_tax, r.tax_amount, r.total_amount, r.received_amount,
+               r.bad_debt_amount, r.tax_rate,
+               r.invoice_no, r.invoice_code, r.invoice_date, r.due_date, r.payment_days, r.status,
+               r.dept_id, r.user_id,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        FROM fin_ar_order r
+        <where>
+            <if test="arNo != null and arNo != ''">
+                AND r.ar_no LIKE CONCAT('%', #{arNo}, '%')
+            </if>
+            <if test="partnerName != null and partnerName != ''">
+                AND r.partner_name LIKE CONCAT('%', #{partnerName}, '%')
+            </if>
+            <if test="period != null and period != ''">
+                AND r.period = #{period}
+            </if>
+            <if test="status != null and status != ''">
+                AND r.status = #{status}
+            </if>
+            <if test="params.beginArDate != null and params.beginArDate != ''">
+                AND r.ar_date &gt;= #{params.beginArDate}
+            </if>
+            <if test="params.endArDate != null and params.endArDate != ''">
+                AND r.ar_date &lt;= #{params.endArDate}
+            </if>
+            AND r.del_flag = '0'
+            <if test="params.dataScope != null and params.dataScope != ''">
+                AND ${params.dataScope}
+            </if>
+        </where>
+        ORDER BY r.ar_date DESC, r.ar_id DESC
+    </select>
+
+    <select id="selectArById" parameterType="java.lang.Long" resultMap="FinArOrderResult">
+        <include refid="selectArVo"/>
+        WHERE ar_id = #{arId} AND del_flag = '0'
+    </select>
+
+    <select id="selectBySource" resultMap="FinArOrderResult">
+        <include refid="selectArVo"/>
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_id     = #{sourceId}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertAr" parameterType="com.ruoyi.fin.domain.FinArOrder" useGeneratedKeys="true" keyProperty="arId">
+        INSERT INTO fin_ar_order (
+            ar_no, source_module, source_type, source_id, source_key,
+            partner_id, partner_name, customer_id, ar_date, period,
+            amount_excl_tax, tax_amount, total_amount, received_amount, bad_debt_amount, tax_rate,
+            invoice_no, invoice_code, invoice_date, due_date, payment_days, status,
+            dept_id, user_id, create_by, create_time, remark
+        ) VALUES (
+            #{arNo}, #{sourceModule}, #{sourceType}, #{sourceId}, #{sourceKey},
+            #{partnerId}, #{partnerName}, #{customerId}, #{arDate}, #{period},
+            #{amountExclTax}, #{taxAmount}, #{totalAmount}, #{receivedAmount}, #{badDebtAmount}, #{taxRate},
+            #{invoiceNo}, #{invoiceCode}, #{invoiceDate}, #{dueDate}, #{paymentDays}, #{status},
+            #{deptId}, #{userId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateAr" parameterType="com.ruoyi.fin.domain.FinArOrder">
+        UPDATE fin_ar_order
+        <set>
+            <if test="partnerId != null">partner_id = #{partnerId},</if>
+            <if test="partnerName != null">partner_name = #{partnerName},</if>
+            <if test="arDate != null">ar_date = #{arDate},</if>
+            <if test="period != null">period = #{period},</if>
+            <if test="dueDate != null">due_date = #{dueDate},</if>
+            <if test="paymentDays != null">payment_days = #{paymentDays},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="badDebtAmount != null">bad_debt_amount = #{badDebtAmount},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE ar_id = #{arId}
+    </update>
+
+    <!--
+      更新已收金额并推导状态（与应付同款设计）：
+        received=0        → OPEN未核销
+        0<recv<total      → PARTIAL部分核销
+        recv>=total       → SETTLED已核销
+      已在SQL 内推导，避免并发下状态与金额不一致。
+    -->
+    <update id="updateReceivedAmount">
+        UPDATE fin_ar_order
+        SET received_amount = #{recvAmount},
+            status = CASE
+                        WHEN #{recvAmount} &lt;= 0 THEN 'OPEN'
+                        WHEN #{recvAmount} &gt;= total_amount THEN 'SETTLED'
+                        ELSE 'PARTIAL'
+                     END,
+            update_by   = #{updateBy},
+            update_time = sysdate()
+        WHERE ar_id = #{arId}
+          AND del_flag = '0'
+    </update>
+
+    <update id="updateInvoice">
+        UPDATE fin_ar_order
+        SET invoice_no   = #{invoiceNo},
+            invoice_code = #{invoiceCode},
+            invoice_date = #{invoiceDate},
+            update_time  = sysdate()
+        WHERE ar_id = #{arId}
+          AND del_flag = '0'
+    </update>
+
+    <!-- 核销时锁定应收行，防并发重复核销 -->
+    <select id="selectArForUpdate" parameterType="java.lang.Long" resultMap="FinArOrderResult">
+        <include refid="selectArVo"/>
+        WHERE ar_id = #{arId} AND del_flag = '0'
+        FOR UPDATE
+    </select>
+
+    <update id="deleteArByIds" parameterType="java.lang.Long">
+        UPDATE fin_ar_order SET del_flag = '2', update_time = sysdate()
+        WHERE ar_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND status != 'SETTLED'
+    </update>
+
+    <!-- 账龄分析：按到期日与今日的间隔分桶 -->
+    <select id="selectAging" resultType="java.util.LinkedHashMap">
+        SELECT
+          CASE
+            WHEN r.status IN ('SETTLED','VOID') OR r.total_amount - r.received_amount &lt;= 0 THEN '已核销'
+            WHEN DATEDIFF(#{today}, r.due_date) &lt;= 0 THEN '未到期'
+            WHEN DATEDIFF(#{today}, r.due_date) &lt;= 30  THEN '逾期1-30天'
+            WHEN DATEDIFF(#{today}, r.due_date) &lt;= 60  THEN '逾期31-60天'
+            WHEN DATEDIFF(#{today}, r.due_date) &lt;= 90  THEN '逾期61-90天'
+            ELSE '逾期90天以上'
+          END AS bucket,
+          COUNT(*) AS cnt,
+          SUM(r.total_amount) AS totalAmount,
+          SUM(r.total_amount - r.received_amount) AS unreceivedAmount
+        FROM fin_ar_order r
+        WHERE r.del_flag = '0'
+          AND r.status NOT IN ('VOID')
+        GROUP BY bucket
+        ORDER BY FIELD(bucket, '未到期', '逾期1-30天', '逾期31-60天',
+                       '逾期61-90天', '逾期90天以上', '已核销')
+    </select>
+
+    <!-- 应收汇总（资产负债表应收账款取数） -->
+    <select id="sumByPeriod" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*) AS arCount,
+               SUM(total_amount) AS totalAmount,
+               SUM(received_amount) AS receivedAmount,
+               SUM(total_amount - received_amount) AS unreceivedAmount,
+               SUM(bad_debt_amount) AS badDebtAmount
+        FROM fin_ar_order
+        WHERE del_flag = '0'
+          AND status != 'VOID'
+          <if test="period != null and period != ''">
+              AND period = #{period}
+          </if>
+    </select>
+
+    <!-- 逾期未收预警 -->
+    <select id="selectOverdue" resultMap="FinArOrderResult">
+        SELECT r.ar_id, r.company_id, r.ar_no, r.source_module, r.source_type, r.source_id, r.source_key,
+               r.partner_id, r.partner_name, r.customer_id, r.ar_date, r.period,
+               r.amount_excl_tax, r.tax_amount, r.total_amount, r.received_amount,
+               r.bad_debt_amount, r.tax_rate,
+               r.invoice_no, r.invoice_code, r.invoice_date, r.due_date, r.payment_days, r.status,
+               r.dept_id, r.user_id,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        FROM fin_ar_order r
+        WHERE r.del_flag = '0'
+          AND r.status IN ('OPEN', 'PARTIAL')
+          AND r.due_date IS NOT NULL
+          AND r.due_date &lt; #{today}
+          AND r.total_amount - r.received_amount &gt; 0
+        ORDER BY r.due_date
+        LIMIT #{limit}
+    </select>
+
+    <!-- 客户维度应收余额（坏账计提基数） -->
+    <select id="selectBalanceByCustomer" resultType="java.util.LinkedHashMap">
+        SELECT r.partner_id                                   AS partnerId,
+               MAX(r.partner_name)                             AS partnerName,
+               SUM(r.total_amount)                             AS totalAmount,
+               SUM(r.received_amount)                          AS receivedAmount,
+               SUM(r.total_amount - r.received_amount)         AS unreceivedAmount,
+               COUNT(*)                                        AS arCount
+        FROM fin_ar_order r
+        WHERE r.del_flag = '0'
+          AND r.status IN ('OPEN', 'PARTIAL')
+        GROUP BY r.partner_id
+        ORDER BY unreceivedAmount DESC
+    </select>
+
+    <select id="sumBadDebtByAr" parameterType="java.lang.Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(provision_amount), 0)
+        FROM fin_bad_debt
+        WHERE ar_id = #{arId} AND del_flag = '0'
+    </select>
+
+</mapper>

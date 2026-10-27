@@ -1,0 +1,90 @@
+package com.ruoyi.dms.domain;
+
+import java.math.BigDecimal;
+import com.ruoyi.common.annotation.Excel;
+import com.ruoyi.common.core.domain.BaseEntity;
+
+/**
+ * 备件主数据 dms_spare_part
+ *
+ * @author ruoyi
+ */
+public class DmsSparePart extends BaseEntity
+{
+    private static final long serialVersionUID = 1L;
+
+    /** 备件ID */
+    private Long partId;
+
+    /** 备件编号 */
+    @Excel(name = "备件编号")
+    private String partCode;
+
+    /** 备件名称 */
+    @Excel(name = "备件名称")
+    private String partName;
+
+    /** 备件类别（字典 dms_part_type） */
+    @Excel(name = "备件类别", dictType = "dms_part_type")
+    private String partType;
+
+    /** 规格型号 */
+    @Excel(name = "规格型号")
+    private String specModel;
+
+    /** 单位 */
+    @Excel(name = "单位", dictType = "wms_unit")
+    private String unit;
+
+    /** 适用设备分类（JSON数组） */
+    private String applicableCategory;
+
+    /** 供应商ID */
+    private Long supplierId;
+
+    /** 供应商名称 */
+    @Excel(name = "供应商")
+    private String supplier;
+
+    /** 库存下限 */
+    @Excel(name = "库存下限")
+    private BigDecimal stockMin;
+
+    /** 库存上限 */
+    @Excel(name = "库存上限")
+    private BigDecimal stockMax;
+
+    /** 状态（0正常 1停用） */
+    @Excel(name = "状态", dictType = "sys_normal_disable")
+    private String status;
+
+    /** 删除标志 */
+    private String delFlag;
+
+    public Long getPartId() { return partId; }
+    public void setPartId(Long partId) { this.partId = partId; }
+    public String getPartCode() { return partCode; }
+    public void setPartCode(String partCode) { this.partCode = partCode; }
+    public String getPartName() { return partName; }
+    public void setPartName(String partName) { this.partName = partName; }
+    public String getPartType() { return partType; }
+    public void setPartType(String partType) { this.partType = partType; }
+    public String getSpecModel() { return specModel; }
+    public void setSpecModel(String specModel) { this.specModel = specModel; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public String getApplicableCategory() { return applicableCategory; }
+    public void setApplicableCategory(String applicableCategory) { this.applicableCategory = applicableCategory; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public String getSupplier() { return supplier; }
+    public void setSupplier(String supplier) { this.supplier = supplier; }
+    public BigDecimal getStockMin() { return stockMin; }
+    public void setStockMin(BigDecimal stockMin) { this.stockMin = stockMin; }
+    public BigDecimal getStockMax() { return stockMax; }
+    public void setStockMax(BigDecimal stockMax) { this.stockMax = stockMax; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getDelFlag() { return delFlag; }
+    public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+}

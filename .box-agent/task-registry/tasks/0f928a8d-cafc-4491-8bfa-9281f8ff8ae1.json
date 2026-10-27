@@ -1,0 +1,90 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "artifact_01e08c413767f9098741629a",
+      "current_revision_id": "revision_64fa9ab224c3d695fb1da6d7",
+      "filename": "gen_doc.js",
+      "kind": "document",
+      "mime": "text/javascript",
+      "rel_path": "gen_doc.js",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_8925ceb3afe5b942a72d9711",
+          "produced_at": "2026-10-27T17:49:19+08:00",
+          "sha256": "eb8c6186fc43f65e81dcdb9e89afeda2ea0a1d59547ee359106e03f09ea10ce1",
+          "size": 22735,
+          "turn_id": "c22bef74-bf4a-4dcb-b8c7-3fe3914b2c2c"
+        },
+        {
+          "artifact_revision_id": "revision_cff9b723913a399ff2fad00c",
+          "produced_at": "2026-10-27T17:50:00+08:00",
+          "sha256": "3e8cb05f9a57e79566e3dd113e4f8847a239dfcd16a6619f446b3bd3bed155f9",
+          "size": 22883,
+          "turn_id": "c22bef74-bf4a-4dcb-b8c7-3fe3914b2c2c"
+        },
+        {
+          "artifact_revision_id": "revision_7acecc442075497cdf443173",
+          "produced_at": "2026-10-27T17:51:11+08:00",
+          "sha256": "7aa009cfcf670a82cf6d09e6d6cdff3a0d009d13ccea5475fe64a8e7cfc07ab9",
+          "size": 22891,
+          "turn_id": "c22bef74-bf4a-4dcb-b8c7-3fe3914b2c2c"
+        },
+        {
+          "artifact_revision_id": "revision_73116dcbf6a8f56f1c737be8",
+          "produced_at": "2026-10-27T17:52:13+08:00",
+          "sha256": "5f96f476a939d37986de9070782879a95a30e36a8aa392f0fc97d5fd63e9deb5",
+          "size": 22725,
+          "turn_id": "c22bef74-bf4a-4dcb-b8c7-3fe3914b2c2c"
+        },
+        {
+          "artifact_revision_id": "revision_64fa9ab224c3d695fb1da6d7",
+          "produced_at": "2026-10-27T18:07:12+08:00",
+          "sha256": "70dbd96a919e59180be375fc7977d1ea3d053f202a0447344fad09a1a0dd65ea",
+          "size": 33922,
+          "turn_id": "517a2bdf-e9f1-410d-8558-495404ca9941"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_c6da12742ab76a6b7260b96c",
+      "current_revision_id": "revision_be44996dc7f8e7cbc06eb4e2",
+      "filename": "曲靖源禾农业_数字化平台业务调研分析文档.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "曲靖源禾农业_数字化平台业务调研分析文档.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_be44996dc7f8e7cbc06eb4e2",
+          "produced_at": "2026-10-27T17:52:55+08:00",
+          "sha256": "ef43039db7b79f157212ed44a1074572839ef3ce9b67ba18658730b9ed1d784b",
+          "size": 20764,
+          "turn_id": "c22bef74-bf4a-4dcb-b8c7-3fe3914b2c2c"
+        }
+      ]
+    },
+    {
+      "artifact_id": "artifact_e2ecf2da48cdb545687fb837",
+      "current_revision_id": "revision_85d7f62be5a9141db21192fd",
+      "filename": "曲靖源禾农业_数字化平台业务调研分析文档_V2.docx",
+      "kind": "document",
+      "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "rel_path": "曲靖源禾农业_数字化平台业务调研分析文档_V2.docx",
+      "revisions": [
+        {
+          "artifact_revision_id": "revision_85d7f62be5a9141db21192fd",
+          "produced_at": "2026-10-27T18:07:29+08:00",
+          "sha256": "dc4a211d375477537a4d46c6a84a1d0bf69fbb396b56a716e67275bf9d3469bf",
+          "size": 26852,
+          "turn_id": "517a2bdf-e9f1-410d-8558-495404ca9941"
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-10-27T09:45:18.548953+00:00",
+  "current_turn_id": "adee45f7-576b-4e99-909d-2a10c35e7224",
+  "execution_status": "running",
+  "schema_version": 3,
+  "session_id": "0f928a8d-cafc-4491-8bfa-9281f8ff8ae1",
+  "task_id": "0f928a8d-cafc-4491-8bfa-9281f8ff8ae1",
+  "updated_at": "2026-10-27T10:23:26.159600+00:00"
+}

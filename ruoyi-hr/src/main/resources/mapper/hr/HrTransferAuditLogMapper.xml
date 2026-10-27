@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrTransferAuditLogMapper">
+
+    <resultMap type="HrTransferAuditLog" id="HrTransferAuditLogResult">
+        <result property="logId"    column="log_id"    />
+        <result property="transferId"    column="transfer_id"    />
+        <result property="auditAction"    column="audit_action"    />
+        <result property="auditBy"    column="audit_by"    />
+        <result property="auditTime"    column="audit_time"    />
+        <result property="auditRemark"    column="audit_remark"    />
+    </resultMap>
+
+    <sql id="selectHrTransferAuditLogVo">
+        select log_id, transfer_id, audit_action, audit_by, audit_time, audit_remark from biz_hr_transfer_audit_log
+    </sql>
+
+    <select id="selectHrTransferAuditLogByLogId" parameterType="Long" resultMap="HrTransferAuditLogResult">
+        <include refid="selectHrTransferAuditLogVo"/>
+        where log_id = #{logId}
+    </select>
+
+    <select id="selectHrTransferAuditLogByTransferId" parameterType="Long" resultMap="HrTransferAuditLogResult">
+        <include refid="selectHrTransferAuditLogVo"/>
+        where transfer_id = #{transferId}
+        order by audit_time asc, log_id asc
+    </select>
+
+    <insert id="insertHrTransferAuditLog" parameterType="HrTransferAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_hr_transfer_audit_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="transferId != null">transfer_id,</if>
+            <if test="auditAction != null">audit_action,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditTime != null">audit_time,</if>
+            <if test="auditRemark != null">audit_remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="transferId != null">#{transferId},</if>
+            <if test="auditAction != null">#{auditAction},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+            <if test="auditRemark != null">#{auditRemark},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteHrTransferAuditLogByLogId" parameterType="Long">
+        delete from biz_hr_transfer_audit_log where log_id = #{logId}
+    </delete>
+
+    <delete id="deleteHrTransferAuditLogByTransferId" parameterType="Long">
+        delete from biz_hr_transfer_audit_log where transfer_id = #{transferId}
+    </delete>
+
+</mapper>

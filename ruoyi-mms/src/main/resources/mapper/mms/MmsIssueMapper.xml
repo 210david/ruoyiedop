@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsIssueMapper">
+
+    <resultMap type="MmsIssue" id="MmsIssueResult">
+                <id property="issueId" column="issue_id"/>
+<result property="issueNo"     column="issue_no"/>
+        <result property="workOrderId"     column="work_order_id"/>
+        <result property="workOrderNo"     column="work_order_no"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"     column="unit"/>
+        <result property="issueQty"     column="issue_qty"/>
+        <result property="batchNo"     column="batch_no"/>
+        <result property="issueTime"     column="issue_time"/>
+        <result property="issueBy"     column="issue_by"/>
+        <result property="status"     column="status"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"     column="remark"/>
+        <result property="productCode"     column="product_code"/>
+        <result property="productName"     column="product_name"/>
+        <result property="planQty"     column="plan_qty"/>
+        <result property="detailCount"     column="detail_count"/>
+        <result property="materialCodes"     column="material_codes"/>
+        <result property="materialNames"     column="material_names"/>
+    </resultMap>
+
+    <!-- 带明细的resultMap -->
+    <resultMap type="MmsIssue" id="MmsIssueDetailResult" extends="MmsIssueResult">
+        <collection property="detailList" ofType="com.ruoyi.mms.domain.MmsIssueDetail">
+            <id property="detailId" column="d_detail_id"/>
+            <result property="issueId" column="d_issue_id"/>
+            <result property="seq" column="d_seq"/>
+            <result property="materialId" column="d_material_id"/>
+            <result property="materialCode" column="d_material_code"/>
+            <result property="materialName" column="d_material_name"/>
+            <result property="specModel" column="d_spec_model"/>
+            <result property="unit" column="d_unit"/>
+            <result property="usageQty" column="d_usage_qty"/>
+            <result property="suggestedQty" column="d_suggested_qty"/>
+            <result property="issueQty" column="d_issue_qty"/>
+            <result property="batchNo" column="d_batch_no"/>
+            <result property="delFlag" column="d_del_flag"/>
+            <result property="createBy" column="d_create_by"/>
+            <result property="createTime" column="d_create_time"/>
+            <result property="remark" column="d_remark"/>
+        </collection>
+    </resultMap>
+
+    <sql id="selectIssueVo">
+        SELECT i.issue_id, i.issue_no, i.work_order_id, i.work_order_no, i.material_id, i.material_code, i.material_name, i.spec_model, i.unit, i.issue_qty, i.batch_no, i.issue_time, i.issue_by, i.status, i.del_flag, i.create_by, i.create_time, i.update_by, i.update_time, i.remark,
+               wo.product_code, wo.product_name, wo.plan_qty,
+               sub.detail_count, sub.material_codes, sub.material_names
+        FROM mms_issue i
+        LEFT JOIN mms_work_order wo ON i.work_order_id = wo.work_order_id
+        LEFT JOIN (
+            SELECT issue_id,
+                   COUNT(*) AS detail_count,
+                   GROUP_CONCAT(material_code ORDER BY seq SEPARATOR ',') AS material_codes,
+                   GROUP_CONCAT(material_name ORDER BY seq SEPARATOR ',') AS material_names
+            FROM mms_issue_detail
+            WHERE del_flag = '0'
+            GROUP BY issue_id
+        ) sub ON i.issue_id = sub.issue_id
+    </sql>
+
+    <select id="selectIssueList" parameterType="MmsIssue" resultMap="MmsIssueResult">
+        <include refid="selectIssueVo"/>
+        <where>
+            i.del_flag = '0'
+            <if test="issueNo != null and issueNo != ''"> AND i.issue_no LIKE CONCAT('%', #{issueNo}, '%')</if>
+            <if test="workOrderNo != null and workOrderNo != ''"> AND i.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')</if>
+            <if test="materialCode != null and materialCode != ''"> AND sub.material_codes LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND sub.material_names LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="status != null and status != ''"> AND i.status = #{status}</if>
+            <if test="params.excludeDraftWorkOrder != null and params.excludeDraftWorkOrder != ''"> AND NOT EXISTS (SELECT 1 FROM mms_work_order w WHERE w.work_order_id = i.work_order_id AND w.status = '0' AND w.del_flag = '0')</if>
+            <if test="batchNo != null and batchNo != ''"> AND i.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="issueBy != null and issueBy != ''"> AND i.issue_by LIKE CONCAT('%', #{issueBy}, '%')</if>
+            <if test="params.workOrderStatus != null and params.workOrderStatus != ''"> AND wo.status = #{params.workOrderStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date(i.create_time) &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date(i.create_time) &lt;= #{params.endTime}</if>
+                  <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+</where>
+        ORDER BY i.issue_id DESC
+    </select>
+
+    <!-- 查询领料单（带明细） -->
+    <select id="selectIssueById" parameterType="Long" resultMap="MmsIssueDetailResult">
+        SELECT i.issue_id, i.issue_no, i.work_order_id, i.work_order_no, i.material_id, i.material_code,
+               i.material_name, i.spec_model, i.unit, i.issue_qty, i.batch_no, i.issue_time,
+               i.issue_by, i.status, i.del_flag, i.create_by, i.create_time, i.update_by, i.update_time, i.remark,
+               wo.product_code, wo.product_name, wo.plan_qty,
+               d.detail_id AS d_detail_id, d.issue_id AS d_issue_id, d.seq AS d_seq,
+               d.material_id AS d_material_id, d.material_code AS d_material_code,
+               d.material_name AS d_material_name, d.spec_model AS d_spec_model, d.unit AS d_unit,
+               d.usage_qty AS d_usage_qty, d.suggested_qty AS d_suggested_qty,
+               d.issue_qty AS d_issue_qty, d.batch_no AS d_batch_no, d.del_flag AS d_del_flag,
+               d.create_by AS d_create_by, d.create_time AS d_create_time, d.remark AS d_remark
+        FROM mms_issue i
+        LEFT JOIN mms_work_order wo ON i.work_order_id = wo.work_order_id
+        LEFT JOIN mms_issue_detail d ON i.issue_id = d.issue_id AND d.del_flag = '0'
+        WHERE i.issue_id = #{issueId} AND i.del_flag = '0'
+        ORDER BY d.seq ASC
+    </select>
+
+    <insert id="insertIssue" parameterType="MmsIssue" useGeneratedKeys="true" keyProperty="issueId">
+        INSERT INTO mms_issue (
+            issue_no,
+            work_order_id,
+            work_order_no,
+            material_id,
+            material_code,
+            material_name,
+            spec_model,
+            unit,
+            issue_qty,
+            batch_no,
+            issue_time,
+            issue_by,
+            status,
+            del_flag,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        )VALUES(
+            #{issueNo},
+            #{workOrderId},
+            #{workOrderNo},
+            #{materialId},
+            #{materialCode},
+            #{materialName},
+            #{specModel},
+            #{unit},
+            #{issueQty},
+            #{batchNo},
+            #{issueTime},
+            #{issueBy},
+            #{status},
+            #{delFlag},
+            #{createBy},
+            #{createTime},
+            #{updateBy},
+            #{updateTime},
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateIssue" parameterType="MmsIssue">
+        UPDATE mms_issue
+        <set>
+            <if test="issueNo != null">issue_no = #{issueNo},</if>
+            <if test="workOrderId != null">work_order_id = #{workOrderId},</if>
+            <if test="workOrderNo != null">work_order_no = #{workOrderNo},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="issueQty != null">issue_qty = #{issueQty},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="issueTime != null">issue_time = #{issueTime},</if>
+            <if test="issueBy != null">issue_by = #{issueBy},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE issue_id = #{issueId}
+    </update>
+
+    <delete id="deleteIssueByIds" parameterType="Long">
+        UPDATE mms_issue SET del_flag = '2' WHERE issue_id IN
+        <foreach collection="array" item="issueId" open="(" separator="," close=")">
+            #{issueId}
+        </foreach>
+    </delete>
+
+    <!-- ===== 领料明细操作 ===== -->
+    <select id="selectIssueDetailByIssueId" parameterType="Long" resultType="com.ruoyi.mms.domain.MmsIssueDetail">
+        SELECT detail_id, issue_id, seq, material_id, material_code, material_name, spec_model,
+               unit, usage_qty, suggested_qty, issue_qty, batch_no, del_flag, create_by, create_time, remark
+        FROM mms_issue_detail
+        WHERE issue_id = #{issueId} AND del_flag = '0'
+        ORDER BY seq ASC
+    </select>
+
+    <insert id="insertIssueDetail" parameterType="com.ruoyi.mms.domain.MmsIssueDetail">
+        INSERT INTO mms_issue_detail (
+            issue_id, seq, material_id, material_code, material_name, spec_model,
+            unit, usage_qty, suggested_qty, issue_qty, batch_no, del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{issueId}, #{seq}, #{materialId}, #{materialCode}, #{materialName}, #{specModel},
+            #{unit}, #{usageQty}, #{suggestedQty}, #{issueQty}, #{batchNo}, '0', #{createBy}, #{createTime}, #{remark}
+        )
+    </insert>
+
+    <delete id="deleteIssueDetailByIssueId" parameterType="Long">
+        UPDATE mms_issue_detail SET del_flag = '2' WHERE issue_id = #{issueId}
+    </delete>
+
+    <!-- 按工单号查询领料明细（按物料拆分，每条明细一行） -->
+    <select id="selectIssueDetailListByWorkOrderNo" parameterType="String" resultType="java.util.Map">
+        SELECT d.detail_id, d.issue_id, d.seq, d.material_id, d.material_code, d.material_name,
+               d.spec_model, d.unit, d.usage_qty, d.suggested_qty, d.issue_qty, d.batch_no,
+               i.issue_no, i.work_order_no, i.issue_time, i.issue_by, i.status, i.create_time
+        FROM mms_issue_detail d
+        INNER JOIN mms_issue i ON d.issue_id = i.issue_id AND i.del_flag = '0'
+        WHERE d.del_flag = '0' AND i.work_order_no = #{workOrderNo}
+        ORDER BY i.issue_id DESC, d.seq ASC
+    </select>
+</mapper>

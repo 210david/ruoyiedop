@@ -1,0 +1,24 @@
+<service>
+  <id>EDOP-Redis</id>
+  <name>EDOP Redis服务</name>
+  <description>企业数字化运营平台 - Redis 缓存服务 (端口6379)</description>
+  
+  <executable>D:\EDOP\redis\redis-server.exe</executable>
+  <arguments>redis.windows.conf</arguments>
+  
+  <workingdirectory>D:\EDOP\redis</workingdirectory>
+  
+  <logpath>D:\EDOP\redis\logs\winsw</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  
+  <stopexecutable>D:\EDOP\redis\redis-cli.exe</stopexecutable>
+  <stoparguments>shutdown nosave</stoparguments>
+  
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+  
+  <startmode>Automatic</startmode>
+</service>

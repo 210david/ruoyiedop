@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.food.mapper.FoodMaterialParamMapper">
+
+    <resultMap type="com.ruoyi.food.domain.FoodMaterialParam" id="FoodMaterialParamResult">
+        <id property="paramId" column="param_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="yieldModel" column="yield_model"/>
+        <result property="stdYieldRate" column="std_yield_rate"/>
+        <result property="yieldAlarmRate" column="yield_alarm_rate"/>
+        <result property="scheduleMode" column="schedule_mode"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectParamVo">
+        SELECT p.param_id, p.material_id, p.material_code, p.material_name, p.yield_model,
+               p.std_yield_rate, p.yield_alarm_rate, p.schedule_mode, p.del_flag,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark
+        FROM food_material_param p
+    </sql>
+
+    <select id="selectParamList" parameterType="com.ruoyi.food.domain.FoodMaterialParam" resultMap="FoodMaterialParamResult">
+        <include refid="selectParamVo"/>
+        <where>
+            p.del_flag = '0'
+            <if test="materialCode != null and materialCode != ''"> AND p.material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND p.material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="yieldModel != null and yieldModel != ''"> AND p.yield_model = #{yieldModel}</if>
+            <if test="scheduleMode != null and scheduleMode != ''"> AND p.schedule_mode = #{scheduleMode}</if>
+        </where>
+        ORDER BY p.param_id DESC
+    </select>
+
+    <select id="selectParamById" parameterType="Long" resultMap="FoodMaterialParamResult">
+        <include refid="selectParamVo"/>
+        WHERE p.param_id = #{paramId} AND p.del_flag = '0'
+    </select>
+
+    <select id="selectParamByMaterialId" parameterType="Long" resultMap="FoodMaterialParamResult">
+        <include refid="selectParamVo"/>
+        WHERE p.material_id = #{materialId} AND p.del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertParam" parameterType="com.ruoyi.food.domain.FoodMaterialParam" useGeneratedKeys="true" keyProperty="paramId">
+        INSERT INTO food_material_param (
+            material_id, material_code, material_name, yield_model, std_yield_rate,
+            yield_alarm_rate, schedule_mode, del_flag, create_by, create_time, update_by, update_time, remark
+        )VALUES(
+            #{materialId}, #{materialCode}, #{materialName}, #{yieldModel}, #{stdYieldRate},
+            #{yieldAlarmRate}, #{scheduleMode}, '0', #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
+        )
+    </insert>
+
+    <update id="updateParam" parameterType="com.ruoyi.food.domain.FoodMaterialParam">
+        UPDATE food_material_param
+        <set>
+            <if test="yieldModel != null and yieldModel != ''">yield_model = #{yieldModel},</if>
+            std_yield_rate = #{stdYieldRate},
+            yield_alarm_rate = #{yieldAlarmRate},
+            <if test="scheduleMode != null and scheduleMode != ''">schedule_mode = #{scheduleMode},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = #{updateTime}
+        </set>
+        WHERE param_id = #{paramId}
+    </update>
+
+    <delete id="deleteParamByIds" parameterType="Long">
+        UPDATE food_material_param SET del_flag = '2' WHERE param_id IN
+        <foreach collection="array" item="paramId" open="(" separator="," close=")">
+            #{paramId}
+        </foreach>
+    </delete>
+
+    <!-- 物料基本信息（wms_material，food 包以 map 承载避免模块反向依赖） -->
+    <select id="selectMaterialInfo" parameterType="Long" resultType="java.util.HashMap">
+        SELECT m.material_code AS material_code, m.material_name AS material_name
+        FROM wms_material m
+        WHERE m.material_id = #{materialId} AND m.del_flag = '0'
+        LIMIT 1
+    </select>
+</mapper>

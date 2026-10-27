@@ -1,0 +1,1 @@
+SELECT menu_id, menu_name, icon, menu_type FROM sys_menu WHERE perms LIKE 'safety:%' OR (menu_name = '安全生产管理' AND parent_id = 0) OR menu_name IN ('一企一档','双控机制','教育培训','应急管理','到期提醒','安全驾驶舱') ORDER BY menu_id;

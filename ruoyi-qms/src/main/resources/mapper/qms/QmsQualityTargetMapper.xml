@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsQualityTargetMapper">
+    <resultMap type="QmsQualityTarget" id="QmsQualityTargetResult">
+        <result property="targetId" column="target_id"/>
+        <result property="targetYear" column="target_year"/>
+        <result property="targetMonth" column="target_month"/>
+        <result property="dimension" column="dimension"/>
+        <result property="dimensionVal" column="dimension_val"/>
+        <result property="targetPassRate" column="target_pass_rate"/>
+        <result property="actualPassRate" column="actual_pass_rate"/>
+        <result property="targetPpm" column="target_ppm"/>
+        <result property="actualPpm" column="actual_ppm"/>
+        <result property="targetComplaintRate" column="target_complaint_rate"/>
+        <result property="actualComplaintRate" column="actual_complaint_rate"/>
+        <result property="targetCapaCloseRate" column="target_capa_close_rate"/>
+        <result property="actualCapaCloseRate" column="actual_capa_close_rate"/>
+        <result property="achievement" column="achievement"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT target_id, target_year, target_month, dimension, dimension_val,
+               target_pass_rate, actual_pass_rate, target_ppm, actual_ppm,
+               target_complaint_rate, actual_complaint_rate, target_capa_close_rate, actual_capa_close_rate,
+               achievement, del_flag, status, create_by, create_time, update_by, update_time, remark
+        FROM qms_quality_target
+    </sql>
+    <select id="selectTargetList" parameterType="QmsQualityTarget" resultMap="QmsQualityTargetResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="targetYear != null"> AND target_year = #{targetYear}</if>
+            <if test="targetMonth != null"> AND target_month = #{targetMonth}</if>
+            <if test="dimension != null and dimension != ''"> AND dimension = #{dimension}</if>
+            <if test="dimensionVal != null and dimensionVal != ''"> AND dimension_val LIKE CONCAT('%', #{dimensionVal}, '%')</if>
+            <if test="achievement != null and achievement != ''"> AND achievement = #{achievement}</if>
+        </where>
+        ORDER BY target_year DESC, target_month ASC
+    </select>
+    <select id="selectTargetById" parameterType="Long" resultMap="QmsQualityTargetResult">
+        <include refid="selectVo"/> WHERE target_id = #{targetId}
+    </select>
+    <insert id="insertTarget" parameterType="QmsQualityTarget" useGeneratedKeys="true" keyProperty="targetId">
+        INSERT INTO qms_quality_target (target_year, target_month, dimension, dimension_val,
+            target_pass_rate, actual_pass_rate, target_ppm, actual_ppm,
+            target_complaint_rate, actual_complaint_rate, target_capa_close_rate, actual_capa_close_rate,
+            achievement, del_flag, status, create_by, create_time, remark)
+        VALUES (#{targetYear}, #{targetMonth}, #{dimension}, #{dimensionVal},
+            #{targetPassRate}, #{actualPassRate}, #{targetPpm}, #{actualPpm},
+            #{targetComplaintRate}, #{actualComplaintRate}, #{targetCapaCloseRate}, #{actualCapaCloseRate},
+            #{achievement}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateTarget" parameterType="QmsQualityTarget">
+        UPDATE qms_quality_target <set>
+            <if test="targetYear != null"> target_year = #{targetYear},</if>
+            <if test="targetMonth != null"> target_month = #{targetMonth},</if>
+            <if test="dimension != null"> dimension = #{dimension},</if>
+            <if test="dimensionVal != null"> dimension_val = #{dimensionVal},</if>
+            <if test="targetPassRate != null"> target_pass_rate = #{targetPassRate},</if>
+            <if test="actualPassRate != null"> actual_pass_rate = #{actualPassRate},</if>
+            <if test="targetPpm != null"> target_ppm = #{targetPpm},</if>
+            <if test="actualPpm != null"> actual_ppm = #{actualPpm},</if>
+            <if test="targetComplaintRate != null"> target_complaint_rate = #{targetComplaintRate},</if>
+            <if test="actualComplaintRate != null"> actual_complaint_rate = #{actualComplaintRate},</if>
+            <if test="targetCapaCloseRate != null"> target_capa_close_rate = #{targetCapaCloseRate},</if>
+            <if test="actualCapaCloseRate != null"> actual_capa_close_rate = #{actualCapaCloseRate},</if>
+            <if test="achievement != null"> achievement = #{achievement},</if>
+            <if test="status != null"> status = #{status},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE target_id = #{targetId}
+    </update>
+    <delete id="deleteTargetByIds" parameterType="Long">
+        UPDATE qms_quality_target SET del_flag = '2' WHERE target_id IN
+        <foreach item="targetId" collection="array" open="(" separator="," close=")">#{targetId}</foreach>
+    </delete>
+</mapper>

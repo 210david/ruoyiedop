@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsTraceSnMapper">
+    <resultMap type="QmsTraceSn" id="QmsTraceSnResult">
+        <id property="id" column="id"/>
+        <result property="snCode" column="sn_code"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">select id, sn_code, batch_no, work_order_no, material_id, material_code, status, del_flag, create_by, create_time, update_by, update_time from qms_trace_sn</sql>
+
+    <select id="selectSnList" parameterType="QmsTraceSn" resultMap="QmsTraceSnResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="snCode != null and snCode != ''">and sn_code like concat('%', #{snCode}, '%')</if>
+            <if test="batchNo != null and batchNo != ''">and batch_no = #{batchNo}</if>
+            <if test="workOrderNo != null and workOrderNo != ''">and work_order_no = #{workOrderNo}</if>
+            <if test="materialCode != null and materialCode != ''">and material_code = #{materialCode}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectSnById" parameterType="Long" resultMap="QmsTraceSnResult">
+        <include refid="selectVo"/> where id = #{id} and del_flag = '0'
+    </select>
+
+    <select id="selectBySnCode" parameterType="String" resultMap="QmsTraceSnResult">
+        <include refid="selectVo"/> where sn_code = #{snCode} and del_flag = '0'
+    </select>
+
+    <select id="selectByBatchNo" parameterType="String" resultMap="QmsTraceSnResult">
+        <include refid="selectVo"/> where batch_no = #{batchNo} and del_flag = '0' order by id desc
+    </select>
+
+    <insert id="insertSn" parameterType="QmsTraceSn" useGeneratedKeys="true" keyProperty="id">
+        insert into qms_trace_sn(sn_code, batch_no, work_order_no, material_id, material_code, status, del_flag, create_by, create_time)
+        values(#{snCode}, #{batchNo}, #{workOrderNo}, #{materialId}, #{materialCode}, #{status}, '0', #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateSn" parameterType="QmsTraceSn">
+        update qms_trace_sn
+        <set>
+            <if test="snCode != null">sn_code = #{snCode},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="workOrderNo != null">work_order_no = #{workOrderNo},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="status != null">status = #{status},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteSnByIds" parameterType="Long">
+        update qms_trace_sn set del_flag = '1' where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

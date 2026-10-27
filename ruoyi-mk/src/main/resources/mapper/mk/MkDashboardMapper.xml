@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkDashboardMapper">
+
+    <resultMap type="com.ruoyi.mk.domain.vo.MkDashboardVO" id="MkDashboardResult">
+        <result property="name"             column="name"/>
+        <result property="code"             column="code"/>
+        <result property="count"            column="cnt"/>
+        <result property="amount"           column="amount"/>
+        <result property="weightedAmount"   column="weighted_amount"/>
+        <result property="winRate"          column="win_rate"/>
+        <result property="date"             column="dt"/>
+        <result property="userId"           column="user_id"/>
+        <result property="userName"         column="user_name"/>
+        <result property="customerCount"    column="customer_count"/>
+        <result property="leadCount"        column="lead_count"/>
+        <result property="opportunityCount" column="opportunity_count"/>
+        <result property="contractCount"    column="contract_count"/>
+        <result property="orderCount"       column="order_count"/>
+        <result property="contractAmount"   column="contract_amount"/>
+        <result property="orderAmount"      column="order_amount"/>
+        <result property="paymentAmount"    column="payment_amount"/>
+        <result property="expectedAmount"   column="expected_amount"/>
+        <result property="wonAmount"        column="won_amount"/>
+        <result property="activityCount"    column="activity_count"/>
+        <result property="activityLeadCount" column="activity_lead_count"/>
+        <result property="deptId"           column="dept_id"/>
+        <result property="deptName"         column="dept_name"/>
+        <result property="rank"             column="rank"/>
+        <result property="wonCount"         column="won_count"/>
+        <result property="lostCount"        column="lost_count"/>
+        <result property="totalDealCount"   column="total_deal_count"/>
+        <result property="avgDealAmount"    column="avg_deal_amount"/>
+        <result property="conversionRate"   column="conversion_rate"/>
+    </resultMap>
+
+    <!-- 概览统计 -->
+    <select id="selectOverview" resultMap="MkDashboardResult">
+        SELECT
+            (SELECT COUNT(*) FROM mk_customer WHERE del_flag = '0') AS customer_count,
+            (SELECT COUNT(*) FROM mk_lead WHERE del_flag = '0') AS lead_count,
+            (SELECT COUNT(*) FROM mk_opportunity WHERE del_flag = '0') AS opportunity_count,
+            (SELECT COUNT(*) FROM mk_contract WHERE del_flag = '0') AS contract_count,
+            (SELECT COUNT(*) FROM mk_order WHERE del_flag = '0') AS order_count,
+            (SELECT IFNULL(SUM(contract_amount),0) FROM mk_contract WHERE del_flag = '0') AS contract_amount,
+            (SELECT IFNULL(SUM(order_amount),0) FROM mk_order WHERE del_flag = '0') AS order_amount,
+            (SELECT IFNULL(SUM(actual_amount),0) FROM mk_payment_plan WHERE payment_status = '1') AS payment_amount,
+            (SELECT IFNULL(SUM(expected_amount),0) FROM mk_opportunity WHERE del_flag = '0' AND opportunity_status = '0') AS expected_amount,
+            (SELECT IFNULL(SUM(actual_amount),0) FROM mk_opportunity WHERE del_flag = '0' AND opportunity_status = '1') AS won_amount,
+            (SELECT COUNT(*) FROM mk_activity WHERE del_flag = '0') AS activity_count
+    </select>
+
+    <!-- 线索转化漏斗 -->
+    <select id="selectLeadFunnel" resultMap="MkDashboardResult">
+        SELECT lead_status AS code, COUNT(*) AS cnt FROM mk_lead WHERE del_flag = '0' GROUP BY lead_status ORDER BY lead_status
+    </select>
+
+    <!-- 商机销售漏斗（按阶段统计） -->
+    <select id="selectOpportunityPipeline" resultMap="MkDashboardResult">
+        SELECT o.stage_code AS code, s.stage_name AS name, COUNT(*) AS cnt,
+               IFNULL(SUM(o.expected_amount),0) AS amount,
+               IFNULL(SUM(o.weighted_amount),0) AS weighted_amount,
+               s.win_rate AS win_rate
+        FROM mk_opportunity o
+        LEFT JOIN mk_opportunity_stage s ON o.stage_code = s.stage_code
+        WHERE o.del_flag = '0' AND o.opportunity_status = '0'
+        GROUP BY o.stage_code, s.stage_name, s.win_rate
+        ORDER BY s.sort
+    </select>
+
+    <!-- 客户行业分布 -->
+    <select id="selectCustomerByIndustry" resultMap="MkDashboardResult">
+        SELECT industry AS code, COUNT(*) AS cnt FROM mk_customer WHERE del_flag = '0' AND industry IS NOT NULL AND industry != '' GROUP BY industry ORDER BY cnt DESC
+    </select>
+
+    <!-- 客户等级分布 -->
+    <select id="selectCustomerByLevel" resultMap="MkDashboardResult">
+        SELECT customer_level AS code, COUNT(*) AS cnt FROM mk_customer WHERE del_flag = '0' GROUP BY customer_level ORDER BY customer_level
+    </select>
+
+    <!-- 销售业绩排行 -->
+    <select id="selectSalesRanking" resultMap="MkDashboardResult">
+        SELECT co.user_id AS user_id, u.nick_name AS user_name,
+               COUNT(DISTINCT co.contract_id) AS contract_count,
+               IFNULL(SUM(co.contract_amount),0) AS contract_amount
+        FROM mk_contract co
+        LEFT JOIN sys_user u ON co.user_id = u.user_id
+        WHERE co.del_flag = '0' AND co.user_id IS NOT NULL
+        GROUP BY co.user_id, u.nick_name
+        ORDER BY contract_amount DESC
+        LIMIT 10
+    </select>
+
+    <!-- 合同/订单月度趋势 -->
+    <select id="selectRevenueTrend" resultMap="MkDashboardResult">
+        SELECT DATE_FORMAT(sign_date, '%Y-%m') AS dt,
+               COUNT(*) AS cnt,
+               IFNULL(SUM(contract_amount),0) AS amount
+        FROM mk_contract
+        WHERE del_flag = '0' AND sign_date IS NOT NULL
+        GROUP BY DATE_FORMAT(sign_date, '%Y-%m')
+        ORDER BY dt
+    </select>
+
+    <!-- 活动效果统计 -->
+    <select id="selectActivityResult" resultMap="MkDashboardResult">
+        SELECT activity_type AS code, COUNT(*) AS cnt,
+               IFNULL(SUM(lead_count),0) AS activity_lead_count,
+               IFNULL(SUM(opportunity_count),0) AS opportunity_count,
+               IFNULL(SUM(deal_amount),0) AS amount
+        FROM mk_activity WHERE del_flag = '0'
+        GROUP BY activity_type ORDER BY cnt DESC
+    </select>
+
+    <!-- 赢单输单分析 -->
+    <select id="selectWinLossAnalysis" resultMap="MkDashboardResult">
+        SELECT
+            opportunity_status AS code,
+            CASE opportunity_status WHEN '0' THEN '进行中' WHEN '1' THEN '已赢单' WHEN '2' THEN '已输单' END AS name,
+            COUNT(*) AS cnt,
+            IFNULL(SUM(expected_amount),0) AS amount,
+            IFNULL(SUM(actual_amount),0) AS won_amount
+        FROM mk_opportunity
+        WHERE del_flag = '0' AND opportunity_status IN ('1','2')
+        GROUP BY opportunity_status
+        ORDER BY opportunity_status
+    </select>
+
+    <!-- 销售预测（按月统计预计成交的加权金额） -->
+    <select id="selectSalesForecast" resultMap="MkDashboardResult">
+        SELECT DATE_FORMAT(expected_date, '%Y-%m') AS dt,
+               COUNT(*) AS cnt,
+               IFNULL(SUM(expected_amount),0) AS amount,
+               IFNULL(SUM(weighted_amount),0) AS weighted_amount
+        FROM mk_opportunity
+        WHERE del_flag = '0' AND opportunity_status = '0' AND expected_date IS NOT NULL
+        GROUP BY DATE_FORMAT(expected_date, '%Y-%m')
+        ORDER BY dt
+    </select>
+
+    <!-- 销售人员综合统计 -->
+    <select id="selectSalespersonOverview" resultMap="MkDashboardResult">
+        SELECT u.user_id AS user_id,
+               u.nick_name AS user_name,
+               u.dept_id AS dept_id,
+               d.dept_name AS dept_name,
+               (SELECT COUNT(*) FROM mk_customer WHERE del_flag = '0' AND user_id = u.user_id) AS customer_count,
+               (SELECT COUNT(*) FROM mk_lead WHERE del_flag = '0' AND user_id = u.user_id) AS lead_count,
+               (SELECT COUNT(*) FROM mk_opportunity WHERE del_flag = '0' AND user_id = u.user_id) AS opportunity_count,
+               (SELECT COUNT(*) FROM mk_opportunity WHERE del_flag = '0' AND user_id = u.user_id AND opportunity_status = '1') AS won_count,
+               (SELECT COUNT(*) FROM mk_opportunity WHERE del_flag = '0' AND user_id = u.user_id AND opportunity_status = '2') AS lost_count,
+               (SELECT COUNT(DISTINCT contract_id) FROM mk_contract WHERE del_flag = '0' AND user_id = u.user_id) AS contract_count,
+               (SELECT COUNT(DISTINCT order_id) FROM mk_order WHERE del_flag = '0' AND user_id = u.user_id) AS order_count,
+               (SELECT IFNULL(SUM(contract_amount),0) FROM mk_contract WHERE del_flag = '0' AND user_id = u.user_id) AS contract_amount,
+               (SELECT IFNULL(SUM(order_amount),0) FROM mk_order WHERE del_flag = '0' AND user_id = u.user_id) AS order_amount,
+               (SELECT IFNULL(SUM(pp.actual_amount),0) FROM mk_payment_plan pp INNER JOIN mk_contract c ON pp.contract_id = c.contract_id WHERE pp.payment_status = '1' AND c.user_id = u.user_id) AS payment_amount,
+               (SELECT IFNULL(SUM(actual_amount),0) FROM mk_opportunity WHERE del_flag = '0' AND user_id = u.user_id AND opportunity_status = '1') AS won_amount
+        FROM sys_user u
+        LEFT JOIN sys_dept d ON u.dept_id = d.dept_id
+        WHERE u.del_flag = '0'
+          AND u.user_id IN (
+              SELECT DISTINCT user_id FROM mk_customer WHERE del_flag = '0' AND user_id IS NOT NULL
+              UNION SELECT DISTINCT user_id FROM mk_lead WHERE del_flag = '0' AND user_id IS NOT NULL
+              UNION SELECT DISTINCT user_id FROM mk_opportunity WHERE del_flag = '0' AND user_id IS NOT NULL
+              UNION SELECT DISTINCT user_id FROM mk_contract WHERE del_flag = '0' AND user_id IS NOT NULL
+          )
+        ORDER BY contract_amount DESC
+    </select>
+
+    <!-- 销售人员月度业绩趋势 -->
+    <select id="selectSalespersonMonthlyTrend" resultMap="MkDashboardResult">
+        SELECT t.dt,
+               IFNULL(SUM(t.contract_count), 0) AS contract_count,
+               IFNULL(SUM(t.contract_amount), 0) AS contract_amount,
+               IFNULL(SUM(t.order_count), 0) AS order_count,
+               IFNULL(SUM(t.order_amount), 0) AS order_amount,
+               IFNULL(SUM(t.payment_amount), 0) AS payment_amount
+        FROM (
+            SELECT DATE_FORMAT(sign_date, '%Y-%m') AS dt,
+                   COUNT(*) AS contract_count,
+                   IFNULL(SUM(contract_amount),0) AS contract_amount,
+                   0 AS order_count,
+                   0 AS order_amount,
+                   0 AS payment_amount
+            FROM mk_contract
+            WHERE del_flag = '0' AND user_id = #{userId} AND sign_date IS NOT NULL
+            GROUP BY DATE_FORMAT(sign_date, '%Y-%m')
+            UNION ALL
+            SELECT DATE_FORMAT(create_time, '%Y-%m') AS dt,
+                   0 AS contract_count,
+                   0 AS contract_amount,
+                   COUNT(*) AS order_count,
+                   IFNULL(SUM(order_amount),0) AS order_amount,
+                   0 AS payment_amount
+            FROM mk_order
+            WHERE del_flag = '0' AND user_id = #{userId} AND create_time IS NOT NULL
+            GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+            UNION ALL
+            SELECT DATE_FORMAT(pp.actual_date, '%Y-%m') AS dt,
+                   0 AS contract_count,
+                   0 AS contract_amount,
+                   0 AS order_count,
+                   0 AS order_amount,
+                   IFNULL(SUM(pp.actual_amount),0) AS payment_amount
+            FROM mk_payment_plan pp
+            INNER JOIN mk_contract c ON pp.contract_id = c.contract_id
+            WHERE pp.payment_status = '1' AND c.user_id = #{userId} AND pp.actual_date IS NOT NULL
+            GROUP BY DATE_FORMAT(pp.actual_date, '%Y-%m')
+        ) t
+        GROUP BY t.dt
+        ORDER BY t.dt
+    </select>
+
+</mapper>

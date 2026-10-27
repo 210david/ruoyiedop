@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkPromotionReportMapper">
+
+    <!-- KPI 汇总 -->
+    <select id="selectOverview" resultType="java.util.HashMap">
+        SELECT
+            IFNULL(SUM(pd.exposure_count), 0) AS exposureCount,
+            IFNULL(SUM(pd.read_count), 0)     AS readCount,
+            IFNULL(SUM(pd.like_count), 0)     AS likeCount,
+            IFNULL(SUM(pd.comment_count), 0)  AS commentCount,
+            (SELECT IFNULL(SUM(l.click_count), 0) FROM mk_activity_channel_link l WHERE l.del_flag = '0') AS clickCount,
+            (SELECT IFNULL(SUM(l.signup_count), 0) FROM mk_activity_channel_link l WHERE l.del_flag = '0') AS signupCount,
+            (SELECT IFNULL(SUM(l.lead_count), 0) FROM mk_activity_channel_link l WHERE l.del_flag = '0') AS leadCount,
+            (SELECT COUNT(1) FROM mk_channel WHERE del_flag = '0' AND channel_status = '0') AS channelCount,
+            (SELECT COUNT(1) FROM mk_content_package WHERE del_flag = '0' AND package_status = '1') AS publishedCount
+        FROM mk_promotion_data pd
+        WHERE pd.del_flag = '0'
+        <if test="beginDate != null and beginDate != ''"> AND pd.data_date &gt;= #{beginDate}</if>
+        <if test="endDate != null and endDate != ''"> AND pd.data_date &lt;= #{endDate}</if>
+    </select>
+
+    <!-- 按渠道类型聚合（内容包效果 + 归因线索） -->
+    <select id="selectChannelCompare" resultType="java.util.HashMap">
+        SELECT
+            c.channel_type AS channelType,
+            COUNT(DISTINCT c.channel_id) AS channelCount,
+            COUNT(DISTINCT p.package_id) AS packageCount,
+            IFNULL(SUM(pd.exposure_count), 0) AS exposureCount,
+            IFNULL(SUM(pd.read_count), 0)     AS readCount,
+            IFNULL(SUM(pd.like_count), 0)     AS likeCount,
+            (SELECT IFNULL(SUM(l.lead_count), 0) FROM mk_activity_channel_link l
+                JOIN mk_channel c2 ON l.channel_id = c2.channel_id
+                WHERE l.del_flag = '0' AND c2.channel_type = c.channel_type) AS leadCount
+        FROM mk_channel c
+        LEFT JOIN mk_content_package p ON p.channel_id = c.channel_id AND p.del_flag = '0'
+        LEFT JOIN mk_promotion_data pd ON pd.package_id = p.package_id AND pd.del_flag = '0'
+        <if test="beginDate != null and beginDate != ''"> AND pd.data_date &gt;= #{beginDate}</if>
+        <if test="endDate != null and endDate != ''"> AND pd.data_date &lt;= #{endDate}</if>
+        WHERE c.del_flag = '0'
+        GROUP BY c.channel_type
+        ORDER BY readCount DESC
+    </select>
+
+    <!-- 内容包效果排行 -->
+    <select id="selectContentRank" resultType="java.util.HashMap">
+        SELECT
+            p.package_id AS packageId,
+            ct.title AS contentTitle,
+            p.package_title AS packageTitle,
+            p.channel_type AS channelType,
+            p.package_status AS packageStatus,
+            IFNULL(SUM(pd.exposure_count), 0) AS exposureCount,
+            IFNULL(SUM(pd.read_count), 0)     AS readCount,
+            IFNULL(SUM(pd.like_count), 0)     AS likeCount,
+            IFNULL(SUM(pd.comment_count), 0)  AS commentCount
+        FROM mk_content_package p
+        INNER JOIN mk_content ct ON p.content_id = ct.content_id AND ct.del_flag = '0'
+        LEFT JOIN mk_promotion_data pd ON pd.package_id = p.package_id AND pd.del_flag = '0'
+        <if test="beginDate != null and beginDate != ''"> AND pd.data_date &gt;= #{beginDate}</if>
+        <if test="endDate != null and endDate != ''"> AND pd.data_date &lt;= #{endDate}</if>
+        WHERE p.del_flag = '0'
+        GROUP BY p.package_id, ct.title, p.package_title, p.channel_type, p.package_status
+        ORDER BY readCount DESC
+        LIMIT 10
+    </select>
+
+    <!-- 活动归因漏斗 -->
+    <select id="selectFunnel" resultType="java.util.HashMap">
+        SELECT
+            (SELECT COUNT(1) FROM mk_activity_channel_link l WHERE l.activity_id = #{activityId} AND l.del_flag = '0') AS channelCount,
+            (SELECT IFNULL(SUM(l.click_count), 0) FROM mk_activity_channel_link l WHERE l.activity_id = #{activityId} AND l.del_flag = '0') AS clickCount,
+            (SELECT IFNULL(SUM(l.signup_count), 0) FROM mk_activity_channel_link l WHERE l.activity_id = #{activityId} AND l.del_flag = '0') AS signupCount,
+            (SELECT COUNT(1) FROM mk_lead WHERE activity_id = #{activityId} AND del_flag = '0') AS leadCount,
+            (SELECT COUNT(1) FROM mk_opportunity o INNER JOIN mk_lead l2 ON o.lead_id = l2.lead_id
+                WHERE l2.activity_id = #{activityId} AND o.del_flag = '0' AND l2.del_flag = '0') AS opportunityCount,
+            (SELECT COUNT(1) FROM mk_opportunity o INNER JOIN mk_lead l3 ON o.lead_id = l3.lead_id
+                WHERE l3.activity_id = #{activityId} AND o.del_flag = '0' AND l3.del_flag = '0' AND o.opportunity_status = '1') AS dealCount
+    </select>
+
+    <!-- 按日推广趋势 -->
+    <select id="selectTrend" resultType="java.util.HashMap">
+        SELECT
+            DATE_FORMAT(pd.data_date, '%m-%d') AS dataDate,
+            IFNULL(SUM(pd.exposure_count), 0) AS exposureCount,
+            IFNULL(SUM(pd.read_count), 0)     AS readCount,
+            IFNULL(SUM(pd.like_count), 0)     AS likeCount,
+            IFNULL(SUM(pd.comment_count), 0)  AS commentCount
+        FROM mk_promotion_data pd
+        WHERE pd.del_flag = '0'
+        <if test="beginDate != null and beginDate != ''"> AND pd.data_date &gt;= #{beginDate}</if>
+        <if test="endDate != null and endDate != ''"> AND pd.data_date &lt;= #{endDate}</if>
+        GROUP BY DATE_FORMAT(pd.data_date, '%m-%d')
+        ORDER BY pd.data_date
+    </select>
+
+</mapper>

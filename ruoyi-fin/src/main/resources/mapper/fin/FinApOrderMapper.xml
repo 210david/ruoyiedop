@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinApOrderMapper">
+
+    <resultMap id="FinApOrderResult" type="com.ruoyi.fin.domain.FinApOrder">
+        <result property="apId"           column="ap_id"/>
+        <result property="companyId"      column="company_id"/>
+        <result property="apNo"           column="ap_no"/>
+        <result property="sourceModule"   column="source_module"/>
+        <result property="sourceType"     column="source_type"/>
+        <result property="sourceId"       column="source_id"/>
+        <result property="sourceKey"      column="source_key"/>
+        <result property="partnerId"      column="partner_id"/>
+        <result property="partnerName"    column="partner_name"/>
+        <result property="supplierId"     column="supplier_id"/>
+        <result property="apDate"         column="ap_date"/>
+        <result property="period"         column="period"/>
+        <result property="amountExclTax"  column="amount_excl_tax"/>
+        <result property="taxAmount"      column="tax_amount"/>
+        <result property="totalAmount"    column="total_amount"/>
+        <result property="paidAmount"     column="paid_amount"/>
+        <result property="taxRate"        column="tax_rate"/>
+        <result property="invoiceNo"      column="invoice_no"/>
+        <result property="invoiceCode"    column="invoice_code"/>
+        <result property="invoiceDate"    column="invoice_date"/>
+        <result property="dueDate"        column="due_date"/>
+        <result property="paymentDays"    column="payment_days"/>
+        <result property="status"         column="status"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectApVo">
+        SELECT ap_id, company_id, ap_no, source_module, source_type, source_id, source_key,
+               partner_id, partner_name, supplier_id, ap_date, period,
+               amount_excl_tax, tax_amount, total_amount, paid_amount, tax_rate,
+               invoice_no, invoice_code, invoice_date, due_date, payment_days, status,
+               dept_id, user_id,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_ap_order
+    </sql>
+
+    <!--
+      数据权限（unified-development-standards.md 3.5.3）：
+      Service 侧 @DataScope(deptAlias="a", userAlias="a")
+      故本查询用表别名 a，dataScope 注入 a.dept_id / a.user_id
+    -->
+    <select id="selectApList" parameterType="com.ruoyi.fin.domain.FinApOrder" resultMap="FinApOrderResult">
+        SELECT a.ap_id, a.company_id, a.ap_no, a.source_module, a.source_type, a.source_id, a.source_key,
+               a.partner_id, a.partner_name, a.supplier_id, a.ap_date, a.period,
+               a.amount_excl_tax, a.tax_amount, a.total_amount, a.paid_amount, a.tax_rate,
+               a.invoice_no, a.invoice_code, a.invoice_date, a.due_date, a.payment_days, a.status,
+               a.dept_id, a.user_id,
+               a.create_by, a.create_time, a.update_by, a.update_time, a.remark
+        FROM fin_ap_order a
+        <where>
+            <if test="apNo != null and apNo != ''">
+                AND a.ap_no LIKE CONCAT('%', #{apNo}, '%')
+            </if>
+            <if test="partnerName != null and partnerName != ''">
+                AND a.partner_name LIKE CONCAT('%', #{partnerName}, '%')
+            </if>
+            <if test="period != null and period != ''">
+                AND a.period = #{period}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+            <if test="sourceModule != null and sourceModule != ''">
+                AND a.source_module = #{sourceModule}
+            </if>
+            <if test="params.beginApDate != null and params.beginApDate != ''">
+                AND a.ap_date &gt;= #{params.beginApDate}
+            </if>
+            <if test="params.endApDate != null and params.endApDate != ''">
+                AND a.ap_date &lt;= #{params.endApDate}
+            </if>
+            AND a.del_flag = '0'
+            <if test="params.dataScope != null and params.dataScope != ''">
+                AND ${params.dataScope}
+            </if>
+        </where>
+        ORDER BY a.ap_date DESC, a.ap_id DESC
+    </select>
+
+    <select id="selectApById" parameterType="java.lang.Long" resultMap="FinApOrderResult">
+        <include refid="selectApVo"/>
+        WHERE ap_id = #{apId} AND del_flag = '0'
+    </select>
+
+    <select id="selectBySource" resultMap="FinApOrderResult">
+        <include refid="selectApVo"/>
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_id     = #{sourceId}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertAp" parameterType="com.ruoyi.fin.domain.FinApOrder" useGeneratedKeys="true" keyProperty="apId">
+        INSERT INTO fin_ap_order (
+            ap_no, source_module, source_type, source_id, source_key,
+            partner_id, partner_name, supplier_id, ap_date, period,
+            amount_excl_tax, tax_amount, total_amount, paid_amount, tax_rate,
+            invoice_no, invoice_code, invoice_date, due_date, payment_days, status,
+            dept_id, user_id, create_by, create_time, remark
+        ) VALUES (
+            #{apNo}, #{sourceModule}, #{sourceType}, #{sourceId}, #{sourceKey},
+            #{partnerId}, #{partnerName}, #{supplierId}, #{apDate}, #{period},
+            #{amountExclTax}, #{taxAmount}, #{totalAmount}, #{paidAmount}, #{taxRate},
+            #{invoiceNo}, #{invoiceCode}, #{invoiceDate}, #{dueDate}, #{paymentDays}, #{status},
+            #{deptId}, #{userId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateAp" parameterType="com.ruoyi.fin.domain.FinApOrder">
+        UPDATE fin_ap_order
+        <set>
+            <if test="partnerId != null">partner_id = #{partnerId},</if>
+            <if test="partnerName != null">partner_name = #{partnerName},</if>
+            <if test="apDate != null">ap_date = #{apDate},</if>
+            <if test="period != null">period = #{period},</if>
+            <if test="dueDate != null">due_date = #{dueDate},</if>
+            <if test="paymentDays != null">payment_days = #{paymentDays},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE ap_id = #{apId}
+    </update>
+
+    <!--
+      更新已付金额并按金额自动推导状态：
+        paid=0          → OPEN未核销
+        0<paid<total    → PARTIAL部分核销
+        paid>=total     → SETTLED已核销
+      状态在 SQL 内推导，避免并发下状态与金额不一致。
+    -->
+    <update id="updatePaidAmount">
+        UPDATE fin_ap_order
+        SET paid_amount = #{paidAmount},
+            status = CASE
+                        WHEN #{paidAmount} &lt;= 0 THEN 'OPEN'
+                        WHEN #{paidAmount} &gt;= total_amount THEN 'SETTLED'
+                        ELSE 'PARTIAL'
+                     END,
+            update_by   = #{updateBy},
+            update_time = sysdate()
+        WHERE ap_id = #{apId}
+          AND del_flag = '0'
+    </update>
+
+    <!-- 核销时锁定应付行，防并发重复核销 -->
+    <select id="selectApForUpdate" parameterType="java.lang.Long" resultMap="FinApOrderResult">
+        <include refid="selectApVo"/>
+        WHERE ap_id = #{apId} AND del_flag = '0'
+        FOR UPDATE
+    </select>
+
+    <update id="deleteApByIds" parameterType="java.lang.Long">
+        UPDATE fin_ap_order SET del_flag = '2', update_time = sysdate()
+        WHERE ap_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND status != 'SETTLED'
+    </update>
+
+    <!--
+      账龄分析：按到期日与今日的间隔分桶（30/60/90 天）。
+      仅统计未核销且有未付余额的应付单。
+    -->
+    <select id="selectAging" resultType="java.util.LinkedHashMap">
+        SELECT
+          CASE
+            WHEN a.status IN ('SETTLED','VOID') OR a.total_amount - a.paid_amount &lt;= 0 THEN '已核销'
+            WHEN DATEDIFF(#{today}, a.due_date) &lt;= 0 THEN '未到期'
+            WHEN DATEDIFF(#{today}, a.due_date) &lt;= 30  THEN '逾期1-30天'
+            WHEN DATEDIFF(#{today}, a.due_date) &lt;= 60  THEN '逾期31-60天'
+            WHEN DATEDIFF(#{today}, a.due_date) &lt;= 90  THEN '逾期61-90天'
+            ELSE '逾期90天以上'
+          END AS bucket,
+          COUNT(*) AS cnt,
+          SUM(a.total_amount) AS totalAmount,
+          SUM(a.total_amount - a.paid_amount) AS unpaidAmount
+        FROM fin_ap_order a
+        WHERE a.del_flag = '0'
+          AND a.status NOT IN ('VOID')
+        GROUP BY bucket
+        ORDER BY FIELD(bucket, '未到期', '逾期1-30天', '逾期31-60天',
+                       '逾期61-90天', '逾期90天以上', '已核销')
+    </select>
+
+    <!-- 应付汇总（资产负债表应付账款取数）；period 为空时统计全部期间 -->
+    <select id="sumByPeriod" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*) AS apCount,
+               SUM(total_amount) AS totalAmount,
+               SUM(paid_amount) AS paidAmount,
+               SUM(total_amount - paid_amount) AS unpaidAmount
+        FROM fin_ap_order
+        WHERE del_flag = '0'
+          AND status != 'VOID'
+          <if test="period != null and period != ''">
+              AND period = #{period}
+          </if>
+    </select>
+
+    <!-- 逾期未付预警 -->
+    <select id="selectOverdue" resultMap="FinApOrderResult">
+        SELECT a.ap_id, a.company_id, a.ap_no, a.source_module, a.source_type, a.source_id, a.source_key,
+               a.partner_id, a.partner_name, a.supplier_id, a.ap_date, a.period,
+               a.amount_excl_tax, a.tax_amount, a.total_amount, a.paid_amount, a.tax_rate,
+               a.invoice_no, a.invoice_code, a.invoice_date, a.due_date, a.payment_days, a.status,
+               a.dept_id, a.user_id,
+               a.create_by, a.create_time, a.update_by, a.update_time, a.remark
+        FROM fin_ap_order a
+        WHERE a.del_flag = '0'
+          AND a.status IN ('OPEN', 'PARTIAL')
+          AND a.due_date IS NOT NULL
+          AND a.due_date &lt; #{today}
+          AND a.total_amount - a.paid_amount &gt; 0
+        ORDER BY a.due_date
+        LIMIT #{limit}
+    </select>
+
+</mapper>

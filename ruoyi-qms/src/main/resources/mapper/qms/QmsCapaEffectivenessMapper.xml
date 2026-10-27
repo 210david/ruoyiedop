@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsCapaEffectivenessMapper">
+    <resultMap type="QmsCapaEffectiveness" id="QmsCapaEffectivenessResult">
+        <id property="effectivenessId" column="effectiveness_id"/>
+        <result property="capaId" column="capa_id"/>
+        <result property="capaNo" column="capa_no"/>
+        <result property="checkPeriod" column="check_period"/>
+        <result property="checkDate" column="check_date"/>
+        <result property="checker" column="checker"/>
+        <result property="checkMethod" column="check_method"/>
+        <result property="checkResult" column="check_result"/>
+        <result property="evidence" column="evidence"/>
+        <result property="recurrenceFlag" column="recurrence_flag"/>
+        <result property="recurrenceDesc" column="recurrence_desc"/>
+        <result property="actionTaken" column="action_taken"/>
+        <result property="esigUser" column="esig_user"/>
+        <result property="esigTime" column="esig_time"/>
+        <result property="status" column="status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">select effectiveness_id, capa_id, capa_no, check_period, check_date, checker, check_method, check_result, evidence, recurrence_flag, recurrence_desc, action_taken, esig_user, esig_time, status, del_flag, create_by, create_time, update_by, update_time, remark from qms_capa_effectiveness</sql>
+
+    <select id="selectEffectivenessList" parameterType="QmsCapaEffectiveness" resultMap="QmsCapaEffectivenessResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="capaId != null">and capa_id = #{capaId}</if>
+            <if test="capaNo != null and capaNo != ''">and capa_no = #{capaNo}</if>
+            <if test="checkResult != null and checkResult != ''">and check_result = #{checkResult}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by effectiveness_id desc
+    </select>
+
+    <select id="selectByCapaId" parameterType="Long" resultMap="QmsCapaEffectivenessResult">
+        <include refid="selectVo"/> where capa_id = #{capaId} and del_flag = '0' order by check_date desc
+    </select>
+
+    <select id="selectEffectivenessById" parameterType="Long" resultMap="QmsCapaEffectivenessResult">
+        <include refid="selectVo"/> where effectiveness_id = #{effectivenessId} and del_flag = '0'
+    </select>
+
+    <insert id="insertEffectiveness" parameterType="QmsCapaEffectiveness" useGeneratedKeys="true" keyProperty="effectivenessId">
+        insert into qms_capa_effectiveness(capa_id, capa_no, check_period, check_date, checker, check_method, check_result, evidence, recurrence_flag, recurrence_desc, action_taken, esig_user, esig_time, status, del_flag, create_by, create_time, remark)
+        values(#{capaId}, #{capaNo}, #{checkPeriod}, #{checkDate}, #{checker}, #{checkMethod}, #{checkResult}, #{evidence}, #{recurrenceFlag}, #{recurrenceDesc}, #{actionTaken}, #{esigUser}, sysdate(), #{status}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateEffectiveness" parameterType="QmsCapaEffectiveness">
+        update qms_capa_effectiveness
+        <set>
+            <if test="checkPeriod != null">check_period = #{checkPeriod},</if>
+            <if test="checkDate != null">check_date = #{checkDate},</if>
+            <if test="checker != null">checker = #{checker},</if>
+            <if test="checkMethod != null">check_method = #{checkMethod},</if>
+            <if test="checkResult != null">check_result = #{checkResult},</if>
+            <if test="evidence != null">evidence = #{evidence},</if>
+            <if test="recurrenceFlag != null">recurrence_flag = #{recurrenceFlag},</if>
+            <if test="recurrenceDesc != null">recurrence_desc = #{recurrenceDesc},</if>
+            <if test="actionTaken != null">action_taken = #{actionTaken},</if>
+            <if test="esigUser != null">esig_user = #{esigUser},</if>
+            <if test="esigTime != null">esig_time = #{esigTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        </set>
+        where effectiveness_id = #{effectivenessId}
+    </update>
+
+    <delete id="deleteEffectivenessByIds" parameterType="Long">
+        update qms_capa_effectiveness set del_flag = '1' where effectiveness_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

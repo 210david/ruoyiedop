@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrLeaveRequestAuditLogMapper">
+
+    <resultMap type="HrLeaveRequestAuditLog" id="HrLeaveRequestAuditLogResult">
+        <result property="logId"        column="log_id"        />
+        <result property="leaveReqId"   column="leave_req_id"  />
+        <result property="auditAction"  column="audit_action"  />
+        <result property="auditBy"      column="audit_by"      />
+        <result property="auditTime"    column="audit_time"    />
+        <result property="auditRemark"  column="audit_remark"  />
+    </resultMap>
+
+    <sql id="selectHrLeaveRequestAuditLogVo">
+        select log_id, leave_req_id, audit_action, audit_by, audit_time, audit_remark from biz_hr_leave_request_audit_log
+    </sql>
+
+    <select id="selectHrLeaveRequestAuditLogByLogId" parameterType="Long" resultMap="HrLeaveRequestAuditLogResult">
+        <include refid="selectHrLeaveRequestAuditLogVo"/>
+        where log_id = #{logId}
+    </select>
+
+    <select id="selectHrLeaveRequestAuditLogByLeaveReqId" parameterType="Long" resultMap="HrLeaveRequestAuditLogResult">
+        <include refid="selectHrLeaveRequestAuditLogVo"/>
+        where leave_req_id = #{leaveReqId}
+        order by audit_time asc, log_id asc
+    </select>
+
+    <insert id="insertHrLeaveRequestAuditLog" parameterType="HrLeaveRequestAuditLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_hr_leave_request_audit_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="leaveReqId != null">leave_req_id,</if>
+            <if test="auditAction != null">audit_action,</if>
+            <if test="auditBy != null">audit_by,</if>
+            <if test="auditTime != null">audit_time,</if>
+            <if test="auditRemark != null">audit_remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="leaveReqId != null">#{leaveReqId},</if>
+            <if test="auditAction != null">#{auditAction},</if>
+            <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+            <if test="auditRemark != null">#{auditRemark},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteHrLeaveRequestAuditLogByLogId" parameterType="Long">
+        delete from biz_hr_leave_request_audit_log where log_id = #{logId}
+    </delete>
+
+    <delete id="deleteHrLeaveRequestAuditLogByLeaveReqId" parameterType="Long">
+        delete from biz_hr_leave_request_audit_log where leave_req_id = #{leaveReqId}
+    </delete>
+
+</mapper>

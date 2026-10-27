@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinInputTaxMapper">
+
+    <!-- ==================== 进项税抵扣台账 ==================== -->
+
+    <resultMap id="FinInputTaxResult" type="com.ruoyi.fin.domain.FinInputTax">
+        <result property="taxId"         column="tax_id"/>
+        <result property="companyId"     column="company_id"/>
+        <result property="apId"          column="ap_id"/>
+        <result property="partnerId"     column="partner_id"/>
+        <result property="partnerName"   column="partner_name"/>
+        <result property="invoiceCode"   column="invoice_code"/>
+        <result property="invoiceNo"     column="invoice_no"/>
+        <result property="invoiceDate"   column="invoice_date"/>
+        <result property="taxRate"       column="tax_rate"/>
+        <result property="amountExclTax" column="amount_excl_tax"/>
+        <result property="taxAmount"     column="tax_amount"/>
+        <result property="deductStatus"  column="deduct_status"/>
+        <result property="deductPeriod"  column="deduct_period"/>
+        <result property="voucherId"     column="voucher_id"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectInputTaxVo">
+        SELECT tax_id, company_id, ap_id, partner_id, partner_name,
+               invoice_code, invoice_no, invoice_date, tax_rate,
+               amount_excl_tax, tax_amount, deduct_status, deduct_period,
+               voucher_id, dept_id, user_id,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_input_tax
+    </sql>
+
+    <select id="selectInputTaxList" parameterType="com.ruoyi.fin.domain.FinInputTax"
+            resultMap="FinInputTaxResult">
+        <include refid="selectInputTaxVo"/>
+        <where>
+            <if test="partnerName != null and partnerName != ''">
+                AND partner_name LIKE CONCAT('%', #{partnerName}, '%')
+            </if>
+            <if test="invoiceNo != null and invoiceNo != ''">
+                AND invoice_no LIKE CONCAT('%', #{invoiceNo}, '%')
+            </if>
+            <if test="deductStatus != null and deductStatus != ''">
+                AND deduct_status = #{deductStatus}
+            </if>
+            <if test="params.beginInvoiceDate != null and params.beginInvoiceDate != ''">
+                AND invoice_date &gt;= #{params.beginInvoiceDate}
+            </if>
+            <if test="params.endInvoiceDate != null and params.endInvoiceDate != ''">
+                AND invoice_date &lt;= #{params.endInvoiceDate}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY invoice_date DESC, tax_id DESC
+    </select>
+
+    <select id="selectByApId" parameterType="java.lang.Long" resultMap="FinInputTaxResult">
+        <include refid="selectInputTaxVo"/>
+        WHERE ap_id = #{apId} AND del_flag = '0'
+        LIMIT 1
+    </select>
+
+    <insert id="insertInputTax" parameterType="com.ruoyi.fin.domain.FinInputTax"
+            useGeneratedKeys="true" keyProperty="taxId">
+        INSERT INTO fin_input_tax (
+            ap_id, partner_id, partner_name, invoice_code, invoice_no, invoice_date,
+            tax_rate, amount_excl_tax, tax_amount, deduct_status, deduct_period,
+            company_id, dept_id, user_id, create_by, create_time, remark
+        ) VALUES (
+            #{apId}, #{partnerId}, #{partnerName}, #{invoiceCode}, #{invoiceNo}, #{invoiceDate},
+            #{taxRate}, #{amountExclTax}, #{taxAmount}, #{deductStatus}, #{deductPeriod},
+            #{companyId}, #{deptId}, #{userId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <!-- 标记已抵扣：仅 PENDING 可流转，避免重复抵扣 -->
+    <update id="markDeducted">
+        UPDATE fin_input_tax
+        SET deduct_status = 'DEDUCTED',
+            deduct_period = #{deductPeriod},
+            voucher_id    = #{voucherId},
+            update_time   = sysdate()
+        WHERE tax_id = #{taxId}
+          AND del_flag = '0'
+          AND deduct_status = 'PENDING'
+    </update>
+
+    <update id="markVoid" parameterType="java.lang.Long">
+        UPDATE fin_input_tax
+        SET deduct_status = 'VOID',
+            update_time   = sysdate()
+        WHERE tax_id = #{taxId}
+          AND del_flag = '0'
+          AND deduct_status = 'PENDING'
+    </update>
+
+    <!--
+      标记过期：超过认证抵扣期限（开票日 +12 个月）仍未抵扣。
+      依据《增值税暂行条例》，逾期进项税不得抵扣，
+      故必须显式标记为 EXPIRED，避免挂账长期虚增待抵扣进项税。
+    -->
+    <update id="markExpired" parameterType="java.util.Date">
+        UPDATE fin_input_tax
+        SET deduct_status = 'EXPIRED',
+            update_time   = sysdate()
+        WHERE del_flag = '0'
+          AND deduct_status = 'PENDING'
+          AND tax_amount &gt; 0
+          AND invoice_date IS NOT NULL
+          AND DATE_ADD(invoice_date, INTERVAL 12 MONTH) &lt; #{today}
+    </update>
+
+    <select id="sumByStatus" resultType="java.util.LinkedHashMap">
+        SELECT deduct_status      AS deductStatus,
+               COUNT(*)            AS cnt,
+               SUM(amount_excl_tax) AS amountExclTax,
+               SUM(tax_amount)      AS taxAmount
+        FROM fin_input_tax
+        WHERE del_flag = '0'
+        <if test="deductStatus != null and deductStatus != ''">
+            AND deduct_status = #{deductStatus}
+        </if>
+        GROUP BY deduct_status
+        ORDER BY deduct_status
+    </select>
+
+    <!-- 即将过期的待抵扣进项税（提前 30 天预警） -->
+    <select id="selectExpiringSoon" resultMap="FinInputTaxResult">
+        <include refid="selectInputTaxVo"/>
+        WHERE del_flag = '0'
+          AND deduct_status = 'PENDING'
+          AND tax_amount &gt; 0
+          AND invoice_date IS NOT NULL
+          AND DATE_ADD(invoice_date, INTERVAL 12 MONTH) &gt;= #{today}
+          AND DATE_ADD(invoice_date, INTERVAL 12 MONTH) &lt; DATE_ADD(#{today}, INTERVAL #{days} DAY)
+        ORDER BY invoice_date
+        LIMIT #{limit}
+    </select>
+
+    <select id="countOverdue" parameterType="java.util.Date" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_input_tax
+        WHERE del_flag = '0'
+          AND deduct_status = 'PENDING'
+          AND invoice_date IS NOT NULL
+          AND DATE_ADD(invoice_date, INTERVAL 12 MONTH) &lt; #{today}
+    </select>
+
+    <!-- ==================== 存货跌价准备 ==================== -->
+
+    <resultMap id="FinInventoryValuationResult" type="com.ruoyi.fin.domain.FinInventoryValuation">
+        <result property="valId"            column="val_id"/>
+        <result property="companyId"        column="company_id"/>
+        <result property="period"           column="period"/>
+        <result property="materialId"       column="material_id"/>
+        <result property="materialCode"     column="material_code"/>
+        <result property="materialName"     column="material_name"/>
+        <result property="warehouseId"      column="warehouse_id"/>
+        <result property="qty"              column="qty"/>
+        <result property="unitCost"         column="unit_cost"/>
+        <result property="totalValue"       column="total_value"/>
+        <result property="provisionAmount"  column="provision_amount"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <!--
+      跌价表无 material_name 列（保持 schema 零侵入），
+      名称通过 LEFT JOIN wms_material 实时带出。
+    -->
+    <select id="selectValuationList" parameterType="com.ruoyi.fin.domain.FinInventoryValuation"
+            resultMap="FinInventoryValuationResult">
+        SELECT v.val_id, v.company_id, v.period, v.material_id, v.material_code,
+               m.material_name, v.warehouse_id, v.qty, v.unit_cost, v.total_value,
+               v.provision_amount,
+               v.create_by, v.create_time, v.update_by, v.update_time, v.remark
+        FROM fin_inventory_valuation v
+        LEFT JOIN wms_material m ON m.material_id = v.material_id AND m.del_flag = '0'
+        <where>
+            <if test="period != null and period != ''">
+                AND v.period = #{period}
+            </if>
+            <if test="materialCode != null and materialCode != ''">
+                AND v.material_code LIKE CONCAT('%', #{materialCode}, '%')
+            </if>
+            <if test="materialName != null and materialName != ''">
+                AND m.material_name LIKE CONCAT('%', #{materialName}, '%')
+            </if>
+            <if test="params.provisionStatus != null and params.provisionStatus != ''">
+                <choose>
+                    <when test="params.provisionStatus == 'REVERSED'">
+                        AND v.remark LIKE CONCAT('%', '[已冲回]', '%')
+                    </when>
+                    <otherwise>
+                        AND (v.remark IS NULL OR v.remark NOT LIKE CONCAT('%', '[已冲回]', '%'))
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != ''">
+                AND date(v.create_time) &gt;= #{params.beginCreateTime}
+            </if>
+            <if test="params.endCreateTime != null and params.endCreateTime != ''">
+                AND date(v.create_time) &lt;= #{params.endCreateTime}
+            </if>
+            AND v.del_flag = '0'
+        </where>
+        ORDER BY v.period DESC, v.material_code
+    </select>
+
+    <!--
+      待计提跌价准备的存货：取自 fin_inventory_cost（成本台账）。
+      NOT EXISTS 排除本期已计提过的物料，避免重复计提。
+    -->
+    <select id="selectPendingProvision" resultType="java.util.LinkedHashMap">
+        SELECT c.material_id                      AS materialId,
+               c.material_code                    AS materialCode,
+               c.material_name                    AS materialName,
+               SUM(c.qty)                         AS qty,
+               CASE WHEN SUM(c.qty) = 0 THEN 0
+                    ELSE ROUND(SUM(c.total_cost) / SUM(c.qty), 4) END AS unitCost,
+               SUM(c.total_cost)                  AS totalValue,
+               IFNULL((SELECT SUM(v.provision_amount)
+                       FROM fin_inventory_valuation v
+                       WHERE v.material_id = c.material_id
+                         AND v.del_flag = '0'), 0)    AS alreadyProvision
+        FROM fin_inventory_cost c
+        WHERE c.del_flag = '0'
+          AND c.qty &gt; 0
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_inventory_valuation v2
+              WHERE v2.material_id = c.material_id
+                AND v2.period = #{period}
+                AND v2.del_flag = '0'
+          )
+        GROUP BY c.material_id, c.material_code, c.material_name
+        ORDER BY totalValue DESC
+    </select>
+
+    <insert id="insertValuation" parameterType="com.ruoyi.fin.domain.FinInventoryValuation"
+            useGeneratedKeys="true" keyProperty="valId">
+        INSERT INTO fin_inventory_valuation (
+            period, material_id, material_code, warehouse_id,
+            qty, unit_cost, total_value, provision_amount,
+            company_id, create_by, create_time, remark
+        ) VALUES (
+            #{period}, #{materialId}, #{materialCode}, #{warehouseId},
+            #{qty}, #{unitCost}, #{totalValue}, #{provisionAmount},
+            #{companyId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="reverseProvision" parameterType="java.lang.Long">
+        UPDATE fin_inventory_valuation
+        SET provision_amount = 0,
+            update_time = sysdate(),
+            remark = CONCAT(IFNULL(remark, ''), ' [已冲回]')
+        WHERE val_id = #{valId} AND del_flag = '0'
+    </update>
+
+    <update id="deleteValuationByIds" parameterType="java.lang.Long">
+        UPDATE fin_inventory_valuation SET del_flag = '2', update_time = sysdate()
+        WHERE val_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="sumProvisionByPeriod" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*)              AS cnt,
+               SUM(total_value)      AS totalValue,
+               SUM(provision_amount) AS provisionAmount
+        FROM fin_inventory_valuation
+        WHERE period = #{period} AND del_flag = '0'
+    </select>
+
+    <select id="sumProvisionByMaterial" parameterType="java.lang.Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(provision_amount), 0) FROM fin_inventory_valuation
+        WHERE material_id = #{materialId} AND del_flag = '0'
+    </select>
+
+</mapper>

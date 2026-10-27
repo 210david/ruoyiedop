@@ -1,0 +1,746 @@
+<template>
+  <div class="app-container mk-list-page">
+    <!-- ===== Filter Card ===== -->
+    <div class="surface filter-card" v-show="showSearch">
+      <div class="filter-head">
+        <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
+        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
+          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
+          <el-icon class="chev"><ArrowDown /></el-icon>
+        </a>
+      </div>
+      <div class="filter-bar">
+        <div class="field">
+          <label>发票编号</label>
+          <div class="control">
+            <el-input v-model="queryParams.invoiceNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>客户名称</label>
+          <div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
+          <label>发票类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.invoiceType" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_invoice_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
+          <label>发票状态</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.invoiceStatus" placeholder="全部" clearable @change="handleQuery">
+              <template #prefix><el-icon><Filter /></el-icon></template>
+              <el-option v-for="d in marketing_invoice_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>发票抬头</label>
+          <div class="control">
+            <el-input v-model="queryParams.invoiceTitle" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>开票日期</label>
+          <div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-info">
+          <el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索
+        </div>
+        <div class="filter-buttons">
+          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Table Section ===== -->
+    <div class="surface">
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <button class="status-tab" :class="{ 'is-active': activeStatusTab === 'all' }" @click="handleStatusTabClick('all')">
+            <span class="dot"></span><span>全部</span><span class="count">{{ statusCounts.all }}</span>
+          </button>
+          <button v-for="s in statusTabList" :key="s.value"
+            class="status-tab"
+            :class="[statusTabClass(s.value), { 'is-active': activeStatusTab === s.value }]"
+            @click="handleStatusTabClick(s.value)">
+            <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="left">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['marketing:invoice:add']">新增</el-button>
+          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:invoice:remove']">
+            <el-icon><Delete /></el-icon> 删除
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['marketing:invoice:export']">
+            <el-icon><Download /></el-icon> 导出
+          </button>
+        </div>
+        <div class="right">
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_invoice_columns" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <el-table ref="tableRef" border v-loading="loading" :data="list" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
+          <el-table-column label="发票编号" prop="invoiceNo" key="invoiceNo" :width="colWidth('invoiceNo', 150)" resizable v-if="columns.invoiceNo.visible" />
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 180)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
+          <el-table-column label="发票类型" prop="invoiceType" key="invoiceType" :width="colWidth('invoiceType', 130)" resizable align="center" v-if="columns.invoiceType.visible">
+            <template #default="scope">
+              <span class="badge" :class="typeBadgeClass(scope.row.invoiceType)">
+                <span class="dot"></span>{{ typeLabel(scope.row.invoiceType) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="开票金额" prop="invoiceAmount" key="invoiceAmount" :width="colWidth('invoiceAmount', 120)" resizable align="right" v-if="columns.invoiceAmount.visible">
+            <template #default="scope"><span class="rd-amount">￥{{ formatAmount(scope.row.invoiceAmount) }}</span></template>
+          </el-table-column>
+          <el-table-column label="税额" prop="taxAmount" key="taxAmount" :width="colWidth('taxAmount', 100)" resizable align="right" v-if="columns.taxAmount.visible" />
+          <el-table-column label="发票抬头" prop="invoiceTitle" key="invoiceTitle" :width="colWidth('invoiceTitle', 200)" resizable show-overflow-tooltip v-if="columns.invoiceTitle.visible" />
+          <el-table-column label="开票日期" prop="invoiceDate" key="invoiceDate" :width="colWidth('invoiceDate', 120)" resizable v-if="columns.invoiceDate.visible" />
+          <el-table-column label="状态" prop="invoiceStatus" key="invoiceStatus" :width="colWidth('invoiceStatus', 100)" resizable align="center" v-if="columns.invoiceStatus.visible">
+            <template #default="scope">
+              <span class="badge" :class="badgeClass(scope.row.invoiceStatus)">
+                <span class="dot"></span>{{ statusLabel(scope.row.invoiceStatus) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+        <template #default="scope">
+          <div class="action-btn-row">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+          <el-button v-if="scope.row.invoiceStatus === '1'" link type="danger" icon="CircleClose" @click="handleVoid(scope.row)" v-hasPermi="['marketing:invoice:void']">作废</el-button>
+          <el-button v-if="scope.row.invoiceStatus === '1'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:invoice:edit']">修改</el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+      </div>
+
+      <!-- Pagination -->
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    </div>
+
+    <!-- 新增/修改对话框 -->
+    <el-dialog v-model="open" width="1000px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">{{ title }}</span>
+          <div class="rd-detail-header-sub" v-if="form.invoiceNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ form.invoiceNo }}</span>
+          </div>
+        </div>
+      </template>
+      <el-form ref="invoiceRef" :model="form" :rules="rules" label-width="120px">
+        <div class="rd-page">
+          <!-- 发票识别 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('recognize')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 4V2"/>
+                    <path d="M15 16v-2"/>
+                    <path d="M8 16v-2"/>
+                    <path d="M8 4V2"/>
+                    <path d="M3 10h18"/>
+                    <path d="M5 6h14"/>
+                    <path d="M5 18h14"/>
+                    <path d="M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/>
+                    <path d="M3 16v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </span>
+                发票识别（上传PDF自动识别）
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.recognize }" aria-label="折叠">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.recognize">
+              <div class="recognize-area">
+                <el-upload ref="recognizeUploadRef" :auto-upload="true" :show-file-list="false" accept=".pdf" :before-upload="handleBeforeRecognize" :http-request="handleRecognizeUpload" :disabled="recognizing">
+                  <el-button type="success" icon="MagicStick" :loading="recognizing">{{ recognizing ? '识别中...' : '上传PDF发票识别' }}</el-button>
+                </el-upload>
+                <span class="recognize-tip">仅支持PDF格式电子发票，上传后自动识别并回填发票信息</span>
+              </div>
+              <div v-if="recognizedFields.length" class="recognized-info">
+                <el-tag v-for="f in recognizedFields" :key="f.label" type="success" class="recognized-tag">{{ f.label }}：{{ f.value }}</el-tag>
+              </div>
+            </div>
+          </section>
+
+          <!-- 发票基本信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('basic')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </span>
+                发票基本信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.basic">
+              <el-row>
+                <el-col :span="12"><el-form-item label="发票编号" prop="invoiceNo"><el-input v-model="form.invoiceNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="发票类型" prop="invoiceType">
+                  <el-select v-model="form.invoiceType" placeholder="请选择" style="width: 100%">
+                    <el-option v-for="d in marketing_invoice_type" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="开票金额" prop="invoiceAmount"><el-input-number v-model="form.invoiceAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="税率(%)" prop="taxRate"><el-input-number v-model="form.taxRate" :min="0" :precision="2" controls-position="right" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="税额" prop="taxAmount"><el-input-number v-model="form.taxAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" disabled /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="开票日期" prop="invoiceDate"><el-date-picker v-model="form.invoiceDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+
+          <!-- 关联信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('relation')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                </span>
+                关联信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.relation }" aria-label="折叠">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.relation">
+              <el-row>
+                <el-col :span="12"><el-form-item label="关联客户" prop="customerId">
+                  <el-input v-model="form.customerName" readonly placeholder="请选择客户" style="width: 100%" @click="openCustomerPicker">
+                    <template v-if="form.customerName" #append>
+                      <el-button icon="CircleClose" @click.stop="clearCustomer" />
+                    </template>
+                    <template v-else #append>
+                      <el-button icon="Search" @click="openCustomerPicker" />
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="关联订单" prop="orderId">
+                  <el-input v-model="form.orderNo" readonly placeholder="可选" style="width: 100%" @click="openOrderPicker">
+                    <template #append><el-button icon="Search" @click="openOrderPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.orderNo" class="clear-icon" @click.stop="clearOrder"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="关联合同" prop="contractId">
+                  <el-input v-model="form.contractNo" readonly placeholder="可选" style="width: 100%" @click="openContractPicker">
+                    <template #append><el-button icon="Search" @click="openContractPicker" /></template>
+                    <template #suffix>
+                      <el-icon v-if="form.contractNo" class="clear-icon" @click.stop="clearContract"><CircleClose /></el-icon>
+                    </template>
+                  </el-input>
+                </el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+
+          <!-- 抬头与税号信息 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('title')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                  </svg>
+                </span>
+                抬头与税号信息
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.title }" aria-label="折叠">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.title">
+              <el-row>
+                <el-col :span="12"><el-form-item label="发票抬头" prop="invoiceTitle"><el-input v-model="form.invoiceTitle" placeholder="请输入发票抬头" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="纳税人识别号" prop="taxNo"><el-input v-model="form.taxNo" placeholder="请输入纳税人识别号" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+
+          <!-- 附件与备注 -->
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('attachment')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </span>
+                附件与备注
+              </div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.attachment }" aria-label="折叠">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.attachment">
+              <el-form-item label="发票附件" prop="invoiceAttachment">
+                <file-upload v-model="form.invoiceAttachment" :fileSize="50" :fileType="['pdf']" />
+              </el-form-item>
+              <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注" /></el-form-item>
+            </div>
+          </section>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="open = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 查看详情 -->
+    <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">发票详情</span>
+          <div class="rd-detail-header-sub" v-if="viewForm.invoiceNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">编号：{{ viewForm.invoiceNo }}</span>
+            <dict-tag :options="marketing_invoice_status" :value="viewForm.invoiceStatus" />
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 发票基本信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('basic')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </span>
+              发票基本信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.basic }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.basic">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">发票编号</span><div class="rd-value">{{ viewForm.invoiceNo }}</div></div>
+              <div class="rd-item"><span class="rd-label">发票类型</span><div class="rd-value"><dict-tag :options="marketing_invoice_type" :value="viewForm.invoiceType" /></div></div>
+              <div class="rd-item"><span class="rd-label">开票金额</span><div class="rd-value rd-value--large rd-amount">￥{{ formatAmount(viewForm.invoiceAmount) }}</div></div>
+              <div class="rd-item"><span class="rd-label">税率(%)</span><div class="rd-value">{{ viewForm.taxRate }}</div></div>
+              <div class="rd-item"><span class="rd-label">税额</span><div class="rd-value rd-amount">￥{{ formatAmount(viewForm.taxAmount) }}</div></div>
+              <div class="rd-item"><span class="rd-label">开票日期</span><div class="rd-value">{{ viewForm.invoiceDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">发票状态</span><div class="rd-value"><dict-tag :options="marketing_invoice_status" :value="viewForm.invoiceStatus" /></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 关联信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('relation')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </span>
+              关联信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.relation }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.relation">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+              <div class="rd-item"><span class="rd-label">订单编号</span><div class="rd-value">{{ viewForm.orderNo }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同编号</span><div class="rd-value">{{ viewForm.contractNo }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 抬头与税号信息 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('title')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+              </span>
+              抬头与税号信息
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.title }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.title">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">发票抬头</span><div class="rd-value">{{ viewForm.invoiceTitle }}</div></div>
+              <div class="rd-item"><span class="rd-label">纳税人识别号</span><div class="rd-value">{{ viewForm.taxNo }}</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 附件与备注 -->
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('attachment')">
+            <div class="rd-card-title">
+              <span class="rd-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </span>
+              附件与备注
+            </div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.attachment }" aria-label="折叠">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.attachment">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full">
+                <span class="rd-label">发票附件</span>
+                <div class="rd-value">
+                  <template v-if="viewForm.invoiceAttachment">
+                    <div v-for="(file, idx) in viewForm.invoiceAttachment.split(',')" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                      <el-link :underline="false" type="primary" @click="handleFileDownload(file)">
+                        <el-icon><Download /></el-icon> {{ getFileName(file) }}
+                      </el-link>
+                      <el-button link type="success" icon="View" size="small" @click="handlePreview(file)">预览</el-button>
+                    </div>
+                  </template>
+                  <span v-else class="rd-value--muted">暂无附件</span>
+                </div>
+              </div>
+              <div class="rd-item rd-item--full">
+                <span class="rd-label">备注</span>
+                <div class="rd-value" :class="{ 'rd-value--muted': !viewForm.remark }">{{ viewForm.remark || '暂无备注' }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+    <!-- 文件预览 -->
+    <file-preview ref="filePreviewRef" />
+
+    <!-- 客户选择弹窗 -->
+    <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
+
+    <!-- 合同选择弹窗 -->
+    <contract-picker ref="contractPickerRef" title="选择合同" :contract-statuses="['2']" @confirm="onContractPickerConfirm" />
+
+    <!-- 订单选择弹窗 -->
+    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
+  </div>
+</template>
+
+<script setup name="MkInvoice">
+import { listInvoice, getInvoice, addInvoice, updateInvoice, delInvoice, voidInvoice, recognizeInvoice } from '@/api/mk/invoice'
+import ContractPicker from '@/components/ContractPicker/index.vue'
+import OrderPicker from '@/components/OrderPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
+import { useColumnResize } from '@/composables/useColumnResize'
+import request from '@/utils/request'
+import { downloadFile } from '@/utils/downloadFile'
+import { ArrowDown, CircleClose, Search } from '@element-plus/icons-vue'
+
+const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_invoice_index')
+const { marketing_invoice_type, marketing_invoice_status } = proxy.useDict('marketing_invoice_type', 'marketing_invoice_status')
+
+const list = ref([])
+const open = ref(false)
+const viewOpen = ref(false)
+const loading = ref(true)
+const showSearch = ref(true)
+const ids = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const total = ref(0)
+const title = ref('')
+const viewForm = ref({})
+const recognizing = ref(false)
+const recognizedFields = ref([])
+const collapsedCards = reactive({ recognize: false, basic: false, relation: false, title: false, attachment: false })
+function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
+function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+
+const data = reactive({
+  form: {},
+  queryParams: { pageNum: 1, pageSize: 10, invoiceNo: undefined, customerName: undefined, invoiceType: undefined, invoiceStatus: undefined, invoiceTitle: undefined, params: {} },
+  rules: {
+    customerId: [{ required: true, message: '请选择关联客户', trigger: 'change' }],
+    invoiceAmount: [{ required: true, message: '开票金额不能为空', trigger: 'blur' }],
+    invoiceType: [{ required: true, message: '请选择发票类型', trigger: 'change' }],
+    invoiceTitle: [{ required: true, message: '请输入发票抬头', trigger: 'blur' }]
+  }
+})
+const { queryParams, form, rules } = toRefs(data)
+
+// 列显隐配置 - 从 localStorage 恢复保存的设置
+const defaultColumns = {
+  invoiceNo: { label: '发票编号', visible: true },
+  customerName: { label: '客户名称', visible: true },
+  invoiceType: { label: '发票类型', visible: true },
+  invoiceAmount: { label: '开票金额', visible: true },
+  taxAmount: { label: '税额', visible: true },
+  invoiceTitle: { label: '发票抬头', visible: true },
+  invoiceDate: { label: '开票日期', visible: true },
+  invoiceStatus: { label: '状态', visible: true }
+}
+
+function loadColumnVisibility() {
+  try {
+    const saved = localStorage.getItem('mk_invoice_columns')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const result = {}
+      Object.keys(defaultColumns).forEach(key => {
+        result[key] = {
+          label: defaultColumns[key].label,
+          visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible
+        }
+      })
+      return result
+    }
+  } catch (e) {}
+  return { ...defaultColumns }
+}
+
+const columns = ref(loadColumnVisibility())
+
+const dateRange = ref([])
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (queryParams.value.invoiceNo) count++
+  if (queryParams.value.customerName) count++
+  if (queryParams.value.invoiceType) count++
+  if (queryParams.value.invoiceStatus) count++
+  if (queryParams.value.invoiceTitle) count++
+  if (dateRange.value && dateRange.value.length === 2) count++
+  return count
+})
+
+const showAdvanced = ref(false)
+const activeStatusTab = ref('all')
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
+const statusTabList = computed(() => marketing_invoice_status.value)
+function loadStatusCounts() {
+  // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
+  const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, invoiceStatus: undefined, params: { ...queryParams.value.params } }
+  listInvoice(query).then(res => {
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const rows = res.rows || []
+    rows.forEach(row => {
+      const s = row.invoiceStatus
+      if (counts[s] !== undefined) counts[s]++
+    })
+    counts.all = rows.length
+    statusCounts.value = counts
+  }).catch(() => { statusCounts.value = { all: 0 } })
+}
+function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.invoiceStatus = status === 'all' ? undefined : status; handleQuery() }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'green', '2': 'gray' }; return map[status] || 'gray' }
+function statusLabel(status) { const item = marketing_invoice_status.value.find(d => d.value == status); return item ? item.label : '-' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-done', '2': 'tab-void' }; return map[value] || '' }
+function typeBadgeClass(type) { const map = { '0': 'blue', '1': 'violet', '2': 'amber' }; return map[type] || 'gray' }
+function typeLabel(type) { const item = marketing_invoice_type.value.find(d => d.value == type); return item ? item.label : '-' }
+
+function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
+
+function getList() { loading.value = true; listInvoice(queryParams.value).then(res => { list.value = res.rows; total.value = res.total; loading.value = false; loadStatusCounts(); applySavedWidths() }).catch(() => { loading.value = false }) }
+/** 打开客户选择弹窗 */
+function openCustomerPicker() {
+  proxy.$refs.customerPickerRef.open(form.value.customerId)
+}
+/** 客户选择确认回调 — 同步发票抬头 */
+function onCustomerPickerConfirm(customer) {
+  form.value.customerId = customer.customerId
+  form.value.customerName = customer.customerName
+  form.value.invoiceTitle = customer.customerName
+}
+/** 清除客户 */
+function clearCustomer() {
+  form.value.customerId = undefined
+  form.value.customerName = undefined
+}
+/** 打开合同选择弹窗 */
+function openContractPicker() {
+  proxy.$refs.contractPickerRef.open(form.value.contractId)
+}
+/** 合同选择确认回调 */
+function onContractPickerConfirm(contract) {
+  form.value.contractId = contract.contractId
+  form.value.contractNo = contract.contractNo
+}
+/** 清除合同 */
+function clearContract() {
+  form.value.contractId = undefined
+  form.value.contractNo = undefined
+}
+/** 打开订单选择弹窗 */
+function openOrderPicker() {
+  proxy.$refs.orderPickerRef.open(form.value.orderId)
+}
+/** 订单选择确认回调 */
+function onOrderPickerConfirm(order) {
+  form.value.orderId = order.orderId
+  form.value.orderNo = order.orderNo
+  form.value.customerId = order.customerId
+  form.value.customerName = order.customerName
+  form.value.invoiceAmount = order.totalAmount
+  form.value.invoiceTitle = order.customerName
+}
+/** 清除订单 */
+function clearOrder() {
+  form.value.orderId = undefined
+  form.value.orderNo = undefined
+}
+function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'InvoiceDate'); queryParams.value.pageNum = 1; getList() }
+function resetQuery() { queryParams.value.invoiceNo = undefined; queryParams.value.customerName = undefined; queryParams.value.invoiceType = undefined; queryParams.value.invoiceStatus = undefined; queryParams.value.invoiceTitle = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
+function handleSelectionChange(selection) { ids.value = selection.map(i => i.invoiceId); single.value = selection.length !== 1; multiple.value = !selection.length }
+function reset() { form.value = { invoiceNo: undefined, orderId: undefined, contractId: undefined, customerId: undefined, customerName: undefined, invoiceType: '0', invoiceStatus: '1', invoiceAmount: 0, taxRate: 13.00, taxAmount: 0, invoiceTitle: undefined, taxNo: undefined, invoiceDate: undefined, invoiceAttachment: undefined, remark: undefined }; proxy.resetForm('invoiceRef'); recognizedFields.value = []; collapsedCards.recognize = false; collapsedCards.basic = false; collapsedCards.relation = false; collapsedCards.title = false; collapsedCards.attachment = false }
+function handleAdd() { reset(); open.value = true; title.value = '新增发票' }
+function handleUpdate(row) { reset(); collapsedCards.recognize = true; getInvoice(row.invoiceId).then(res => { form.value = res.data; open.value = true; title.value = '修改发票' }) }
+function handleView(row) { getInvoice(row.invoiceId).then(res => { viewForm.value = res.data; collapsedCards.basic = false; collapsedCards.relation = false; collapsedCards.title = false; collapsedCards.attachment = false; viewOpen.value = true }) }
+function submitForm() {
+  proxy.$refs['invoiceRef'].validate(valid => {
+    if (valid) {
+      if (form.value.invoiceAmount != null && form.value.taxRate != null) {
+        form.value.taxAmount = Number((form.value.invoiceAmount * form.value.taxRate / 100).toFixed(2))
+      }
+      if (form.value.invoiceId != undefined) {
+        updateInvoice(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
+      } else {
+        addInvoice(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() })
+      }
+    }
+  })
+}
+function handleDelete(row) { const invoiceIds = row.invoiceId || ids.value; proxy.$modal.confirm('确认删除选中的发票？').then(() => delInvoice(invoiceIds)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('删除成功') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) }) }
+function handleVoid(row) { proxy.$modal.confirm('确认作废发票【' + row.invoiceNo + '】？').then(() => voidInvoice(row.invoiceId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('发票已作废') }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('作废发票失败：' + (e?.message || e)) }) }
+function handleExport() { proxy.download('mk/invoice/export', proxy.withExportIds({ ...proxy.addDateRange(queryParams.value, dateRange.value, 'InvoiceDate') }, ids.value, 'invoiceId'), `invoice_${new Date().getTime()}.xlsx`) }
+
+function handleBeforeRecognize(file) {
+  const fileName = file.name.split('.')
+  const fileExt = fileName[fileName.length - 1].toLowerCase()
+  if (fileExt !== 'pdf') { proxy.$modal.msgError('仅支持PDF格式发票文件!'); return false }
+  if (file.size / 1024 / 1024 > 20) { proxy.$modal.msgError('上传文件大小不能超过 20 MB!'); return false }
+  return true
+}
+
+function handleRecognizeUpload(options) {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  recognizing.value = true
+  recognizedFields.value = []
+  recognizeInvoice(formData).then(res => {
+    const data = res.data
+    if (data) {
+      if (data.invoiceNo) form.value.invoiceNo = data.invoiceNo
+      if (data.invoiceType) form.value.invoiceType = data.invoiceType
+      if (data.invoiceDate) form.value.invoiceDate = data.invoiceDate
+      if (data.invoiceAmount != null) form.value.invoiceAmount = Number(data.invoiceAmount)
+      if (data.taxAmount != null) form.value.taxAmount = Number(data.taxAmount)
+      if (data.taxRate != null) form.value.taxRate = Number(data.taxRate)
+      if (data.invoiceTitle) form.value.invoiceTitle = data.invoiceTitle
+      if (data.taxNo) form.value.taxNo = data.taxNo
+      const fieldLabels = { invoiceNo: '发票号码', invoiceType: '发票类型', invoiceDate: '开票日期', invoiceAmount: '金额', taxAmount: '税额', taxRate: '税率(%)', invoiceTitle: '发票抬头', taxNo: '纳税人识别号' }
+      recognizedFields.value = Object.keys(fieldLabels).filter(k => data[k] != null && data[k] !== '').map(k => ({ label: fieldLabels[k], value: data[k] }))
+      if (recognizedFields.value.length > 0) { proxy.$modal.msgSuccess('识别成功，已回填' + recognizedFields.value.length + '项信息') } else { proxy.$modal.msgWarning('未识别到发票信息，请检查PDF文件是否为电子发票') }
+      uploadAttachment(options.file)
+    } else { proxy.$modal.msgWarning('未识别到发票信息') }
+  }).catch(e => { proxy.$modal.msgError('发票识别失败：' + (e?.message || e)) }).finally(() => { recognizing.value = false })
+}
+
+function uploadAttachment(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  request({ url: '/common/upload', method: 'post', data: formData, timeout: 60000, headers: { 'repeatSubmit': false, 'Content-Type': false } }).then(res => { if (res.fileName) { form.value.invoiceAttachment = res.fileName } }).catch(e => { proxy.$modal.msgError('发票附件上传失败：' + (e?.message || e)) })
+}
+
+function getFileName(name) { if (name.lastIndexOf('/') > -1) { return name.slice(name.lastIndexOf('/') + 1) } return name }
+function handlePreview(fileUrl) { proxy.$refs.filePreviewRef.open(fileUrl, getFileName(fileUrl)) }
+function handleFileDownload(url) { downloadFile(url) }
+
+getList()
+</script>
+
+<style scoped>
+/* 卡片式样式使用全局 detail-page.scss，此处仅保留页面特有样式 */
+
+/* 发票识别区域 */
+.recognize-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f0f9eb; border-radius: 8px; border: 1px dashed #67c23a; }
+.recognize-tip { color: #909399; font-size: 13px; }
+.recognized-info { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.recognized-tag { margin: 0; }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+</style>

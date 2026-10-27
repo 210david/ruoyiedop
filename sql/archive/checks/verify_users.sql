@@ -1,0 +1,1 @@
+SELECT user_id, dept_id, user_name, nick_name, status FROM sys_user WHERE user_name IN ('wangwei','liuyang','chenjie','zhangmin','zhaolei','sunli','zhouwei','wuxia','zhengyu','fengling','qianwei','sunjing','wuhao','linpeng','gaojie','xulei','huying') ORDER BY user_id;

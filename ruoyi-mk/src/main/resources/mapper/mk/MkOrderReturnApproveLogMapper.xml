@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOrderReturnApproveLogMapper">
+
+    <resultMap type="MkOrderReturnApproveLog" id="MkOrderReturnApproveLogResult">
+        <result property="logId"           column="log_id"/>
+        <result property="returnId"        column="return_id"/>
+        <result property="actionType"      column="action_type"/>
+        <result property="approveOpinion"  column="approve_opinion"/>
+        <result property="approveBy"       column="approve_by"/>
+        <result property="approveTime"     column="approve_time"/>
+    </resultMap>
+
+    <select id="selectApproveLogByReturnId" parameterType="Long" resultMap="MkOrderReturnApproveLogResult">
+        SELECT log_id, return_id, action_type, approve_opinion, approve_by, approve_time
+        FROM mk_order_return_approve_log
+        WHERE return_id = #{returnId}
+        ORDER BY approve_time ASC
+    </select>
+
+    <insert id="insertApproveLog" parameterType="MkOrderReturnApproveLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_order_return_approve_log (return_id, action_type, approve_opinion, approve_by, approve_time)
+        VALUES (#{returnId}, #{actionType}, #{approveOpinion}, #{approveBy}, sysdate())
+    </insert>
+
+    <delete id="deleteApproveLogByReturnId" parameterType="Long">
+        DELETE FROM mk_order_return_approve_log WHERE return_id = #{returnId}
+    </delete>
+
+</mapper>

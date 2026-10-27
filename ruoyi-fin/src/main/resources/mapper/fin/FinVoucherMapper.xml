@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinVoucherMapper">
+
+    <resultMap id="FinVoucherResult" type="com.ruoyi.fin.domain.FinVoucher">
+        <result property="voucherId"     column="voucher_id"/>
+        <result property="voucherNo"     column="voucher_no"/>
+        <result property="companyId"     column="company_id"/>
+        <result property="voucherDate"   column="voucher_date"/>
+        <result property="period"        column="period"/>
+        <result property="voucherType"   column="voucher_type"/>
+        <result property="sourceModule"  column="source_module"/>
+        <result property="sourceType"    column="source_type"/>
+        <result property="sourceId"      column="source_id"/>
+        <result property="sourceKey"     column="source_key"/>
+        <result property="ruleKey"       column="rule_key"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="entryCount"    column="entry_count"/>
+        <result property="status"        column="status"/>
+        <result property="attachCount"   column="attach_count"/>
+        <result property="auditBy"       column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditOpinion"  column="audit_opinion"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinVoucherEntryResult" type="com.ruoyi.fin.domain.FinVoucherEntry">
+        <result property="entryId"       column="entry_id"/>
+        <result property="voucherId"     column="voucher_id"/>
+        <result property="companyId"     column="company_id"/>
+        <result property="lineNo"        column="line_no"/>
+        <result property="period"        column="period"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="accountCode"   column="account_code"/>
+        <result property="accountName"   column="account_name"/>
+        <result property="direction"     column="direction"/>
+        <result property="amount"        column="amount"/>
+        <result property="currency"      column="currency"/>
+        <result property="exchangeRate"  column="exchange_rate"/>
+        <result property="taxAmount"     column="tax_amount"/>
+        <result property="auxCustomerId" column="aux_customer_id"/>
+        <result property="auxSupplierId" column="aux_supplier_id"/>
+        <result property="auxDeptId"     column="aux_dept_id"/>
+        <result property="auxProjectId"  column="aux_project_id"/>
+        <result property="summary"       column="summary"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVoucherVo">
+        SELECT voucher_id, voucher_no, company_id, voucher_date, period, voucher_type,
+               source_module, source_type, source_id, source_key, rule_key,
+               dept_id, user_id, total_amount, entry_count, status, attach_count,
+               audit_by, audit_time, audit_opinion,
+               create_by, create_time, update_by, update_time, remark
+        FROM fin_voucher
+    </sql>
+
+    <sql id="selectEntryVo">
+        SELECT entry_id, voucher_id, company_id, line_no, period, dept_id,
+               account_code, account_name, direction, amount, currency, exchange_rate,
+               tax_amount, aux_customer_id, aux_supplier_id, aux_dept_id, aux_project_id,
+               summary, create_by, create_time, update_by, update_time, remark
+        FROM fin_voucher_entry
+    </sql>
+
+    <select id="selectVoucherList" parameterType="com.ruoyi.fin.domain.FinVoucher" resultMap="FinVoucherResult">
+        <include refid="selectVoucherVo"/>
+        <where>
+            <if test="voucherNo != null and voucherNo != ''">
+                AND voucher_no LIKE CONCAT('%', #{voucherNo}, '%')
+            </if>
+            <if test="period != null and period != ''">
+                AND period = #{period}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="voucherType != null and voucherType != ''">
+                AND voucher_type = #{voucherType}
+            </if>
+            <if test="sourceModule != null and sourceModule != ''">
+                AND source_module = #{sourceModule}
+            </if>
+            <if test="sourceKey != null and sourceKey != ''">
+                AND source_key LIKE CONCAT('%', #{sourceKey}, '%')
+            </if>
+            <if test="params.beginVoucherDate != null and params.beginVoucherDate != ''">
+                AND voucher_date &gt;= #{params.beginVoucherDate}
+            </if>
+            <if test="params.endVoucherDate != null and params.endVoucherDate != ''">
+                AND voucher_date &lt;= #{params.endVoucherDate}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY voucher_date DESC, voucher_id DESC
+    </select>
+
+    <select id="selectVoucherById" parameterType="java.lang.Long" resultMap="FinVoucherResult">
+        <include refid="selectVoucherVo"/>
+        WHERE voucher_id = #{voucherId} AND del_flag = '0'
+    </select>
+
+    <select id="selectEntriesByVoucherId" parameterType="java.lang.Long" resultMap="FinVoucherEntryResult">
+        <include refid="selectEntryVo"/>
+        WHERE voucher_id = #{voucherId} AND del_flag = '0'
+        ORDER BY line_no
+    </select>
+
+    <!--
+      【P0-3 幂等兜底】唯一索引冲突后，用四元组回查已存在凭证。
+      手工凭证 rule_key 传空串，与 uk_source 的定义一致。
+    -->
+    <select id="selectBySource" resultMap="FinVoucherResult">
+        <include refid="selectVoucherVo"/>
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_id     = #{sourceId}
+          AND rule_key      = #{ruleKey}
+          AND del_flag      = '0'
+        LIMIT 1
+    </select>
+
+    <!--
+      【P0-2 并发】审核/反审核前锁定凭证行，配合状态前置条件防并发竞态。
+    -->
+    <select id="selectVoucherForUpdate" parameterType="java.lang.Long" resultMap="FinVoucherResult">
+        <include refid="selectVoucherVo"/>
+        WHERE voucher_id = #{voucherId} AND del_flag = '0'
+        FOR UPDATE
+    </select>
+
+    <!-- 试算平衡：按科目汇总本期发生额 -->
+    <select id="selectTrialBalance" resultType="java.util.LinkedHashMap">
+        SELECT e.account_code                AS accountCode,
+               MAX(e.account_name)           AS accountName,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+               SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount,
+               SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE -e.amount END) AS balance
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+        WHERE e.del_flag = '0'
+          AND v.status IN ('AUDITED', 'POSTED')
+        <if test="period != null and period != ''">
+            AND e.period = #{period}
+        </if>
+        GROUP BY e.account_code
+        ORDER BY e.account_code
+    </select>
+
+    <!--
+      科目余额表：期初取 fin_ledger（结账物化），本期发生取凭证分录。
+      期末 = 期初 + 本期借贷差。
+    -->
+    <select id="selectSubjectBalance" resultType="java.util.LinkedHashMap">
+        SELECT s.subject_code   AS accountCode,
+               s.subject_name   AS accountName,
+               s.level          AS level,
+               s.direction      AS direction,
+               COALESCE(l.opening_debit, 0)  AS openingDebit,
+               COALESCE(l.opening_credit, 0) AS openingCredit,
+               COALESCE(t.debitAmount, 0)    AS periodDebit,
+               COALESCE(t.creditAmount, 0)   AS periodCredit,
+               COALESCE(l.opening_debit, 0) + COALESCE(t.debitAmount, 0)
+                   - COALESCE(l.opening_credit, 0) - COALESCE(t.creditAmount, 0) AS closingBalance
+        FROM fin_subject s
+        LEFT JOIN fin_ledger l
+               ON l.account_code = s.subject_code AND l.period = #{period}
+        LEFT JOIN (
+            SELECT e.account_code,
+                   SUM(CASE WHEN e.direction = 'DEBIT'  THEN e.amount ELSE 0 END) AS debitAmount,
+                   SUM(CASE WHEN e.direction = 'CREDIT' THEN e.amount ELSE 0 END) AS creditAmount
+            FROM fin_voucher_entry e
+            JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+            WHERE e.del_flag = '0'
+              AND v.status IN ('AUDITED', 'POSTED')
+              AND e.period = #{period}
+            GROUP BY e.account_code
+        ) t ON t.account_code = s.subject_code
+        WHERE s.del_flag = '0' AND s.status = '0' AND s.is_leaf = '1'
+        ORDER BY s.subject_code
+    </select>
+
+    <select id="sumDebit" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(e.amount), 0)
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+        WHERE e.del_flag = '0'
+          AND v.status IN ('AUDITED', 'POSTED')
+          AND e.direction = 'DEBIT'
+        <if test="period != null and period != ''">
+            AND e.period = #{period}
+        </if>
+    </select>
+
+    <select id="sumCredit" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(e.amount), 0)
+        FROM fin_voucher_entry e
+        JOIN fin_voucher v ON v.voucher_id = e.voucher_id AND v.del_flag = '0'
+        WHERE e.del_flag = '0'
+          AND v.status IN ('AUDITED', 'POSTED')
+          AND e.direction = 'CREDIT'
+        <if test="period != null and period != ''">
+            AND e.period = #{period}
+        </if>
+    </select>
+
+    <insert id="insertVoucher" parameterType="com.ruoyi.fin.domain.FinVoucher" useGeneratedKeys="true" keyProperty="voucherId">
+        INSERT INTO fin_voucher (
+            voucher_no, company_id, voucher_date, period, voucher_type,
+            source_module, source_type, source_id, source_key, rule_key,
+            dept_id, user_id, total_amount, entry_count, status, attach_count,
+            create_by, create_time, remark
+        ) VALUES (
+            #{voucherNo}, #{companyId}, #{voucherDate}, #{period}, #{voucherType},
+            #{sourceModule}, #{sourceType}, #{sourceId}, #{sourceKey}, #{ruleKey},
+            #{deptId}, #{userId}, #{totalAmount}, #{entryCount}, #{status}, #{attachCount},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <insert id="insertEntries" parameterType="java.util.List">
+        INSERT INTO fin_voucher_entry (
+            voucher_id, company_id, line_no, period, dept_id,
+            account_code, account_name, direction, amount, currency, exchange_rate, tax_amount,
+            aux_customer_id, aux_supplier_id, aux_dept_id, aux_project_id,
+            summary, create_by, create_time, remark
+        ) VALUES
+        <foreach collection="list" item="e" separator=",">
+            (#{e.voucherId}, #{e.companyId}, #{e.lineNo}, #{e.period}, #{e.deptId},
+             #{e.accountCode}, #{e.accountName}, #{e.direction}, #{e.amount},
+             #{e.currency}, #{e.exchangeRate}, #{e.taxAmount},
+             #{e.auxCustomerId}, #{e.auxSupplierId}, #{e.auxDeptId}, #{e.auxProjectId},
+             #{e.summary}, #{e.createBy}, sysdate(), #{e.remark})
+        </foreach>
+    </insert>
+
+    <update id="deleteEntriesByVoucherId" parameterType="java.lang.Long">
+        UPDATE fin_voucher_entry SET del_flag = '2', update_time = sysdate()
+        WHERE voucher_id = #{voucherId}
+    </update>
+
+    <!--
+      修改凭证主表：带 status='DRAFT' 前置条件。
+      并发下若已被他人审核，此处影响行数为 0，Service 据此抛出状态冲突。
+      注意：不修改 status / audit_* 字段，状态流转走专用方法。
+    -->
+    <update id="updateVoucher" parameterType="com.ruoyi.fin.domain.FinVoucher">
+        UPDATE fin_voucher
+        SET voucher_date = #{voucherDate},
+            period       = #{period},
+            total_amount = #{totalAmount},
+            entry_count  = #{entryCount},
+            remark       = #{remark},
+            update_by    = #{updateBy},
+            update_time  = sysdate()
+        WHERE voucher_id = #{voucherId}
+          AND status = 'DRAFT'
+          AND del_flag = '0'
+    </update>
+
+    <update id="deleteVoucherByIds" parameterType="java.lang.Long">
+        UPDATE fin_voucher SET del_flag = '2', update_time = sysdate()
+        WHERE voucher_id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!--
+      按来源删除凭证（反结账清理结转损益凭证用）。
+      连带删除分录，保证账簿干净。
+    -->
+    <update id="deleteVoucherBySource">
+        UPDATE fin_voucher SET del_flag = '2', update_time = sysdate()
+        WHERE source_module = #{sourceModule}
+          AND source_type   = #{sourceType}
+          AND source_key    = #{sourceKey}
+          AND del_flag      = '0'
+    </update>
+
+    <!--
+      审核：带 status='DRAFT' 前置条件。
+      若并发下已被他人审核，影响行数为 0，Service 据此给出提示。
+    -->
+    <update id="auditVoucher">
+        UPDATE fin_voucher
+        SET status        = 'AUDITED',
+            audit_by      = #{auditBy},
+            audit_time    = sysdate(),
+            audit_opinion = #{auditOpinion},
+            update_by     = #{auditBy},
+            update_time   = sysdate()
+        WHERE voucher_id = #{voucherId}
+          AND status = 'DRAFT'
+          AND del_flag = '0'
+    </update>
+
+    <!-- 反审核：仅 已审核 → 草稿；已记账不允许 -->
+    <update id="cancelAudit">
+        UPDATE fin_voucher
+        SET status      = 'DRAFT',
+            audit_by    = NULL,
+            audit_time  = NULL,
+            update_by   = #{updateBy},
+            update_time = sysdate()
+        WHERE voucher_id = #{voucherId}
+          AND status = 'AUDITED'
+          AND del_flag = '0'
+    </update>
+
+    <select id="countEntryByAccount" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM fin_voucher_entry
+        WHERE account_code = #{accountCode} AND del_flag = '0'
+    </select>
+
+</mapper>

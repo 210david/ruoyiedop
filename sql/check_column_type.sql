@@ -1,0 +1,1 @@
+DESCRIBE pms_receive_detail qualified_qty;

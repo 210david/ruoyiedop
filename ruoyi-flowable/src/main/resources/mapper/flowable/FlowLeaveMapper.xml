@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowLeaveMapper">
+
+    <resultMap type="FlowLeave" id="FlowLeaveResult">
+        <id     property="leaveId"       column="leave_id"/>
+        <result property="title"         column="title"/>
+        <result property="leaveType"     column="leave_type"/>
+        <result property="startDate"     column="start_date"/>
+        <result property="endDate"       column="end_date"/>
+        <result property="days"          column="days"/>
+        <result property="reason"        column="reason"/>
+        <result property="status"        column="status"/>
+        <result property="instanceId"    column="instance_id"/>
+        <result property="startUserId"   column="start_user_id"/>
+        <result property="startUserName" column="start_user_name"/>
+        <result property="auditOpinion"  column="audit_opinion"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectFlowLeaveVo">
+        select leave_id, title, leave_type, start_date, end_date, days, reason, status, instance_id,
+               start_user_id, start_user_name, audit_opinion, del_flag, create_by, create_time,
+               update_by, update_time, remark from flow_leave
+    </sql>
+
+    <select id="selectFlowLeaveList" parameterType="FlowLeave" resultMap="FlowLeaveResult">
+        <include refid="selectFlowLeaveVo"/>
+        where del_flag = '0'
+        <if test="title != null and title != ''"> AND title LIKE CONCAT('%', #{title}, '%')</if>
+        <if test="leaveType != null and leaveType != ''"> AND leave_type = #{leaveType}</if>
+        <if test="status != null and status != ''"> AND status = #{status}</if>
+        <if test="instanceId != null and instanceId != ''"> AND instance_id = #{instanceId}</if>
+        <if test="startUserId != null"> AND start_user_id = #{startUserId}</if>
+        <if test="startUserName != null and startUserName != ''"> AND start_user_name LIKE CONCAT('%', #{startUserName}, '%')</if>
+        <if test="params.beginStartDate != null and params.beginStartDate != ''"> AND start_date &gt;= #{params.beginStartDate}</if>
+        <if test="params.endStartDate != null and params.endStartDate != ''"> AND start_date &lt;= #{params.endStartDate}</if>
+        order by leave_id desc
+    </select>
+
+    <select id="selectFlowLeaveByLeaveId" parameterType="Long" resultMap="FlowLeaveResult">
+        <include refid="selectFlowLeaveVo"/>
+        where leave_id = #{leaveId} and del_flag = '0'
+    </select>
+
+    <insert id="insertFlowLeave" parameterType="FlowLeave" useGeneratedKeys="true" keyProperty="leaveId">
+        insert into flow_leave
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="title != null">title,</if>
+            <if test="leaveType != null">leave_type,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="days != null">days,</if>
+            <if test="reason != null">reason,</if>
+            <if test="status != null">status,</if>
+            <if test="instanceId != null">instance_id,</if>
+            <if test="startUserId != null">start_user_id,</if>
+            <if test="startUserName != null">start_user_name,</if>
+            <if test="auditOpinion != null">audit_opinion,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="title != null">#{title},</if>
+            <if test="leaveType != null">#{leaveType},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="days != null">#{days},</if>
+            <if test="reason != null">#{reason},</if>
+            <if test="status != null">#{status},</if>
+            <if test="instanceId != null">#{instanceId},</if>
+            <if test="startUserId != null">#{startUserId},</if>
+            <if test="startUserName != null">#{startUserName},</if>
+            <if test="auditOpinion != null">#{auditOpinion},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFlowLeave" parameterType="FlowLeave">
+        update flow_leave
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null">title = #{title},</if>
+            <if test="leaveType != null">leave_type = #{leaveType},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="days != null">days = #{days},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="instanceId != null">instance_id = #{instanceId},</if>
+            <if test="startUserId != null">start_user_id = #{startUserId},</if>
+            <if test="startUserName != null">start_user_name = #{startUserName},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where leave_id = #{leaveId}
+    </update>
+
+    <update id="deleteFlowLeaveByLeaveIds" parameterType="Long">
+        update flow_leave set del_flag = '2' where leave_id in
+        <foreach item="leaveId" collection="array" open="(" separator="," close=")">
+            #{leaveId}
+        </foreach>
+    </update>
+</mapper>

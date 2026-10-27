@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.fin.mapper.FinArWriteoffMapper">
+
+    <resultMap id="FinArWriteoffResult" type="com.ruoyi.fin.domain.FinArWriteoff">
+        <result property="writeoffId"     column="writeoff_id"/>
+        <result property="arId"           column="ar_id"/>
+        <result property="receiptId"      column="receipt_id"/>
+        <result property="writeoffAmount" column="writeoff_amount"/>
+        <result property="writeoffDate"   column="writeoff_date"/>
+        <result property="period"         column="period"/>
+        <result property="deptId"         column="dept_id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <resultMap id="FinBadDebtResult" type="com.ruoyi.fin.domain.FinBadDebt">
+        <result property="badDebtId"       column="bad_debt_id"/>
+        <result property="companyId"       column="company_id"/>
+        <result property="provisionNo"     column="provision_no"/>
+        <result property="period"          column="period"/>
+        <result property="arId"            column="ar_id"/>
+        <result property="partnerId"       column="partner_id"/>
+        <result property="partnerName"     column="partner_name"/>
+        <result property="receivableAmount" column="receivable_amount"/>
+        <result property="provisionRatio"  column="provision_ratio"/>
+        <result property="provisionAmount" column="provision_amount"/>
+        <result property="provisionType"   column="provision_type"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="userId"          column="user_id"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <insert id="insertWriteoff" parameterType="com.ruoyi.fin.domain.FinArWriteoff"
+            useGeneratedKeys="true" keyProperty="writeoffId">
+        INSERT INTO fin_ar_writeoff (
+            ar_id, receipt_id, writeoff_amount, writeoff_date, period,
+            dept_id, user_id, create_by, create_time, remark
+        ) VALUES (
+            #{arId}, #{receiptId}, #{writeoffAmount}, #{writeoffDate}, #{period},
+            #{deptId}, #{userId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <select id="selectByArId" parameterType="java.lang.Long" resultMap="FinArWriteoffResult">
+        SELECT writeoff_id, ar_id, receipt_id, writeoff_amount, writeoff_date, period,
+               dept_id, user_id, create_by, create_time, remark
+        FROM fin_ar_writeoff
+        WHERE ar_id = #{arId} AND del_flag = '0'
+        ORDER BY writeoff_id
+    </select>
+
+    <select id="sumWriteoffAmount" parameterType="java.lang.Long" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(writeoff_amount), 0)
+        FROM fin_ar_writeoff
+        WHERE ar_id = #{arId} AND del_flag = '0'
+    </select>
+
+    <insert id="insertBadDebt" parameterType="com.ruoyi.fin.domain.FinBadDebt"
+            useGeneratedKeys="true" keyProperty="badDebtId">
+        INSERT INTO fin_bad_debt (
+            provision_no, period, ar_id, partner_id, partner_name,
+            receivable_amount, provision_ratio, provision_amount, provision_type,
+            dept_id, user_id, create_by, create_time, remark
+        ) VALUES (
+            #{provisionNo}, #{period}, #{arId}, #{partnerId}, #{partnerName},
+            #{receivableAmount}, #{provisionRatio}, #{provisionAmount}, #{provisionType},
+            #{deptId}, #{userId}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <select id="selectBadDebtList" resultMap="FinBadDebtResult">
+        SELECT bad_debt_id, company_id, provision_no, period, ar_id, partner_id, partner_name,
+               receivable_amount, provision_ratio, provision_amount, provision_type,
+               dept_id, user_id, create_by, create_time, remark
+        FROM fin_bad_debt
+        <where>
+            <if test="period != null and period != ''">
+                AND period = #{period}
+            </if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY bad_debt_id DESC
+    </select>
+
+</mapper>

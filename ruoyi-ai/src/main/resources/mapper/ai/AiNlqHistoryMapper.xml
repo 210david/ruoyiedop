@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.ai.mapper.AiNlqHistoryMapper">
+
+    <resultMap type="AiNlqHistory" id="AiNlqHistoryResult">
+        <id     property="id"          column="id"/>
+        <result property="userId"      column="user_id"/>
+        <result property="userName"    column="user_name"/>
+        <result property="question"    column="question"/>
+        <result property="answer"      column="answer"/>
+        <result property="resultJson"  column="result_json"/>
+        <result property="status"      column="status"/>
+        <result property="createTime"  column="create_time"/>
+    </resultMap>
+
+    <insert id="insertHistory" parameterType="AiNlqHistory" useGeneratedKeys="true" keyProperty="id">
+        insert into ai_nlq_history (user_id, user_name, question, answer, result_json, status, create_time)
+        values (#{userId}, #{userName}, #{question}, #{answer}, #{resultJson}, #{status}, sysdate())
+    </insert>
+
+    <select id="selectHistoryByUser" parameterType="AiNlqHistory" resultMap="AiNlqHistoryResult">
+        select id, user_id, user_name, question, answer, result_json, status, create_time
+        from ai_nlq_history
+        where user_id = #{userId}
+        <if test="question != null and question != ''">
+            and question like concat('%', #{question}, '%')
+        </if>
+        order by create_time desc, id desc
+        limit #{pageSize} offset #{offset}
+    </select>
+
+    <delete id="deleteHistoryByUser" parameterType="Long">
+        delete from ai_nlq_history where user_id = #{userId}
+    </delete>
+
+    <!-- 本月提问数（配置页双口径统计） -->
+    <select id="selectMonthlyCount" resultType="int">
+        select count(*) from ai_nlq_history
+        where create_time &gt;= date_format(now(), '%Y-%m-01')
+    </select>
+
+</mapper>

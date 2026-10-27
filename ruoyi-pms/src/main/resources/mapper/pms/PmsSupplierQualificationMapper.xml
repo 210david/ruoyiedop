@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsSupplierQualificationMapper">
+
+    <resultMap type="PmsSupplierQualification" id="PmsSupplierQualificationResult">
+        <result property="qualId"          column="qual_id"/>
+        <result property="supplierId"      column="supplier_id"/>
+        <result property="supplierName"    column="supplier_name"/>
+        <result property="qualName"        column="qual_name"/>
+        <result property="qualType"        column="qual_type"/>
+        <result property="qualCode"        column="qual_code"/>
+        <result property="issueDate"       column="issue_date"/>
+        <result property="expireDate"      column="expire_date"/>
+        <result property="status"          column="status"/>
+        <result property="fileUrl"         column="file_url"/>
+        <result property="fileName"        column="file_name"/>
+        <result property="auditBy"         column="audit_by"/>
+        <result property="auditTime"       column="audit_time"/>
+        <result property="auditRemark"     column="audit_remark"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectQualVo">
+        SELECT qual_id, supplier_id, supplier_name, qual_name, qual_type, qual_code,
+               issue_date, expire_date, status, file_url, file_name,
+               audit_by, audit_time, audit_remark,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM pms_supplier_qualification
+    </sql>
+
+    <select id="selectQualificationList" parameterType="PmsSupplierQualification" resultMap="PmsSupplierQualificationResult">
+        <include refid="selectQualVo"/>
+        <where>
+            del_flag = '0'
+            <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="qualName != null and qualName != ''"> AND qual_name LIKE CONCAT('%', #{qualName}, '%')</if>
+            <if test="qualType != null and qualType != ''"> AND qual_type = #{qualType}</if>
+            <if test="qualCode != null and qualCode != ''"> AND qual_code LIKE CONCAT('%', #{qualCode}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY qual_id DESC
+    </select>
+
+    <select id="selectQualificationById" parameterType="Long" resultMap="PmsSupplierQualificationResult">
+        <include refid="selectQualVo"/>
+        WHERE qual_id = #{qualId}
+    </select>
+
+    <insert id="insertQualification" parameterType="PmsSupplierQualification" useGeneratedKeys="true" keyProperty="qualId">
+        INSERT INTO pms_supplier_qualification (
+            supplier_id, supplier_name, qual_name, qual_type, qual_code,
+            issue_date, expire_date, status, file_url, file_name,
+            audit_by, audit_time, audit_remark,
+            del_flag, create_by, create_time, remark
+        ) VALUES (
+            #{supplierId}, #{supplierName}, #{qualName}, #{qualType}, #{qualCode},
+            #{issueDate}, #{expireDate}, #{status}, #{fileUrl}, #{fileName},
+            #{auditBy}, #{auditTime}, #{auditRemark},
+            #{delFlag}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateQualification" parameterType="PmsSupplierQualification">
+        UPDATE pms_supplier_qualification
+        <set>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="supplierName != null">supplier_name = #{supplierName},</if>
+            <if test="qualName != null and qualName != ''">qual_name = #{qualName},</if>
+            <if test="qualType != null and qualType != ''">qual_type = #{qualType},</if>
+            <if test="qualCode != null">qual_code = #{qualCode},</if>
+            <if test="issueDate != null">issue_date = #{issueDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE qual_id = #{qualId}
+    </update>
+
+    <update id="auditQualification" parameterType="PmsSupplierQualification">
+        UPDATE pms_supplier_qualification
+        SET status = #{status}, audit_by = #{auditBy}, audit_time = #{auditTime}, audit_remark = #{auditRemark},
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE qual_id = #{qualId}
+    </update>
+
+    <delete id="deleteQualificationByIds" parameterType="Long">
+        UPDATE pms_supplier_qualification SET del_flag = '2' WHERE qual_id IN
+        <foreach item="qualId" collection="array" open="(" separator="," close=")">#{qualId}</foreach>
+    </delete>
+
+    <!-- 查询已过期但状态仍为有效(1)的资质 -->
+    <select id="selectExpiredQualifications" resultMap="PmsSupplierQualificationResult">
+        <include refid="selectQualVo"/>
+        WHERE del_flag = '0'
+          AND status = '1'
+          AND expire_date IS NOT NULL
+          AND expire_date &lt; CURDATE()
+    </select>
+
+    <!-- 批量将过期资质状态更新为已过期(3) -->
+    <update id="updateExpiredStatus" parameterType="java.util.List">
+        UPDATE pms_supplier_qualification SET status = '3', update_time = sysdate()
+        WHERE qual_id IN
+        <foreach item="qualId" collection="qualIds" open="(" separator="," close=")">#{qualId}</foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkContractApproveLogMapper">
+
+    <resultMap type="MkContractApproveLog" id="MkContractApproveLogResult">
+        <result property="logId"           column="log_id"/>
+        <result property="contractId"      column="contract_id"/>
+        <result property="actionType"      column="action_type"/>
+        <result property="approveOpinion"  column="approve_opinion"/>
+        <result property="approveBy"       column="approve_by"/>
+        <result property="approveTime"     column="approve_time"/>
+    </resultMap>
+
+    <select id="selectApproveLogByContractId" parameterType="Long" resultMap="MkContractApproveLogResult">
+        SELECT log_id, contract_id, action_type, approve_opinion, approve_by, approve_time
+        FROM mk_contract_approve_log
+        WHERE contract_id = #{contractId}
+        ORDER BY approve_time ASC
+    </select>
+
+    <insert id="insertApproveLog" parameterType="MkContractApproveLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_contract_approve_log (contract_id, action_type, approve_opinion, approve_by, approve_time)
+        VALUES (#{contractId}, #{actionType}, #{approveOpinion}, #{approveBy}, sysdate())
+    </insert>
+
+    <delete id="deleteApproveLogByContractId" parameterType="Long">
+        DELETE FROM mk_contract_approve_log WHERE contract_id = #{contractId}
+    </delete>
+
+</mapper>

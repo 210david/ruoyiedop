@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkOpportunityStageLogMapper">
+
+    <resultMap type="MkOpportunityStageLog" id="MkOpportunityStageLogResult">
+        <result property="logId"            column="log_id"/>
+        <result property="opportunityId"    column="opportunity_id"/>
+        <result property="opportunityName"  column="opportunity_name"/>
+        <result property="fromStageCode"   column="from_stage_code"/>
+        <result property="fromStageName"   column="from_stage_name"/>
+        <result property="toStageCode"      column="to_stage_code"/>
+        <result property="toStageName"     column="to_stage_name"/>
+        <result property="actionType"       column="action_type"/>
+        <result property="operatorId"      column="operator_id"/>
+        <result property="operatorName"    column="operator_name"/>
+        <result property="operateTime"     column="operate_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <select id="selectStageLogList" parameterType="Long" resultMap="MkOpportunityStageLogResult">
+        SELECT l.log_id, l.opportunity_id, l.from_stage_code, l.from_stage_name,
+               l.to_stage_code, l.to_stage_name, l.action_type, l.operator_id, l.operator_name,
+               l.operate_time, l.remark,
+               o.opportunity_name
+        FROM mk_opportunity_stage_log l
+        LEFT JOIN mk_opportunity o ON l.opportunity_id = o.opportunity_id
+        WHERE l.opportunity_id = #{opportunityId}
+        ORDER BY l.log_id DESC
+    </select>
+
+    <insert id="insertStageLog" parameterType="MkOpportunityStageLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO mk_opportunity_stage_log (opportunity_id, from_stage_code, from_stage_name,
+            to_stage_code, to_stage_name, action_type, operator_id, operator_name, operate_time, remark)
+        VALUES (#{opportunityId}, #{fromStageCode}, #{fromStageName},
+            #{toStageCode}, #{toStageName}, #{actionType}, #{operatorId}, #{operatorName}, sysdate(), #{remark})
+    </insert>
+
+</mapper>

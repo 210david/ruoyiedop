@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrStatisticsMapper">
+
+    <!-- 概览统计：在册人数、本年入职、本年离职、最近工资月人工成本、本年加班工时 -->
+    <select id="selectOverview" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="map">
+        select
+            (select count(*) from biz_hr_employee e
+              where e.del_flag = '0' and e.employee_status in ('0', '1')) as headcount,
+            (select count(*) from biz_hr_entry en
+              where en.del_flag = '0'
+                and year(en.entry_date) = year(curdate())) as entryCount,
+            (select count(*) from biz_hr_leave lv
+              where lv.del_flag = '0'
+                and year(lv.leave_date) = year(curdate())) as leaveCount,
+            (select ifnull(sum(p.gross_salary + ifnull(p.social_insurance,0) + ifnull(p.house_fund,0)), 0)
+               from biz_hr_payslip p
+              where p.del_flag = '0'
+                and p.year_month = (select max(p2.year_month) from biz_hr_payslip p2
+                                     where p2.del_flag = '0')) as costAmount,
+            (select ifnull(sum(p.net_salary), 0) from biz_hr_payslip p
+              where p.del_flag = '0'
+                and p.year_month = (select max(p2.year_month) from biz_hr_payslip p2
+                                     where p2.del_flag = '0')) as netAmount,
+            (select max(p.year_month) from biz_hr_payslip p
+              where p.del_flag = '0') as latestMonth,
+            (select ifnull(sum(o.overtime_hours), 0) from biz_hr_overtime o
+              where o.del_flag = '0'
+                and year(o.overtime_date) = year(curdate())) as overtimeHours,
+            (select count(*) from biz_hr_certificate c
+              where c.del_flag = '0' and c.valid_to &lt; curdate()) as certExpired
+    </select>
+
+    <!-- 在册人员按部门分布（在职+试用期） -->
+    <select id="selectHeadcountByOrg" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            d.dept_name        as name,
+            d.dept_id          as deptId,
+            count(e.employee_id)                         as count,
+            sum(case when e.gender = '0' then 1 else 0 end) as maleCount,
+            sum(case when e.gender = '1' then 1 else 0 end) as femaleCount
+        from sys_dept d
+        join biz_hr_employee e
+          on e.org_id = d.dept_id
+         and e.del_flag = '0'
+         and e.employee_status in ('0', '1')
+        where d.del_flag = '0'
+        group by d.dept_id, d.dept_name
+        order by count desc
+    </select>
+
+    <!-- 人员流动：按月统计入职/离职 -->
+    <select id="selectFlowTrend" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            t.month_seq as yearMonth,
+            ifnull(en.cnt, 0) as entryCount,
+            ifnull(lv.cnt, 0) as leaveCount,
+            ifnull(en.cnt, 0) - ifnull(lv.cnt, 0) as count
+        from (
+            select 1 as month_seq union select 2 union select 3 union select 4 union select 5 union select 6
+            union select 7 union select 8 union select 9 union select 10 union select 11 union select 12
+        ) t
+        left join (
+            select month(entry_date) as m, count(*) as cnt
+              from biz_hr_entry
+             where del_flag = '0' and year(entry_date) = #{params.year}
+             group by month(entry_date)
+        ) en on en.m = t.month_seq
+        left join (
+            select month(leave_date) as m, count(*) as cnt
+              from biz_hr_leave
+             where del_flag = '0' and year(leave_date) = #{params.year}
+             group by month(leave_date)
+        ) lv on lv.m = t.month_seq
+        order by t.month_seq
+    </select>
+
+    <!-- 出勤月报：按部门聚合 -->
+    <select id="selectAttendanceByOrg" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            d.dept_name            as name,
+            d.dept_id              as deptId,
+            count(m.monthly_id)    as requiredPeople,
+            ifnull(sum(m.attend_days), 0)    as attendDays,
+            ifnull(sum(m.actual_days), 0)    as count,
+            ifnull(sum(m.late_count), 0)     as lateCount,
+            ifnull(sum(m.early_count), 0)    as earlyCount,
+            ifnull(sum(m.absent_days), 0)    as absentDays,
+            ifnull(sum(m.leave_days), 0)     as leaveDays,
+            ifnull(sum(m.overtime_hours), 0) as overtimeHours,
+            ifnull(sum(m.night_shift_count), 0) as nightShiftCount
+        from biz_hr_attendance_monthly m
+        join sys_dept d on d.dept_id = m.dept_id
+        where m.del_flag = '0'
+          and m.year_month = #{yearMonth}
+        group by d.dept_id, d.dept_name
+        order by d.dept_name
+    </select>
+
+    <!-- 出勤趋势：按月汇总 -->
+    <select id="selectAttendanceTrend" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            m.year_month        as yearMonth,
+            ifnull(sum(m.attend_days), 0)    as attendDays,
+            ifnull(sum(m.absent_days), 0)    as absentDays,
+            ifnull(sum(m.leave_days), 0)     as leaveDays,
+            ifnull(sum(m.overtime_hours), 0) as overtimeHours,
+            ifnull(sum(m.late_count), 0)     as lateCount
+        from biz_hr_attendance_monthly m
+        where m.del_flag = '0'
+          and m.year_month like concat(#{params.year}, '%')
+        group by m.year_month
+        order by m.year_month
+    </select>
+
+    <!-- 人工成本：按月汇总（应发+个人社保+公积金+个税+实发） -->
+    <select id="selectCostByMonth" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            p.year_month as yearMonth,
+            ifnull(sum(p.gross_salary), 0)                       as grossAmount,
+            ifnull(sum(p.social_insurance), 0)                   as socialAmount,
+            ifnull(sum(p.house_fund), 0)                         as fundAmount,
+            ifnull(sum(p.income_tax), 0)                         as taxAmount,
+            ifnull(sum(p.net_salary), 0)                         as netAmount,
+            ifnull(sum(p.gross_salary + ifnull(p.social_insurance,0) + ifnull(p.house_fund,0)), 0) as costAmount
+        from biz_hr_payslip p
+        where p.del_flag = '0'
+          and p.year_month like concat(#{params.year}, '%')
+        group by p.year_month
+        order by p.year_month
+    </select>
+
+    <!-- 人工成本：按部门（指定月） -->
+    <select id="selectCostByOrg" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            d.dept_name        as name,
+            d.dept_id          as deptId,
+            count(p.payslip_id) as count,
+            ifnull(sum(p.gross_salary), 0)                       as grossAmount,
+            ifnull(sum(p.social_insurance), 0)                   as socialAmount,
+            ifnull(sum(p.house_fund), 0)                         as fundAmount,
+            ifnull(sum(p.income_tax), 0)                         as taxAmount,
+            ifnull(sum(p.net_salary), 0)                         as netAmount,
+            ifnull(sum(p.gross_salary + ifnull(p.social_insurance,0) + ifnull(p.house_fund,0)), 0) as costAmount
+        from biz_hr_payslip p
+        join sys_dept d on d.dept_id = p.org_id
+        where p.del_flag = '0'
+          and p.year_month = #{yearMonth}
+        group by d.dept_id, d.dept_name
+        order by costAmount desc
+    </select>
+
+    <!-- 薪酬发放台账（批次） -->
+    <select id="selectPayrollLedger" parameterType="com.ruoyi.hr.domain.vo.HrStatisticsVO" resultType="com.ruoyi.hr.domain.vo.HrStatisticsVO">
+        select
+            b.batch_id     as deptId,
+            b.batch_no     as batchNo,
+            b.batch_name   as batchName,
+            b.year_month   as yearMonth,
+            b.pay_date     as payDate,
+            b.bank_name    as bankName,
+            b.total_count  as totalCount,
+            b.total_amount as totalAmount,
+            b.audit_status as auditStatus,
+            b.sealed_status as sealedStatus
+        from biz_hr_payroll_batch b
+        where b.del_flag = '0'
+        <if test="yearMonth != null and yearMonth != ''">
+          and b.year_month = #{yearMonth}
+        </if>
+        order by b.year_month desc, b.batch_id desc
+    </select>
+
+</mapper>

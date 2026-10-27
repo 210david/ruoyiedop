@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mms.mapper.MmsBatchTraceMapper">
+
+    <resultMap type="MmsBatchTrace" id="MmsBatchTraceResult">
+        <id     property="traceId"      column="trace_id"/>
+        <result property="sourceType"   column="source_type"/>
+        <result property="sourceNo"     column="source_no"/>
+        <result property="batchOut"     column="batch_out"/>
+        <result property="batchIn"      column="batch_in"/>
+        <result property="workOrderNo"  column="work_order_no"/>
+        <result property="opName"       column="op_name"/>
+        <result property="opId"         column="op_id"/>
+        <result property="lineName"     column="line_name"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialIn"   column="material_id"/>
+        <result property="qtyUsed"      column="qty_in"/>
+        <result property="qtyOut"       column="qty_out"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="operator"     column="operator"/>
+        <result property="productCode"  column="product_code"/>
+        <result property="productName"  column="product_name"/>
+        <result property="specModel"    column="spec_model"/>
+        <result property="unit"         column="unit"/>
+        <result property="traceTime"    column="trace_time"/>
+        <result property="breakFlag"    column="break_flag"/>
+        <result property="breakReason"  column="break_reason"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <!--
+        批次追溯列表（谱系融合版 2026-09-19）
+        主表：qms_lot_genealogy（批次谱系）——行粒度 = 一条谱系事件
+        产出批次/投入批次/工序/产线/供应商/数量 全部直接来自谱系，不依赖齐套明细
+        产品编码/名称/规格/单位 按工单号关联 mms_work_order 补充（谱系表不存产品信息）
+    -->
+    <sql id="traceColumns">
+        g.id AS trace_id, g.source_type, g.source_no,
+        g.parent_batch_no AS batch_in, g.child_batch_no AS batch_out,
+        g.work_order_no, g.op_id, g.op_name, g.line_name,
+        g.material_id, g.material_code, g.material_name,
+        g.qty_in, g.qty_out, g.supplier_name, g.operator,
+        g.trace_time, g.break_flag, g.break_reason,
+        g.create_by, g.create_time,
+        wo.product_code, wo.product_name, wo.spec_model, wo.unit
+    </sql>
+
+    <select id="selectBatchTraceList" parameterType="MmsBatchTrace" resultMap="MmsBatchTraceResult">
+        SELECT <include refid="traceColumns"/>
+        FROM qms_lot_genealogy g
+        LEFT JOIN mms_work_order wo ON wo.work_order_no = g.work_order_no AND wo.del_flag = '0'
+        <where>
+            g.del_flag = '0'
+            <if test="batchOut != null and batchOut != ''">
+                AND g.child_batch_no LIKE CONCAT('%', #{batchOut}, '%')
+            </if>
+            <if test="batchIn != null and batchIn != ''">
+                AND g.parent_batch_no LIKE CONCAT('%', #{batchIn}, '%')
+            </if>
+            <if test="materialCode != null and materialCode != ''">
+                AND g.material_code LIKE CONCAT('%', #{materialCode}, '%')
+            </if>
+            <if test="materialName != null and materialName != ''">
+                AND g.material_name LIKE CONCAT('%', #{materialName}, '%')
+            </if>
+            <if test="workOrderNo != null and workOrderNo != ''">
+                AND g.work_order_no LIKE CONCAT('%', #{workOrderNo}, '%')
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND g.source_type = #{sourceType}
+            </if>
+            <if test="opName != null and opName != ''">
+                AND g.op_name LIKE CONCAT('%', #{opName}, '%')
+            </if>
+            <if test="lineName != null and lineName != ''">
+                AND g.line_name LIKE CONCAT('%', #{lineName}, '%')
+            </if>
+            <if test="supplierName != null and supplierName != ''">
+                AND g.supplier_name LIKE CONCAT('%', #{supplierName}, '%')
+            </if>
+            <if test="operator != null and operator != ''">
+                AND g.operator LIKE CONCAT('%', #{operator}, '%')
+            </if>
+            <if test="breakFlag != null">
+                AND g.break_flag = #{breakFlag}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND g.trace_time &gt;= CONCAT(#{params.beginTime}, ' 00:00:00')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND g.trace_time &lt;= CONCAT(#{params.endTime}, ' 23:59:59')
+            </if>
+        </where>
+        ORDER BY g.trace_time DESC, g.id DESC
+    </select>
+
+    <select id="selectBatchTraceById" parameterType="Long" resultMap="MmsBatchTraceResult">
+        SELECT <include refid="traceColumns"/>
+        FROM qms_lot_genealogy g
+        LEFT JOIN mms_work_order wo ON wo.work_order_no = g.work_order_no AND wo.del_flag = '0'
+        WHERE g.del_flag = '0' AND g.id = #{traceId}
+    </select>
+
+</mapper>
