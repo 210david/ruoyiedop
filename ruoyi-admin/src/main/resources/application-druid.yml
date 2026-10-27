@@ -6,7 +6,7 @@ spring:
         druid:
             # 主库数据源
             master:
-                url: jdbc:mysql://localhost:3306/RUOYI_CFSP?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+                url: jdbc:mysql://localhost:3306/RUOYI_YHNY?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
                 username: root
                 # Druid 加密密码（明文 ZBrj@2026，与生产一致；更换方式: java -cp druid-1.2.28.jar com.alibaba.druid.filter.config.ConfigTools 新密码）
                 password: fBCDoozBjsSnNKAVF5kdOPGdIVn23UESJuY4uFsiiP5ETlKHBaxTC6itcV3Vjo9BRToDYfHFGp7KFwvZE1n2kw==
