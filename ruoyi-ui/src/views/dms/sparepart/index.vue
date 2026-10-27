@@ -321,7 +321,6 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, partCode: undefined, partName: undefined, partType: undefined, status: undefined, specModel: undefined, supplier: undefined },
   rules: {
-    partCode: [{ required: true, message: '备件编码不能为空', trigger: 'blur' }],
     partName: [{ required: true, message: '备件名称不能为空', trigger: 'blur' }],
     partType: [{ required: true, message: '备件类别不能为空', trigger: 'change' }],
     unit: [{ required: true, message: '单位不能为空', trigger: 'change' }],
