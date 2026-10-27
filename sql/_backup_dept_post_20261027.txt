@@ -1,0 +1,20 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+dept_id	parent_id	ancestors	dept_name	order_num	leader	phone	email	status	del_flag	create_by	create_time	update_by	update_time
+100	0	0	鼎泰科技有限公司	0	杨华	NULL	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-20 11:26:12
+101	100	0,100	质量部	6	谢斌	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:06:50
+102	100	0,100	长沙分公司	2	若依	15888888888	ry@qq.com	0	2	admin	2026-07-13 11:25:52		NULL
+103	100	0,100	研发部	4	张涛	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:07:44
+104	100	0,100	市场部	5	周伟	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:07:48
+105	100	0,100	综合管理部	1	郑宇	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:06:26
+106	100	0,100	财务部	2	吴昊	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:07:39
+107	100	0,100	人事部	3	胡颖	15888888888	ry@qq.com	0	0	admin	2026-07-13 11:25:52	admin	2026-07-24 08:08:44
+108	102	0,100,102	市场部门	1	若依	15888888888	ry@qq.com	0	2	admin	2026-07-13 11:25:52		NULL
+109	102	0,100,102	财务部门	2	若依	15888888888	ry@qq.com	0	2	admin	2026-07-13 11:25:52		NULL
+200	100	0,100	生产部	4	许智	NULL	NULL	0	0	admin	2026-07-24 08:08:02		NULL
+post_id	post_code	post_name	post_sort	status	create_by	create_time	update_by	update_time	remark
+1	ceo	董事长	1	0	admin	2026-07-13 11:25:52		NULL	
+2	se	项目经理	2	0	admin	2026-07-13 11:25:52		NULL	
+3	hr	人力资源	3	0	admin	2026-07-13 11:25:52		NULL	
+4	user	普通员工	4	0	admin	2026-07-13 11:25:52		NULL	
+5	general_manager	总经理	0	0	system	2026-07-25 11:47:50		NULL	公司整体运营管理
+6	dept_head	部门负责人	5	0	system	2026-07-25 11:47:50		NULL	各部门负责人
