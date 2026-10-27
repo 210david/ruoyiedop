@@ -131,10 +131,13 @@
 
       <!-- Table -->
       <div class="table-wrap">
-        <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
-          <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" resizable align="center" />
-<el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 200)" resizable v-if="columns.warehouseCode.visible" />
-          <el-table-column prop="warehouseName" label="名称" key="warehouseName" :min-width="colWidth('warehouseName', 260)" resizable :show-overflow-tooltip="true" v-if="columns.warehouseName.visible" />
+        <el-table ref="tableRef" border v-if="refreshTable" v-loading="loading" :data="warehouseList" row-key="warehouseId" :indent="32" :default-expand-all="isExpandAll" :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @header-dragend="onHeaderDragEnd" class="app-table">
+<el-table-column prop="warehouseCode" label="编码" key="warehouseCode" :width="colWidth('warehouseCode', 300)" resizable class-name="code-col" v-if="columns.warehouseCode.visible" />
+          <el-table-column prop="warehouseName" label="名称" key="warehouseName" :min-width="colWidth('warehouseName', 260)" resizable :show-overflow-tooltip="true" v-if="columns.warehouseName.visible">
+            <template #default="scope">
+              <span :class="['tree-name', 'lv' + scope.row.nodeType]">{{ scope.row.warehouseName }}</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="nodeType" label="类型" key="nodeType" :width="colWidth('nodeType', 90)" resizable align="center" v-if="columns.nodeType.visible">
             <template #default="scope">
               <span class="badge violet" v-if="scope.row.nodeType === '1'">仓库</span>
@@ -376,7 +379,7 @@ import { useDetailCard } from '@/composables/useDetailCard'
 const { collapsedCards, toggleCard } = useDetailCard(["c4","c3","c2","c1","c0"])
 
 const { proxy } = getCurrentInstance()
-const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_warehouse_index')
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_warehouse_index_v2')
 const { wms_area_type, wms_location_type } = proxy.useDict('wms_area_type', 'wms_location_type')
 
 const warehouseList = ref([])
@@ -445,7 +448,6 @@ const data = reactive({
   },
   rules: {
     nodeType: [{ required: true, message: '请选择节点类型', trigger: 'change' }],
-    warehouseCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
     managerId: [{ required: true, message: '请选择负责人', trigger: 'change' }],
     deptId: [{ required: true, message: '请选择管理部门', trigger: 'change' }],
     warehouseName: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
@@ -788,6 +790,15 @@ loadTreeData()
 .wms-warehouse-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .wms-warehouse-page .app-table :deep(.el-table__border-left-patch) { display:none; }
 .wms-warehouse-page .app-table :deep(.col-num) { text-align:center; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums; }
+
+/* ===== 树形层级视觉（名称列按层级缩进） ===== */
+.wms-warehouse-page .tree-name { display:inline-block; }
+.wms-warehouse-page .tree-name.lv1 { font-weight:600; color:var(--ink-700); }
+.wms-warehouse-page .tree-name.lv2 { padding-left:28px; color:var(--ink-700); }
+.wms-warehouse-page .tree-name.lv3 { padding-left:56px; color:var(--ink-500); }
+
+/* 编码列禁止换行：树形缩进+编码文本总宽不得挤成两行 */
+.wms-warehouse-page .app-table :deep(.code-col .cell) { white-space:nowrap; }
 
 /* ===== Badges ===== */
 .wms-warehouse-page .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; }
