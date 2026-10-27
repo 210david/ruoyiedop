@@ -19,7 +19,7 @@ ruoyi:
 
 # 开发环境配置
 server:
-  port: 8004
+  port: 82
   servlet:
     context-path: /
   tomcat:

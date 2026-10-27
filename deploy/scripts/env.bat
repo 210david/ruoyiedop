@@ -22,9 +22,9 @@ set LOG_HOME=%EDOP_HOME%\app\logs
 
 REM ===== Service Config =====
 set JAR_NAME=ruoyi-admin.jar
-set BACKEND_PORT=8004
+set BACKEND_PORT=82
 set REDIS_PORT=6379
-set NGINX_PORT=8005
+set NGINX_PORT=82
 set MYSQL_PORT=3306
 
 REM ===== JVM Options =====
