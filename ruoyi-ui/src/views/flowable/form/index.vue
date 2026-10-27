@@ -780,7 +780,11 @@ const fieldRules = {
 
 const mainTableName = computed(() => form.value.formKey ? 'flow_data_' + form.value.formKey : 'flow_data_{表单Key}')
 
-const activeFields = computed(() => fields.value.filter(f => (f.table || 'main') === activeTableTab.value))
+/** 编辑表格可见字段：系统内置字段（标题/紧急程度/签字意见/打印次数）默认新增但不在字段编辑列表中展示，
+    数据仍完整保留在 fields 中（发起页/详情渲染需要），仅列表隐藏，避免用户误以为是可删业务字段 */
+const HIDDEN_SYS_FIELDS = new Set(['title', 'urgency', 'signOpinion', 'printCount'])
+const activeFields = computed(() => fields.value.filter(f =>
+  (f.table || 'main') === activeTableTab.value && !HIDDEN_SYS_FIELDS.has(f.field)))
 
 // ===== 字段列表拖动排序（参照泛微：拖拽手柄列触发，拖动后按新顺序重写显示顺序） =====
 const fieldTableRef = ref(null)

@@ -239,17 +239,19 @@
     </el-dialog>
 
     <!-- ===== 流程设计器弹窗（bpmn-js + 自研属性面板） ===== -->
-    <el-dialog v-model="designOpen" fullscreen append-to-body class="designer-dialog" :close-on-click-modal="false" destroy-on-close @opened="onDesignerOpened">
+    <el-dialog v-model="designOpen" fullscreen append-to-body class="designer-dialog" :close-on-click-modal="false" :show-close="false" destroy-on-close @opened="onDesignerOpened">
       <template #header>
         <div class="designer-header">
           <div class="designer-title">
             <span class="glyph"></span>
             流程设计器
-            <span class="designer-model-name">{{ designModel.modelName }}</span>
+            <span class="designer-model-name" :title="designModel.modelName">{{ designModel.modelName }}</span>
             <span class="badge blue"><span class="dot"></span>Key: {{ designModel.modelKey }}</span>
           </div>
           <div class="designer-actions">
-            <el-button type="primary" icon="Check" @click="saveDesigner" v-hasPermi="['flowable:model:edit']">保存</el-button>
+            <!-- 流转设置页签的保存由子页签内的「编辑」页承载，顶部保存对该页无意义；
+                 关闭按钮保留，保证任何页签都有明确退出入口 -->
+            <el-button v-if="designTab !== 'flow'" type="primary" icon="Check" @click="saveDesigner" v-hasPermi="['flowable:model:edit']">保存</el-button>
             <el-button @click="designOpen = false">关 闭</el-button>
           </div>
         </div>
@@ -310,64 +312,34 @@
             </el-tab-pane>
           </el-tabs>
         </el-tab-pane>
-        <!-- ===== 流转设置（图形编辑 + 节点属性，参照泛微节点信息） ===== -->
+        <!-- ===== 流转设置：仅流程图（打开默认显示流程图，点「编 辑」进入流程图编辑页） ===== -->
         <el-tab-pane label="流转设置" name="flow">
-          <!-- 流转设置编辑入口（泛微式：在子页签行顶部，管图形编辑/节点/出口三个子页签） -->
-          <div class="graph-toolbar">
-            <el-button size="small" type="primary" icon="EditPen" @click="openGraphicEditor">编 辑</el-button>
-            <span class="graph-tip">点击"编辑"进入独立编辑页面：流程图拖拽绘制、节点/出口新增删除、统一保存</span>
+          <div class="flow-tabbar">
+            <div class="designer-body">
+              <div class="designer-canvas" ref="canvasRef"></div>
+              <!-- 空状态：模型尚无流程图时，画布中央给出引导与主操作，替代一片空网格 -->
+              <div v-if="flowEmpty" class="flow-empty">
+                <div class="fe-art">
+                  <span class="fe-node fe-start"></span>
+                  <span class="fe-line"></span>
+                  <span class="fe-node fe-task"></span>
+                  <span class="fe-line"></span>
+                  <span class="fe-node fe-end"></span>
+                </div>
+                <div class="fe-title">还没有流程图</div>
+                <div class="fe-desc">该流程还没有绘制流转图。从「开始」到「结束」拖拽出审批节点，即可让流程真正跑起来。</div>
+                <el-button type="primary" icon="EditPen" @click="openGraphicEditor('graph')">开始绘制流程图</el-button>
+                <div class="fe-steps">
+                  <span><b>1</b> 拖入节点</span>
+                  <span><b>2</b> 连线成流</span>
+                  <span><b>3</b> 设置办理人</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="!flowEmpty" class="flow-tab-actions">
+              <el-button size="small" type="primary" icon="EditPen" @click="openGraphicEditor('graph')">编 辑</el-button>
+            </div>
           </div>
-          <el-tabs v-model="flowTab" type="card" class="form-sub-tabs">
-            <el-tab-pane label="图形编辑" name="graph">
-      <div class="designer-body">
-        <div class="designer-canvas" ref="canvasRef"></div>
-      </div>
-            </el-tab-pane>
-            <!-- ===== 节点信息（表格方式展示节点，参照泛微节点信息） ===== -->
-            <el-tab-pane label="节点信息" name="nodes">
-              <div class="batch-toolbar">
-                <span class="field-tip">只读展示：节点名称/操作者等编辑请点"编 辑"进入独立流程图编辑页面</span>
-              </div>
-              <el-table :data="flowNodes" border size="small" max-height="420" class="field-table" highlight-current-row>
-                <el-table-column type="index" label="序号" width="55" align="center" />
-                <el-table-column label="节点名称" min-width="140" align="center">
-                  <template #default="scope">{{ scope.row.name || scope.row.id }}</template>
-                </el-table-column>
-                <el-table-column label="节点类型" width="110" align="center">
-                  <template #default="scope"><span class="badge blue"><span class="dot"></span>{{ scope.row.typeLabel }}</span></template>
-                </el-table-column>
-                <el-table-column label="分支语义" width="110" align="center">
-                  <template #default="scope">{{ branchRoleLabelFor(scope.row.type, scope.row.id, flowExits) }}</template>
-                </el-table-column>
-                <el-table-column label="操作者（办理人）" min-width="160" align="center">
-                  <template #default="scope"><span v-if="scope.row.assignee">{{ scope.row.assignee }}</span><span v-else style="color:#cbd5e1">未设置</span></template>
-                </el-table-column>
-                <el-table-column label="候选组" min-width="150" align="center">
-                  <template #default="scope"><span v-if="scope.row.candidateGroups">{{ scope.row.candidateGroups }}</span><span v-else style="color:#cbd5e1">—</span></template>
-                </el-table-column>
-                <el-table-column label="表单内容" width="110" align="center">
-                  <template #default="scope"><span v-if="scope.row.formKey">{{ scope.row.formKey }}</span><span v-else style="color:#cbd5e1">Html模式</span></template>
-                </el-table-column>
-              </el-table>
-            </el-tab-pane>
-            <!-- ===== 出口信息（连线与分支条件只读展示） ===== -->
-            <el-tab-pane label="出口信息" name="exits">
-              <div class="batch-toolbar">
-                <span class="field-tip">只读展示：连线名称/分支条件编辑请点"编 辑"进入独立流程图编辑页面</span>
-              </div>
-              <el-table :data="flowExits" border size="small" max-height="420" class="field-table" highlight-current-row>
-                <el-table-column type="index" label="序号" width="55" align="center" />
-                <el-table-column label="连线名称" min-width="130" align="center">
-                  <template #default="scope">{{ scope.row.name || '—' }}</template>
-                </el-table-column>
-                <el-table-column label="来源节点" min-width="120" align="center"><template #default="scope">{{ scope.row.sourceName || scope.row.sourceId }}</template></el-table-column>
-                <el-table-column label="目标节点" min-width="120" align="center"><template #default="scope">{{ scope.row.targetName || scope.row.targetId }}</template></el-table-column>
-                <el-table-column label="分支条件" min-width="200" align="center">
-                  <template #default="scope"><span v-if="scope.row.condition">{{ scope.row.condition }}</span><span v-else style="color:#cbd5e1">—</span></template>
-                </el-table-column>
-              </el-table>
-            </el-tab-pane>
-          </el-tabs>
         </el-tab-pane>
         <!-- ===== 高级设置（泛微式：高级功能设置） ===== -->
         <el-tab-pane label="高级设置" name="advanced">
@@ -391,7 +363,7 @@
       <input ref="xmlFileRef" type="file" accept=".xml,.bpmn" style="display:none" @change="onXmlFileChange" />
     </el-dialog>
 
-    <!-- ===== 图形化编辑独立全屏弹窗（泛微式：点击"编辑"进入独立编辑页面，关闭返回列表） ===== -->
+    <!-- ===== 图形化编辑独立全屏弹窗（点"编辑"进入独立编辑页，关闭返回列表） ===== -->
     <el-dialog v-model="graphicOpen" fullscreen append-to-body class="designer-dialog" :close-on-click-modal="false" destroy-on-close @opened="onGraphicOpened">
       <template #header>
         <div class="designer-header">
@@ -399,28 +371,58 @@
             <span class="glyph"></span>
             流程图编辑
             <span class="designer-model-name">{{ designModel.modelName }}</span>
+            <span class="mode-badge">{{ graphicModeLabel }}</span>
             <span class="badge blue"><span class="dot"></span>Key: {{ designModel.modelKey }}</span>
           </div>
           <div class="designer-actions">
-            <el-tooltip content="撤销"><el-button icon="RefreshLeft" @click="graphicCmd('undo')" /></el-tooltip>
-            <el-tooltip content="重做"><el-button icon="RefreshRight" @click="graphicCmd('redo')" /></el-tooltip>
-            <el-tooltip content="放大"><el-button icon="ZoomIn" @click="graphicZoom(0.1)" /></el-tooltip>
-            <el-tooltip content="缩小"><el-button icon="ZoomOut" @click="graphicZoom(-0.1)" /></el-tooltip>
-            <el-tooltip content="适应画布"><el-button icon="FullScreen" @click="graphicZoomReset" /></el-tooltip>
-            <el-tooltip content="删除选中"><el-button icon="Delete" @click="graphicDelete" /></el-tooltip>
-            <el-divider direction="vertical" />
-            <el-button icon="Upload" @click="graphicImportXml">导入XML</el-button>
-            <el-button icon="Download" @click="graphicExportXml">导出XML</el-button>
+            <!-- 画布类操作仅图形模式提供：节点/出口模式下没有画布，撤销/缩放/删除对用户无意义 -->
+            <template v-if="graphicMode === 'graph'">
+            <!-- 第一组：编辑（撤销/重做/删除） -->
+            <el-tooltip content="撤销（Ctrl+Z）" placement="bottom"><el-button icon="RefreshLeft" @click="graphicCmd('undo')" /></el-tooltip>
+            <el-tooltip content="重做（Ctrl+Y）" placement="bottom"><el-button icon="RefreshRight" @click="graphicCmd('redo')" /></el-tooltip>
+            <el-tooltip content="删除选中（Del）" placement="bottom"><el-button icon="Delete" :disabled="!graphicHasSelection" @click="graphicDelete" /></el-tooltip>
+            <span class="da-divider"></span>
+            <!-- 第二组：视图缩放 -->
+            <el-dropdown trigger="click" @command="onGraphicZoomCmd">
+              <el-button class="da-zoom">
+                <el-icon><ZoomIn /></el-icon><span class="da-zoom-label">缩放 {{ graphicZoomPct }}%</span><el-icon class="da-caret"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="in">放大</el-dropdown-item>
+                  <el-dropdown-item command="out">缩小</el-dropdown-item>
+                  <el-dropdown-item command="reset" divided>适应画布</el-dropdown-item>
+                  <el-dropdown-item command="100">实际大小（100%）</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <span class="da-divider"></span>
+            <!-- 第三组：低频操作收纳 -->
+            <el-dropdown trigger="click" @command="onGraphicMoreCmd">
+              <el-button icon="MoreFilled" class="da-more">更多</el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="import" icon="Upload">导入 XML</el-dropdown-item>
+                  <el-dropdown-item command="export" icon="Download">导出 XML</el-dropdown-item>
+                  <el-dropdown-item command="help" icon="QuestionFilled" divided>快捷键与使用说明</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <span class="da-divider"></span>
+            </template>
+            <!-- 主操作：两种模式共用，保存当前编辑内容 -->
             <el-button type="primary" icon="Check" @click="graphicSave" v-hasPermi="['flowable:model:edit']">保存</el-button>
             <el-button @click="graphicClose">关 闭</el-button>
           </div>
         </div>
       </template>
       <div class="designer-body graphic-body">
-        <el-tabs v-model="graphicTab" type="card" class="graphic-editor-tabs">
-          <el-tab-pane label="图形编辑" name="graph" class="graphic-pane">
-        <div class="palette-host" ref="paletteHostRef"></div>
-        <div class="graphic-main">
+        <!-- 单一模式编辑：一次只编辑一类（图形 / 节点 / 出口）。
+             画布容器仅在图形模式渲染；节点/出口模式不建实例、不做视口适配，
+             从根本上避免零尺寸容器上 fit-viewport 算出非有限值（SVGMatrix scale 报错）。 -->
+        <div v-if="graphicMode === 'graph'" class="graphic-pane">
+          <div class="palette-host" ref="paletteHostRef"></div>
+          <div class="graphic-main">
           <div class="designer-canvas" ref="graphicCanvasRef"></div>
           <div class="props-handle" v-if="selectedElement" @click="propsCollapsed = !propsCollapsed" :title="propsCollapsed ? '展开节点信息' : '收起节点信息'"><span>{{ propsCollapsed ? '‹' : '›' }}</span></div>
           <div class="designer-props" v-if="selectedElement && !propsCollapsed">
@@ -493,37 +495,44 @@
           <div class="props-help">
             <div class="props-help-title">使用提示</div>
             <ul>
-              <li>顶部按钮组独立：撤销/重做、缩放、删除、导入/导出XML、保存</li>
-              <li>点"保存"同步回设计器画布并保存到系统</li>
-              <li>点"关 闭"返回流转设置；未保存的改动不生效</li>
+              <li>本页只编辑图形：从上方节点条拖拽节点、连线，选中后右侧配置属性</li>
+              <li>节点清单、出口信息请回流转设置，各自点"编 辑"单独进入</li>
+              <li>点"保存"同步回设计器画布并保存到系统；"关 闭"不保存未提交的改动</li>
             </ul>
           </div>
         </div>
         </div>
-          </el-tab-pane>
-          <el-tab-pane label="节点信息" name="nodes">
+        </div>
+        <!-- 节点信息：节点清单维护（独立模式下只出现本区块） -->
+        <div v-else-if="graphicMode === 'nodes'" class="graphic-single-pane">
             <div class="batch-toolbar">
               <el-button-group>
                 <el-button size="small" icon="Plus" @click="openAddNode" title="新增节点" />
-                <el-button size="small" icon="Minus" :disabled="!graphicSelectedRow" @click="removeGraphicNode" title="删除选中节点" />
+                <el-button size="small" icon="Minus" :disabled="!graphicCheckedNodes.length" @click="removeGraphicNodes" :title="graphicCheckedNodes.length ? '删除勾选节点（已选 ' + graphicCheckedNodes.length + ' 个）' : '请先勾选要删除的节点'" />
               </el-button-group>
-              <span class="field-tip">选中行后加减：新增节点在选中节点后追加；修改实时写入流程图，点"保存"生效</span>
+              <span class="field-tip">勾选行后点「−」批量删除；新增节点在选中节点后追加；修改实时写入流程图，点"保存"生效</span>
             </div>
-            <el-table :data="graphicNodes" border size="small" max-height="420" class="field-table" highlight-current-row @current-change="onGraphicNodeSelect">
+            <el-table ref="nodeTableRef" :data="graphicNodes" row-key="id" border size="small" max-height="420" class="field-table" highlight-current-row @current-change="onGraphicNodeSelect" @selection-change="onNodeSelectionChange">
+              <el-table-column type="selection" width="46" align="center" reserve-selection :selectable="isNodeSelectable" />
               <el-table-column type="index" label="序号" width="55" align="center" />
-              <el-table-column label="节点名称" min-width="140" align="center">
+              <el-table-column label="节点名称" min-width="150" align="center">
                 <template #default="scope"><el-input v-model="scope.row.name" placeholder="如：部门审批" size="small" @change="updateNodeProp(scope.row, 'name', scope.row.name)" /></template>
               </el-table-column>
-              <el-table-column label="节点类型" width="110" align="center">
-                <template #default="scope"><span class="badge blue"><span class="dot"></span>{{ scope.row.typeLabel }}</span></template>
+              <el-table-column label="节点类型" width="150" align="center">
+                <template #default="scope">
+                  <el-select v-if="isTypeChangeable(scope.row)" v-model="scope.row.type" size="small" style="width:100%" @change="changeNodeType(scope.row)">
+                    <el-option v-for="t in ADD_NODE_TYPES" :key="t.value" :label="t.label" :value="t.value" />
+                  </el-select>
+                  <span v-else class="badge blue"><span class="dot"></span>{{ scope.row.typeLabel }}</span>
+                </template>
               </el-table-column>
-              <el-table-column label="分支语义" width="110" align="center">
+              <el-table-column label="分支语义" width="120" align="center">
                 <template #default="scope">
                   <span v-if="scope.row.isUserTask || isGatewayType(scope.row.type)">{{ branchRoleLabel(scope.row) }}</span>
                   <span v-else style="color:#cbd5e1">—</span>
                 </template>
               </el-table-column>
-              <el-table-column label="操作者（办理人）" min-width="160" align="center">
+              <el-table-column label="操作者（办理人）" min-width="180" align="center">
                 <template #default="scope">
                   <el-select v-if="scope.row.isUserTask" v-model="scope.row.assignee" placeholder="未设置" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeAssignee(scope.row)">
                     <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="String(u.userId)" />
@@ -531,29 +540,18 @@
                   <span v-else style="color:#cbd5e1">—</span>
                 </template>
               </el-table-column>
-              <el-table-column label="候选组" min-width="150" align="center">
+              <el-table-column label="节点表单" min-width="150" align="center">
                 <template #default="scope">
-                  <el-select v-if="scope.row.isUserTask" v-model="scope.row.candidateGroups" placeholder="未设置" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeCandidate(scope.row)">
-                    <el-option v-for="r in roleOptions" :key="r.roleId" :label="r.roleName + '（' + r.roleKey + '）'" :value="String(r.roleId)" />
+                  <el-select v-if="scope.row.isUserTask" v-model="scope.row.formKey" placeholder="Html模式" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeFormKey(scope.row)">
+                    <el-option v-for="f in formOptions" :key="f.formId" :label="f.formName" :value="String(f.formId)" />
                   </el-select>
-                  <span v-else style="color:#cbd5e1">—</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="表单内容" width="110" align="center">
-                <template #default="scope"><span v-if="scope.row.formKey">{{ scope.row.formKey }}</span><span v-else style="color:#cbd5e1">Html模式</span></template>
-              </el-table-column>
-              <el-table-column label="操作组" width="110" align="center">
-                <template #default="scope">
-                  <el-button v-if="scope.row.isUserTask" link type="primary" size="small" @click="openOperatorGroups(scope.row)">
-                    <el-icon><Setting /></el-icon>
-                    <span style="margin-left:2px">{{ operatorGroupSummary(scope.row) }}</span>
-                  </el-button>
-                  <span v-else style="color:#cbd5e1">—</span>
+                  <span v-else style="color:#cbd5e1">Html模式</span>
                 </template>
               </el-table-column>
             </el-table>
-          </el-tab-pane>
-          <el-tab-pane label="出口信息" name="exits">
+        </div>
+        <!-- 出口信息：连线与出口条件维护（独立模式下只出现本区块） -->
+        <div v-else-if="graphicMode === 'exits'" class="graphic-single-pane">
             <div class="batch-toolbar">
               <el-button-group>
                 <el-button size="small" icon="Plus" @click="openAddLine" title="新增出口" />
@@ -601,8 +599,7 @@
                 </template>
               </el-table-column>
             </el-table>
-          </el-tab-pane>
-        </el-tabs>
+        </div>
       </div>
       <input ref="graphicFileRef" type="file" accept=".xml,.bpmn" style="display:none" @change="onGraphicFileChange" />
     </el-dialog>
@@ -827,8 +824,8 @@ import { allForms } from '@/api/flowable/form'
 import FormPicker from '@/components/FormPicker/index.vue'
 import request from '@/utils/request'
 import { ElMessageBox } from 'element-plus'
-import { h, nextTick, ref, computed, watch, reactive, toRefs } from 'vue'
-import { Search, Filter, Document, Pointer, RefreshLeft, RefreshRight, ZoomIn, ZoomOut, FullScreen, Setting, Check } from '@element-plus/icons-vue'
+import { h, nextTick, ref, computed, watch, reactive, toRefs, onMounted, onBeforeUnmount } from 'vue'
+import { Search, Filter, Document, Pointer, RefreshLeft, RefreshRight, ZoomIn, ZoomOut, FullScreen, Setting, Check, ArrowDown, MoreFilled, QuestionFilled, Clock } from '@element-plus/icons-vue'
 import Sortable from 'sortablejs'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useColumnDrag } from '@/composables/useColumnDrag'
@@ -1139,6 +1136,40 @@ function bpmnTranslate(template, replacements) {
 }
 const bpmnChineseTranslate = { translate: ['value', bpmnTranslate] }
 
+/**
+ * 精简版节点工具条：只保留业务需要的三类节点
+ *   开始（bpmn:StartEvent）/ 审批（bpmn:UserTask）/ 结束（bpmn:EndEvent）
+ * 覆盖 bpmn-js 默认 PaletteProvider，移除连线工具、中间事件、网关、数据对象、泳道等冗余入口；
+ * 底层仍生成标准 BPMN 元素，不影响引擎解析与部署。
+ */
+function WmPaletteProvider(palette, create, elementFactory, translate) {
+  this._palette = palette
+  this._create = create
+  this._elementFactory = elementFactory
+  this._translate = translate
+  palette.registerProvider(this)
+}
+WmPaletteProvider.$inject = ['palette', 'create', 'elementFactory', 'translate']
+WmPaletteProvider.prototype.getPaletteEntries = function () {
+  const create = this._create
+  const elementFactory = this._elementFactory
+  const translate = this._translate
+  function action(type, group, className, title) {
+    function createListener(event) {
+      const shape = elementFactory.createShape({ type })
+      create.start(event, shape)
+    }
+    return { group, className, title, action: { dragstart: createListener, click: createListener } }
+  }
+  return {
+    'create.start-event': action('bpmn:StartEvent', 'event', 'bpmn-icon-start-event-none', translate('开始')),
+    'create.user-task': action('bpmn:UserTask', 'task', 'bpmn-icon-user-task', translate('审批环节')),
+    'create.end-event': action('bpmn:EndEvent', 'event', 'bpmn-icon-end-event-none', translate('结束'))
+  }
+}
+/** 精简工具条模块（覆盖默认 palette） */
+const wmPaletteModule = { paletteProvider: ['type', WmPaletteProvider] }
+
 async function onDesignerOpened() {
   // 设计器必需样式：工具面板/连线菜单/字体图标
   await import('bpmn-js/dist/assets/diagram-js.css')
@@ -1159,9 +1190,17 @@ async function onDesignerOpened() {
     .then(res => { roleOptions.value = res.rows || [] })
     .catch(e => { proxy.$modal.msgWarning('角色列表加载失败，候选组下拉将为空：' + (e?.message || e)) })
   const xml = designModel.value.bpmnXml || ''
-  if (!xml) {
-    // 只读视图：无流程图时提示（绘制在独立编辑页面进行）
-    proxy.$modal.msgWarning('该模型暂无流程图，点"编 辑"开始绘制')
+  // 无 XML 或缺少 bpmndi 图形段（DI）时，bpmn-js importXML 会抛 “no diagram to display”，
+  // 此处统一兜底为空画布，保证新建/历史空模型也能正常打开设计器
+  const hasDiagram = /<bpmndi:BPMNDiagram[\s>]/.test(xml)
+  if (!xml || !hasDiagram) {
+    try {
+      await newBlankDiagram()
+      bpmnModeler.get('canvas').zoom('fit-viewport', 'auto')
+      applyWmCanvasMarkers(bpmnModeler)
+    } catch (e) {
+      proxy.$modal.msgWarning('该模型暂无流程图，点"编 辑"开始绘制')
+    }
     return
   }
   try {
@@ -1221,31 +1260,20 @@ function applyWmCanvasMarkers(modeler) {
   } catch (e) {}
 }
 
-/** 创建新画布：根流程 ID 对齐模型 Key，并默认生成 开始→结束 连线 */
-async function newBlankDiagram() {
-  await bpmnModeler.createDiagram()
-  const canvas = bpmnModeler.get('canvas')
+/** 创建新画布：根流程 ID 对齐模型 Key，画布保持纯白（节点由用户从 palette 自行拖拽） */
+async function newBlankDiagram(target) {
+  // createDiagram 只存在于 Modeler，NavigatedViewer（只读）没有该方法：走默认时先兜底到 graphicModeler
+  const md = target || (bpmnModeler && typeof bpmnModeler.createDiagram === 'function' ? bpmnModeler : graphicModeler)
+  if (!md || typeof md.createDiagram !== 'function') throw new Error('当前画布实例不支持创建新图')
+  await md.createDiagram()
+  const canvas = md.get('canvas')
   const root = canvas.getRootElement()
-  const modeling = bpmnModeler.get('modeling')
-  const elementFactory = bpmnModeler.get('elementFactory')
+  const modeling = md.get('modeling')
   modeling.updateProperties(root, {
     id: designModel.value.modelKey,
     name: designModel.value.modelName || designModel.value.modelKey
   })
-  // 默认生成 开始 → 结束 及连线
-  const start = (root.children || []).find(c => c.type === 'bpmn:StartEvent')
-  if (start) {
-    modeling.updateProperties(start, { name: '开始' })
-    const endAttrs = { name: '结束' }
-    const endShape = modeling.createShape(
-      elementFactory.createElement('bpmn:EndEvent', endAttrs, root),
-      { x: start.x + start.width + 140, y: start.y + start.height / 2 - 18 },
-      root
-    )
-    // 创建后显式补写节点名，确保画布显示“结束”文字
-    modeling.updateProperties(endShape, { name: '结束' })
-    modeling.connect(start, endShape)
-  }
+  // 纯白画布：不预置 开始/结束 节点，用户从上方 palette 自行拖拽绘制
 }
 
 function loadSelectedElement(el) {
@@ -1344,17 +1372,6 @@ function updateBranchRole() {
 /** 节点信息表格用：按节点行派生分支语义文案 */
 function branchRoleLabel(row) {
   const role = deriveBranchRole(row.type, row.id)
-  return { none: '一般', fork: '分支起点', join: '分支合并点' }[role] || '一般'
-}
-/** 只读节点信息表格用：出口数据源可显式传入（该表格读 flowExits，非 graphicExits） */
-function branchRoleLabelFor(type, nodeId, exits) {
-  const list = exits || []
-  let out = 0, inn = 0
-  list.forEach(e => {
-    if (e.sourceId === nodeId) out++
-    if (e.targetId === nodeId) inn++
-  })
-  const role = (isGatewayType(type) || out >= 2) ? 'fork' : (inn >= 2 ? 'join' : 'none')
   return { none: '一般', fork: '分支起点', join: '分支合并点' }[role] || '一般'
 }
 
@@ -1547,10 +1564,7 @@ function onFormFieldsSaved() {
   loadDesignVersions()
 }
 
-// ===== 流转设置二级页签：图形编辑/节点信息/出口信息（表格与画布互通，参照泛微节点信息） =====
-const flowTab = ref('graph')
-const flowNodes = ref([])
-const flowExits = ref([])
+// ===== 流转设置：仅流程图（已移除节点信息/出口信息子页签，节点与连线统一在流程图编辑页维护） =====
 const NODE_TYPE_LABELS = {
   'bpmn:StartEvent': '开始', 'bpmn:EndEvent': '结束', 'bpmn:UserTask': '审批节点',
   'bpmn:ServiceTask': '服务节点', 'bpmn:ExclusiveGateway': '排他网关',
@@ -1575,43 +1589,121 @@ function semanticNodeLabel(type) {
 /** 是否网关类元素（分支/汇聚） */
 function isGatewayType(type) { return !!type && type.includes('Gateway') }
 
-/** 从 BPMN 模型解析节点/连线清单（节点信息/出口信息表格数据源） */
-function refreshFlowModelData() {
-  if (!bpmnModeler) return
-  try {
-    const registry = bpmnModeler.get('elementRegistry')
-    flowNodes.value = registry
-      .filter(el => el.businessObject && el.businessObject.$instanceOf && el.businessObject.$instanceOf('bpmn:FlowNode'))
-      .map(el => {
-        const bo = el.businessObject
-        return {
-          id: bo.id,
-          name: bo.name || '',
-          type: el.type,
-          typeLabel: semanticNodeLabel(el.type),
-          isUserTask: el.type === 'bpmn:UserTask',
-          assignee: (bo.get && bo.get('flowable:assignee')) || bo.assignee || '',
-          candidateGroups: (bo.get && bo.get('flowable:candidateGroups')) || bo.candidateGroups || '',
-          formKey: (bo.get && bo.get('flowable:formKey')) || bo.formKey || ''
-        }
-      })
-    flowExits.value = registry
-      .filter(el => el.type === 'bpmn:SequenceFlow')
-      .map(el => {
-        const bo = el.businessObject
-        return {
-          id: bo.id,
-          name: bo.name || '',
-          sourceId: bo.sourceRef ? bo.sourceRef.id : '',
-          sourceName: (bo.sourceRef && bo.sourceRef.name) || '',
-          targetId: bo.targetRef ? bo.targetRef.id : '',
-          targetName: (bo.targetRef && bo.targetRef.name) || '',
-          condition: bo.conditionExpression ? bo.conditionExpression.body || '' : ''
-        }
-      })
-  } catch (e) { flowNodes.value = []; flowExits.value = [] }
+/** 是否允许在该行直接改类型：仅网关/审批/发起/结束等可换型元素，连线与流程根不参与 */
+function isTypeChangeable(row) {
+  if (!row || !row.type) return false
+  if (row.type === 'bpmn:SequenceFlow') return false
+  // 用字面量判定，避免依赖后续才声明的 ADD_NODE_TYPES（const 暂时性死区会导致首渲染抛错）
+  return ['bpmn:UserTask', 'bpmn:ExclusiveGateway', 'bpmn:StartEvent', 'bpmn:EndEvent'].includes(row.type)
 }
-watch(flowTab, tab => { if (tab !== 'graph') refreshFlowModelData() })
+
+/**
+ * 表格内直接切换节点类型（bpmn-js 不支持原地改型，采用「同位置重建 + 配置迁移 + 连线重建」）：
+ * 1) 读取原节点的全部扩展属性（办理人/候选组/表单Key/字段权限/操作组/多实例/出口元数据）与所有入出连线；
+ * 2) 记录坐标后在原位置删除旧元素、新建目标类型元素；
+ * 3) 把扩展属性与节点名迁移到新元素；
+ * 4) 按原方向重连所有入出连线，并恢复连线名称与分支条件；
+ * 5) 重新应用画布标记与退回路由。
+ * 注意：节点 ID 会变化（bpmn-js 重建的必然结果），保存后以新 ID 落库。
+ */
+async function changeNodeType(row) {
+  if (!graphicModeler || !row) return
+  const registry = graphicModeler.get('elementRegistry')
+  const oldEl = registry.get(row.id)
+  if (!oldEl) { proxy.$modal.msgWarning('节点已不存在，请刷新后重试'); return }
+  const targetType = row.type
+  if (oldEl.type === targetType) return
+
+  const modeling = graphicModeler.get('modeling')
+  const elementFactory = graphicModeler.get('elementFactory')
+  const canvas = graphicModeler.get('canvas')
+  const root = canvas.getRootElement()
+  const oldBo = oldEl.businessObject
+
+  // 1) 采集扩展属性（原样迁移，避免配置丢失）
+  const attrs = {}
+  ;['flowable:assignee', 'flowable:candidateGroups', 'flowable:formKey', 'flowable:fieldPerms', 'flowable:operatorGroups']
+    .forEach(k => {
+      const v = (oldBo.get && oldBo.get(k)) || (oldBo.$attrs && oldBo.$attrs[k])
+      if (v !== undefined && v !== null && v !== '') attrs[k] = v
+    })
+  const hadMultiInstance = !!oldBo.loopCharacteristics
+  const savedName = oldBo.name || ''
+
+  // 2) 采集连线（含名称与分支条件），按方向分入/出
+  const incoming = registry.filter(el => el.type === 'bpmn:SequenceFlow' && el.businessObject.targetRef && el.businessObject.targetRef.id === oldEl.id)
+  const outgoing = registry.filter(el => el.type === 'bpmn:SequenceFlow' && el.businessObject.sourceRef && el.businessObject.sourceRef.id === oldEl.id)
+  const packFlow = fl => ({
+    name: fl.businessObject.name || '',
+    condition: fl.businessObject.conditionExpression ? fl.businessObject.conditionExpression.body || '' : '',
+    extraAttrs: Object.assign({}, fl.businessObject.$attrs || {})
+  })
+  const inPacks = incoming.map(fl => ({ el: fl, pack: packFlow(fl) }))
+  const outPacks = outgoing.map(fl => ({ el: fl, pack: packFlow(fl) }))
+
+  const x = oldEl.x, y = oldEl.y, w = oldEl.width, h = oldEl.height
+
+  try {
+    // 3) 先建新元素（同位置），再删旧元素，保证不出现流程断链的中间态被持久化
+    const newShape = modeling.createShape(
+      elementFactory.createShape({ type: targetType }),
+      { x: x + w / 2, y: y + h / 2 },
+      root
+    )
+    // 4) 迁移名称与扩展属性
+    if (savedName) modeling.updateProperties(newShape, { name: savedName })
+    const newBo = newShape.businessObject
+    Object.keys(attrs).forEach(k => { try { newBo.$attrs[k] = attrs[k] } catch (e) {} })
+    if (hadMultiInstance && targetType === 'bpmn:UserTask') {
+      const moddle = graphicModeler.get('moddle')
+      modeling.updateModdleProperties(newShape, newBo, {
+        loopCharacteristics: moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
+          isSequential: false,
+          completionCondition: '${nrOfCompletedInstances >= nrOfInstances}'
+        })
+      })
+    }
+
+    // 5) 重建入线（源 → 新元素）
+    inPacks.forEach(({ el, pack }) => {
+      const src = el.source
+      if (!src) return
+      const conn = modeling.connect(src, newShape, { type: 'bpmn:SequenceFlow' })
+      if (pack.name) modeling.updateProperties(conn, { name: pack.name })
+      if (pack.condition) {
+        const moddle = graphicModeler.get('moddle')
+        modeling.updateProperties(conn, { conditionExpression: moddle.create('bpmn:FormalExpression', { body: pack.condition }) })
+      }
+      Object.keys(pack.extraAttrs || {}).forEach(k => { try { conn.businessObject.$attrs[k] = pack.extraAttrs[k] } catch (e) {} })
+    })
+    // 6) 重建出线（新元素 → 目标）
+    outPacks.forEach(({ el, pack }) => {
+      const dst = el.target
+      if (!dst) return
+      const conn = modeling.connect(newShape, dst, { type: 'bpmn:SequenceFlow' })
+      if (pack.name) modeling.updateProperties(conn, { name: pack.name })
+      if (pack.condition) {
+        const moddle = graphicModeler.get('moddle')
+        modeling.updateProperties(conn, { conditionExpression: moddle.create('bpmn:FormalExpression', { body: pack.condition }) })
+      }
+      Object.keys(pack.extraAttrs || {}).forEach(k => { try { conn.businessObject.$attrs[k] = pack.extraAttrs[k] } catch (e) {} })
+    })
+
+    // 7) 删除旧元素及其残留连线
+    modeling.removeElements([oldEl])
+
+    // 8) 同步选中态与视觉标记
+    refreshGraphicData()
+    const created = graphicNodes.value.find(n => n.type === targetType && n.name === savedName)
+    graphicSelectedRow.value = created || null
+    applyWmCanvasMarkers(graphicModeler)
+    applyWmReturnRoutes(graphicModeler)
+    proxy.$modal.msgSuccess('节点类型已切换为「' + (SEMANTIC_NODE_LABELS[targetType] || targetType.replace('bpmn:', '')) + '」，原有配置与连线已保留，点"保存"生效')
+  } catch (e) {
+    proxy.$modal.msgError('节点类型切换失败：' + (e.message || e))
+    refreshGraphicData()
+  }
+}
 
 /** 表格编辑：节点属性（名称等）实时写入 BPMN（编辑弹窗的独立实例） */
 function updateNodeProp(row, key, value) {
@@ -1634,6 +1726,16 @@ function updateNodeCandidate(row) {
   if (!graphicModeler) return
   const el = graphicModeler.get('elementRegistry').get(row.id)
   if (el) graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:candidateGroups': row.candidateGroups || undefined })
+  refreshGraphicData()
+}
+
+/** 表格编辑：节点表单（写回 flowable:formKey，留空即 Html 模式） */
+function updateNodeFormKey(row) {
+  if (!graphicModeler) return
+  const el = graphicModeler.get('elementRegistry').get(row.id)
+  if (!el) return
+  const val = row.formKey === 'Html模式' || row.formKey === '' ? undefined : row.formKey
+  graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:formKey': val || undefined })
   refreshGraphicData()
 }
 
@@ -2107,6 +2209,35 @@ function onGraphicLineSelect(row) {
   }
 }
 
+/** 勾选变化：记录当前勾选的节点行（供批量删除按钮的启用状态与删除范围使用） */
+function onNodeSelectionChange(rows) {
+  graphicCheckedNodes.value = rows || []
+}
+/** 是否可被勾选删除：仅限 4 类语义节点（连线与无法识别的脏元素不可删） */
+function isNodeSelectable(row) {
+  return !!row && !!row.id && row.type !== 'bpmn:SequenceFlow'
+}
+/** 批量删除勾选的节点（含其关联连线一并移除，删除后清空勾选） */
+function removeGraphicNodes() {
+  if (!graphicModeler) return
+  const rows = graphicCheckedNodes.value
+  if (!rows || !rows.length) { proxy.$modal.msgWarning('请先勾选要删除的节点'); return }
+  const registry = graphicModeler.get('elementRegistry')
+  const targets = rows.map(r => registry.get(r.id)).filter(Boolean)
+  if (!targets.length) { proxy.$modal.msgWarning('勾选节点已不存在，请刷新后重试'); return }
+  const names = rows.map(r => r.name || r.id).join('、')
+  proxy.$modal.confirm('确认删除勾选的 ' + targets.length + ' 个节点（' + names + '）？其关联连线将一并移除。').then(() => {
+    graphicModeler.get('modeling').removeElements(targets)
+    graphicSelectedRow.value = null
+    graphicCheckedNodes.value = []
+    if (nodeTableRef.value) nodeTableRef.value.clearSelection()
+    refreshGraphicData()
+    applyWmCanvasMarkers(graphicModeler)
+    applyWmReturnRoutes(graphicModeler)
+    proxy.$modal.msgSuccess('已删除 ' + targets.length + ' 个节点，点"保存"生效')
+  }).catch(() => {})
+}
+
 // 新增节点（在选中节点后追加）：界面仅 4 类业务语义，底层仍写标准 BPMN 元素
 const ADD_NODE_TYPES = [
   { value: 'bpmn:UserTask', label: '审批节点' },
@@ -2132,7 +2263,16 @@ function confirmAddNode() {
   const realType = addNodeForm.value.type === 'bpmn:ExclusiveGateway'
     ? (addNodeForm.value.branchMode || 'bpmn:ExclusiveGateway')
     : addNodeForm.value.type
-  graphicModeler.get('modeling').appendShape(source, { type: realType, name: addNodeForm.value.name || undefined })
+  if (!realType || !String(realType).startsWith('bpmn:')) {
+    proxy.$modal.msgError('节点类型无效，请重新选择'); return
+  }
+  try {
+    graphicModeler.get('modeling').appendShape(source, { type: realType, name: addNodeForm.value.name || undefined })
+  } catch (e) {
+    proxy.$modal.msgError('新增节点失败：' + (e.message || e))
+    addNodeOpen.value = false
+    return
+  }
   addNodeOpen.value = false
   refreshGraphicData()
 }
@@ -2181,15 +2321,43 @@ const graphicNodes = ref([])
 const graphicExits = ref([])
 const graphicSelectedRow = ref(null)
 const graphicSelectedLine = ref(null)
+/** 节点表勾选集合（多选批量删除用）与表格实例引用 */
+const graphicCheckedNodes = ref([])
+const nodeTableRef = ref(null)
 const addNodeOpen = ref(false)
 const addNodeForm = ref({ type: 'bpmn:UserTask', branchMode: 'bpmn:ExclusiveGateway', name: undefined })
 const addLineOpen = ref(false)
 const addLineForm = ref({ sourceId: undefined, targetId: undefined, name: undefined })
 
-/** 打开独立编辑页面（复制当前模型到独立实例） */
-function openGraphicEditor() {
+/** 打开独立编辑页面：按入口决定编辑模式（graph 只编辑图形 / nodes 只编辑节点 / exits 只编辑出口），一次只编辑一类 */
+function openGraphicEditor(mode) {
   if (!designModel.value.modelKey) return
+  // 流转设置子页签名（gnodes/gexits）与编辑模式名（nodes/exits）不同名，此处做归一映射
+  const MODE_ALIAS = { gnodes: 'nodes', gexits: 'exits', graph: 'graph', nodes: 'nodes', exits: 'exits' }
+  const resolved = MODE_ALIAS[mode] || 'graph'
+  graphicMode.value = resolved
+  graphicTab.value = resolved
   graphicOpen.value = true
+}
+const graphicMode = ref('graph')
+/** 编辑模式的中文名（顶部标题与页签标签共用） */
+const GRAPHIC_MODE_LABEL = { graph: '图形编辑', nodes: '节点信息', exits: '出口信息' }
+const graphicModeLabel = computed(() => GRAPHIC_MODE_LABEL[graphicMode.value] || '图形编辑')
+
+/**
+ * 安全适配视口：容器尺寸为 0（隐藏中/尚未布局）时直接跳过。
+ * bpmn-js 的 fit-viewport 会按容器宽高算缩放，容器 0 尺寸时得到非有限值，
+ * 内部 SVGMatrix.scale 抛 "The provided float value is non-finite"。
+ */
+function safeFitViewport(modeler) {
+  if (!modeler) return
+  try {
+    const el = modeler.get('canvas').getContainer ? modeler.get('canvas').getContainer() : null
+    const w = el ? el.clientWidth : 0
+    const h = el ? el.clientHeight : 0
+    if (!w || !h) return
+    modeler.get('canvas').zoom('fit-viewport', 'auto')
+  } catch (e) { /* 画布不可用时忽略，等下次布局完成再适配 */ }
 }
 
 /** 独立编辑页初始化：独立 bpmn-js 实例 + 导入当前模型 */
@@ -2202,7 +2370,7 @@ async function onGraphicOpened() {
   wmReturnExitChecker = isReturnExit
   graphicModeler = new BpmnModeler({
     container: graphicCanvasRef.value,
-    additionalModules: [bpmnChineseTranslate, { layouter: ['type', WmReturnLayouter] }]
+    additionalModules: [bpmnChineseTranslate, wmPaletteModule, { layouter: ['type', WmReturnLayouter] }]
   })
   // 选中事件 → 属性面板互通（独立实例的选中元素共享同一面板状态）
   const gEventBus = graphicModeler.get('eventBus')
@@ -2212,23 +2380,60 @@ async function onGraphicOpened() {
     if (el) { loadSelectedElement(el); propsCollapsed.value = false }
     else { selectedEl = null; selectedElement.value = null }
   })
+  // palette 迁移优先执行：无论后续 XML 加载成败，图元面板都必须落在画布上方的横条里，
+  // 不能因为加载异常而残留在画布左侧
+  await nextTick()
+  mountPaletteToTop()
+  setTimeout(mountPaletteToTop, 150)
   try {
-    const { xml } = await bpmnModeler.saveXML({ format: true })
+    const xml = await resolveGraphicXml()
     await graphicModeler.importXML(xml)
-    graphicModeler.get('canvas').zoom('fit-viewport', 'auto')
+    safeFitViewport(graphicModeler)
     // 布局稳定后二次适配：避免弹窗打开瞬间容器尺寸未定导致内容贴顶、下方大片空白
-    setTimeout(() => { try { graphicModeler.get('canvas').zoom('fit-viewport', 'auto') } catch (e) {} }, 150)
+    setTimeout(() => safeFitViewport(graphicModeler), 150)
     applyWmCanvasMarkers(graphicModeler)
     applyWmReturnRoutes(graphicModeler)
-    // 泛微式：palette 移出画布容器，放到画布上方独立工具条区域（占位布局，不遮挡画布内容与视口计算）
-    await nextTick()
-    const paletteHostEl = paletteHostRef.value
-    const paletteEl = graphicCanvasRef.value && graphicCanvasRef.value.querySelector('.djs-palette')
-    if (paletteHostEl && paletteEl) paletteHostEl.appendChild(paletteEl)
+    mountPaletteToTop()
     refreshGraphicData()
   } catch (e) {
     proxy.$modal.msgError('加载流程图失败：' + (e.message || e))
   }
+}
+
+/** 把 bpmn-js 默认挂在画布左侧的 palette 移到画布上方横条（palette-host） */
+function mountPaletteToTop() {
+  try {
+    const host = paletteHostRef.value
+    if (!host || !graphicCanvasRef.value) return
+    const paletteEl = graphicCanvasRef.value.querySelector('.djs-palette')
+    if (paletteEl && paletteEl.parentElement !== host) host.appendChild(paletteEl)
+  } catch (e) { /* 画布未就绪时忽略，等下次调用 */ }
+}
+
+/**
+ * 取流程图 XML：
+ * 1) 优先用主设计器 viewer 的当前内容；
+ * 2) viewer 尚未导入任何定义时 saveXML 会抛 "no definitions loaded"，此时回退模型自身 bpmnXml；
+ * 3) 都没有图形段则生成空白图，保证画布可编辑而不是整屏报错。
+ */
+async function resolveGraphicXml() {
+  let xml = ''
+  try {
+    if (bpmnModeler) {
+      const res = await bpmnModeler.saveXML({ format: true })
+      xml = (res && res.xml) || ''
+    }
+  } catch (e) {
+    xml = ''
+  }
+  if (!xml) xml = designModel.value.bpmnXml || ''
+  if (!xml || !/<bpmndi:BPMNDiagram[\s>]/.test(xml)) {
+    // 关键：空白图必须由 graphicModeler（Modeler）生成，主设计器是 NavigatedViewer 没有 createDiagram
+    await newBlankDiagram(graphicModeler)
+    const res = await graphicModeler.saveXML({ format: true })
+    xml = (res && res.xml) || ''
+  }
+  return xml
 }
 
 function graphicCmd(cmd) {
@@ -2236,14 +2441,72 @@ function graphicCmd(cmd) {
   const stack = graphicModeler.get('commandStack')
   if (cmd === 'undo') stack.undo()
   else stack.redo()
+  syncGraphicZoomPct()
 }
-function graphicZoom(delta) { if (graphicModeler) graphicModeler.get('canvas').zoom(graphicModeler.get('canvas').zoom() + delta) }
-function graphicZoomReset() { if (graphicModeler) graphicModeler.get('canvas').zoom('fit-viewport', 'auto') }
+/** 当前缩放百分比（工具栏下拉展示用，随缩放/适配实时刷新） */
+const graphicZoomPct = ref(100)
+function syncGraphicZoomPct() {
+  if (!graphicModeler) return
+  try {
+    const z = graphicModeler.get('canvas').zoom()
+    graphicZoomPct.value = Math.round(z * 100)
+  } catch (e) { /* 画布未就绪时忽略 */ }
+}
+function graphicZoom(delta) {
+  if (!graphicModeler) return
+  const canvas = graphicModeler.get('canvas')
+  canvas.zoom(Math.min(2, Math.max(0.2, Math.round((canvas.zoom() + delta) * 100) / 100)))
+  syncGraphicZoomPct()
+}
+function graphicZoomReset() {
+  if (!graphicModeler) return
+  graphicModeler.get('canvas').zoom('fit-viewport', 'auto')
+  syncGraphicZoomPct()
+}
+/** 视图下拉命令：放大/缩小/适应画布/100% */
+function onGraphicZoomCmd(cmd) {
+  if (!graphicModeler) return
+  if (cmd === 'in') graphicZoom(0.1)
+  else if (cmd === 'out') graphicZoom(-0.1)
+  else if (cmd === 'reset') graphicZoomReset()
+  else if (cmd === '100') { graphicModeler.get('canvas').zoom(1); syncGraphicZoomPct() }
+}
+/** 更多菜单：导入/导出/说明（原平铺按钮收纳，能力不减） */
+function onGraphicMoreCmd(cmd) {
+  if (cmd === 'import') graphicImportXml()
+  else if (cmd === 'export') graphicExportXml()
+  else if (cmd === 'help') openGraphicHelp()
+}
+function openGraphicHelp() {
+  ElMessageBox.alert(
+    '<div style="line-height:2;font-size:13px">'
+    + '<b>画布操作</b>：从左侧节点面板拖拽节点到画布；选中节点/连线后右侧显示属性。<br/>'
+    + '<b>快捷键</b>：Ctrl+Z 撤销、Ctrl+Y 重做、Del 删除选中、Ctrl+滚轮 缩放画布。<br/>'
+    + '<b>保存</b>：点右上角「保存」同步回流程设计器并持久化；「关 闭」不保存未提交的改动。<br/>'
+    + '<b>导入/导出</b>：在「更多」菜单中，用于备份或迁移 BPMN XML。</div>',
+    '流程图编辑 · 使用说明',
+    { dangerouslyUseHTMLString: true, confirmButtonText: '知道了', customStyle: { width: '560px' } }
+  )
+}
+/** 画布是否有选中元素（控制删除按钮可用状态） */
+const graphicHasSelection = computed(() => !!(selectedElement.value && selectedElement.value.id))
 function graphicDelete() {
   if (!graphicModeler) return
   const sel = graphicModeler.get('selection').get()
   if (sel && sel.length) graphicModeler.get('modeling').removeElements(sel)
 }
+/** 键盘快捷键：Del 删除选中元素（输入框聚焦时不触发），与工具栏删除同一动作 */
+function onGraphicKeydown(e) {
+  if (!graphicOpen.value || !graphicModeler) return
+  const tag = (e.target && e.target.tagName || '').toUpperCase()
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return
+  if (e.key === 'Delete') {
+    const sel = graphicModeler.get('selection').get()
+    if (sel && sel.length) { e.preventDefault(); graphicDelete() }
+  }
+}
+onMounted(() => { window.addEventListener('keydown', onGraphicKeydown) })
+onBeforeUnmount(() => { window.removeEventListener('keydown', onGraphicKeydown) })
 
 /** 独立页面保存：同步回主画布 + 持久化到后端（与 saveDesigner 同一校验/锁定逻辑） */
 async function graphicSave() {
@@ -2387,6 +2650,12 @@ function handleVersionSuspend(suspend) {
 
 // ===== 泛微式四页签：基本信息 / 表单管理 / 流转设置 / 高级设置 =====
 const designTab = ref('flow')
+/** 流转设置是否为空（模型尚无流程图）：为空时画布中央显示引导空状态，点按钮直接进入绘制；
+    已有流程图时恢复为右上角「编 辑」按钮，保持原有位置 */
+const flowEmpty = computed(() => {
+  const xml = designModel.value && designModel.value.bpmnXml ? designModel.value.bpmnXml : ''
+  return !/<bpmndi:BPMNDiagram[\s>]/.test(xml)
+})
 /** 表单管理页签：当前关联表单详情（来自表单选项，兜底用模型详情字段） */
 const boundFormInfo = computed(() => {
   const fid = designModel.value.formId
@@ -2527,9 +2796,9 @@ function handleDelete(row) {
 
 getList()
 onActivated(() => { getList() })
-// exits 页签激活时初始化出口表格行拖拽（graphicTab 定义之后注册，避免 TDZ）
-watch([graphicTab, filteredGraphicExits], ([tab]) => {
-  if (tab === 'exits') nextTick(initExitDragSort)
+// 出口编辑模式下初始化表格行拖拽（graphicTab 定义之后注册，避免 TDZ）
+watch([graphicTab, graphicMode, filteredGraphicExits], () => {
+  if (graphicMode.value === 'exits') nextTick(initExitDragSort)
 })
 </script>
 
@@ -2562,8 +2831,6 @@ watch([graphicTab, filteredGraphicExits], ([tab]) => {
 .form-sub-tabs :deep(.el-tab-pane) { padding-top: 10px; }
 
 /* 图形编辑独立工具栏（泛微式：按钮放画布上方） */
-.graph-toolbar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; }
-.graph-toolbar .graph-tip { font-size: 12px; color: #94a3b8; margin-left: 4px; }
 
 /* 图形化编辑弹窗：三个二级页签（图形编辑/节点信息/出口信息） */
 .graphic-body { flex-direction: column; }
@@ -2603,40 +2870,102 @@ watch([graphicTab, filteredGraphicExits], ([tab]) => {
 .props-handle span { writing-mode: vertical-lr; letter-spacing: 2px; }
 .props-handle:hover { background: #e0f2fe; color: #1d4ed8; }
 .graphic-main .designer-props { width: 320px; flex: none; }
-.graphic-editor-tabs { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 0 8px; }
-.graphic-editor-tabs :deep(.el-tabs__header) { flex: none; margin-bottom: 0; }
-.graphic-editor-tabs :deep(.el-tabs__content) { flex: 1 1 auto; min-height: 0; height: auto; overflow: hidden; }
-.graphic-editor-tabs :deep(.el-tab-pane[name='graph'] .designer-body) { height: 100%; }
+/* 顶部模式徽标：打开编辑页后一眼看出当前在编辑哪一类 */
+.mode-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 10px; border-radius: 10px;
+  font-size: 12px; font-weight: 600;
+  color: #bfdbfe; background: rgba(59,130,246,.22);
+  border: 1px solid rgba(147,197,253,.45);
+  letter-spacing: .5px;
+}
+/* ===== 流转设置空状态：无流程图时画布中央的引导卡片 ===== */
+.flow-empty {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 24px; text-align: center;
+  background: radial-gradient(circle at 50% 42%, rgba(239,246,255,.96) 0%, rgba(248,250,252,.9) 45%, rgba(248,250,252,.72) 100%);
+}
+.flow-empty .fe-art { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.flow-empty .fe-node { display: inline-block; flex: none; }
+.flow-empty .fe-start { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #22c55e; background: #dcfce7; }
+.flow-empty .fe-task { width: 74px; height: 34px; border-radius: 8px; border: 2px solid #3b82f6; background: #eff6ff; box-shadow: 0 2px 6px rgba(37,99,235,.12); }
+.flow-empty .fe-end { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #dc2626; background: #fee2e2; }
+.flow-empty .fe-line { width: 26px; height: 2px; background: #cbd5e1; position: relative; }
+.flow-empty .fe-line::after {
+  content: ''; position: absolute; right: -1px; top: -3px;
+  border-left: 6px solid #cbd5e1; border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+}
+.flow-empty .fe-title { font-size: 16px; font-weight: 600; color: #1e293b; }
+.flow-empty .fe-desc { font-size: 13px; line-height: 1.7; color: #64748b; max-width: 420px; }
+.flow-empty .fe-steps { display: flex; gap: 18px; margin-top: 6px; font-size: 12px; color: #94a3b8; }
+.flow-empty .fe-steps b {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; margin-right: 4px; border-radius: 50%;
+  background: #dbeafe; color: #2563eb; font-size: 11px; font-weight: 700;
+}
+/* 流转设置：仅流程图，右侧「编辑」绝对定位锚定页签头（top:0 + 同高 + 垂直居中） */
+.flow-tabbar { position: relative; }
+.flow-tabbar .flow-tab-actions {
+  position: absolute; right: 8px; top: 0;
+  height: 36px; display: flex; align-items: center;
+}
+/* 单一模式容器：直接撑满 graphic-body（不再有二级 el-tabs 包裹层） */
+.graphic-pane, .graphic-single-pane { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+/* v-show 隐藏时必须彻底退出布局：否则 flex 容器里仍按原尺寸占位，画布会盖住节点/出口表格 */
+.graphic-pane[style*="display: none"], .graphic-single-pane[style*="display: none"] { display: none !important; flex: none; }
+.graphic-single-pane { padding: 10px 8px 8px; overflow-y: auto; }
 
-/* ===== 泛微式工具面板顶部化（palette 移出画布、占位水平横排：分组分隔 + hover 效果，不遮挡画布） ===== */
-.palette-host { border-bottom: 1px solid #e5e7eb; background: #f8fafc; min-height: 40px; }
+/* ===== 流程图节点工具条（重新设计：仅保留 开始 / 审批 / 结束 三类节点，扁平化卡片式图标） ===== */
+.palette-host {
+  flex: none;
+  display: flex; align-items: center;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #fbfdff, #f4f7fb);
+  border-bottom: 1px solid #e3e9f2;
+}
 .palette-host:empty { display: none; }
+/* 隐藏 bpmn-js 默认的 palette 容器样式，只借用其拖拽能力 */
 .palette-host :deep(.djs-palette) {
   position: relative !important;
-  left: 0 !important;
-  top: 0 !important;
+  left: 0 !important; top: 0 !important;
   width: 100% !important;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  padding: 2px 6px;
+  border: none; border-radius: 0; box-shadow: none; background: transparent;
+  padding: 0;
 }
 .palette-host :deep(.djs-palette .djs-palette-toggle) { display: none; }
-.palette-host :deep(.djs-palette .djs-palette-entries) { display: flex; flex-wrap: wrap; align-items: center; }
+.palette-host :deep(.djs-palette .djs-palette-entries) { display: flex; flex-wrap: wrap; align-items: center; gap: 0; }
 .palette-host :deep(.djs-palette .djs-palette-entries .group) {
   display: flex; flex-wrap: wrap; align-items: center;
-  padding: 0 8px;
-  border-right: 1px dashed #d1d5db;
+  padding: 0 14px;
+  border-right: 1px solid #e3e9f2;
 }
+.palette-host :deep(.djs-palette .djs-palette-entries .group:first-child) { padding-left: 0; }
 .palette-host :deep(.djs-palette .djs-palette-entries .group:last-child) { border-right: none; }
+
+/* 节点按钮：白底圆角卡片 + 图标 + 悬浮上浮高亮 */
 .palette-host :deep(.djs-palette .entry) {
-  width: 34px; height: 32px; margin: 2px;
+  width: 46px; height: 46px; margin: 0 4px;
   box-sizing: border-box;
-  border-radius: 4px;
-  line-height: 32px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #dfe6f0;
+  box-shadow: 0 1px 2px rgba(16,38,74,.05);
+  color: #4a5b76;
+  line-height: 46px;
+  font-size: 20px;
+  transition: all .16s ease;
 }
-.palette-host :deep(.djs-palette .entry:hover) { background: #e0f2fe; color: #1d4ed8; }
+.palette-host :deep(.djs-palette .entry:hover) {
+  background: #eef4ff;
+  border-color: #93b4f7;
+  color: #2563eb;
+  box-shadow: 0 3px 10px rgba(37,99,235,.16);
+  transform: translateY(-1px);
+}
+.palette-host :deep(.djs-palette .entry.active) {
+  background: #2563eb; border-color: #2563eb; color: #fff;
+}
 /* 画布网格背景（泛微式：浅灰网格线）+ 高度链补全（tab-pane/djs-container 撑满，避免下半纯白空白） */
 .palette-host :deep(.djs-canvas) { outline: none; }
 .designer-canvas :deep(.djs-container) { height: 100% !important; width: 100% !important; }
@@ -2645,7 +2974,6 @@ watch([graphicTab, filteredGraphicExits], ([tab]) => {
   background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
   background-size: 24px 24px;
 }
-.graphic-editor-tabs :deep(.el-tab-pane.graphic-pane) { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 .graphic-pane .palette-host { flex: none; }
 .graphic-pane .graphic-main { flex: 1; min-height: 0; }
 /* ===== 泛微式画布节点视觉（P0 图形编辑画布） ===== */
@@ -2702,6 +3030,23 @@ watch([graphicTab, filteredGraphicExits], ([tab]) => {
  .graphic-body → .el-tabs__content → .el-tab-pane → .graphic-main → .designer-canvas
  打通为可计算的弹性高度，使 djs-container 的网格底图铺满整个剩余区域。 -->
 <style lang="scss">
+/* ===== 设计器头部（必须放全局块） =====
+   1) 弹窗由 el-dialog 通过 teleport 挂到 body 下，DOM 不带本组件作用域属性；
+      写进 scoped 块（含 @use 的 flow-model.scss）会被编译成 [data-v-xxx]，永远匹配不上。
+   2) 底色统一采用《统一开发规范》弹窗头部标准蓝色渐变
+      linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%)，与 .rd-dialog 及其他业务弹窗一致。 */
+.designer-dialog .el-dialog__header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%) !important;
+  background-color: #2563eb !important;
+  padding: 10px 20px;
+  margin-right: 0;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+.designer-dialog .el-dialog__header .designer-title { color: #fff; }
+.designer-dialog .el-dialog__header .designer-title .designer-model-name { color: #f1f5f9; }
+.designer-dialog .el-dialog__headerbtn .el-dialog__close { color: #fff; }
+
 .designer-dialog .el-dialog__body {
   padding: 0;
   display: flex;
@@ -2710,15 +3055,8 @@ watch([graphicTab, filteredGraphicExits], ([tab]) => {
   height: calc(100vh - 60px);
 }
 .designer-dialog .el-dialog__body > .designer-body { flex: 1 1 auto; min-height: 0; height: auto; }
-.designer-dialog .graphic-body > .graphic-editor-tabs { flex: 1 1 auto; min-height: 0; height: auto; }
-.designer-dialog .graphic-editor-tabs > .el-tabs__content {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
-.designer-dialog .graphic-editor-tabs > .el-tabs__content > .el-tab-pane { flex: 1 1 auto; min-height: 0; }
+.designer-dialog .graphic-body > .graphic-pane,
+.designer-dialog .graphic-body > .graphic-single-pane { flex: 1 1 auto; min-height: 0; }
 /* 画布自身铺满其容器，网格底图随之延伸到底部 */
 .designer-dialog .graphic-main .designer-canvas { height: 100%; min-height: 0; }
 </style>

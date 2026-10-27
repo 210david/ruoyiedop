@@ -145,13 +145,32 @@
 
 /* ===== 流程设计器 ===== */
 .designer-dialog { }
-:is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.designer-dialog .el-dialog__header) { background:var(--ink-900); padding:10px 20px; margin-right:0; }
+/* 头部底色已统一移到 index.vue 末尾的全局 <style lang="scss"> 块：
+   本文件被 scoped 引入，规则会带 [data-v-xxx]，而弹窗经 teleport 挂到 body 下不带该属性，
+   写在这里永远匹配不到（这正是之前"改了没效果"的原因）。 */
 :is(.flowable-model-page,.flowable-task-page,.flowable-process-page,.flowable-launch-page,.flowable-form-page,.flowable-leave-page,.flowable-definition-page,.flowable-search-page,.flowable-category-page,.flowable-urgency-page,.flowable-handle-page) :deep(.designer-dialog .el-dialog__headerbtn .el-dialog__close) { color:#fff; }
 .designer-header { display:flex; align-items:center; justify-content:space-between; width:100%; padding-right:30px; }
 .designer-title { display:flex; align-items:center; gap:10px; color:#fff; font-size:16px; font-weight:600; }
 .designer-title .glyph { width:4px; height:16px; background:#6366f1; border-radius:2px; }
-.designer-model-name { color:#cbd5e1; font-weight:400; font-size:14px; }
-.designer-actions { display:flex; gap:8px; }
+/* 深色头部上的流程名：提高对比度与省略处理，避免长名称挤掉标题且发灰看不清 */
+.designer-model-name { color:#f1f5f9; font-weight:500; font-size:14px; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.designer-actions { display:flex; gap:8px; align-items:center; }
+/* 工具栏分层：编辑组 / 缩放 / 更多 / 主操作，组间细分隔线，主次一眼可辨 */
+.designer-actions .da-divider { width:1px; height:20px; background:rgba(255,255,255,.22); margin:0 2px; }
+.designer-actions .da-zoom { display:flex; align-items:center; gap:6px; }
+.designer-actions .da-zoom-label { font-size:13px; font-feature-settings:"tnum" 1; min-width:56px; text-align:center; }
+.designer-actions .da-caret { font-size:12px; opacity:.65; }
+.designer-actions .da-more { display:flex; align-items:center; gap:4px; }
+/* 深色头部的默认按钮：统一为半透明描边，避免一片白块抢主按钮视觉 */
+:is(.flowable-model-page) :deep(.designer-dialog .designer-actions .el-button:not(.el-button--primary)) {
+  background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.24); color:#e2e8f0;
+}
+:is(.flowable-model-page) :deep(.designer-dialog .designer-actions .el-button:not(.el-button--primary):hover) {
+  background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.38); color:#fff;
+}
+:is(.flowable-model-page) :deep(.designer-dialog .designer-actions .el-button.is-disabled) {
+  background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.3);
+}
 .designer-body { display:flex; height:calc(100vh - 140px); background:#fff; border-radius:0 0 6px 6px; overflow:hidden; }
 .designer-canvas { flex:1; position:relative; background:linear-gradient(90deg,#f1f5f9 1px,transparent 1px),linear-gradient(#f1f5f9 1px,transparent 1px); background-size:20px 20px; }
 .designer-props { width:300px; border-left:1px solid var(--ink-200); background:#fff; padding:16px; overflow-y:auto; }

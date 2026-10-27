@@ -45,7 +45,7 @@ public class FlowModelServiceImpl implements IFlowModelService
     @Autowired
     private org.flowable.engine.ProcessEngineConfiguration processEngineConfiguration;
 
-    /** 空模型 BPMN XML 模板 */
+    /** 空模型 BPMN XML 模板（含 BPMNDiagram 图形段，避免 bpmn-js 报 no diagram to display） */
     private static final String EMPTY_BPMN_TEMPLATE =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
         "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" " +
@@ -56,8 +56,15 @@ public class FlowModelServiceImpl implements IFlowModelService
         "xmlns:omgdi=\"http://www.omg.org/spec/DD/20100524/DI\" " +
         "targetNamespace=\"http://flowable.org/bpmn\">\n" +
         "  <process id=\"%s\" name=\"%s\" isExecutable=\"true\">\n" +
-        "    <startEvent id=\"StartEvent_1\"/>\n" +
+        "    <startEvent id=\"StartEvent_1\" name=\"开始\"/>\n" +
         "  </process>\n" +
+        "  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n" +
+        "    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"%s\">\n" +
+        "      <bpmndi:BPMNShape id=\"StartEvent_1_di\" bpmnElement=\"StartEvent_1\">\n" +
+        "        <omgdc:Bounds x=\"173\" y=\"102\" width=\"36\" height=\"36\"/>\n" +
+        "      </bpmndi:BPMNShape>\n" +
+        "    </bpmndi:BPMNPlane>\n" +
+        "  </bpmndi:BPMNDiagram>\n" +
         "</definitions>";
 
     /** BPMN 根节点 targetNamespace 属性匹配（部署前按模型分类改写） */
