@@ -28,7 +28,7 @@ set NGINX_PORT=8005
 set MYSQL_PORT=3306
 
 REM ===== JVM Options =====
-set JVM_OPTS=-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%LOG_HOME%
+set JVM_OPTS=-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Xms512m -Xmx2048m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=%LOG_HOME%
 
 REM ===== Prefix Tags =====
 set INFO=[INFO]

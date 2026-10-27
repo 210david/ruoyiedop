@@ -128,14 +128,14 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-mysql -hlocalhost -P3306 -uroot -p"ZBrj@2026" -e "SELECT 1" >nul 2>nul
+mysql -hlocalhost -P3306 -uroot -p123456 -e "SELECT 1" >nul 2>nul
 if %errorlevel% equ 0 (
     echo [%PASS%] MySQL 连接正常（localhost:3306）
     set /a CHECK_PASS+=1
 ) else (
     echo [%FAIL%] MySQL 连接失败，请检查：
     echo        - MySQL 服务是否启动（net start mysql 或 services.msc）
-    echo        - 用户名/密码是否正确（root/ZBrj@2026）
+    echo        - 用户名/密码是否正确（root/123456）
     set /a CHECK_FAIL+=1
 )
 exit /b

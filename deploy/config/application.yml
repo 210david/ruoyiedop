@@ -1,6 +1,6 @@
 # ============================================================
-# 传丰食品数字化运营平台 - 生产环境配置
-# 部署路径: D:\EDOP_CFSP\app\application.yml
+# 企业数字化运营平台 - 生产环境配置
+# 部署路径: D:\EDOP\app\application.yml
 # 说明: 此文件会覆盖jar包内部同名配置，修改后重启服务即可生效
 # ============================================================
 
@@ -11,7 +11,7 @@ ruoyi:
   copyrightYear: 2026
   # 文件上传根目录（优先级：环境变量 EDOP_UPLOAD_PATH > 本文件 > 默认 ${user.dir}/uploadPath）
   # 生产环境实际使用 D:/EDOP/uploadPath；如需改名/迁移，改此处或设环境变量 EDOP_UPLOAD_PATH 即可
-  profile: D:/EDOP_CFSP/uploadPath
+  profile: D:/EDOP/uploadPath
   addressEnabled: false
   captchaType: math
   # 文件加密密钥（AES-128，需至少16位字符，生产环境请务必修改）
@@ -19,7 +19,7 @@ ruoyi:
 
 # 开发环境配置
 server:
-  port: 8082
+  port: 8004
   servlet:
     context-path: /
   tomcat:
@@ -35,7 +35,7 @@ logging:
     com.ruoyi: info
     org.springframework: warn
   file:
-    name: D:/EDOP_CFSP/app/logs/ruoyi.log
+    name: D:/EDOP/app/logs/ruoyi.log
 
 # 用户配置
 user:
@@ -68,9 +68,9 @@ spring:
       # Redis地址（本机部署用localhost，远程部署改为实际IP）
       host: localhost
       port: 6379
-      database: 1
-      # Redis密码（与 deploy/config/redis.windows.conf 的 requirepass 一致，务必保持同步）
-      password: cc99de507fc3934eb8f84b5c4f76e11d
+      database: 2
+      # Redis密码（生产环境强烈建议设置密码）
+      password:
       timeout: 10s
       lettuce:
         pool:
@@ -82,8 +82,8 @@ spring:
 # token配置
 token:
   header: Authorization
-  # 令牌密钥（随机生成，严禁改回默认值；泄露或更换会使所有登录态失效）
-  secret: 2DOVQuux9LM6r3euwcG6Zzp89nR778hYNIQuOd0n26sn8HkZDeJ0d/XSXvuRCDHC
+  # 生产环境请修改此密钥！！！
+  secret: abcdefghijklmnopqrstuvwxyz
   expireTime: 30
 
 # MyBatis配置
