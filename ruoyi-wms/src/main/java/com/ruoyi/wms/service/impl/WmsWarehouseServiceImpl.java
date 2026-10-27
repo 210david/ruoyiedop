@@ -1,10 +1,12 @@
-package com.ruoyi.wms.service.impl;
+package com.ruoyi.wms.service.impl;
+
 import java.util.HashMap;
 import java.util.Map;
 
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.StringUtils;
@@ -62,7 +64,15 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
         {
             warehouse.setLocationStatus("0");
         }
-        return wmsWarehouseMapper.insertWarehouse(warehouse);
+        try
+        {
+            return wmsWarehouseMapper.insertWarehouse(warehouse);
+        }
+        catch (DuplicateKeyException e)
+        {
+            // 唯一性冲突给出明确业务提示（如删除后重新新增生成的编码与软删除记录撞车）
+            throw new ServiceException("保存失败：编码[" + warehouse.getWarehouseCode() + "]已被占用，请刷新页面后重新新增");
+        }
     }
 
     @Override

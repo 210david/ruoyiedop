@@ -63,8 +63,10 @@
     </select>
 
     <select id="selectMaxCodeByParent" resultType="String">
+        <!-- 序号取最大时不过滤 del_flag：软删除记录仍占用编码（唯一索引不区分删除标记），
+             否则删除后重新新增会生成重复编码，触发 uk_warehouse_code 冲突 -->
         SELECT warehouse_code FROM wms_warehouse
-        WHERE del_flag = '0'
+        WHERE 1 = 1
         <choose>
             <when test="parentId != null and parentId != 0">
                 AND parent_id = #{parentId}
@@ -76,7 +78,9 @@
         <if test="nodeType != null and nodeType != ''">
             AND node_type = #{nodeType}
         </if>
-        ORDER BY warehouse_code DESC LIMIT 1
+        <!-- 编码尾部为序号，按尾部数字倒序取最大，避免字符串排序（如 'WH999' &gt; 'WH162519'）导致重复 -->
+        ORDER BY CAST(REGEXP_REPLACE(warehouse_code, '[^0-9]', '') AS UNSIGNED) DESC, warehouse_code DESC
+        LIMIT 1
     </select>
 
     <insert id="insertWarehouse" parameterType="WmsWarehouse" useGeneratedKeys="true" keyProperty="warehouseId">
