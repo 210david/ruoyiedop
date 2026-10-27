@@ -39,7 +39,7 @@ CREATE INDEX `idx_sys_role_module_key` ON `sys_role` (`module_key`);
 CREATE INDEX `idx_sys_job_module_key`  ON `sys_job` (`module_key`);
 
 -- -----------------------------------------------------------------------------
--- 三、模块种子数据（15个模块，初始状态与基础环境当前菜单状态一致）
+-- 三、模块种子数据（16个模块，含产品设计 pdm），初始状态与基础环境当前菜单状态一致）
 -- -----------------------------------------------------------------------------
 INSERT INTO `sys_module` (`module_name`, `module_key`, `root_menu_id`, `status`, `is_core`, `order_num`, `create_by`, `remark`) VALUES
 ('系统管理',     'system', 1,      '0', '1', 1,  'admin', '核心基础模块，不可关闭'),
@@ -56,6 +56,7 @@ INSERT INTO `sys_module` (`module_name`, `module_key`, `root_menu_id`, `status`,
 ('人力资源管理', 'hr',     905538, '0', '0', 23, 'admin', NULL),
 ('财务管理',     'fin',    905938, '0', '0', 24, 'admin', NULL),
 ('招投标管理',   'bid',    905886, '0', '0', 25, 'admin', NULL),
+('产品设计',     'pdm',    11000,  '0', '0', 16, 'admin', NULL),
 ('系统工具',     'tool',   3,      '1', '0', 26, 'admin', '与当前菜单停用状态一致');
 
 -- -----------------------------------------------------------------------------

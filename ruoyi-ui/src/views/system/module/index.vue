@@ -68,6 +68,10 @@
               <span class="module-key">{{ item.moduleKey }}</span>
               <span class="module-status" :class="item.status === '0' ? 'st-on' : 'st-off'">{{ item.status === '0' ? '运行中' : '已停用' }}</span>
             </div>
+            <div class="module-flow" v-if="item.notRegistered">
+              <el-tag type="info" effect="plain" size="small">未登记</el-tag>
+              <span class="flow-tip">模块开关表未登记此模块，请执行补齐脚本</span>
+            </div>
             <div class="module-stats">
               <span class="m-stat"><el-icon><User /></el-icon> {{ item.roleCount || 0 }} 角色</span>
               <span class="m-stat"><el-icon><Timer /></el-icon> {{ item.jobCount || 0 }} 任务</span>
@@ -110,12 +114,37 @@ const disabledCount = computed(() => moduleList.value.filter(m => m.status === '
 const totalRoleCount = computed(() => moduleList.value.reduce((s, m) => s + (Number(m.roleCount) || 0), 0))
 const totalJobCount = computed(() => moduleList.value.reduce((s, m) => s + (Number(m.jobCount) || 0), 0))
 
+/** 未在模块开关表登记的模块（业务模块已有菜单但缺失开关项时自动补录，避免模块开关漏项） */
+const knownModules = [
+  { moduleKey: 'pdm', moduleName: '产品设计', rootMenuId: 11000, orderNum: 16, remark: '产品设计模块（PDM）' }
+]
+
 /** 查询模块列表 */
 function getList() {
   loading.value = true
   listModule(queryParams.value).then(response => {
-    moduleList.value = response.rows
-    total.value = response.total
+    const rows = response.rows || []
+    const exists = new Set(rows.map(r => r.moduleKey))
+    knownModules.forEach(m => {
+      if (exists.has(m.moduleKey)) return
+      if (queryParams.value.moduleName && m.moduleName.indexOf(queryParams.value.moduleName) === -1) return
+      if (queryParams.value.status === '1') return
+      rows.push({
+        moduleId: -(knownModules.indexOf(m) + 1),
+        moduleName: m.moduleName,
+        moduleKey: m.moduleKey,
+        rootMenuId: m.rootMenuId,
+        status: '0',
+        isCore: '0',
+        orderNum: m.orderNum,
+        roleCount: 0,
+        jobCount: 0,
+        remark: m.remark,
+        notRegistered: true
+      })
+    })
+    moduleList.value = rows.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0))
+    total.value = rows.length
     loading.value = false
   }).catch(() => {
     loading.value = false
@@ -124,6 +153,11 @@ function getList() {
 
 /** 切换模块状态 */
 function handleStatusChange(item) {
+  if (item.notRegistered) {
+    item.status = '0'
+    proxy.$modal.msgWarning(`模块【${item.moduleName}】尚未在 sys_module 登记，请先执行 sql/module_switch_init_ryvue.sql 补齐脚本`)
+    return
+  }
   const action = item.status === '0' ? '启用' : '停用'
   const tip = item.status === '0'
     ? `确认要启用模块【${item.moduleName}】吗？将恢复该模块的菜单、角色与定时任务，并强制所有在线用户重新登录。`
@@ -202,6 +236,8 @@ onMounted(() => {
 .module-switch-page .module-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .module-switch-page .dot-on { background:var(--green-500); box-shadow:0 0 0 3px var(--green-50); }
 .module-switch-page .dot-off { background:var(--ink-400); box-shadow:0 0 0 3px var(--ink-100); }
+.module-switch-page .module-flow { display:flex; align-items:center; gap:8px; }
+.module-switch-page .flow-tip { font-size:12px; color:var(--amber-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .module-switch-page .module-card-body { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
 .module-switch-page .module-key-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .module-switch-page .module-key { font-family:ui-monospace, monospace; font-size:12px; color:var(--brand-700); background:var(--brand-50); border:1px solid var(--brand-200); border-radius:4px; padding:1px 8px; }

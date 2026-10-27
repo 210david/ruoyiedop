@@ -49,3 +49,13 @@ ruoyi-admin/com/
 !*/build/*.java
 !*/build/*.html
 !*/build/*.xml
+
+# ===== AI session temp artifacts (not tracked) =====
+.box-agent-scratch/
+.workbuddy/
+logs/
+output/
+image-*.png
+image-*.webp
+managed-browser-*.png
+*.artifact.json
