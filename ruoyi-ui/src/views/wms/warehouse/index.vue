@@ -190,7 +190,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" class-name="col-action">
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button v-if="scope.row.nodeType !== '3'" link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['wms:warehouse:add']">新增</el-button>
@@ -241,7 +241,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="编码" prop="warehouseCode">
-              <el-input v-model="form.warehouseCode" placeholder="保存后自动生成" disabled />
+              <el-input v-model="form.warehouseCode" :disabled="autoCodeEnabled || form.nodeType !== '1'" :placeholder="form.nodeType === '1' && !autoCodeEnabled ? '请输入仓库编码' : '保存后自动生成'" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -371,7 +371,7 @@
 </template>
 
 <script setup name="WmsWarehouse">
-import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse } from '@/api/wms/warehouse'
+import { listWarehouseTree, getWarehouse, addWarehouse, updateWarehouse, delWarehouse, getWarehouseAutoCodeEnabled } from '@/api/wms/warehouse'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -394,6 +394,17 @@ const title = ref('')
 const isExpandAll = ref(true)
 const refreshTable = ref(true)
 const showAdvanced = ref(false)
+
+// 仓库编码规则「是否启用自动编码」开关（true=自动生成只读，false=手动输入必填）
+const autoCodeEnabled = ref(true)
+
+/** 仓库编码校验：自动编码关闭时必填（唯一性由后端提交时校验） */
+function validateWarehouseCode(rule, value, callback) {
+  if (form.value.nodeType === '1' && !autoCodeEnabled.value && !value) {
+    return callback(new Error('仓库编码不能为空：自动编码已关闭，请手动填写'))
+  }
+  callback()
+}
 
 const defaultColumns = {
   warehouseCode: { label: '编码', visible: true },
@@ -450,7 +461,8 @@ const data = reactive({
     nodeType: [{ required: true, message: '请选择节点类型', trigger: 'change' }],
     managerId: [{ required: true, message: '请选择负责人', trigger: 'change' }],
     deptId: [{ required: true, message: '请选择管理部门', trigger: 'change' }],
-    warehouseName: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
+    warehouseName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
+    warehouseCode: [{ validator: validateWarehouseCode, trigger: 'blur' }]
   }
 })
 
@@ -573,6 +585,8 @@ function reset() {
 
 function handleAdd(row) {
   reset()
+  // keep-alive 页面缓存下开关状态不会自动刷新，每次打开弹窗前重新加载
+  loadAutoCodeEnabled()
   if (row && row.warehouseId) {
     form.value.parentId = row.warehouseId
     form.value.parentName = row.warehouseName
@@ -593,6 +607,8 @@ function handleAdd(row) {
 
 function handleUpdate(row) {
   reset()
+  // keep-alive 页面缓存下开关状态不会自动刷新，每次打开弹窗前重新加载
+  loadAutoCodeEnabled()
   getWarehouse(row.warehouseId).then(response => {
     form.value = response.data
     // 查找父节点名称
@@ -690,6 +706,14 @@ function clearDept() {
   form.value.deptName = undefined
 }
 
+// 加载仓库编码规则「是否启用自动编码」开关
+function loadAutoCodeEnabled() {
+  getWarehouseAutoCodeEnabled().then(res => {
+    autoCodeEnabled.value = res.data !== false
+  })
+}
+
+loadAutoCodeEnabled()
 getList()
 loadTreeData()
 </script>

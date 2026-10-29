@@ -54,6 +54,14 @@ export function genWarehouseCode(nodeType, parentId) {
   })
 }
 
+// 查询仓库编码规则「是否启用自动编码」开关
+export function getWarehouseAutoCodeEnabled() {
+  return request({
+    url: '/wms/warehouse/autoCodeEnabled',
+    method: 'get'
+  })
+}
+
 // ==================== 兼容接口（供其他模块下拉选择调用） ====================
 
 // 查询仓库列表（仅仓库层级）
