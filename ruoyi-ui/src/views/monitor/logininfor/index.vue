@@ -68,7 +68,6 @@
 <el-table-column label="访问编号" align="center" prop="infoId" :width="colWidth('infoId', 120)" resizable v-if="columns.infoId.visible" />
           <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" :min-width="colWidth('userName', 120)" resizable sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.userName.visible" />
           <el-table-column label="地址" align="center" prop="ipaddr" :show-overflow-tooltip="true" :min-width="colWidth('ipaddr', 130)" resizable v-if="columns.ipaddr.visible" />
-          <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" :width="colWidth('loginLocation', 160)" resizable v-if="columns.loginLocation.visible" />
           <el-table-column label="操作系统" align="center" prop="os" :show-overflow-tooltip="true" :width="colWidth('os', 130)" resizable v-if="columns.os.visible" />
           <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" :width="colWidth('browser', 130)" resizable v-if="columns.browser.visible" />
           <el-table-column label="登录状态" align="center" prop="status" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
@@ -123,7 +122,6 @@ const columns = ref({
   infoId: { label: '访问编号', visible: true, defaultWidth: 120 },
   userName: { label: '用户名称', visible: true, defaultWidth: 120 },
   ipaddr: { label: '地址', visible: true, defaultWidth: 130 },
-  loginLocation: { label: '登录地点', visible: true, defaultWidth: 160 },
   os: { label: '操作系统', visible: true, defaultWidth: 130 },
   browser: { label: '浏览器', visible: true, defaultWidth: 130 },
   status: { label: '登录状态', visible: true, defaultWidth: 100 },

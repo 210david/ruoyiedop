@@ -40,12 +40,12 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
     public int insertWarehouse(WmsWarehouse warehouse)
     {
         warehouse.setDelFlag("0");
-        // 自动生成编码（所有节点类型）
-        if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
+        if ("1".equals(warehouse.getNodeType()))
         {
-            if ("1".equals(warehouse.getNodeType()))
+            // 仓库级别：根据编号规则「是否启用自动编码」开关决定生成方式
+            if (isAutoCodeEnabled())
             {
-                // 仓库级别使用编号规则
+                // 自动编码开启：按规则生成，忽略手动输入
                 Map<String, String> params = new HashMap<>();
             if (StringUtils.isNotEmpty(warehouse.getAreaType())) { params.put("areaType", warehouse.getAreaType()); }
             if (StringUtils.isNotEmpty(warehouse.getLocationType())) { params.put("locationType", warehouse.getLocationType()); }
@@ -53,9 +53,18 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
             }
             else
             {
-                // 仓区/仓位使用层级编码（父编码+后缀）
-                warehouse.setWarehouseCode(generateNextCode(warehouse));
+                // 自动编码关闭：编码必填，手动输入，校验不能重复
+                if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
+                {
+                    throw new ServiceException("仓库编码不能为空：自动编码已关闭，请手动填写仓库编码");
+                }
+                checkCodeUnique(warehouse.getWarehouseCode(), null);
             }
+        }
+        else if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
+        {
+            // 仓区/仓位使用层级编码（父编码+后缀）
+            warehouse.setWarehouseCode(generateNextCode(warehouse));
         }
         // 维护 ancestors
         buildAncestors(warehouse);
@@ -80,6 +89,26 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
     {
         // 如果修改了父节点，需要更新 ancestors
         WmsWarehouse old = wmsWarehouseMapper.selectWarehouseById(warehouse.getWarehouseId());
+        if ("1".equals(warehouse.getNodeType()) && old != null)
+        {
+            if (isAutoCodeEnabled())
+            {
+                // 自动编码开启：编码只读，忽略前端提交的编码变更，保留原编码
+                warehouse.setWarehouseCode(old.getWarehouseCode());
+            }
+            else
+            {
+                // 自动编码关闭：允许手动修改编码，校验不能重复（排除自身）
+                if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
+                {
+                    throw new ServiceException("仓库编码不能为空：自动编码已关闭，请手动填写仓库编码");
+                }
+                if (!warehouse.getWarehouseCode().equals(old.getWarehouseCode()))
+                {
+                    checkCodeUnique(warehouse.getWarehouseCode(), warehouse.getWarehouseId());
+                }
+            }
+        }
         if (old != null && warehouse.getParentId() != null
                 && !warehouse.getParentId().equals(old.getParentId()))
         {
@@ -169,6 +198,24 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
             {
                 warehouse.setAncestors("0");
             }
+        }
+    }
+
+    /** 仓库编码规则「是否启用自动编码」开关（规则缺失时默认开启，保持向后兼容） */
+    @Override
+    public boolean isAutoCodeEnabled()
+    {
+        com.ruoyi.mk.domain.MkNumberRule rule = mkNumberRuleService.selectRuleByCode("wms_warehouse");
+        return rule == null || !"0".equals(rule.getAutoEnabled());
+    }
+
+    /** 仓库编码唯一性校验（excludeId 为编辑时排除自身，可为 null） */
+    private void checkCodeUnique(String warehouseCode, Long excludeId)
+    {
+        Long count = wmsWarehouseMapper.checkWarehouseCodeUnique(warehouseCode, excludeId);
+        if (count != null && count > 0)
+        {
+            throw new ServiceException("仓库编码“" + warehouseCode + "”已存在，请更换编码");
         }
     }
 }
