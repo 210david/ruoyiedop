@@ -25,4 +25,7 @@ public interface WmsWarehouseMapper
 
     /** 查询某父节点下同类型最大编码后缀 */
     public String selectMaxCodeByParent(Long parentId, String nodeType);
+
+    /** 仓库编码唯一性校验（返回重复数量，excludeId 编辑时排除自身，可为 null） */
+    public Long checkWarehouseCodeUnique(@org.apache.ibatis.annotations.Param("warehouseCode") String warehouseCode, @org.apache.ibatis.annotations.Param("excludeId") Long excludeId);
 }
