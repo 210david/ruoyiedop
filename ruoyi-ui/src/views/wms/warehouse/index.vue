@@ -241,7 +241,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="编码" prop="warehouseCode">
-              <el-input v-model="form.warehouseCode" :disabled="autoCodeEnabled || form.nodeType !== '1'" :placeholder="form.nodeType === '1' && !autoCodeEnabled ? '请输入仓库编码' : '保存后自动生成'" />
+              <el-input v-model="form.warehouseCode" :disabled="autoCodeEnabled" :placeholder="autoCodeEnabled ? '保存后自动生成' : (form.nodeType === '1' ? '请输入仓库编码' : form.nodeType === '2' ? '请输入仓区编码' : '请输入仓位编码')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
