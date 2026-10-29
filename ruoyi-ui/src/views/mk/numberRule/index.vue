@@ -105,6 +105,12 @@
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="自动编码" prop="autoEnabled" key="autoEnabled" :width="colWidth('autoEnabled', 100)" resizable align="center">
+            <template #default="scope">
+              <el-switch v-if="scope.row.ruleCode === 'wms_warehouse'" v-model="scope.row.autoEnabled" active-value="1" inactive-value="0" @change="handleAutoCodeChange(scope.row)" />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="备注" prop="remark" key="remark" :min-width="colWidth('remark', 180)" resizable show-overflow-tooltip v-if="columns.remark.visible" />
 <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
 <template #default="scope">
@@ -524,6 +530,22 @@ function useHead() {
 }
 
 function handleAdd() { reset(); isView.value = false; open.value = true; title.value = `新增${currentModuleName.value}编号规则` }
+/** 自动编码开关切换（仅仓库编码规则）：确认后保存，失败回退 */
+function handleAutoCodeChange(row) {
+  const text = row.autoEnabled === '1' ? '启用' : '停用'
+  proxy.$modal.confirm('是否确认' + text + '仓库编码自动编码？停用后仓库编码需手动输入且不能重复。').then(() => {
+    return updateNumberRule({ ruleId: row.ruleId, ruleCode: row.ruleCode, autoEnabled: row.autoEnabled })
+  }).then(() => {
+    proxy.$modal.msgSuccess(text + '成功')
+  }).catch(e => {
+    // 取消或保存失败：回退开关状态
+    row.autoEnabled = row.autoEnabled === '1' ? '0' : '1'
+    if (e !== 'cancel' && e !== 'close') {
+      proxy.$modal.msgError('自动编码' + text + '失败：' + (e?.message || '请稍后重试'))
+    }
+  })
+}
+
 function handleUpdate(row) {
   reset()
   isView.value = false

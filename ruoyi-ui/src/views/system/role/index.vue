@@ -773,11 +773,33 @@ function toggleTreeExpand(type) {
 function toggleTreeNodeAll(type) {
   if (type == 'menu') {
     menuNodeAll.value = !menuNodeAll.value
-    menuRef.value.setCheckedNodes(menuNodeAll.value ? menuOptions.value : [])
+    // 存在搜索筛选时，仅作用于筛选命中的节点，不影响被过滤隐藏的节点
+    menuRef.value.setCheckedNodes(menuNodeAll.value ? getMenuFilterMatchedNodes() : [])
   } else if (type == 'dept') {
     deptNodeAll.value = !deptNodeAll.value
     deptRef.value.setCheckedNodes(deptNodeAll.value ? deptOptions.value : [])
   }
+}
+
+/** 获取菜单树中匹配当前搜索条件的节点列表（无搜索时返回全部节点） */
+function getMenuFilterMatchedNodes() {
+  const text = (menuFilterText.value || "").trim()
+  if (!text) return menuOptions.value
+  const matched = []
+  const walk = (list) => {
+    list.forEach(item => {
+      // 仅取自身名称命中的节点；父级目录若因子节点命中而显示，不参与全选，
+      // 避免父子联动开启时把未命中的隐藏子级一并勾选
+      if (item.label && item.label.indexOf(text) !== -1) {
+        matched.push(item)
+      }
+      if (item.children && item.children.length) {
+        walk(item.children)
+      }
+    })
+  }
+  walk(menuOptions.value)
+  return matched
 }
 
 /** 树权限（父子联动）— 切换按钮 */

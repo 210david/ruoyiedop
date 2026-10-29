@@ -337,9 +337,8 @@ const data = reactive({
       { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
       { pattern: /^[0-9A-HJ-NPQRTUWXY]{18}$/, message: '统一社会信用代码应为18位数字或大写字母', trigger: 'blur' }
     ],
-    contactPerson: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
+    contactPerson: [{ message: '联系人不能为空', trigger: 'blur' }],
     contactPhone: [
-      { required: true, message: '联系电话不能为空', trigger: 'blur' },
       { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
     ]
   }
