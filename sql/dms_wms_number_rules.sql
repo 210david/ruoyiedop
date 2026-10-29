@@ -65,8 +65,8 @@ INSERT INTO `mk_number_rule` (`rule_code`, `rule_name`, `prefix`, `date_format`,
 SELECT 'wms_material', '物料编号', 'WL', 'yyyyMMdd', '1', 5, 1, 1, 0, '', '', '0', 'admin', sysdate(), '物料编号，每日重置'
 WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='wms_material');
 
-INSERT INTO `mk_number_rule` (`rule_code`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)
-SELECT 'wms_warehouse', '仓库编码', 'WH', '', '0', 3, 1, 1, 0, '', '', '0', 'admin', sysdate(), '仓库编码，不重置'
+INSERT INTO `mk_number_rule` (`rule_code`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `auto_enabled`, `status`, `create_by`, `create_time`, `remark`)
+SELECT 'wms_warehouse', '仓库编码', 'WH', '', '0', 3, 1, 1, 0, '', '', '1', '0', 'admin', sysdate(), '仓库编码，不重置'
 WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code='wms_warehouse');
 
 INSERT INTO `mk_number_rule` (`rule_code`, `rule_name`, `prefix`, `date_format`, `reset_type`, `seq_length`, `seq_start`, `step`, `current_seq`, `current_date_str`, `connector`, `status`, `create_by`, `create_time`, `remark`)

@@ -22,4 +22,7 @@ public interface IWmsWarehouseService
 
     /** 生成下一个编码 */
     public String generateNextCode(WmsWarehouse warehouse);
+
+    /** 仓库编码规则「是否启用自动编码」开关 */
+    public boolean isAutoCodeEnabled();
 }

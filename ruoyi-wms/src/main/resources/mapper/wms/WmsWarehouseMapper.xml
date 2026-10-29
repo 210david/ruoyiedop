@@ -83,6 +83,15 @@
         LIMIT 1
     </select>
 
+    <select id="checkWarehouseCodeUnique" resultType="Long">
+        SELECT COUNT(1) FROM wms_warehouse
+        WHERE warehouse_code = #{warehouseCode} AND del_flag = '0'
+        <if test="excludeId != null">
+            AND warehouse_id != #{excludeId}
+        </if>
+        LIMIT 1
+    </select>
+
     <insert id="insertWarehouse" parameterType="WmsWarehouse" useGeneratedKeys="true" keyProperty="warehouseId">
         INSERT INTO wms_warehouse (
             parent_id, ancestors, warehouse_code, warehouse_name, node_type,

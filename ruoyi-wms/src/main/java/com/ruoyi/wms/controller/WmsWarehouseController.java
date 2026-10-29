@@ -32,6 +32,14 @@ public class WmsWarehouseController extends BaseController
         return AjaxResult.success(list);
     }
 
+    /** 查询仓库编码规则「是否启用自动编码」开关 */
+    @PreAuthorize("@ss.hasPermi('wms:warehouse:list')")
+    @GetMapping("/autoCodeEnabled")
+    public AjaxResult autoCodeEnabled()
+    {
+        return AjaxResult.success(wmsWarehouseService.isAutoCodeEnabled());
+    }
+
     @Log(title = "仓库管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('wms:warehouse:export')")
     @PostMapping("/export")
