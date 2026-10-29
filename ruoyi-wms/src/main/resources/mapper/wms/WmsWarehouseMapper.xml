@@ -62,6 +62,12 @@
         SELECT COUNT(1) FROM wms_warehouse WHERE parent_id = #{parentId} AND del_flag = '0'
     </select>
 
+    <select id="selectChildByParentId" parameterType="Long" resultMap="WmsWarehouseResult">
+        <include refid="selectWarehouseVo"/>
+        WHERE w.del_flag = '0' AND w.parent_id = #{parentId}
+        ORDER BY w.warehouse_id ASC
+    </select>
+
     <select id="selectMaxCodeByParent" resultType="String">
         <!-- 序号取最大时不过滤 del_flag：软删除记录仍占用编码（唯一索引不区分删除标记），
              否则删除后重新新增会生成重复编码，触发 uk_warehouse_code 冲突 -->

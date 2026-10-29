@@ -241,7 +241,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="编码" prop="warehouseCode">
-              <el-input v-model="form.warehouseCode" :disabled="autoCodeEnabled || form.nodeType !== '1'" :placeholder="form.nodeType === '1' && !autoCodeEnabled ? '请输入仓库编码' : '保存后自动生成'" />
+              <el-input v-model="form.warehouseCode" :disabled="autoCodeEnabled" :placeholder="autoCodeEnabled ? '保存后自动生成' : (form.nodeType === '1' ? '请输入仓库编码' : form.nodeType === '2' ? '请输入仓区编码' : '请输入仓位编码')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -398,10 +398,10 @@ const showAdvanced = ref(false)
 // 仓库编码规则「是否启用自动编码」开关（true=自动生成只读，false=手动输入必填）
 const autoCodeEnabled = ref(true)
 
-/** 仓库编码校验：自动编码关闭时必填（唯一性由后端提交时校验） */
+/** 仓库/仓区/仓位编码校验：自动编码关闭时必填（唯一性由后端提交时校验） */
 function validateWarehouseCode(rule, value, callback) {
-  if (form.value.nodeType === '1' && !autoCodeEnabled.value && !value) {
-    return callback(new Error('仓库编码不能为空：自动编码已关闭，请手动填写'))
+  if (!autoCodeEnabled.value && !value) {
+    return callback(new Error('编码不能为空：自动编码已关闭，请手动填写'))
   }
   callback()
 }
