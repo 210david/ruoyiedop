@@ -74,6 +74,10 @@ public class MkNumberRule extends BaseEntity
     @Excel(name = "动态前缀", readConverterExp = "0=关闭,1=开启")
     private String prefixFieldEnabled;
 
+    /** 是否启用自动编码（0=关闭,1=开启；关闭时业务页面编码手动输入，开启时按规则自动生成） */
+    @Excel(name = "自动编码", readConverterExp = "0=关闭,1=开启")
+    private String autoEnabled;
+
     /** 预览编号（非数据库字段） */
     @Excel(name = "预览")
     private String preview;
@@ -117,6 +121,8 @@ public class MkNumberRule extends BaseEntity
     public void setPrefixFieldDictType(String prefixFieldDictType) { this.prefixFieldDictType = prefixFieldDictType; }
     public String getPrefixFieldEnabled() { return prefixFieldEnabled; }
     public void setPrefixFieldEnabled(String prefixFieldEnabled) { this.prefixFieldEnabled = prefixFieldEnabled; }
+    public String getAutoEnabled() { return autoEnabled; }
+    public void setAutoEnabled(String autoEnabled) { this.autoEnabled = autoEnabled; }
     public List<MkNumberRulePrefix> getPrefixList() { return prefixList; }
     public void setPrefixList(List<MkNumberRulePrefix> prefixList) { this.prefixList = prefixList; }
 }
