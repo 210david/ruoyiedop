@@ -398,10 +398,10 @@ const showAdvanced = ref(false)
 // 仓库编码规则「是否启用自动编码」开关（true=自动生成只读，false=手动输入必填）
 const autoCodeEnabled = ref(true)
 
-/** 仓库编码校验：自动编码关闭时必填（唯一性由后端提交时校验） */
+/** 仓库/仓区/仓位编码校验：自动编码关闭时必填（唯一性由后端提交时校验） */
 function validateWarehouseCode(rule, value, callback) {
-  if (form.value.nodeType === '1' && !autoCodeEnabled.value && !value) {
-    return callback(new Error('仓库编码不能为空：自动编码已关闭，请手动填写'))
+  if (!autoCodeEnabled.value && !value) {
+    return callback(new Error('编码不能为空：自动编码已关闭，请手动填写'))
   }
   callback()
 }

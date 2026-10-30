@@ -1,0 +1,3 @@
+-- YHNY 全员密码重置为 yh@123456（BCrypt，2026-10-30）
+-- 执行：UPDATE sys_user SET password='$2a$10$yrG0NJ..STEc.VX/pojhVeGQce4uUrSE0iyndKeBGzbpG/FDZWYr.';
+-- 回滚：从 sql/_backup_yhny_before_resync_20261030.sql 恢复 sys_user 表

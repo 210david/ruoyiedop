@@ -43,7 +43,7 @@ INSERT INTO `wms_warehouse` (parent_id,ancestors,node_type,warehouse_code,wareho
 INSERT INTO `wms_warehouse` (parent_id,ancestors,node_type,warehouse_code,warehouse_name,area_type,location_type,status,del_flag,create_by,create_time)
 SELECT warehouse_id,warehouse_id,2,CONCAT(warehouse_code,'A01'),'常温存储区','0','0','0','0','admin',NOW() FROM wms_warehouse WHERE warehouse_code LIKE 'YH-WH%';
 INSERT INTO `wms_warehouse` (parent_id,ancestors,node_type,warehouse_code,warehouse_name,area_type,location_type,status,del_flag,create_by,create_time)
-SELECT parent_id,CONCAT(ancestors,',',parent_id),3,CONCAT(warehouse_code,'L01'),'货架位01','0','0','0','0','admin',NOW() FROM wms_warehouse WHERE node_type=2;
+SELECT parent_id,CONCAT(ancestors,',',parent_id),3,CONCAT(warehouse_code,'L01'),'货架位01','0','0','0','0','admin',NOW() FROM wms_warehouse WHERE node_type=2 AND warehouse_code LIKE 'YH-%';
 
 -- -----------------------------------------------------------------------------
 -- 三、物料（wms_material：0原材料 1半成品 2成品 3辅料）

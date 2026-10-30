@@ -14,6 +14,9 @@ public interface WmsWarehouseMapper
     /** 查询子节点数量 */
     public int countChildByParentId(Long parentId);
 
+    /** 查询直接子节点列表（编码级联更新用） */
+    public List<WmsWarehouse> selectChildByParentId(Long parentId);
+
     /** 新增 */
     public int insertWarehouse(WmsWarehouse warehouse);
 

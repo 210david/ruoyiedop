@@ -89,7 +89,7 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
     {
         // 如果修改了父节点，需要更新 ancestors
         WmsWarehouse old = wmsWarehouseMapper.selectWarehouseById(warehouse.getWarehouseId());
-        if ("1".equals(warehouse.getNodeType()) && old != null)
+        if (old != null)
         {
             if (isAutoCodeEnabled())
             {
@@ -98,10 +98,10 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
             }
             else
             {
-                // 自动编码关闭：允许手动修改编码，校验不能重复（排除自身）
+                // 自动编码关闭：所有节点类型（仓库/仓区/仓位）允许手动修改编码，校验不能重复（排除自身）
                 if (StringUtils.isEmpty(warehouse.getWarehouseCode()))
                 {
-                    throw new ServiceException("仓库编码不能为空：自动编码已关闭，请手动填写仓库编码");
+                    throw new ServiceException("仓库编码不能为空：自动编码已关闭，请手动填写编码");
                 }
                 if (!warehouse.getWarehouseCode().equals(old.getWarehouseCode()))
                 {
@@ -114,7 +114,32 @@ public class WmsWarehouseServiceImpl implements IWmsWarehouseService
         {
             buildAncestors(warehouse);
         }
-        return wmsWarehouseMapper.updateWarehouse(warehouse);
+        int rows = wmsWarehouseMapper.updateWarehouse(warehouse);
+        // 编码变更后级联更新子节点编码前缀，保持层级编码一致（如仓区 WH001A01 改为 WH001B01，其下仓位 WH001A01L01 → WH001B01L01）
+        if (old != null && !old.getWarehouseCode().equals(warehouse.getWarehouseCode()))
+        {
+            cascadeChildCodes(warehouse.getWarehouseId(), old.getWarehouseCode(), warehouse.getWarehouseCode());
+        }
+        return rows;
+    }
+
+    /** 级联更新子节点编码：子节点编码以旧父编码为前缀的部分替换为新父编码，递归处理 */
+    private void cascadeChildCodes(Long parentId, String oldCode, String newCode)
+    {
+        List<WmsWarehouse> children = wmsWarehouseMapper.selectChildByParentId(parentId);
+        for (WmsWarehouse child : children)
+        {
+            String childCode = child.getWarehouseCode();
+            if (StringUtils.isNotEmpty(childCode) && childCode.startsWith(oldCode))
+            {
+                String updated = newCode + childCode.substring(oldCode.length());
+                WmsWarehouse update = new WmsWarehouse();
+                update.setWarehouseId(child.getWarehouseId());
+                update.setWarehouseCode(updated);
+                wmsWarehouseMapper.updateWarehouse(update);
+                cascadeChildCodes(child.getWarehouseId(), childCode, updated);
+            }
+        }
     }
 
     @Override
