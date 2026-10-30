@@ -126,6 +126,11 @@
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="结算方式" prop="settleType" key="settleType" :width="colWidth('settleType', 100)" resizable align="center" v-if="columns.settleType.visible">
+            <template #default="scope">
+              <el-tag :type="scope.row.settleType === '0' ? 'warning' : 'info'" effect="light">{{ settleLabel(scope.row.settleType) }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="负责人" prop="userName" key="userName" :width="colWidth('userName', 100)" resizable v-if="columns.userName.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
         <template #default="scope">
@@ -229,6 +234,17 @@
                 <el-col :span="8"><el-form-item label="订单状态" prop="orderStatus">
                   <el-select v-model="form.orderStatus" disabled style="width: 100%">
                     <el-option v-for="d in marketing_order_status" :key="d.value" :label="d.label" :value="d.value" />
+                  </el-select>
+                </el-form-item></el-col>
+                <el-col :span="8"><el-form-item prop="settleType">
+                  <template #label>
+                    <span>结算方式</span>
+                    <el-tooltip content="个人客户强制现结，下单与审核双节点拦截" placement="top">
+                      <el-icon class="rd-form-tip"><question-filled /></el-icon>
+                    </el-tooltip>
+                  </template>
+                  <el-select v-model="form.settleType" :disabled="isPersonalOrder" style="width: 100%">
+                    <el-option v-for="d in mk_settle_type" :key="d.value" :label="d.label" :value="d.value" />
                   </el-select>
                 </el-form-item></el-col>
               </el-row>
@@ -895,7 +911,7 @@ import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_order_index')
-const { marketing_order_status, wms_unit } = proxy.useDict('marketing_order_status', 'wms_unit')
+const { marketing_order_status, wms_unit, mk_settle_type } = proxy.useDict('marketing_order_status', 'wms_unit', 'mk_settle_type')
 
 const list = ref([])
 const open = ref(false)
@@ -961,6 +977,7 @@ const defaultColumns = {
   customerName: { label: '客户名称', visible: true },
   orderAmount: { label: '订单金额', visible: true },
   orderStatus: { label: '订单状态', visible: true },
+  settleType: { label: '结算方式', visible: true },
   userName: { label: '负责人', visible: true }
 }
 
@@ -1044,6 +1061,7 @@ function openCustomerPicker() {
 function onCustomerPickerConfirm(customer) {
   form.value.customerId = customer.customerId
   form.value.customerName = customer.customerName
+  applyCustomerSettleType(customer)
   if (customer.userId) {
     form.value.userId = customer.userId
     form.value.userName = customer.userName
@@ -1068,6 +1086,7 @@ function onContractPickerConfirm(contract) {
     form.value.customerName = contract.customerName
     getCustomer(contract.customerId).then(res => {
       const customer = res.data
+      applyCustomerSettleType(customer)
       if (customer && customer.userId && !form.value.userId) {
         form.value.userId = customer.userId
         form.value.userName = customer.userName
@@ -1129,7 +1148,18 @@ function calcSubtotal(index) { const item = form.value.itemList[index]; if (item
 function handleQuery() { showAdvanced.value = false; queryParams.value.params = proxy.addDateRange(queryParams.value.params, dateRange.value, 'CreateTime'); queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.customerName = undefined; queryParams.value.orderStatus = undefined; queryParams.value.contractNo = undefined; queryParams.value.userName = undefined; dateRange.value = []; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.orderId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { orderNo: undefined, contractId: undefined, contractNo: undefined, customerId: undefined, customerName: undefined, orderAmount: 0, orderStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, itemList: [], remark: undefined }; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = false; collapsedCards.other = false; proxy.resetForm('orderRef') }
+function reset() { form.value = { orderNo: undefined, contractId: undefined, contractNo: undefined, customerId: undefined, customerName: undefined, orderAmount: 0, orderStatus: '0', settleType: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, itemList: [], remark: undefined }; selectedCustomerType.value = undefined; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = false; collapsedCards.other = false; proxy.resetForm('orderRef') }
+
+/** 所选客户的类型（1企业 2经销商 3个人），用于个人客户强制现结 */
+const selectedCustomerType = ref(undefined)
+const isPersonalOrder = computed(() => selectedCustomerType.value === '3')
+/** 结算方式显示 */
+function settleLabel(val) { const item = mk_settle_type.value.find(d => d.value == val); return item ? item.label : (val === '0' ? '现结' : '账期') }
+/** 个人客户强制现结 */
+function applyCustomerSettleType(customer) {
+  selectedCustomerType.value = customer && customer.customerType ? customer.customerType : undefined
+  if (selectedCustomerType.value === '3') { form.value.settleType = '0' }
+}
 function handleAdd() { reset(); open.value = true; title.value = '新增订单' }
 function handleUpdate(row) { reset(); getOrder(row.orderId || ids.value[0]).then(res => { form.value = res.data; if (!form.value.itemList) { form.value.itemList = [] }; open.value = true; title.value = '修改订单' }) }
 function handleView(row) { getOrder(row.orderId).then(res => { viewForm.value = res.data; collapsedCards.basic = false; collapsedCards.owner = false; collapsedCards.items = !res.data.itemList || res.data.itemList.length === 0; collapsedCards.other = !res.data.remark && !res.data.cancelReason; viewOpen.value = true }) }

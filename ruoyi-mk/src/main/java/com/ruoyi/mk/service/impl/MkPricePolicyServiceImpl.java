@@ -97,8 +97,22 @@ public class MkPricePolicyServiceImpl implements IMkPricePolicyService
                 result.put("policyNo", custPolicy.getPolicyNo());
                 return result;
             }
-            // 2. 等级价（按客户等级匹配）
             MkCustomer customer = mkCustomerMapper.selectCustomerById(customerId);
+            // 2. 经销商供货价（仅经销商客户，按经销层级匹配，插在客户专价与等级价之间）
+            if (customer != null && MkCustomer.TYPE_DEALER.equals(customer.getCustomerType()))
+            {
+                // 经销层级随上级推导：无上级=一级(1)，有上级=二级(2)
+                String dealerLevel = customer.getParentCustomerId() == null ? "1" : "2";
+                MkPricePolicy dealerPolicy = mkPricePolicyMapper.selectDealerPrice(dealerLevel, materialId);
+                if (dealerPolicy != null)
+                {
+                    result.put("unitPrice", dealerPolicy.getUnitPrice());
+                    result.put("source", "经销商供货价");
+                    result.put("policyNo", dealerPolicy.getPolicyNo());
+                    return result;
+                }
+            }
+            // 3. 等级价（按客户等级匹配）
             if (customer != null && StringUtils.isNotEmpty(customer.getCustomerLevel()))
             {
                 MkPricePolicy levelPolicy = mkPricePolicyMapper.selectLevelPrice(customer.getCustomerLevel(), materialId);
@@ -111,7 +125,7 @@ public class MkPricePolicyServiceImpl implements IMkPricePolicyService
                 }
             }
         }
-        // 3. 无政策
+        // 4. 无政策
         result.put("unitPrice", null);
         result.put("source", "");
         result.put("policyNo", null);
@@ -143,6 +157,11 @@ public class MkPricePolicyServiceImpl implements IMkPricePolicyService
         if ("2".equals(policy.getPriceType()) && StringUtils.isEmpty(policy.getCustomerLevel()))
         {
             throw new ServiceException("等级价必须指定客户等级");
+        }
+        // 经销商供货价：customer_level 复用为经销层级（1一级 2二级）
+        if ("3".equals(policy.getPriceType()) && StringUtils.isEmpty(policy.getCustomerLevel()))
+        {
+            throw new ServiceException("经销商供货价必须指定经销层级");
         }
         if (policy.getPriceType() == null || policy.getPriceType().isEmpty())
         {

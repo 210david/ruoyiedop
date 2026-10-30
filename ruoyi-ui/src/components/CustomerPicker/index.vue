@@ -19,7 +19,10 @@
         <el-input v-model="queryParams.customerNo" placeholder="客户编号" clearable size="small" style="width: 160px" @keyup.enter="handleQuery">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-input v-model="queryParams.customerName" placeholder="企业名称" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-model="queryParams.customerName" placeholder="客户名称" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-select v-model="queryParams.customerType" placeholder="客户类型" clearable size="small" style="width: 130px; margin-left: 8px" @change="handleQuery">
+          <el-option v-for="d in mk_customer_type" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select>
         <el-select v-model="queryParams.customerLevel" placeholder="客户等级" clearable size="small" style="width: 120px; margin-left: 8px" @change="handleQuery">
           <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
@@ -45,7 +48,10 @@
             </template>
           </el-table-column>
           <el-table-column label="客户编号" prop="customerNo" width="130" show-overflow-tooltip />
-          <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
+          <el-table-column label="客户名称" prop="customerName" min-width="170" show-overflow-tooltip />
+          <el-table-column label="客户类型" prop="customerType" width="95" align="center">
+            <template #default="scope"><dict-tag :options="mk_customer_type" :value="scope.row.customerType" /></template>
+          </el-table-column>
           <el-table-column label="客户等级" prop="customerLevel" width="100" align="center">
             <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
           </el-table-column>
@@ -78,7 +84,7 @@
 import { listCustomer } from '@/api/mk/customer'
 
 const { proxy } = getCurrentInstance()
-const { marketing_customer_level, marketing_customer_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_status')
+const { marketing_customer_level, marketing_customer_status, mk_customer_type } = proxy.useDict('marketing_customer_level', 'marketing_customer_status', 'mk_customer_type')
 
 const props = defineProps({
   title: {
@@ -102,6 +108,7 @@ const queryParams = reactive({
   pageSize: 10,
   customerNo: undefined,
   customerName: undefined,
+  customerType: undefined,
   customerLevel: undefined
 })
 
@@ -109,6 +116,7 @@ const queryParams = reactive({
 function onOpen() {
   queryParams.customerNo = undefined
   queryParams.customerName = undefined
+  queryParams.customerType = undefined
   queryParams.customerLevel = undefined
   queryParams.pageNum = 1
   selectedId.value = null
@@ -144,6 +152,7 @@ function handleQuery() {
 function resetQuery() {
   queryParams.customerNo = undefined
   queryParams.customerName = undefined
+  queryParams.customerType = undefined
   queryParams.customerLevel = undefined
   handleQuery()
 }

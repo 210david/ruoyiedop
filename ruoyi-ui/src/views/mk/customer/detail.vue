@@ -30,7 +30,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.d_basic">
               <div class="rd-grid">
                 <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ customer.customerNo }}</div></div>
-                <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ customer.customerName }}</div></div>
+                <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ customer.customerName }}</div></div>
                 <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ customer.creditCode }}</div></div>
                 <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="customer.customerLevel" /></div></div>
                 <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="customer.customerSource" /></div></div>

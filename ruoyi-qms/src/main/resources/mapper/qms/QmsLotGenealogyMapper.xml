@@ -18,6 +18,8 @@
         <result property="operator" column="operator"/>
         <result property="supplierId" column="supplier_id"/>
         <result property="supplierName" column="supplier_name"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="customerName" column="customer_name"/>
         <result property="sourceType" column="source_type"/>
         <result property="sourceNo" column="source_no"/>
         <result property="traceTime" column="trace_time"/>
@@ -36,6 +38,7 @@
         SELECT id, parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
                material_id, material_code, material_name, qty_in, qty_out,
                line_id, line_name, operator, supplier_id, supplier_name,
+               customer_id, customer_name,
                source_type, source_no, trace_time, break_flag, break_reason,
                del_flag, status, create_by, create_time, update_by, update_time, remark
         FROM qms_lot_genealogy
@@ -51,6 +54,7 @@
             <if test="materialCode != null and materialCode != ''"> AND material_code LIKE CONCAT('%', #{materialCode}, '%')</if>
             <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
             <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="sourceType != null and sourceType != ''"> AND source_type = #{sourceType}</if>
             <if test="breakFlag != null"> AND break_flag = #{breakFlag}</if>
         </where>
@@ -100,12 +104,14 @@
             parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
             material_id, material_code, material_name, qty_in, qty_out,
             line_id, line_name, operator, supplier_id, supplier_name,
+            customer_id, customer_name,
             source_type, source_no, trace_time, break_flag, break_reason,
             del_flag, status, create_by, create_time, remark
         ) VALUES (
             #{parentBatchNo}, #{childBatchNo}, #{workOrderNo}, #{opId}, #{opName},
             #{materialId}, #{materialCode}, #{materialName}, #{qtyIn}, #{qtyOut},
             #{lineId}, #{lineName}, #{operator}, #{supplierId}, #{supplierName},
+            #{customerId}, #{customerName},
             #{sourceType}, #{sourceNo}, #{traceTime}, #{breakFlag}, #{breakReason},
             '0', #{status}, #{createBy}, sysdate(), #{remark}
         )
@@ -116,6 +122,7 @@
             parent_batch_no, child_batch_no, work_order_no, op_id, op_name,
             material_id, material_code, material_name, qty_in, qty_out,
             line_id, line_name, operator, supplier_id, supplier_name,
+            customer_id, customer_name,
             source_type, source_no, trace_time, break_flag, break_reason,
             del_flag, status, create_by, create_time, remark
         ) VALUES
@@ -124,6 +131,7 @@
             #{item.parentBatchNo}, #{item.childBatchNo}, #{item.workOrderNo}, #{item.opId}, #{item.opName},
             #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.qtyIn}, #{item.qtyOut},
             #{item.lineId}, #{item.lineName}, #{item.operator}, #{item.supplierId}, #{item.supplierName},
+            #{item.customerId}, #{item.customerName},
             #{item.sourceType}, #{item.sourceNo}, #{item.traceTime}, #{item.breakFlag}, #{item.breakReason},
             '0', '0', #{item.createBy}, sysdate(), #{item.remark}
         )
@@ -154,6 +162,8 @@
             <if test="operator != null"> operator = #{operator},</if>
             <if test="supplierId != null"> supplier_id = #{supplierId},</if>
             <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="customerId != null"> customer_id = #{customerId},</if>
+            customer_name = #{customerName},
             <if test="sourceType != null"> source_type = #{sourceType},</if>
             <if test="traceTime != null"> trace_time = #{traceTime},</if>
             <if test="breakFlag != null"> break_flag = #{breakFlag},</if>

@@ -46,4 +46,13 @@ public interface MkDashboardMapper
 
     /** 销售人员月度业绩趋势 */
     public List<MkDashboardVO> selectSalespersonMonthlyTrend(@Param("userId") Long userId);
+
+    /** P2-01: 按客户类型统计客户数/订单数/销售额 */
+    public List<MkDashboardVO> selectCustomerTypeStats();
+
+    /** P2-01: 客户类型月度销售额趋势（按月×类型分组） */
+    public List<MkDashboardVO> selectCustomerTypeTrend();
+
+    /** P2-04: 个人客户消费Top10（contactPhone 明文，Service 层负责脱敏） */
+    public java.util.List<java.util.Map<String, Object>> selectPersonalTopCustomers();
 }

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkRebateOffsetMapper">
+
+    <resultMap type="MkRebateOffset" id="MkRebateOffsetResult">
+        <id     property="offsetId"      column="offset_id"/>
+        <result property="settleId"      column="settle_id"/>
+        <result property="offsetAmount"  column="offset_amount"/>
+        <result property="offsetDate"    column="offset_date"/>
+        <result property="auditStatus"   column="audit_status"/>
+        <result property="auditBy"       column="audit_by"/>
+        <result property="auditTime"     column="audit_time"/>
+        <result property="auditOpinion"  column="audit_opinion"/>
+        <result property="msgId"         column="msg_id"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="settleNo"      column="settle_no"/>
+        <result property="customerId"    column="customer_id"/>
+        <result property="customerName"  column="customer_name"/>
+        <result property="rebateAmount"  column="rebate_amount"/>
+    </resultMap>
+
+    <sql id="selectOffsetVo">
+        select o.offset_id, o.settle_id, o.offset_amount, o.offset_date, o.audit_status,
+               o.audit_by, o.audit_time, o.audit_opinion, o.msg_id,
+               o.create_by, o.create_time, o.update_by, o.update_time, o.remark,
+               s.settle_no, s.customer_id, s.customer_name, s.rebate_amount
+        from mk_rebate_offset o
+        inner join mk_rebate_settle s on o.settle_id = s.settle_id
+    </sql>
+
+    <select id="selectOffsetList" parameterType="MkRebateOffset" resultMap="MkRebateOffsetResult">
+        <include refid="selectOffsetVo"/>
+        <where>
+            <if test="settleId != null"> and o.settle_id = #{settleId}</if>
+            <if test="auditStatus != null and auditStatus != ''"> and o.audit_status = #{auditStatus}</if>
+            <if test="customerId != null"> and s.customer_id = #{customerId}</if>
+            <if test="customerName != null and customerName != ''"> and s.customer_name like concat('%', #{customerName}, '%')</if>
+            <if test="settleNo != null and settleNo != ''"> and s.settle_no like concat('%', #{settleNo}, '%')</if>
+        </where>
+        order by o.offset_id desc
+    </select>
+
+    <select id="selectOffsetById" parameterType="Long" resultMap="MkRebateOffsetResult">
+        <include refid="selectOffsetVo"/>
+        where o.offset_id = #{offsetId}
+    </select>
+
+    <select id="selectOffsetListBySettleId" parameterType="Long" resultMap="MkRebateOffsetResult">
+        <include refid="selectOffsetVo"/>
+        where o.settle_id = #{settleId}
+        order by o.offset_id desc
+    </select>
+
+    <select id="selectOffsetSumBySettleId" parameterType="Long" resultType="java.math.BigDecimal">
+        select IFNULL(sum(offset_amount), 0) from mk_rebate_offset
+        where settle_id = #{settleId} and audit_status = '1'
+    </select>
+
+    <insert id="insertOffset" parameterType="MkRebateOffset" useGeneratedKeys="true" keyProperty="offsetId">
+        insert into mk_rebate_offset (settle_id, offset_amount, offset_date, audit_status, create_by, create_time, remark)
+        values (#{settleId}, #{offsetAmount}, #{offsetDate}, #{auditStatus}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateOffset" parameterType="MkRebateOffset">
+        update mk_rebate_offset
+        <set>
+            <if test="auditStatus != null and auditStatus != ''">audit_status = #{auditStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            audit_opinion = #{auditOpinion},
+            <if test="msgId != null">msg_id = #{msgId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where offset_id = #{offsetId}
+    </update>
+
+</mapper>

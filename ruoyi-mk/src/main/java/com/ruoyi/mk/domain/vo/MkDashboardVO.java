@@ -101,6 +101,18 @@ public class MkDashboardVO extends BaseEntity
     /** 转化率 */
     private BigDecimal conversionRate;
 
+    /** 类型名称（P2-01 客户类型分析） */
+    private String typeName;
+
+    /** 客单价（销售额/订单数，Service派生） */
+    private BigDecimal avgOrderAmount;
+
+    /** 销售额占比%（Service派生） */
+    private BigDecimal amountRatio;
+
+    /** 客户数占比%（Service派生） */
+    private BigDecimal customerRatio;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getCode() { return code; }
@@ -159,4 +171,13 @@ public class MkDashboardVO extends BaseEntity
     public void setAvgDealAmount(BigDecimal avgDealAmount) { this.avgDealAmount = avgDealAmount; }
     public BigDecimal getConversionRate() { return conversionRate; }
     public void setConversionRate(BigDecimal conversionRate) { this.conversionRate = conversionRate; }
+
+    public String getTypeName() { return typeName; }
+    public void setTypeName(String typeName) { this.typeName = typeName; }
+    public BigDecimal getAvgOrderAmount() { return avgOrderAmount; }
+    public void setAvgOrderAmount(BigDecimal avgOrderAmount) { this.avgOrderAmount = avgOrderAmount; }
+    public BigDecimal getAmountRatio() { return amountRatio; }
+    public void setAmountRatio(BigDecimal amountRatio) { this.amountRatio = amountRatio; }
+    public BigDecimal getCustomerRatio() { return customerRatio; }
+    public void setCustomerRatio(BigDecimal customerRatio) { this.customerRatio = customerRatio; }
 }

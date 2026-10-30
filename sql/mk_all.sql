@@ -12,7 +12,10 @@ DROP TABLE IF EXISTS mk_customer;
 CREATE TABLE mk_customer (
     customer_id        BIGINT        NOT NULL AUTO_INCREMENT  COMMENT '客户ID',
     customer_no        VARCHAR(32)   NOT NULL                 COMMENT '客户编号',
-    customer_name      VARCHAR(200)  NOT NULL                 COMMENT '企业名称',
+    customer_name      VARCHAR(200)  NOT NULL                 COMMENT '客户名称',
+    customer_type      CHAR(1)       DEFAULT '1'              COMMENT '客户类型（1企业客户 2经销商 3个人客户）',
+    parent_customer_id BIGINT                                 COMMENT '上级经销商ID（仅经销商使用）',
+    contact_phone      VARCHAR(20)                            COMMENT '个人客户手机号（明文存储，接口层统一脱敏）',
     credit_code        VARCHAR(32)                            COMMENT '统一社会信用代码',
     customer_level     VARCHAR(10)   DEFAULT '3'              COMMENT '客户等级（1关键大客户 2重要客户 3普通客户 4潜在客户）',
     customer_source    VARCHAR(10)   DEFAULT '0'              COMMENT '客户来源（字典）',
@@ -37,11 +40,14 @@ CREATE TABLE mk_customer (
     remark             VARCHAR(500)                           COMMENT '备注',
     PRIMARY KEY (customer_id),
     UNIQUE KEY uk_customer_no (customer_no),
+    UNIQUE KEY uk_phone (contact_phone),
     KEY idx_customer_name (customer_name),
     KEY idx_customer_user (user_id),
     KEY idx_customer_dept (dept_id),
-    KEY idx_customer_level (customer_level)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='企业客户表';
+    KEY idx_customer_level (customer_level),
+    KEY idx_customer_type (customer_type),
+    KEY idx_customer_parent (parent_customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户表';
 
 -- 2. 联系人表
 DROP TABLE IF EXISTS mk_contact;
@@ -308,6 +314,7 @@ CREATE TABLE mk_order (
     contract_id         BIGINT                                 COMMENT '关联合同ID',
     customer_id         BIGINT        NOT NULL                 COMMENT '客户ID',
     order_amount        DECIMAL(14,2) NOT NULL                 COMMENT '订单金额',
+    settle_type         CHAR(1)       DEFAULT '0'              COMMENT '结算方式（0现结 1账期）——个人客户强制0',
     order_status        VARCHAR(10)   DEFAULT '0'              COMMENT '订单状态（0待发货 1已发货 2已完成 3已取消）',
     logistics_company   VARCHAR(50)                            COMMENT '物流公司',
     tracking_no         VARCHAR(50)                            COMMENT '物流单号',
@@ -727,6 +734,155 @@ INSERT INTO mk_customer (customer_id, customer_no, customer_name, credit_code, c
 (3, 'CUS20260719003', '深圳创新金融服务有限公司', '91440300MA01GHI789', '2', '2', '2', '1', '广东省', '深圳市', '南山区', '科技园南区高新南一道9号', 'www.cx-fin.com', '2', '2026-03-05', '2026-04-01', 150000, 2, 103, '0', 'admin', sysdate(), '金融行业客户'),
 (4, 'CUS20260719004', '杭州云端教育科技有限公司', '91330106MA01JKL012', '3', '3', '3', '1', '浙江省', '杭州市', '余杭区', '未来科技城梦想小镇', 'www.yunduan-edu.com', '0', '2026-04-10', NULL, 50000, 2, 103, '0', 'admin', sysdate(), '教育行业新客户'),
 (5, 'CUS20260719005', '广州速达物流有限公司', '91440101MA01MNO345', '4', '4', '6', '2', '广东省', '广州市', '天河区', '天河软件园建中路50号', 'www.suda-log.com', '0', '2026-05-15', NULL, 0, 2, 103, '0', 'admin', sysdate(), '潜在客户，待跟进');
+
+
+-- =============================================
+-- 七、多类型客户体系（客户类型/经销商/个人客户，V2.1 方案）
+-- 注意：本文件为全量初始化脚本（DROP+CREATE），升级环境严禁直接执行
+-- =============================================
+
+-- 1. 经销商扩展档案
+DROP TABLE IF EXISTS mk_dealer_profile;
+CREATE TABLE mk_dealer_profile (
+  profile_id      BIGINT        NOT NULL AUTO_INCREMENT COMMENT '档案ID',
+  customer_id     BIGINT        NOT NULL                COMMENT '客户ID',
+  dealer_level    CHAR(1)                               COMMENT '经销层级（1一级 2二级）',
+  auth_regions    VARCHAR(500)                          COMMENT '授权区域（省市区JSON）',
+  auth_categories VARCHAR(500)                          COMMENT '授权品类（物料分类ID串）',
+  deposit_amount  DECIMAL(14,2) DEFAULT 0               COMMENT '保证金（仅档案金额，收退台账独立立项）',
+  coop_start_date DATE                                  COMMENT '合作开始日期',
+  coop_end_date   DATE                                  COMMENT '合作结束日期',
+  status          CHAR(1)       DEFAULT '0'             COMMENT '状态（0正常 1停用）',
+  create_by       VARCHAR(64)   DEFAULT ''              COMMENT '创建者',
+  create_time     DATETIME                              COMMENT '创建时间',
+  update_by       VARCHAR(64)   DEFAULT ''              COMMENT '更新者',
+  update_time     DATETIME                              COMMENT '更新时间',
+  remark          VARCHAR(500)                          COMMENT '备注',
+  PRIMARY KEY (profile_id),
+  UNIQUE KEY uk_dealer_customer (customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='经销商扩展档案';
+
+-- 2. 经销商分销流向登记
+DROP TABLE IF EXISTS mk_dealer_sell_flow;
+CREATE TABLE mk_dealer_sell_flow (
+  flow_id         BIGINT        NOT NULL AUTO_INCREMENT COMMENT '流向ID',
+  dealer_id       BIGINT        NOT NULL                COMMENT '经销商客户ID',
+  flow_date       DATE          NOT NULL                COMMENT '流向日期',
+  material_id     BIGINT        NOT NULL                COMMENT '物料ID',
+  batch_no        VARCHAR(64)   DEFAULT NULL            COMMENT '批次号（启用批次管理的行业/物料必填，其他可空）',
+  quantity        DECIMAL(18,4) NOT NULL                COMMENT '数量',
+  downstream_type CHAR(1)                               COMMENT '下游客户类型（1企业 2经销商 3个人 4终端不详）',
+  downstream_name VARCHAR(200)                          COMMENT '下游客户名称',
+  shipment_id     BIGINT                                COMMENT '来源发货单ID',
+  create_by       VARCHAR(64)   DEFAULT ''              COMMENT '创建者',
+  create_time     DATETIME                              COMMENT '创建时间',
+  update_by       VARCHAR(64)   DEFAULT ''              COMMENT '更新者',
+  update_time     DATETIME                              COMMENT '更新时间',
+  remark          VARCHAR(500)                          COMMENT '备注',
+  PRIMARY KEY (flow_id),
+  KEY idx_flow_batch (batch_no),
+  KEY idx_dealer_date (dealer_id, flow_date),
+  UNIQUE KEY uk_shipment_material (shipment_id, material_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='经销商分销流向登记';
+
+-- 3. 返利冲抵台账
+DROP TABLE IF EXISTS mk_rebate_offset;
+CREATE TABLE mk_rebate_offset (
+  offset_id     BIGINT        NOT NULL AUTO_INCREMENT COMMENT '冲抵ID',
+  settle_id     BIGINT        NOT NULL                COMMENT '返利结算单ID',
+  offset_amount DECIMAL(14,2) NOT NULL                COMMENT '本次冲抵金额',
+  offset_date   DATE          NOT NULL                COMMENT '冲抵日期',
+  audit_status  CHAR(1)       DEFAULT '0'             COMMENT '审批状态（0待财务审核 1审核通过 2驳回）',
+  audit_by      VARCHAR(64)                           COMMENT '审核人',
+  audit_time    DATETIME                              COMMENT '审核时间',
+  audit_opinion VARCHAR(500)                          COMMENT '审核意见',
+  msg_id        BIGINT                                COMMENT '财务待办消息ID',
+  create_by     VARCHAR(64)   DEFAULT ''              COMMENT '创建者',
+  create_time   DATETIME                              COMMENT '创建时间',
+  update_by     VARCHAR(64)   DEFAULT ''              COMMENT '更新者',
+  update_time   DATETIME                              COMMENT '更新时间',
+  remark        VARCHAR(500)                          COMMENT '备注',
+  PRIMARY KEY (offset_id),
+  KEY idx_offset_settle (settle_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='返利冲抵台账';
+
+-- 4. 客户变更日志
+DROP TABLE IF EXISTS mk_customer_change_log;
+CREATE TABLE mk_customer_change_log (
+  log_id        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  customer_id   BIGINT       NOT NULL                COMMENT '客户ID',
+  change_type   VARCHAR(20)  NOT NULL                COMMENT '变更类型（customer_type客户类型 parent上级经销商）',
+  old_value     VARCHAR(200)                         COMMENT '变更前值',
+  new_value     VARCHAR(200)                         COMMENT '变更后值',
+  change_reason VARCHAR(500)                         COMMENT '变更原因',
+  create_by     VARCHAR(64)  DEFAULT ''              COMMENT '创建者',
+  create_time   DATETIME                             COMMENT '创建时间',
+  update_by     VARCHAR(64)  DEFAULT ''              COMMENT '更新者',
+  update_time   DATETIME                             COMMENT '更新时间',
+  remark        VARCHAR(500)                         COMMENT '备注',
+  PRIMARY KEY (log_id),
+  KEY idx_change_customer (customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户变更日志';
+
+-- 5. 字典：客户类型/经销层级/结算方式/冲抵状态/下游客户类型 + 价格类型与客户等级扩展
+INSERT INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark) VALUES
+('客户类型', 'mk_customer_type', '0', 'admin', sysdate(), '企业客户/经销商/个人客户'),
+('经销层级', 'mk_dealer_level', '0', 'admin', sysdate(), '经销商层级字典'),
+('结算方式', 'mk_settle_type', '0', 'admin', sysdate(), '订单结算方式（现结/账期）'),
+('冲抵状态', 'mk_offset_status', '0', 'admin', sysdate(), '返利结算单冲抵状态'),
+('冲抵审批状态', 'mk_offset_audit_status', '0', 'admin', sysdate(), '返利冲抵审批状态（一级审批）'),
+('下游客户类型', 'mk_downstream_type', '0', 'admin', sysdate(), '经销商流向下游客户类型'),
+('付款方式', 'marketing_payment_method', '0', 'admin', sysdate(), '合同付款方式（含个人客户现结专用：一次性）');
+
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, list_class, is_default, status, create_by, create_time) VALUES
+(1, '企业客户', '1', 'mk_customer_type', 'primary', 'Y', '0', 'admin', sysdate()),
+(2, '经销商',   '2', 'mk_customer_type', 'warning', 'N', '0', 'admin', sysdate()),
+(3, '个人客户', '3', 'mk_customer_type', 'info',    'N', '0', 'admin', sysdate()),
+(1, '一级经销商', '1', 'mk_dealer_level', 'primary', 'Y', '0', 'admin', sysdate()),
+(2, '二级经销商', '2', 'mk_dealer_level', 'success', 'N', '0', 'admin', sysdate()),
+(1, '现结', '0', 'mk_settle_type', 'primary', 'Y', '0', 'admin', sysdate()),
+(2, '账期', '1', 'mk_settle_type', 'warning', 'N', '0', 'admin', sysdate()),
+(1, '未冲抵', '0', 'mk_offset_status', 'info', 'Y', '0', 'admin', sysdate()),
+(2, '部分冲抵', '1', 'mk_offset_status', 'warning', 'N', '0', 'admin', sysdate()),
+(3, '全部冲抵', '2', 'mk_offset_status', 'success', 'N', '0', 'admin', sysdate()),
+(1, '待财务审核', '0', 'mk_offset_audit_status', 'warning', 'Y', '0', 'admin', sysdate()),
+(2, '审核通过', '1', 'mk_offset_audit_status', 'success', 'N', '0', 'admin', sysdate()),
+(3, '驳回', '2', 'mk_offset_audit_status', 'danger', 'N', '0', 'admin', sysdate()),
+(1, '企业客户', '1', 'mk_downstream_type', 'primary', 'N', '0', 'admin', sysdate()),
+(2, '经销商', '2', 'mk_downstream_type', 'warning', 'N', '0', 'admin', sysdate()),
+(3, '个人客户', '3', 'mk_downstream_type', 'info', 'N', '0', 'admin', sysdate()),
+(4, '终端不详', '4', 'mk_downstream_type', 'info', 'N', '0', 'admin', sysdate()),
+(3, '经销商供货价', '3', 'mk_price_type', 'warning', 'N', '0', 'admin', sysdate()),
+(5, '一级经销商', '5', 'marketing_customer_level', 'warning', 'N', '0', 'admin', sysdate()),
+(6, '二级经销商', '6', 'marketing_customer_level', 'warning', 'N', '0', 'admin', sysdate()),
+(1, '银行转账', '0', 'marketing_payment_method', 'primary', 'Y', '0', 'admin', sysdate()),
+(2, '承兑汇票', '1', 'marketing_payment_method', 'info', 'N', '0', 'admin', sysdate()),
+(3, '现金', '2', 'marketing_payment_method', 'success', 'N', '0', 'admin', sysdate()),
+(4, '其他', '3', 'marketing_payment_method', '', 'N', '0', 'admin', sysdate()),
+(5, '一次性', '4', 'marketing_payment_method', 'warning', 'N', '0', 'admin', sysdate());
+
+-- 6. 菜单与按钮权限
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(4200, '经销商管理', 4001, 6, 'dealer', 'mk/dealer/index', '', 'MkDealer', 1, 0, 'C', '0', '0', 'marketing:dealer:list', 'shopping', 'admin', sysdate(), '经销商档案/层级/授权管理'),
+(4201, '经销商查询', 4200, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:dealer:query', '#', 'admin', sysdate(), ''),
+(4202, '经销商新增', 4200, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:dealer:add', '#', 'admin', sysdate(), ''),
+(4203, '经销商修改', 4200, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:dealer:edit', '#', 'admin', sysdate(), ''),
+(4204, '经销商删除', 4200, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:dealer:remove', '#', 'admin', sysdate(), ''),
+(4205, '流向登记', 4487, 6, 'dealerFlow', 'mk/dealerFlow/index', '', 'MkDealerFlow', 1, 0, 'C', '0', '0', 'marketing:flow:list', 'log', 'admin', sysdate(), '经销商分销流向登记'),
+(4206, '流向查询', 4205, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:flow:query', '#', 'admin', sysdate(), ''),
+(4207, '流向新增', 4205, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:flow:add', '#', 'admin', sysdate(), ''),
+(4208, '流向修改', 4205, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:flow:edit', '#', 'admin', sysdate(), ''),
+(4209, '流向删除', 4205, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:flow:remove', '#', 'admin', sysdate(), ''),
+(4210, '个人客户导出', 4010, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:customer:exportPersonal', '#', 'admin', sysdate(), '个人客户手机号明文导出（留痕审计）'),
+(4211, '客户类型变更', 4010, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:customer:changeType', '#', 'admin', sysdate(), '企业客户/经销商互转'),
+(4212, '冲抵登记', 9062221, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:rebate:offset:add', '#', 'admin', sysdate(), '返利冲抵台账登记（支持拆分）'),
+(4213, '冲抵审核', 9062221, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:rebate:offset:audit', '#', 'admin', sysdate(), '财务一级审批'),
+(4214, '冲抵明细', 9062221, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:rebate:offset:list', '#', 'admin', sysdate(), '查看冲抵台账明细');
+
+-- P2-02 经销商专项报表（营销管理 → 数据分析 → 经销商专项报表）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
+(4215, '经销商专项报表', 4006, 3, 'dealerReport', 'mk/dealerReport/index', '', 'MkDealerReport', 1, 0, 'C', '0', '0', 'marketing:dealerReport:list', 'report', 'admin', sysdate(), '分经销商销量/返利/账龄/流向汇总'),
+(4216, '报表导出', 4215, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'marketing:dealerReport:export', '#', 'admin', sysdate(), '');
 
 -- 联系人数据（5条）
 INSERT INTO mk_contact (contact_id, customer_id, name, gender, position, department, role_tag, phone, email, wechat, qq, is_key, is_primary, personal_trait, del_flag, create_by, create_time, remark) VALUES

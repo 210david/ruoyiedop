@@ -18,12 +18,15 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkCustomer;
+import com.ruoyi.mk.domain.MkRebateOffset;
 import com.ruoyi.mk.domain.MkRebatePolicy;
 import com.ruoyi.mk.domain.MkRebateSettle;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
+import com.ruoyi.mk.mapper.MkRebateOffsetMapper;
 import com.ruoyi.mk.mapper.MkRebatePolicyMapper;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.mk.service.IMkRebateService;
+import com.ruoyi.system.utils.MessageHelper;
 
 /**
  * 返利政策/结算 Service实现
@@ -40,7 +43,13 @@ public class MkRebateServiceImpl implements IMkRebateService
     private MkRebatePolicyMapper mkRebatePolicyMapper;
 
     @Autowired
+    private MkRebateOffsetMapper mkRebateOffsetMapper;
+
+    @Autowired
     private MkCustomerMapper mkCustomerMapper;
+
+    @Autowired
+    private MessageHelper messageHelper;
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
@@ -229,30 +238,118 @@ public class MkRebateServiceImpl implements IMkRebateService
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public int redeem(Long settleId, String redeemType)
+    public List<MkRebateOffset> selectOffsetList(MkRebateOffset offset)
     {
-        MkRebateSettle settle = mkRebatePolicyMapper.selectSettleById(settleId);
+        return mkRebateOffsetMapper.selectOffsetList(offset);
+    }
+
+    @Override
+    public List<MkRebateOffset> selectOffsetListBySettleId(Long settleId)
+    {
+        return mkRebateOffsetMapper.selectOffsetListBySettleId(settleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertOffset(MkRebateOffset offset)
+    {
+        MkRebateSettle settle = mkRebatePolicyMapper.selectSettleById(offset.getSettleId());
         if (settle == null)
         {
             throw new ServiceException("返利结算单不存在");
         }
         if (!"0".equals(settle.getStatus()))
         {
-            throw new ServiceException("只有待兑现状态的结算单才能兑现");
+            throw new ServiceException("只有待兑现状态的结算单可以登记冲抵");
         }
-        if (StringUtils.isEmpty(redeemType))
+        if (offset.getOffsetAmount() == null || offset.getOffsetAmount().compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("兑现方式不能为空");
+            throw new ServiceException("本次冲抵金额必须大于0");
         }
-        MkRebateSettle update = new MkRebateSettle();
-        update.setSettleId(settleId);
-        update.setStatus("1");
-        update.setRedeemType(redeemType);
-        update.setRedeemDate(new Date());
-        update.setRedeemBy(SecurityUtils.getUsername());
-        update.setUpdateBy(SecurityUtils.getUsername());
-        return mkRebatePolicyMapper.updateSettle(update);
+        if (offset.getOffsetDate() == null)
+        {
+            throw new ServiceException("冲抵日期不能为空");
+        }
+        // 已审核通过的冲抵合计 + 本次金额 不得超过结算返利总额
+        BigDecimal offsetTotal = mkRebateOffsetMapper.selectOffsetSumBySettleId(offset.getSettleId());
+        if (offsetTotal.add(offset.getOffsetAmount()).compareTo(settle.getRebateAmount()) > 0)
+        {
+            throw new ServiceException("冲抵金额超出可冲抵余额：返利总额 "
+                    + settle.getRebateAmount().toPlainString() + "，已冲抵 " + offsetTotal.toPlainString());
+        }
+        offset.setAuditStatus(MkRebateOffset.AUDIT_PENDING);
+        offset.setCreateBy(SecurityUtils.getUsername());
+        int rows = mkRebateOffsetMapper.insertOffset(offset);
+        // 推送财务待办：冲抵审核（红票开票依据）
+        if (rows > 0)
+        {
+            String content = "客户：" + settle.getCustomerName() + "，结算单：" + settle.getSettleNo()
+                    + "，本次冲抵：￥" + offset.getOffsetAmount().toPlainString()
+                    + "，冲抵日期：" + new java.text.SimpleDateFormat("yyyy-MM-dd").format(offset.getOffsetDate());
+            messageHelper.sendMessage(
+                "返利冲抵待审核",
+                content,
+                "3",   // 审批消息
+                "2",   // 重要
+                "mk",
+                offset.getOffsetId(),
+                "/mk/rebate/settleList",
+                "marketing:rebate:offset:audit",
+                "1",   // bizStatus: 待审核
+                "返利冲抵单"
+            );
+        }
+        return rows;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int auditOffset(MkRebateOffset audit)
+    {
+        MkRebateOffset old = mkRebateOffsetMapper.selectOffsetById(audit.getOffsetId());
+        if (old == null)
+        {
+            throw new ServiceException("冲抵记录不存在");
+        }
+        if (!MkRebateOffset.AUDIT_PENDING.equals(old.getAuditStatus()))
+        {
+            throw new ServiceException("该冲抵记录已审核，请勿重复操作");
+        }
+        String auditStatus = audit.getAuditStatus();
+        if (!MkRebateOffset.AUDIT_PASS.equals(auditStatus) && !MkRebateOffset.AUDIT_REJECT.equals(auditStatus))
+        {
+            throw new ServiceException("审核状态不合法（1通过 2驳回）");
+        }
+        String username = SecurityUtils.getUsername();
+        audit.setAuditBy(username);
+        audit.setAuditTime(new Date());
+        audit.setUpdateBy(username);
+        int rows = mkRebateOffsetMapper.updateOffset(audit);
+        if (rows > 0 && MkRebateOffset.AUDIT_PASS.equals(auditStatus))
+        {
+            // 审核通过：重算结算单冲抵进度
+            MkRebateSettle settle = mkRebatePolicyMapper.selectSettleById(old.getSettleId());
+            BigDecimal offsetTotal = mkRebateOffsetMapper.selectOffsetSumBySettleId(old.getSettleId());
+            MkRebateSettle update = new MkRebateSettle();
+            update.setSettleId(old.getSettleId());
+            update.setOffsetAmount(offsetTotal);
+            if (offsetTotal.compareTo(settle.getRebateAmount()) >= 0)
+            {
+                // 全部冲抵：结算单置已兑现
+                update.setOffsetStatus("2");
+                update.setStatus("1");
+                update.setRedeemType("2"); // 抵货款
+                update.setRedeemDate(new Date());
+                update.setRedeemBy(username);
+            }
+            else
+            {
+                update.setOffsetStatus("1");
+            }
+            update.setUpdateBy(username);
+            mkRebatePolicyMapper.updateSettle(update);
+        }
+        return rows;
     }
 
     private void validateTiers(List<MkRebatePolicy> tiers, String expectNo)

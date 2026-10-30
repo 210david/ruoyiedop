@@ -68,6 +68,14 @@ public class MkRebateSettle extends BaseEntity
     /** 兑现人 */
     private String redeemBy;
 
+    /** 冲抵状态（0未冲抵 1部分冲抵 2全部冲抵） */
+    @Excel(name = "冲抵状态", dictType = "mk_offset_status")
+    private String offsetStatus;
+
+    /** 已冲抵金额 */
+    @Excel(name = "已冲抵金额")
+    private BigDecimal offsetAmount;
+
     /** 删除标志（0存在 2删除） */
     private String delFlag;
 
@@ -99,6 +107,10 @@ public class MkRebateSettle extends BaseEntity
     public void setRedeemDate(Date redeemDate) { this.redeemDate = redeemDate; }
     public String getRedeemBy() { return redeemBy; }
     public void setRedeemBy(String redeemBy) { this.redeemBy = redeemBy; }
+    public String getOffsetStatus() { return offsetStatus; }
+    public void setOffsetStatus(String offsetStatus) { this.offsetStatus = offsetStatus; }
+    public BigDecimal getOffsetAmount() { return offsetAmount; }
+    public void setOffsetAmount(BigDecimal offsetAmount) { this.offsetAmount = offsetAmount; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
 }

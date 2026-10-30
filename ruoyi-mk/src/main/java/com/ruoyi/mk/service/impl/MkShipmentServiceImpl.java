@@ -3,7 +3,10 @@ package com.ruoyi.mk.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
@@ -27,6 +30,8 @@ import com.ruoyi.mk.service.IMkNumberRuleService;
 @Service
 public class MkShipmentServiceImpl implements IMkShipmentService
 {
+    private static final Logger log = LoggerFactory.getLogger(MkShipmentServiceImpl.class);
+
     @Autowired
     private MkShipmentMapper mkShipmentMapper;
 
@@ -38,6 +43,9 @@ public class MkShipmentServiceImpl implements IMkShipmentService
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<MkShipment> selectShipmentList(MkShipment shipment)
@@ -257,6 +265,18 @@ public class MkShipmentServiceImpl implements IMkShipmentService
             }
             // 删除明细
             mkShipmentMapper.deleteShipmentDetailByShipmentId(shipmentId);
+            // 发布谱系撤销事件：QMS 侧删除该发货单写入的 shipment 谱系（幂等，未写过则无影响）
+            try
+            {
+                eventPublisher.publishEvent(new MkShipmentGenealogyEvent(this, MkShipmentGenealogyEvent.ACTION_REVOKE,
+                        shipment.getShipmentId(), shipment.getShipmentNo(), shipment.getOrderId(),
+                        shipment.getCustomerId(), shipment.getCustomerName(), shipment.getOutboundOrderNo(),
+                        shipment.getShipperName(), shipment.getShipmentDate()));
+            }
+            catch (Exception e)
+            {
+                log.error("发货谱系撤销事件发布失败（不阻断删除主流程）：发货单 {}，原因：{}", shipment.getShipmentNo(), e.getMessage(), e);
+            }
         }
         return mkShipmentMapper.deleteShipmentByIds(shipmentIds);
     }
@@ -429,6 +449,18 @@ public class MkShipmentServiceImpl implements IMkShipmentService
                 updateOrder.setUpdateBy(SecurityUtils.getUsername());
                 mkOrderMapper.updateOrder(updateOrder);
             }
+        }
+        // 发布发货谱系联动事件：QMS 侧事务提交后写"成品批次→发货客户"谱系（失败不阻断发货主流程）
+        try
+        {
+            eventPublisher.publishEvent(new MkShipmentGenealogyEvent(this, MkShipmentGenealogyEvent.ACTION_CONFIRM,
+                    existing.getShipmentId(), existing.getShipmentNo(), existing.getOrderId(),
+                    existing.getCustomerId(), existing.getCustomerName(), existing.getOutboundOrderNo(),
+                    existing.getShipperName(), existing.getShipmentDate()));
+        }
+        catch (Exception e)
+        {
+            log.error("发货谱系事件发布失败（不阻断发货主流程）：发货单 {}，原因：{}", existing.getShipmentNo(), e.getMessage(), e);
         }
         return rows;
     }
