@@ -1,0 +1,23 @@
+-- =============================================================================
+-- YHNY 菜单/字典/授权差量同步脚本（数据源：ruoyi_cfsp 开发库，2026-10-30）
+-- 背景：YHNY 库基线为 CFSP 全量备份（2026-10-13），落后 cfsp 分支 14 天，
+--       本次已直接从 ruoyi_cfsp 库同步以下差量（随附 4 个 mysqldump 文件）：
+--   1) sys_menu 差量 77 条（批次管理 906210~9062118、投标管理 905886 系列、
+--      招投标档案 9062200 系列等）——见 sync_menu_delta_20261030.sql
+--   2) sys_menu 改名：905886 招投标管理 → 投标管理（并归位到营销管理 4000 下）
+--   3) sys_module 模块开关：hr/bid 由停用改为启用（与 cfsp 一致）
+--   4) sys_dict_type 差量 25 类 —— 见 sync_dict_type_delta_20261030.sql
+--      及对应 sys_dict_data —— 见 sync_dict_data_delta_20261030.sql
+--   5) sys_role_menu 角色授权差量 —— 见 sync_role_menu_delta_20261030.sql
+-- 验证结果：同步后 YHNY 菜单 1557 条（与 cfsp 一致，缺失 0）、字典类型 302 类
+--          （缺失 0）、905886 名称=投标管理、批次管理菜单 13 条、hr/bid 均启用。
+-- =============================================================================
+-- 回滚说明（手工按需执行）：
+-- DELETE FROM sys_role_menu WHERE menu_id IN (77 条差量菜单ID, 见 sync_menu_delta_20261030.sql);
+-- DELETE FROM sys_menu WHERE menu_id IN (77 条差量菜单ID);
+-- UPDATE sys_menu SET menu_name='招投标管理' WHERE menu_id=905886;
+-- UPDATE sys_module SET status='1' WHERE module_key IN ('hr','bid');
+-- 字典回滚：按 sync_dict_type_delta_20261030.sql 中的 dict_type 执行
+--   DELETE FROM sys_dict_data WHERE dict_type IN (...);
+--   DELETE FROM sys_dict_type WHERE dict_type IN (...);
+-- =============================================================================
