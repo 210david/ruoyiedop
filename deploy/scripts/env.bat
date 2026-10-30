@@ -5,7 +5,7 @@ REM Path: D:\EDOP\scripts\env.bat
 REM ============================================================
 
 REM ===== Root Directory =====
-set EDOP_HOME=D:\EDOP
+set EDOP_HOME=D:\EDOP\YHNY
 
 REM ===== JDK Path (portable JDK) =====
 set JAVA_HOME=%EDOP_HOME%\jdk17
@@ -21,10 +21,10 @@ set UPLOAD_PATH=%EDOP_HOME%\uploadPath
 set LOG_HOME=%EDOP_HOME%\app\logs
 
 REM ===== Service Config =====
-set JAR_NAME=ruoyi-admin.jar
-set BACKEND_PORT=8004
+set JAR_NAME=edop-admin-v10.jar
+set BACKEND_PORT=84
 set REDIS_PORT=6379
-set NGINX_PORT=8005
+set NGINX_PORT=8084
 set MYSQL_PORT=3306
 
 REM ===== JVM Options =====

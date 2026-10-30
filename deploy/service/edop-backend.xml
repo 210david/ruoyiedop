@@ -1,7 +1,7 @@
 <service>
   <id>EDOP-CFSP-Backend</id>
   <name>传丰食品 EDOP 后端服务</name>
-  <description>传丰食品数字化运营平台 - Spring Boot 后端服务 (端口8082)</description>
+  <description>源禾农业数字化运营平台 - Spring Boot 后端服务 (端口84)</description>
   
   <executable>%JAVA_HOME%\bin\java.exe</executable>
   <arguments>-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=D:\EDOP_CFSP\app\logs -jar ruoyi-admin.jar</arguments>
