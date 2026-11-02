@@ -79,6 +79,15 @@ export function terminateContract(contractId, terminateReason) {
   })
 }
 
+// 过期恢复（已过期 -> 已生效），可同时调整到期日或改为长期有效
+export function restoreExpiredContract(contractId, restoreReason, newExpireDate, longTerm) {
+  return request({
+    url: '/mk/contract/restore/' + contractId,
+    method: 'put',
+    params: { restoreReason, newExpireDate, longTerm }
+  })
+}
+
 // 合同续签
 export function renewContract(contractId, data) {
   return request({

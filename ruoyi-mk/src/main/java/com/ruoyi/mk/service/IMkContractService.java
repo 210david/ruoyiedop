@@ -31,6 +31,17 @@ public interface IMkContractService
     /** 终止合同：已生效(2) -> 已终止(4) */
     public int terminateContract(Long contractId, String terminateReason);
 
+    /**
+     * 过期恢复：已过期(3) -> 已生效(2)
+     *
+     * @param contractId    合同ID
+     * @param restoreReason 恢复原因
+     * @param newExpireDate 新的到期日期（可选，为空时沿用原到期日）
+     * @param longTerm      是否改为长期有效（true 时清空到期日期）
+     */
+    public int restoreExpiredContract(Long contractId, String restoreReason,
+            java.util.Date newExpireDate, Boolean longTerm);
+
     /** 检查并更新过期合同：已生效(2) -> 已过期(3) */
     public int checkExpiredContracts();
 
