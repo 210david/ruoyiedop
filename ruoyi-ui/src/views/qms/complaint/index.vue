@@ -413,7 +413,7 @@
         <div class="highlight-card highlight-warning" style="margin-top: 12px;">
           <div class="highlight-card-title">客户与物料信息区</div>
           <div class="highlight-card-body">
-            <p>• <strong>客户名称：</strong>投诉客户的企业名称，点击搜索按钮从客户档案中选择<span style="color: #f56c6c;">*必填</span></p>
+            <p>• <strong>客户名称：</strong>投诉客户的客户名称，点击搜索按钮从客户档案中选择<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>客户编号：</strong>客户编号在选择客户后自动带出</p>
             <p>• <strong>物料编码：</strong>投诉涉及的物料编码，点击搜索按钮从物料主数据中选择<span style="color: #f56c6c;">*必填</span></p>
             <p>• <strong>物料名称：</strong>物料名称在选择物料后自动带出</p>

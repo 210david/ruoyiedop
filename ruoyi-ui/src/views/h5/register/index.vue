@@ -111,12 +111,12 @@
         <h3 class="card-title">填写报名信息</h3>
         <form @submit.prevent="handleSubmit" class="register-form">
           <div class="form-group">
-            <label class="form-label">企业名称 <span class="required">*</span></label>
+            <label class="form-label">客户名称 <span class="required">*</span></label>
             <input
               v-model="form.companyName"
               type="text"
               class="form-input"
-              placeholder="请输入企业名称"
+              placeholder="请输入客户名称"
               maxlength="100"
             />
           </div>
@@ -235,7 +235,7 @@ const validateForm = () => {
   formError.value = ''
 
   if (!form.companyName || form.companyName.trim().length < 2) {
-    formError.value = '请输入企业名称（至少2个字符）'
+    formError.value = '请输入客户名称（至少2个字符）'
     return false
   }
   if (!form.contactName || form.contactName.trim().length < 2) {

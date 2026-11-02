@@ -355,7 +355,7 @@
       </template>
       <div class="customer-picker">
         <div class="customer-picker-search">
-          <el-input v-model="customerPickerQuery.customerName" placeholder="企业名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
+          <el-input v-model="customerPickerQuery.customerName" placeholder="客户名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-input v-model="customerPickerQuery.creditCode" placeholder="信用代码" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleCustomerPickerQuery">
@@ -371,7 +371,7 @@
                 <el-radio :model-value="customerPickerSelectedId" :value="row.customerId" @click.stop="onCustomerRowClick(row)"><span /></el-radio>
               </template>
             </el-table-column>
-            <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
+            <el-table-column label="客户名称" prop="customerName" min-width="180" show-overflow-tooltip />
             <el-table-column label="信用代码" prop="creditCode" width="160" show-overflow-tooltip />
             <el-table-column label="客户等级" width="100" align="center">
               <template #default="scope">{{ levelLabel(scope.row.customerLevel) }}</template>
@@ -555,7 +555,7 @@
               <div class="rd-card-body" v-show="!collapsedCards.viewActivities">
                 <el-table ref="activitiesTableRef" :data="activityParticipants" border size="small" v-if="activityParticipants.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
-                  <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
+                  <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
                   <el-table-column label="参与状态" prop="participateStatus" width="100" align="center">
                     <template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template>
                   </el-table-column>

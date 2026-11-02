@@ -371,7 +371,7 @@
                 <el-col :span="8"><el-form-item label="最短时长"><el-input-number v-model="paramRow.minDays" :min="0" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="最长时长"><el-input-number v-model="paramRow.maxDays" :min="0" :precision="1" :step="0.5" controls-position="right" style="width: 100%" /></el-form-item></el-col>
               </el-row>
-              <div class="form-tip" style="margin-left:10px">长周期工序（腌制/发酵/晾制）以天计；WIP预计出柜时间 = 入柜时间 + 标准时长</div>
+              <div class="form-tip" style="margin-left:10px">长周期工序（发酵/沉淀/陈化）以天计；WIP预计出柜时间 = 入柜时间 + 标准时长</div>
             </div>
           </section>
           <section class="rd-card">

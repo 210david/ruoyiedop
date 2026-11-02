@@ -78,7 +78,7 @@
         <template #label>参与活动<el-badge :value="activityParticipants.length" :hidden="activityParticipants.length === 0" class="ml5" /></template>
         <el-table :data="activityParticipants" border size="small">
           <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
-          <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
+          <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
           <el-table-column label="参与状态" prop="participateStatus" width="100" align="center">
             <template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template>
           </el-table-column>

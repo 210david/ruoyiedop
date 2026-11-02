@@ -19,7 +19,7 @@
           </div>
         </div>
         <div class="field">
-          <label>企业名称</label>
+          <label>客户名称</label>
           <div class="control">
             <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -148,7 +148,7 @@
           <el-table-column label="客户编号" prop="customerNo" key="customerNo" :min-width="colWidth('customerNo', 150)" show-overflow-tooltip resizable sortable="custom" v-if="columns.customerNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.customerNo }}</span></template>
           </el-table-column>
-          <el-table-column label="企业名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
             </template>
@@ -242,7 +242,7 @@
           <div class="rd-card-body" v-show="!collapsedCards.c_basic">
             <el-row>
               <el-col :span="12"><el-form-item label="客户编号" prop="customerNo"><el-input v-model="form.customerNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="企业名称" prop="customerName"><el-input v-model="form.customerName" placeholder="请输入企业名称" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="客户名称" prop="customerName"><el-input v-model="form.customerName" placeholder="请输入客户名称" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="信用代码" prop="creditCode"><el-input v-model="form.creditCode" placeholder="请输入统一社会信用代码" /></el-form-item></el-col>
               <el-col :span="12"><el-form-item label="客户等级" prop="customerLevel">
                 <el-select v-model="form.customerLevel" placeholder="请选择" style="width: 100%">
@@ -524,7 +524,7 @@
               <div class="rd-card-body" v-show="!collapsedCards.v_basic">
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ viewForm.customerNo }}</div></div>
-                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
                   <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ viewForm.creditCode }}</div></div>
                   <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="viewForm.customerLevel" /></div></div>
                   <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="viewForm.customerSource" /></div></div>
@@ -693,7 +693,7 @@
                 <el-table :data="activities" border size="small" v-if="activities.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
-                  <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
+                  <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
                   <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
                   <el-table-column label="签到时间" prop="signTime" width="160" />
                 </el-table>
@@ -763,7 +763,7 @@
           <p>• <strong>公海机制：</strong>释放到公海的客户无负责人，其他销售人员可领取</p>
           <p>• <strong>批量操作：</strong>支持批量分配负责人、批量变更客户状态</p>
           <p>• <strong>客户导入：</strong>支持通过Excel批量导入客户数据</p>
-          <p>• <strong>客户查重：</strong>新增时系统自动检测重复企业名称</p>
+          <p>• <strong>客户查重：</strong>新增时系统自动检测重复客户名称</p>
           <p>• <strong>详情关联：</strong>客户详情页展示联系人、商机、合同、订单、互动记录等关联数据</p>
         </div>
       </div>
@@ -851,18 +851,18 @@ const statusCustomerId = ref(null)
 
 // ===== 导入功能配置 =====
 const importTips = [
-  '企业名称为必填字段，不能为空',
+  '客户名称为必填字段，不能为空',
   '统一社会信用代码为必填字段，需为18位数字和大写字母',
   '客户编号由系统自动生成，无需填写',
   '客户等级请填写文字描述（参考系统中字典数据，或留空）',
   '客户状态请填写文字描述（参考系统中字典数据，或留空）',
   '累计交易额请填写非负数值',
-  '如勾选「更新已存在数据」，需选择匹配字段：按企业名称、统一信用代码或客户编号匹配',
+  '如勾选「更新已存在数据」，需选择匹配字段：按客户名称、统一信用代码或客户编号匹配',
   '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入'
 ]
 const importColumnLabels = {
   customerNo: '客户编号',
-  customerName: '企业名称',
+  customerName: '客户名称',
   creditCode: '统一社会信用代码',
   customerLevel: '客户等级',
   customerStatus: '客户状态',
@@ -875,7 +875,7 @@ const importColumnLabels = {
   errorReason: '失败原因'
 }
 const updateKeyOptions = [
-  { value: 'customerName', label: '企业名称' },
+  { value: 'customerName', label: '客户名称' },
   { value: 'creditCode', label: '统一社会信用代码' },
   { value: 'customerNo', label: '客户编号' }
 ]
@@ -885,8 +885,8 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, userName: undefined, params: {} },
   rules: {
     customerName: [
-      { required: true, message: '企业名称不能为空', trigger: 'blur' },
-      { min: 2, max: 100, message: '企业名称长度需在 2 到 100 个字符', trigger: 'blur' }
+      { required: true, message: '客户名称不能为空', trigger: 'blur' },
+      { min: 2, max: 100, message: '客户名称长度需在 2 到 100 个字符', trigger: 'blur' }
     ],
     creditCode: [
       { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
@@ -912,7 +912,7 @@ const { queryParams, form, rules } = toRefs(data)
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   customerNo: { label: '客户编号', visible: true },
-  customerName: { label: '企业名称', visible: true },
+  customerName: { label: '客户名称', visible: true },
   tagNames: { label: '客户标签', visible: true },
   customerLevel: { label: '客户等级', visible: true },
   industry: { label: '所属行业', visible: true },

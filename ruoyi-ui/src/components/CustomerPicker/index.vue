@@ -19,7 +19,7 @@
         <el-input v-model="queryParams.customerNo" placeholder="客户编号" clearable size="small" style="width: 160px" @keyup.enter="handleQuery">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-input v-model="queryParams.customerName" placeholder="企业名称" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-model="queryParams.customerName" placeholder="客户名称" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleQuery" />
         <el-select v-model="queryParams.customerLevel" placeholder="客户等级" clearable size="small" style="width: 120px; margin-left: 8px" @change="handleQuery">
           <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
@@ -45,7 +45,7 @@
             </template>
           </el-table-column>
           <el-table-column label="客户编号" prop="customerNo" width="130" show-overflow-tooltip />
-          <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
+          <el-table-column label="客户名称" prop="customerName" min-width="180" show-overflow-tooltip />
           <el-table-column label="客户等级" prop="customerLevel" width="100" align="center">
             <template #default="scope"><dict-tag :options="marketing_customer_level" :value="scope.row.customerLevel" /></template>
           </el-table-column>

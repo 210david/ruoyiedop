@@ -124,7 +124,7 @@
           <el-col :span="1.5"><el-button type="primary" plain icon="Plus" size="small" @click="handleAddParticipant" v-hasPermi="['marketing:participant:add']">新增参与人</el-button></el-col>
         </el-row>
         <el-table :data="participants" border size="small">
-          <el-table-column label="企业名称" prop="companyName" show-overflow-tooltip />
+          <el-table-column label="客户名称" prop="companyName" show-overflow-tooltip />
           <el-table-column label="联系人" prop="contactName" width="100" align="center" />
           <el-table-column label="手机号" prop="contactPhone" width="130" align="center" />
           <el-table-column label="职位" prop="position" width="100" align="center" />
@@ -296,7 +296,7 @@
             <el-option v-for="c in contactOptions" :key="c.contactId" :label="c.name + ' (' + (c.customerName||'') + ')'" :value="c.contactId" />
           </el-select>
         </el-form-item>
-        <el-form-item label="企业名称" prop="companyName"><el-input v-model="participantForm.companyName" /></el-form-item>
+        <el-form-item label="客户名称" prop="companyName"><el-input v-model="participantForm.companyName" /></el-form-item>
         <el-form-item label="联系人" prop="contactName"><el-input v-model="participantForm.contactName" /></el-form-item>
         <el-form-item label="手机号" prop="contactPhone"><el-input v-model="participantForm.contactPhone" /></el-form-item>
         <el-form-item label="邮箱"><el-input v-model="participantForm.contactEmail" /></el-form-item>
@@ -349,7 +349,7 @@ const contactOptions = ref([])
 
 const participantForm = ref({})
 const participantRules = {
-  companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
+  companyName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
   contactName: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
   contactPhone: [{ required: true, message: '手机号不能为空', trigger: 'blur' }]
 }

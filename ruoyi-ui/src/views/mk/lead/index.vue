@@ -19,7 +19,7 @@
           </div>
         </div>
         <div class="field">
-          <label>企业名称</label>
+          <label>客户名称</label>
           <div class="control">
             <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -122,7 +122,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
-          <el-table-column label="企业名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
+          <el-table-column label="客户名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.companyName }}</el-button>
             </template>
@@ -202,7 +202,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.c_lead">
               <el-row>
                 <el-col :span="12"><el-form-item label="线索编号" prop="leadNo"><el-input v-model="form.leadNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" @blur="onCompanyBlur" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="客户名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入客户名称" @blur="onCompanyBlur" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" @blur="onPhoneBlur" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
@@ -327,7 +327,7 @@
               <div class="rd-card-body" v-show="!collapsedCards.viewBasic">
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ viewForm.leadNo }}</div></div>
-                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
                   <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
                   <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
                   <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.contactEmail }">{{ viewForm.contactEmail || '暂无' }}</div></div>
@@ -577,7 +577,7 @@
         </template>
       </el-alert>
       <el-descriptions :column="2" border size="small" class="mb8">
-        <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ convertForm.companyName }}</div></div>
+        <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ convertForm.companyName }}</div></div>
         <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ convertForm.contactName }}</div></div>
         <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ convertForm.contactPhone }}</div></div>
         <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="convertForm.leadSource" /></div></div>
@@ -633,7 +633,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.followInfo">
               <div class="rd-grid">
-                <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
+                <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ followForm.companyName }}</div></div>
                 <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ followForm.contactName }}</div></div>
               </div>
             </div>
@@ -675,7 +675,7 @@
       action="/mk/lead/importData"
       template-action="/mk/lead/importTemplate"
       template-file-name="lead_template"
-      update-support-label="如果已存在相同企业名称，则更新数据"
+      update-support-label="如果已存在相同客户名称，则更新数据"
       :tips="importTips"
       :column-labels="importColumnLabels"
       @success="getList"
@@ -692,7 +692,7 @@
       <el-alert v-if="dupList.length > 0" title="系统检测到以下线索可能与当前输入重复，请确认是否继续" type="warning" :closable="false" class="mb8" />
       <el-table :data="dupList" border size="small">
         <el-table-column label="线索编号" prop="leadNo" width="150" />
-        <el-table-column label="企业名称" prop="companyName" show-overflow-tooltip />
+        <el-table-column label="客户名称" prop="companyName" show-overflow-tooltip />
         <el-table-column label="联系人" prop="contactName" width="100" />
         <el-table-column label="手机号" prop="contactPhone" width="130" />
         <el-table-column label="状态" prop="leadStatus" width="80" align="center">
@@ -762,7 +762,7 @@
           <p>• <strong>快速跟进：</strong>点击"跟进"按钮可快速录入跟进记录，系统自动更新最后跟进时间</p>
           <p>• <strong>转化为客户：</strong>线索转化后自动创建客户档案和联系人，不可逆操作</p>
           <p>• <strong>公海机制：</strong>可退回公海，其他销售人员可申请领取</p>
-          <p>• <strong>查重功能：</strong>新增时自动检测重复企业名称和手机号</p>
+          <p>• <strong>查重功能：</strong>新增时自动检测重复客户名称和手机号</p>
           <p>• <strong>批量操作：</strong>支持批量分配负责人、批量变更状态</p>
           <p>• <strong>线索导入：</strong>支持通过Excel批量导入线索数据</p>
         </div>
@@ -881,7 +881,7 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, leadNo: undefined, companyName: undefined, leadStatus: undefined, leadGrade: undefined, leadSource: undefined, isPublic: '0', params: {} },
   rules: {
-    companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
+    companyName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
     contactName: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
     contactPhone: [
       { required: true, message: '手机号不能为空', trigger: 'blur' },
@@ -901,7 +901,7 @@ const { queryParams, form, rules } = toRefs(data)
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   leadNo: { label: '线索编号', visible: true },
-  companyName: { label: '企业名称', visible: true },
+  companyName: { label: '客户名称', visible: true },
   contactName: { label: '联系人', visible: true },
   contactPhone: { label: '手机号', visible: true },
   leadSource: { label: '线索来源', visible: true },
@@ -1267,15 +1267,15 @@ function confirmBatchStatus() {
 // 导入
 const importTips = [
   '请先下载导入模板，按模板格式填写数据。',
-  '企业名称、联系人、手机号、所属行业、线索来源、线索等级、需求描述为必填字段。',
+  '客户名称、联系人、手机号、所属行业、线索来源、线索等级、需求描述为必填字段。',
   '所属行业、企业规模、线索来源、等级、状态请填写文字描述（参考系统中字典数据，或留空）',
   '评分请填写0-100之间的整数，选择等级后系统会自动填充参考评分',
-  '如勾选更新选项，已存在相同企业名称的线索将被覆盖更新。',
+  '如勾选更新选项，已存在相同客户名称的线索将被覆盖更新。',
   '导入结果将显示每条数据的处理情况，失败数据可导出修正后重新导入。'
 ]
 const importColumnLabels = {
   leadNo: '线索编号',
-  companyName: '企业名称',
+  companyName: '客户名称',
   contactName: '联系人',
   contactPhone: '手机号',
   contactEmail: '邮箱',

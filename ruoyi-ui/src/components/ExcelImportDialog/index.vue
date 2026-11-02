@@ -302,7 +302,7 @@ const defaultLabels = {
   materialCode: '物料编码', materialName: '物料名称', specModel: '规格型号', unit: '单位',
   materialType: '物料类型',
   // 客户
-  customerNo: '客户编号', customerName: '企业名称', customerLevel: '客户等级',
+  customerNo: '客户编号', customerName: '客户名称', customerLevel: '客户等级',
   contactName: '联系人', phone: '电话',
   // 员工
   deptName: '部门', position: '职位', idCard: '身份证号', gender: '性别',

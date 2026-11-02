@@ -11,7 +11,7 @@
       </div>
       <div class="filter-bar">
         <div class="field">
-          <label>企业名称</label>
+          <label>客户名称</label>
           <div class="control">
             <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -123,7 +123,7 @@
         <el-table ref="tableRef" border v-loading="loading" :data="list" @header-dragend="onHeaderDragEnd" @sort-change="handleSortChange" class="app-table">
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="线索编号" prop="leadNo" key="leadNo" :width="colWidth('leadNo', 150)" resizable v-if="columns.leadNo.visible" />
-          <el-table-column label="企业名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
+          <el-table-column label="客户名称" prop="companyName" key="companyName" :width="colWidth('companyName', 200)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
           <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
           <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.contactPhone }}</span></template>
@@ -189,7 +189,7 @@
               <div class="rd-card-body" v-show="!collapsedCards.v_lead">
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ viewForm.leadNo }}</div></div>
-                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
                   <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
                   <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
                   <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.contactEmail }">{{ viewForm.contactEmail || '暂无' }}</div></div>
@@ -329,7 +329,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ approveForm.leadNo }}</div></div>
               <div class="rd-item"><span class="rd-label">线索来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="approveForm.leadSource" /></div></div>
-              <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ approveForm.companyName }}</div></div>
+              <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ approveForm.companyName }}</div></div>
               <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ approveForm.contactName }}</div></div>
               <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ approveForm.contactPhone }}</div></div>
               <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !approveForm.contactEmail }">{{ approveForm.contactEmail || '暂无' }}</div></div>
@@ -515,7 +515,7 @@ const { queryParams } = toRefs(data)
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   leadNo: { label: '线索编号', visible: true },
-  companyName: { label: '企业名称', visible: true },
+  companyName: { label: '客户名称', visible: true },
   contactName: { label: '联系人', visible: true },
   contactPhone: { label: '手机号', visible: true },
   leadSource: { label: '线索来源', visible: true },

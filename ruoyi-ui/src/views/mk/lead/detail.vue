@@ -18,7 +18,7 @@
       <el-tab-pane label="基本信息" name="basic">
         <div class="rd-grid">
           <div class="rd-item"><span class="rd-label">线索编号</span><div class="rd-value">{{ lead.leadNo }}</div></div>
-          <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ lead.companyName }}</div></div>
+          <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ lead.companyName }}</div></div>
           <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ lead.contactName }}</div></div>
           <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ lead.contactPhone }}</div></div>
           <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': true }">{{ lead.contactEmail || '暂无' }}</div></div>

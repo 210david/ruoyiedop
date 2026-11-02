@@ -20,7 +20,7 @@
           </div>
         </div>
         <div class="field">
-          <label>企业名称</label>
+          <label>客户名称</label>
           <div class="control">
             <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -125,7 +125,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="活动名称" prop="activityName" key="activityName" :min-width="colWidth('activityName', 200)" resizable show-overflow-tooltip v-if="!queryParams.activityId && columns.activityName.visible" />
-          <el-table-column label="企业名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 180)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
+          <el-table-column label="客户名称" prop="companyName" key="companyName" :min-width="colWidth('companyName', 180)" resizable show-overflow-tooltip v-if="columns.companyName.visible" />
           <el-table-column label="联系人" prop="contactName" key="contactName" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
           <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.contactPhone }}</span></template>
@@ -205,7 +205,7 @@
                     <template #suffix><el-icon style="cursor: pointer"><Search /></el-icon></template>
                   </el-input>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="企业名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入企业名称" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="客户名称" prop="companyName"><el-input v-model="form.companyName" placeholder="请输入客户名称" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="联系人" prop="contactName"><el-input v-model="form.contactName" placeholder="请输入联系人姓名" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入手机号" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="邮箱" prop="contactEmail"><el-input v-model="form.contactEmail" placeholder="请输入邮箱" /></el-form-item></el-col>
@@ -268,7 +268,7 @@
           </div>
           <div class="rd-card-body" v-show="!collapsedCards.v_info">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
+              <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.companyName }}</div></div>
               <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewForm.contactName }}</div></div>
               <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewForm.contactPhone }}</div></div>
               <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value" :class="{ 'rd-value--muted': !viewForm.contactEmail }">{{ viewForm.contactEmail || '暂无' }}</div></div>
@@ -450,7 +450,7 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, activityId: undefined, companyName: undefined, participateStatus: undefined, contactName: undefined, contactPhone: undefined, position: undefined, params: {} },
   rules: {
     activityId: [{ required: true, message: '请选择所属活动', trigger: 'change' }],
-    companyName: [{ required: true, message: '企业名称不能为空', trigger: 'blur' }],
+    companyName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
     contactName: [{ required: true, message: '联系人不能为空', trigger: 'blur' }],
     contactPhone: [{ required: true, message: '手机号不能为空', trigger: 'blur' }]
   }
@@ -460,7 +460,7 @@ const { queryParams, form, rules } = toRefs(data)
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   activityName: { label: '活动名称', visible: true },
-  companyName: { label: '企业名称', visible: true },
+  companyName: { label: '客户名称', visible: true },
   contactName: { label: '联系人', visible: true },
   contactPhone: { label: '手机号', visible: true },
   contactEmail: { label: '邮箱', visible: true },
