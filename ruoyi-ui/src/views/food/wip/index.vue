@@ -173,7 +173,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.w1b">
               <el-form-item label="批次号" prop="batchId">
-                <el-input :model-value="form.batchCode" readonly placeholder="点击选择批次（可选，干腌火腿建垛时可暂不指定）" @click="openBatchPicker">
+                <el-input :model-value="form.batchCode" readonly placeholder="点击选择批次（可选，灌装批次可暂不指定）" @click="openBatchPicker">
                   <template v-if="form.batchId" #append><el-button icon="CircleClose" @click.stop="clearBatch" /></template>
                   <template v-else #append><el-button icon="Search" @click="openBatchPicker" /></template>
                 </el-input>

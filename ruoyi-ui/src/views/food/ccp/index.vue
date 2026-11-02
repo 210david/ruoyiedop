@@ -372,10 +372,10 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.t1">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="控制点名称" prop="ccpName"><el-input v-model="tplForm.ccpName" placeholder="如：腌制间温度" maxlength="100" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="tplForm.processName" placeholder="如：三次上盐腌制" maxlength="100" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="模板名称" prop="templateName"><el-input v-model="tplForm.templateName" placeholder="如：干腌火腿CCP" maxlength="100" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工艺路线" prop="routeName"><el-input v-model="tplForm.routeName" placeholder="如：干腌火腿工艺路线" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="控制点名称" prop="ccpName"><el-input v-model="tplForm.ccpName" placeholder="如：杀菌温度" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工序名称" prop="processName"><el-input v-model="tplForm.processName" placeholder="如：原蜜过滤浓缩" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="模板名称" prop="templateName"><el-input v-model="tplForm.templateName" placeholder="如：蜂蜜灌装CCP" maxlength="100" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工艺路线" prop="routeName"><el-input v-model="tplForm.routeName" placeholder="如：蜂蜜灌装工艺路线" maxlength="100" /></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -451,7 +451,7 @@
         <h4>一、什么是CCP电子台账</h4>
         <div class="highlight-card highlight-primary">
           <div class="highlight-card-title">CCP是什么？</div>
-          <div class="highlight-card-body">CCP全称 Critical Control Point（关键控制点）。用大白话说：就是食品加工过程中<strong>最容易出食品安全问题、必须重点盯防的关键环节</strong>。比如腌火腿时盐要撒够、腌制间温度要达标、发酵间温湿度要合适、表面不能上霉——这些环节一旦没控制住，做出来的产品就可能不安全。所以每个环节都要定一条"合格标准"（即关键限值），工人班次班次地记录检查数据</div>
+          <div class="highlight-card-body">CCP全称 Critical Control Point（关键控制点）。用大白话说：就是食品加工过程中<strong>最容易出食品安全问题、必须重点盯防的关键环节</strong>。比如灌装温度要达标、净化车间卫生要合格、波美度要达标、不许掺假勾兑——这些环节一旦没控制住，做出来的产品就可能不安全。所以每个环节都要定一条"合格标准"（即关键限值），工人班次班次地记录检查数据</div>
         </div>
         <div class="highlight-card highlight-success" style="margin-top: 12px;">
           <div class="highlight-card-title">CCP电子台账是什么？</div>
@@ -827,7 +827,7 @@ function openTplDialog() {
   loadTemplates()
 }
 function resetTpl() {
-  tplData.tplForm = { templateId: null, templateName: '干腌火腿CCP', routeId: null, routeName: undefined, processName: undefined, ccpName: undefined, monitorType: '1', limitType: '1', limitMin: undefined, limitMax: undefined, limitValue: undefined, unit: undefined, monitorFreq: undefined, correctiveAction: undefined, status: '0', remark: undefined }
+  tplData.tplForm = { templateId: null, templateName: '蜂蜜灌装CCP', routeId: null, routeName: undefined, processName: undefined, ccpName: undefined, monitorType: '1', limitType: '1', limitMin: undefined, limitMax: undefined, limitValue: undefined, unit: undefined, monitorFreq: undefined, correctiveAction: undefined, status: '0', remark: undefined }
   proxy.resetForm("tplRef")
 }
 function handleTplAdd() {
