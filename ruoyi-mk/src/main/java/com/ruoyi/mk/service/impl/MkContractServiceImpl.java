@@ -71,10 +71,43 @@ public class MkContractServiceImpl implements IMkContractService
         return contract;
     }
 
+    /**
+     * 合同日期合理性校验
+     * 业务规则：
+     * 1. 签约日期、生效日期必填；
+     * 2. 到期日期允许为空，为空表示「长期有效」；
+     * 3. 填写了到期日期时，到期日期必须晚于生效日期；
+     * 4. 生效日期不得早于签约日期。
+     *
+     * @param contract 合同对象
+     */
+    private void validateContractDates(MkContract contract)
+    {
+        if (contract.getSignDate() == null)
+        {
+            throw new ServiceException("请填写签约日期");
+        }
+        if (contract.getEffectiveDate() == null)
+        {
+            throw new ServiceException("请填写生效日期");
+        }
+        if (contract.getEffectiveDate().before(contract.getSignDate()))
+        {
+            throw new ServiceException("生效日期不能早于签约日期，请检查后重新填写");
+        }
+        // 到期日期为空表示长期有效，不做范围校验
+        if (contract.getExpireDate() != null
+                && !contract.getExpireDate().after(contract.getEffectiveDate()))
+        {
+            throw new ServiceException("到期日期必须晚于生效日期；若该合同长期有效，请将到期日期留空");
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertContract(MkContract contract)
     {
+        validateContractDates(contract);
         contract.setDelFlag("0");
         if (contract.getContractStatus() == null)
         {
@@ -129,6 +162,7 @@ public class MkContractServiceImpl implements IMkContractService
         {
             throw new ServiceException("非草稿状态的合同不允许修改，请先驳回至草稿状态");
         }
+        validateContractDates(contract);
         // 删除旧回款计划，重新插入
         mkPaymentPlanMapper.deletePaymentPlanByContractId(contract.getContractId());
         if (contract.getPaymentPlanList() != null)
@@ -312,6 +346,67 @@ public class MkContractServiceImpl implements IMkContractService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public int restoreExpiredContract(Long contractId, String restoreReason,
+            java.util.Date newExpireDate, Boolean longTerm)
+    {
+        MkContract contract = mkContractMapper.selectContractById(contractId);
+        if (contract == null)
+        {
+            throw new ServiceException("合同不存在，无法恢复");
+        }
+        if (!"3".equals(contract.getContractStatus()))
+        {
+            throw new ServiceException("只有已过期的合同才能恢复为已生效，当前状态不可操作");
+        }
+        // 已过期合同不是草稿，无法走编辑流程修改到期日，故恢复时允许一并调整：
+        // longTerm=true 表示改为长期有效（清空到期日）；newExpireDate 指定新的到期日；
+        // 两者都未提供时，沿用原到期日，但必须仍在有效期内，否则恢复后次日又会被标记过期。
+        java.util.Date targetExpire = contract.getExpireDate();
+        boolean clearExpire = false;
+        if (Boolean.TRUE.equals(longTerm))
+        {
+            clearExpire = true;
+            targetExpire = null;
+        }
+        else if (newExpireDate != null)
+        {
+            if (!newExpireDate.after(contract.getEffectiveDate() == null ? new java.util.Date(0) : contract.getEffectiveDate()))
+            {
+                throw new ServiceException("新的到期日期必须晚于生效日期，请重新选择");
+            }
+            targetExpire = newExpireDate;
+        }
+        if (!clearExpire)
+        {
+            if (targetExpire == null)
+            {
+                throw new ServiceException("该合同未设置到期日期，请确认恢复方式");
+            }
+            if (!targetExpire.after(new java.util.Date()))
+            {
+                throw new ServiceException("该合同到期日期为 "
+                        + new java.text.SimpleDateFormat("yyyy-MM-dd").format(targetExpire)
+                        + "，已过期。请在恢复时同时延长到期日期，或勾选「长期有效」");
+            }
+        }
+        MkContract update = new MkContract();
+        update.setContractId(contractId);
+        update.setContractStatus("2");
+        update.setExpireDate(targetExpire);
+        update.setClearExpireDate(clearExpire);
+        mkContractMapper.updateContract(update);
+        // 写入审批记录，actionType=5 表示「过期恢复」
+        MkContractApproveLog approveLog = new MkContractApproveLog();
+        approveLog.setContractId(contractId);
+        approveLog.setActionType("5");
+        approveLog.setApproveOpinion(restoreReason);
+        approveLog.setApproveBy(SecurityUtils.getUsername());
+        mkContractApproveLogMapper.insertApproveLog(approveLog);
+        return 1;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public int checkExpiredContracts()
     {
         List<MkContract> expiredList = mkContractMapper.selectExpiredContracts();
@@ -362,10 +457,13 @@ public class MkContractServiceImpl implements IMkContractService
         // 合同金额：优先使用用户输入的
         newContract.setContractAmount(renewDTO.getNewAmount() != null ? renewDTO.getNewAmount() : contract.getContractAmount());
         newContract.setSignDate(new java.util.Date());
-        // 生效日期：优先使用用户选择的，否则使用原合同到期日期
-        newContract.setEffectiveDate(renewDTO.getNewEffectiveDate() != null ? renewDTO.getNewEffectiveDate() : contract.getExpireDate());
-        // 到期日期：使用用户选择的
+        // 生效日期：优先使用用户选择的，否则使用原合同到期日期（长期有效合同无到期日，回退为当天）
+        newContract.setEffectiveDate(renewDTO.getNewEffectiveDate() != null ? renewDTO.getNewEffectiveDate()
+                : (contract.getExpireDate() != null ? contract.getExpireDate() : new java.util.Date()));
+        // 到期日期：使用用户选择的（为空表示续签合同长期有效）
         newContract.setExpireDate(renewDTO.getNewExpireDate());
+        // 续签合同的日期合理性校验
+        validateContractDates(newContract);
         // 付款方式：优先使用用户选择的，否则使用原合同
         newContract.setPaymentMethod(renewDTO.getNewPaymentMethod() != null ? renewDTO.getNewPaymentMethod() : contract.getPaymentMethod());
         newContract.setContractStatus("0"); // 草稿

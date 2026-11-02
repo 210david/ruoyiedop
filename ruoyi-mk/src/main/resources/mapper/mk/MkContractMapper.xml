@@ -90,7 +90,8 @@
             <if test="contractAmount != null">contract_amount = #{contractAmount},</if>
             <if test="signDate != null">sign_date = #{signDate},</if>
             <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
-            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <!-- 到期日期允许为空（长期有效）：clearExpireDate=true 时显式写入 NULL -->
+            <if test="expireDate != null or clearExpireDate == true">expire_date = #{expireDate},</if>
             <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
             <if test="contractStatus != null">contract_status = #{contractStatus},</if>
             <if test="userId != null">user_id = #{userId},</if>

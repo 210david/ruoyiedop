@@ -10,6 +10,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.mk.domain.MkContract;
 import com.ruoyi.mk.domain.MkContractChangeLog;
@@ -125,6 +126,32 @@ public class MkContractController extends BaseController
     public AjaxResult terminate(@PathVariable("contractId") Long contractId, @RequestParam(required = false) String terminateReason)
     {
         return toAjax(mkContractService.terminateContract(contractId, terminateReason));
+    }
+
+    /**
+     * 过期恢复：已过期(3) -> 已生效(2)
+     */
+    @Log(title = "合同管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:contract:edit')")
+    @PutMapping("/restore/{contractId}")
+    public AjaxResult restore(@PathVariable("contractId") Long contractId,
+            @RequestParam(required = false) String restoreReason,
+            @RequestParam(required = false) String newExpireDate,
+            @RequestParam(required = false) Boolean longTerm)
+    {
+        java.util.Date expire = null;
+        if (StringUtils.isNotEmpty(newExpireDate))
+        {
+            try
+            {
+                expire = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(newExpireDate);
+            }
+            catch (java.text.ParseException e)
+            {
+                return AjaxResult.error("到期日期格式不正确，应为 yyyy-MM-dd");
+            }
+        }
+        return toAjax(mkContractService.restoreExpiredContract(contractId, restoreReason, expire, longTerm));
     }
 
     /**
