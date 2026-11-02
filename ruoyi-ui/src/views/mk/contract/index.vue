@@ -167,6 +167,8 @@
           <el-button v-if="scope.row.contractStatus === '2'" link type="warning" icon="EditPen" @click="handleChange(scope.row)" v-hasPermi="['marketing:contract:change']">变更</el-button>
           <!-- 已生效/已过期：续签 -->
           <el-button v-if="scope.row.contractStatus === '2' || scope.row.contractStatus === '3'" link type="primary" icon="RefreshRight" @click="handleRenew(scope.row)" v-hasPermi="['marketing:contract:renew']">续签</el-button>
+          <!-- 已过期：恢复为已生效 -->
+          <el-button v-if="scope.row.contractStatus === '3'" link type="success" icon="RefreshLeft" @click="handleRestore(row)" v-hasPermi="['marketing:contract:edit']">恢复生效</el-button>
           <!-- 已生效：终止 -->
           <el-button v-if="scope.row.contractStatus === '2'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['marketing:contract:edit']">终止</el-button>
           </div>
@@ -273,7 +275,15 @@
               <el-row>
                 <el-col :span="8"><el-form-item label="签约日期" prop="signDate"><el-date-picker v-model="form.signDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="生效日期" prop="effectiveDate"><el-date-picker v-model="form.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="到期日期" prop="expireDate"><el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="8"><el-form-item prop="expireDate">
+                  <template #label>
+                    <span>到期日期</span>
+                    <el-tooltip content="留空表示长期有效；填写时须晚于生效日期" placement="top">
+                      <el-icon class="rd-form-tip"><question-filled /></el-icon>
+                    </el-tooltip>
+                  </template>
+                  <el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="留空表示长期有效" clearable style="width: 100%" />
+                </el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -516,7 +526,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">签约日期</span><div class="rd-value">{{ viewForm.signDate }}</div></div>
               <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ viewForm.effectiveDate }}</div></div>
-              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ viewForm.expireDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ viewForm.expireDate || '长期有效' }}</div></div>
             </div>
           </div>
         </section>
@@ -788,7 +798,7 @@
               <div class="rd-item"><span class="rd-label">合同金额</span><div class="rd-value rd-amount">￥{{ formatAmount(changeForm.originalContractAmount) }}</div></div>
               <div class="rd-item"><span class="rd-label">签约日期</span><div class="rd-value">{{ changeForm.originalSignDate }}</div></div>
               <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ changeForm.originalEffectiveDate }}</div></div>
-              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ changeForm.originalExpireDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ changeForm.originalExpireDate || '长期有效' }}</div></div>
               <div class="rd-item"><span class="rd-label">付款方式</span><div class="rd-value"><dict-tag :options="marketing_payment_method" :value="changeForm.originalPaymentMethod" /></div></div>
             </div>
           </div>
@@ -912,6 +922,36 @@
       </template>
     </el-dialog>
 
+    <!-- 过期恢复对话框 -->
+    <el-dialog title="恢复为已生效" v-model="restoreOpen" width="500px" append-to-body>
+      <el-form label-width="100px">
+        <el-form-item label="合同编号">
+          <span>{{ restoreForm.contractNo }}</span>
+        </el-form-item>
+        <el-form-item label="合同名称">
+          <span>{{ restoreForm.contractName }}</span>
+        </el-form-item>
+        <el-form-item label="当前到期日期">
+          <span>{{ restoreForm.expireDate || '长期有效' }}</span>
+        </el-form-item>
+        <el-form-item label="长期有效">
+          <el-switch v-model="restoreForm.longTerm" />
+          <span class="restore-tip">开启后恢复为长期有效，不再受到期日限制</span>
+        </el-form-item>
+        <el-form-item v-if="!restoreForm.longTerm" label="新的到期日期">
+          <el-date-picker v-model="restoreForm.newExpireDate" type="date" value-format="YYYY-MM-DD"
+            placeholder="请选择新的到期日期（须晚于生效日期）" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="恢复原因">
+          <el-input v-model="restoreForm.restoreReason" type="textarea" :rows="3" placeholder="请输入恢复原因" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button type="success" @click="confirmRestore">确认恢复</el-button>
+        <el-button @click="restoreOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 终止合同对话框 -->
     <el-dialog title="终止合同" v-model="terminateOpen" width="500px" append-to-body>
       <el-form label-width="100px">
@@ -972,7 +1012,7 @@
               <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ renewForm.originalCustomerName }}</div></div>
               <div class="rd-item"><span class="rd-label">合同金额</span><div class="rd-value rd-amount">￥{{ formatAmount(renewForm.originalAmount) }}</div></div>
               <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ renewForm.originalEffectiveDate }}</div></div>
-              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value" :class="{ 'rd-value--warning': isExpired }">{{ renewForm.originalExpireDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value" :class="{ 'rd-value--warning': isExpired }">{{ renewForm.originalExpireDate || '长期有效' }}</div></div>
             </div>
           </div>
         </section>
@@ -1159,7 +1199,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">签约日期</span><div class="rd-value">{{ approveForm.signDate }}</div></div>
               <div class="rd-item"><span class="rd-label">生效日期</span><div class="rd-value">{{ approveForm.effectiveDate }}</div></div>
-              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ approveForm.expireDate }}</div></div>
+              <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ approveForm.expireDate || '长期有效' }}</div></div>
             </div>
           </div>
         </section>
@@ -1368,7 +1408,7 @@
 
 <script setup name="MkContract">
 import { CircleClose, ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
-import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
+import { listContract, getContract, addContract, updateContract, delContract, submitContract, approveContract, rejectContract, terminateContract, restoreExpiredContract, renewContract, submitContractChangeBatch, approveContractChangeByContractId } from '@/api/mk/contract'
 import UserPicker from '@/components/UserPicker/index.vue'
 import DeptPicker from '@/components/DeptPicker/index.vue'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
@@ -1385,6 +1425,7 @@ const viewOpen = ref(false)
 const viewApproveMode = ref(false)
 const changeApproveOpinion = ref('')
 const terminateOpen = ref(false)
+const restoreOpen = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
@@ -1397,6 +1438,7 @@ const total = ref(0)
 const title = ref('')
 const viewForm = ref({})
 const terminateForm = ref({})
+const restoreForm = ref({})
 const approveOpen = ref(false)
 const approveForm = ref({})
 const renewOpen = ref(false)
@@ -1405,7 +1447,7 @@ const renewRules = {
   newContractName: [{ required: true, message: '请输入新合同名称', trigger: 'blur' }],
   newAmount: [{ required: true, message: '合同金额不能为空', trigger: 'blur' }],
   newEffectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }],
-  newExpireDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }]
+  newExpireDate: [{ required: false, message: '请选择到期日期', trigger: 'change' }]
 }
 const isExpired = computed(() => {
   if (!renewForm.value.originalExpireDate) return false
@@ -1423,7 +1465,7 @@ contractName: [{ required: true, message: '合同名称不能为空', trigger: '
     contractAmount: [{ required: true, message: '合同金额不能为空', trigger: 'blur' }],
     signDate: [{ required: true, message: '请选择签约日期', trigger: 'change' }],
     effectiveDate: [{ required: true, message: '请选择生效日期', trigger: 'change' }],
-    expireDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }]
+    expireDate: [{ required: false, message: '请选择到期日期', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -1587,9 +1629,23 @@ function confirmChangeApprove(approved) {
     getList(); loadStatusCounts()
   }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('审批合同变更失败：' + (e?.message || e)) })
 }
+/** 合同日期合理性校验：到期日可空（长期有效），填写时须晚于生效日 */
+function validateContractDates() {
+  const f = form.value
+  if (f.signDate && f.effectiveDate && f.effectiveDate < f.signDate) {
+    proxy.$modal.msgWarning('生效日期不能早于签约日期，请检查后重新填写')
+    return false
+  }
+  if (f.expireDate && f.effectiveDate && f.expireDate <= f.effectiveDate) {
+    proxy.$modal.msgWarning('到期日期必须晚于生效日期；若该合同长期有效，请将到期日期留空')
+    return false
+  }
+  return true
+}
 function submitForm() {
   proxy.$refs['contractRef'].validate(valid => {
     if (valid) {
+      if (!validateContractDates()) return
       if (form.value.contractId != undefined) { updateContract(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('保存失败：' + (e?.message || e)) }) }
       else { addContract(form.value).then(() => { proxy.$modal.msgSuccess('新增成功'); open.value = false; getList(); loadStatusCounts() }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('保存失败：' + (e?.message || e)) }) }
     }
@@ -1651,6 +1707,22 @@ function confirmTerminate() {
     terminateOpen.value = false
     getList(); loadStatusCounts()
   }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('终止合同失败：' + (e?.message || e)) })
+}
+function handleRestore(row) {
+  restoreForm.value = { contractId: row.contractId, contractNo: row.contractNo, contractName: row.contractName, expireDate: row.expireDate, restoreReason: '', longTerm: false, newExpireDate: undefined }
+  restoreOpen.value = true
+}
+function confirmRestore() {
+  if (!restoreForm.value.longTerm && !restoreForm.value.newExpireDate) {
+    proxy.$modal.msgWarning('请选择新的到期日期，或开启「长期有效」后再恢复')
+    return
+  }
+  const newExpire = restoreForm.value.longTerm ? undefined : restoreForm.value.newExpireDate
+  restoreExpiredContract(restoreForm.value.contractId, restoreForm.value.restoreReason, newExpire, restoreForm.value.longTerm).then(() => {
+    proxy.$modal.msgSuccess('合同已恢复为已生效')
+    restoreOpen.value = false
+    getList(); loadStatusCounts()
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('恢复失败：' + (e?.message || e)) })
 }
 
 function handleRenew(row) {
@@ -2090,5 +2162,6 @@ const showStatusHelp = ref(false)
 :deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
 .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.restore-tip { margin-left: 10px; font-size: 12px; color: #909399; line-height: 32px; }
 :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
 </style>
