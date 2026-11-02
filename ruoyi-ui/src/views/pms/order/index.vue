@@ -810,7 +810,7 @@
     <!-- 物料选择弹框 -->
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
     <!-- 采购合同选择弹框 -->
-    <contract-picker ref="contractPickerRef" title="选择采购合同" status="1" @confirm="onContractPickerConfirm" />
+    <contract-picker ref="contractPickerRef" title="选择采购合同" :statuses="['1','2','3']" hint="仅显示已签订 / 变更审批中 / 已到期的采购合同（不含草稿 / 待审核 / 已终止）" @confirm="onContractPickerConfirm" />
     <!-- 采购申请单选择弹框 -->
     <request-picker ref="requestPickerRef" title="选择采购申请单" status="2" @confirm="onRequestPickerConfirm" />
   </div>
