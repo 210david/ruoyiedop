@@ -48,6 +48,49 @@ public class CommonController
 
     private static final String FILE_DELIMITER = ",";
 
+    /** 单文件上传上限参数键（单位 MB），由后台「参数设置」维护 */
+    private static final String CONFIG_UPLOAD_MAX_MB = "system.upload.maxFileSizeMb";
+
+    /** 默认单文件上传上限（MB），配置缺失时兜底 */
+    private static final int DEFAULT_UPLOAD_MAX_MB = 50;
+
+    @Autowired
+    private com.ruoyi.system.service.ISysConfigService configService;
+
+    /**
+     * 获取单文件上传上限（MB）
+     * 前端上传组件据此展示并校验，避免前端写死的数值与后端/网关限制不一致
+     */
+    @GetMapping("/uploadMaxSize")
+    public AjaxResult uploadMaxSize()
+    {
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put("maxSizeMb", getUploadMaxMb());
+        return ajax;
+    }
+
+    /** 读取单文件上传上限（MB），配置非法时回落默认值 */
+    private int getUploadMaxMb()
+    {
+        try
+        {
+            String val = configService.selectConfigByKey(CONFIG_UPLOAD_MAX_MB);
+            if (com.ruoyi.common.utils.StringUtils.isNotEmpty(val))
+            {
+                int mb = Integer.parseInt(val.trim());
+                if (mb > 0)
+                {
+                    return mb;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("读取上传大小配置失败，使用默认值 {}MB", DEFAULT_UPLOAD_MAX_MB, e);
+        }
+        return DEFAULT_UPLOAD_MAX_MB;
+    }
+
     /**
      * 通用下载请求
      * 
