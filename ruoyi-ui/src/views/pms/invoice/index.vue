@@ -1015,7 +1015,7 @@
     <!-- 供应商选择弹框 -->
     <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
     <!-- 采购合同选择弹框 -->
-    <contract-picker ref="contractPickerRef" title="选择采购合同" :statuses="['1', '2', '3', '4']" hint="仅显示有效合同（排除草稿 / 已作废 / 已驳回）" @confirm="onContractPickerConfirm" />
+    <contract-picker ref="contractPickerRef" title="选择采购合同" :statuses="['1','2','3']" hint="仅显示已签订 / 变更审批中 / 已到期的采购合同（不含草稿 / 待审核 / 已终止）" @confirm="onContractPickerConfirm" />
     <!-- 采购订单选择弹框 -->
     <order-picker ref="orderPickerRef" title="选择采购订单" :statuses="['2', '3', '4', '5']" hint="仅显示已审批 / 已下单 / 部分到货 / 已完成的采购订单" @confirm="onOrderPickerConfirm" />
   </div>

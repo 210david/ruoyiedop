@@ -489,7 +489,7 @@
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
 
     <!-- 合同选择弹窗 -->
-    <contract-picker ref="contractPickerRef" title="选择营销合同" biz-type="mk" :statuses="['2']" hint="仅显示审批通过且已生效的营销合同（不含草稿 / 审批中）" @confirm="onContractPickerConfirm" />
+    <contract-picker ref="contractPickerRef" title="选择营销合同" biz-type="mk" :statuses="['2','3','5']" hint="仅显示已生效 / 已过期 / 变更审批中的营销合同（不含草稿 / 审批中 / 已终止）" @confirm="onContractPickerConfirm" />
 
     <!-- 订单选择弹窗 -->
     <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
