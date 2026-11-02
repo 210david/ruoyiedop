@@ -111,6 +111,11 @@
 /* 已作废 */
 .mk-list-page .status-tab.tab-void .dot { background:var(--ink-400); }
 
+/* 已退货 */
+.mk-list-page .status-tab.tab-returned .dot { background:var(--red-500); }
+.mk-list-page .status-tab.tab-returned .count { background:var(--red-50); color:var(--red-700); }
+.mk-list-page .status-tab.is-active.tab-returned .count { background:var(--red-500); color:#fff; }
+
 /* 部分处理 */
 .mk-list-page .status-tab.tab-partial .dot { background:var(--violet-500); }
 .mk-list-page .status-tab.tab-partial .count { background:var(--violet-50); color:#7c3aed; }
