@@ -11,6 +11,7 @@
       :on-error="handleUploadError"
       :on-exceed="handleExceed"
       :on-success="handleUploadSuccess"
+      :on-progress="handleUploadProgress"
       :show-file-list="false"
       :headers="headers"
       class="upload-file-uploader"
@@ -21,7 +22,14 @@
     </el-upload>
     <!-- 上传提示 -->
     <div class="el-upload__tip" v-if="showTip && !disabled">
-      单个文件不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b><template v-if="fileType">，支持 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> 格式</template>
+      单个文件不超过 <b style="color: #f56c6c">{{ effectiveFileSize }}MB</b><template v-if="fileType">，支持 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> 格式</template>
+      <br />
+      <span class="upload-file-tip-extra">大文件上传耗时较长，请保持页面打开，勿重复点击</span>
+    </div>
+    <!-- 上传进度（仅在上传中显示，避免只有转圈无法判断进度） -->
+    <div v-if="uploading" class="upload-file-progress">
+      <el-progress :percentage="uploadPercent" :status="uploadPercent >= 100 ? 'success' : undefined" :stroke-width="10" />
+      <div class="upload-file-progress-text">正在上传：{{ uploadFileName }}（{{ uploadPercent }}%），请稍候...</div>
     </div>
     <!-- 文件列表 -->
     <transition-group ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
@@ -42,6 +50,7 @@
 
 <script setup>
 import { getToken } from "@/utils/auth"
+import { getUploadMaxSize } from "@/api/common/uploadLimit"
 import Sortable from 'sortablejs'
 
 // Token 可能会过期，使用 computed 每次上传时动态获取最新 Token
@@ -97,9 +106,27 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传文件服务器地址
 const headers = computed(() => ({ Authorization: "Bearer " + getToken() }))
 const fileList = ref([])
+// 上传进度状态
+const uploading = ref(false)
+const uploadPercent = ref(0)
+const uploadFileName = ref('')
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
 )
+
+// 后台配置的单文件上限（MB）。未取到配置时沿用组件 props，保证离线可用。
+const serverMaxMb = ref(0)
+/** 实际生效的上限：取「props 与后台配置」的较小值，避免前端提示大于网关限制 */
+const effectiveFileSize = computed(() => {
+  if (serverMaxMb.value > 0) {
+    return Math.min(props.fileSize || serverMaxMb.value, serverMaxMb.value)
+  }
+  return props.fileSize
+})
+getUploadMaxSize().then(res => {
+  const mb = Number(res.maxSizeMb)
+  if (mb > 0) serverMaxMb.value = mb
+}).catch(() => { /* 取不到配置时静默回落，不阻塞上传 */ })
 
 /**
  * 将 /profile/... 资源路径转换为安全访问 URL
@@ -147,13 +174,18 @@ function handleBeforeUpload(file) {
     return false
   }
   // 校检文件大小
-  if (props.fileSize) {
-    const isLt = file.size / 1024 / 1024 < props.fileSize
+  const limitMb = effectiveFileSize.value
+  if (limitMb) {
+    const isLt = file.size / 1024 / 1024 < limitMb
     if (!isLt) {
-      proxy.$modal.msgError(`上传文件大小不能超过 ${props.fileSize} MB!`)
+      proxy.$modal.msgError(`上传文件大小不能超过 ${limitMb} MB!`)
       return false
     }
   }
+  // 记录当前上传文件，用于进度展示
+  uploadFileName.value = file.name
+  uploadPercent.value = 0
+  uploading.value = true
   proxy.$modal.loading("正在上传文件，请稍候...")
   number.value++
   return true
@@ -164,14 +196,39 @@ function handleExceed() {
   proxy.$modal.msgError(`上传文件数量不能超过 ${props.limit} 个!`)
 }
 
+// 上传进度
+function handleUploadProgress(event, file) {
+  uploading.value = true
+  if (file && file.name) uploadFileName.value = file.name
+  const percent = event && event.percent ? Math.floor(event.percent) : 0
+  // 浏览器上传到 100% 后仍需等待服务端写入磁盘，避免直接跳满造成误解
+  uploadPercent.value = percent >= 100 ? 99 : percent
+}
+
 // 上传失败
 function handleUploadError(err) {
-  proxy.$modal.msgError("上传文件失败")
+  uploading.value = false
+  uploadPercent.value = 0
+  // 大文件被网关拦截时给出可判断的提示，而不是笼统的「上传文件失败」
+  let reason = ''
+  try {
+    const body = err && err.message ? JSON.parse(err.message) : null
+    if (body && body.msg) reason = body.msg
+  } catch (e) { /* 非 JSON 响应，忽略 */ }
+  const msg = err && err.message ? String(err.message) : ''
+  if (msg.indexOf('413') > -1) {
+    reason = '文件超过服务器允许的大小上限，请联系管理员调整上传限制'
+  } else if (msg.indexOf('504') > -1 || msg.indexOf('timeout') > -1) {
+    reason = '上传超时，文件较大时请分卷上传或稍后重试'
+  }
+  proxy.$modal.msgError(reason ? `上传文件失败：${reason}` : "上传文件失败，请检查网络或文件大小后重试")
   proxy.$modal.closeLoading()
 }
 
 // 上传成功回调
 function handleUploadSuccess(res, file) {
+  uploading.value = false
+  uploadPercent.value = 100
   if (res.code === 200) {
     uploadList.value.push({ name: res.fileName, url: res.fileName })
     uploadedSuccessfully()
@@ -202,6 +259,8 @@ function uploadedSuccessfully() {
     uploadList.value = []
     number.value = 0
     emit("update:modelValue", listToString(fileList.value))
+    uploading.value = false
+    uploadPercent.value = 0
     proxy.$modal.closeLoading()
   }
 }
@@ -268,5 +327,19 @@ onMounted(() => {
 }
 .ele-upload-list__item-content-action .el-link {
   margin-right: 10px;
+}
+.upload-file-tip-extra {
+  color: #909399;
+}
+.upload-file-progress {
+  margin: 6px 0 10px;
+  max-width: 420px;
+}
+.upload-file-progress-text {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #606266;
+  line-height: 18px;
+  word-break: break-all;
 }
 </style>

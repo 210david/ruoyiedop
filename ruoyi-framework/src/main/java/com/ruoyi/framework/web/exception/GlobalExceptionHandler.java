@@ -13,6 +13,7 @@ import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.text.Convert;
@@ -147,6 +148,22 @@ public class GlobalExceptionHandler
     /**
      * 拦截未知的运行时异常 → 业务化提示（不暴露技术细节）
      */
+    /**
+     * 上传文件超过大小限制
+     * 明确告知用户超限，避免落到兜底提示「系统繁忙」而无法判断原因
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public AjaxResult handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.warn("请求地址'{}',上传文件超过大小限制.", requestURI);
+        long maxSize = e.getMaxUploadSize();
+        String limit = maxSize > 0
+                ? "单个文件不能超过 " + (maxSize / 1024 / 1024) + "MB"
+                : "文件超过服务器允许的上限";
+        return AjaxResult.error("上传失败：" + limit + "，请压缩文件或分批上传");
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public AjaxResult handleRuntimeException(RuntimeException e, HttpServletRequest request)
     {
