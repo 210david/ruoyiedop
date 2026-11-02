@@ -100,6 +100,9 @@ private String deptName;
     /** 变更记录列表 */
     private List<MkContractChangeLog> changeLogs;
 
+    /** 是否清空到期日期（编辑合同时用户主动改为「长期有效」，Mapper 据此写入 NULL） */
+    private Boolean clearExpireDate;
+
     public Long getContractId() { return contractId; }
     public void setContractId(Long contractId) { this.contractId = contractId; }
     public String getContractNo() { return contractNo; }
@@ -122,6 +125,8 @@ private String deptName;
     public void setEffectiveDate(Date effectiveDate) { this.effectiveDate = effectiveDate; }
     public Date getExpireDate() { return expireDate; }
     public void setExpireDate(Date expireDate) { this.expireDate = expireDate; }
+    public Boolean getClearExpireDate() { return clearExpireDate; }
+    public void setClearExpireDate(Boolean clearExpireDate) { this.clearExpireDate = clearExpireDate; }
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getContractStatus() { return contractStatus; }
