@@ -21,7 +21,8 @@
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <el-input v-model="queryParams.contractName" placeholder="合同名称" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
-        <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable size="small" style="width: 160px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-if="!isMk" v-model="queryParams.supplierName" placeholder="供应商" clearable size="small" style="width: 160px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-else v-model="queryParams.customerName" placeholder="客户" clearable size="small" style="width: 160px; margin-left: 8px" @keyup.enter="handleQuery" />
         <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
         <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
       </div>
@@ -47,12 +48,16 @@
           </el-table-column>
           <el-table-column label="合同编号" prop="contractNo" width="140" show-overflow-tooltip />
           <el-table-column label="合同名称" prop="contractName" min-width="160" show-overflow-tooltip />
-          <el-table-column label="供应商" prop="supplierName" min-width="130" show-overflow-tooltip />
+          <el-table-column v-if="!isMk" label="供应商" prop="supplierName" min-width="130" show-overflow-tooltip />
+          <el-table-column v-else label="客户" prop="customerName" min-width="130" show-overflow-tooltip />
           <el-table-column label="合同金额" prop="contractAmount" width="110" align="right">
             <template #default="scope">{{ formatMoney(scope.row.contractAmount) }}</template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="90" align="center">
-            <template #default="scope"><dict-tag :options="pms_contract_status" :value="scope.row.status" /></template>
+          <el-table-column label="状态" :prop="isMk ? 'contractStatus' : 'status'" width="90" align="center">
+            <template #default="scope">
+              <dict-tag v-if="isMk" :options="marketing_contract_status" :value="scope.row.contractStatus" />
+              <dict-tag v-else :options="pms_contract_status" :value="scope.row.status" />
+            </template>
           </el-table-column>
         </el-table>
       </div>
@@ -77,16 +82,22 @@
 </template>
 
 <script setup>
-import { listContract } from '@/api/pms/contract'
+import { listContract as listPmsContract } from '@/api/pms/contract'
+import { listContract as listMkContract } from '@/api/mk/contract'
 import { formatMoney } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
-const { pms_contract_status } = proxy.useDict('pms_contract_status')
+const { pms_contract_status, marketing_contract_status } = proxy.useDict('pms_contract_status', 'marketing_contract_status')
 
 const props = defineProps({
   title: {
     type: String,
     default: '选择采购合同'
+  },
+  // 业务类型：pms=采购合同（默认，保持原有语义）；mk=营销合同（销售订单/发票/收款使用）
+  bizType: {
+    type: String,
+    default: 'pms'
   },
   // 可选：限定合同状态（单值，如订单页仅可选择审批通过且已生效的合同 status='1'）
   status: {
@@ -121,14 +132,23 @@ const queryParams = reactive({
   pageSize: 10,
   contractNo: undefined,
   contractName: undefined,
-  supplierName: undefined
+  supplierName: undefined,
+  customerName: undefined
 })
+
+/** 是否营销合同数据源 */
+const isMk = computed(() => props.bizType === 'mk')
+/** 统一读取合同状态（pms 用 status，mk 用 contractStatus） */
+function rowStatus(row) {
+  return isMk.value ? row.contractStatus : row.status
+}
 
 /** 弹窗打开时初始化 */
 function onOpen() {
   queryParams.contractNo = undefined
   queryParams.contractName = undefined
   queryParams.supplierName = undefined
+  queryParams.customerName = undefined
   queryParams.pageNum = 1
   selectedId.value = null
   selectedRow.value = null
@@ -138,16 +158,22 @@ function onOpen() {
 /** 加载合同列表（状态客户端过滤，前端分页） */
 function getList() {
   loading.value = true
-  listContract({
+  const api = isMk.value ? listMkContract : listPmsContract
+  const params = {
     pageNum: 1,
     pageSize: 999,
     contractNo: queryParams.contractNo,
-    contractName: queryParams.contractName,
-    supplierName: queryParams.supplierName
-  }).then(res => {
+    contractName: queryParams.contractName
+  }
+  if (isMk.value) {
+    params.customerName = queryParams.customerName
+  } else {
+    params.supplierName = queryParams.supplierName
+  }
+  api(params).then(res => {
     allList.value = (res.rows || []).filter(c =>
-      props.statuses.length > 0 ? props.statuses.includes(c.status)
-        : (props.status ? c.status === props.status : true)
+      props.statuses.length > 0 ? props.statuses.includes(rowStatus(c))
+        : (props.status ? rowStatus(c) === props.status : true)
     )
     total.value = allList.value.length
     paginate()
@@ -160,6 +186,11 @@ function getList() {
         }
       })
     }
+  }).catch(() => {
+    loading.value = false
+    allList.value = []
+    total.value = 0
+    paginate()
   })
 }
 
@@ -180,6 +211,7 @@ function resetQuery() {
   queryParams.contractNo = undefined
   queryParams.contractName = undefined
   queryParams.supplierName = undefined
+  queryParams.customerName = undefined
   handleQuery()
 }
 
@@ -198,17 +230,31 @@ function onRowDblClick(row) {
 
 /** 确认选择 */
 function handleConfirm() {
-  if (!selectedId.value) return
-  emit('confirm', {
-    contractId: selectedRow.value.contractId,
-    contractNo: selectedRow.value.contractNo,
-    contractName: selectedRow.value.contractName,
-    supplierId: selectedRow.value.supplierId,
-    supplierName: selectedRow.value.supplierName,
-    // 合同关联的采购申请单（用于联动带出）
-    orderId: selectedRow.value.orderId,
-    orderNo: selectedRow.value.orderNo
-  })
+  if (!selectedId.value || !selectedRow.value) return
+  const row = selectedRow.value
+  if (isMk.value) {
+    // 营销合同：回传客户与营销合同状态，供销售订单联动带出
+    emit('confirm', {
+      contractId: row.contractId,
+      contractNo: row.contractNo,
+      contractName: row.contractName,
+      customerId: row.customerId,
+      customerName: row.customerName,
+      contractStatus: row.contractStatus,
+      contractAmount: row.contractAmount
+    })
+  } else {
+    emit('confirm', {
+      contractId: row.contractId,
+      contractNo: row.contractNo,
+      contractName: row.contractName,
+      supplierId: row.supplierId,
+      supplierName: row.supplierName,
+      // 合同关联的采购申请单（用于联动带出）
+      orderId: row.orderId,
+      orderNo: row.orderNo
+    })
+  }
   visible.value = false
 }
 
