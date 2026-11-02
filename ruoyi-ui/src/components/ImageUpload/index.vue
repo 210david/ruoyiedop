@@ -25,7 +25,7 @@
     <div class="el-upload__tip" v-if="showTip && !disabled">
       请上传
       <template v-if="fileSize">
-        大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b>
+        大小不超过 <b style="color: #f56c6c">{{ effectiveFileSize }}MB</b>
       </template>
       <template v-if="fileType">
         格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b>
@@ -49,6 +49,7 @@
 
 <script setup>
 import { getToken } from "@/utils/auth"
+import { getUploadMaxSize } from "@/api/common/uploadLimit"
 import { isExternal } from "@/utils/validate"
 import Sortable from 'sortablejs'
 
@@ -111,6 +112,19 @@ const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
 )
 
+// 后台配置的单文件上限（MB），未取到时沿用 props 默认值
+const serverMaxMb = ref(0)
+const effectiveFileSize = computed(() => {
+  if (serverMaxMb.value > 0) {
+    return Math.min(props.fileSize || serverMaxMb.value, serverMaxMb.value)
+  }
+  return props.fileSize
+})
+getUploadMaxSize().then(res => {
+  const mb = Number(res.maxSizeMb)
+  if (mb > 0) serverMaxMb.value = mb
+}).catch(() => { /* 静默回落 */ })
+
 watch(() => props.modelValue, val => {
   if (val) {
     // 首先将值转为数组
@@ -158,10 +172,11 @@ function handleBeforeUpload(file) {
     proxy.$modal.msgError('文件名不正确，不能包含英文逗号!')
     return false
   }
-  if (props.fileSize) {
-    const isLt = file.size / 1024 / 1024 < props.fileSize
+  const limitMb = effectiveFileSize.value
+  if (limitMb) {
+    const isLt = file.size / 1024 / 1024 < limitMb
     if (!isLt) {
-      proxy.$modal.msgError(`上传头像图片大小不能超过 ${props.fileSize} MB!`)
+      proxy.$modal.msgError(`上传图片大小不能超过 ${limitMb} MB!`)
       return false
     }
   }
