@@ -6,6 +6,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.ruoyi.qms.domain.vo.QmsDealerFlowNode;
 
 /**
  * 批次谱系表 qms_lot_genealogy
@@ -77,8 +78,15 @@ public class QmsLotGenealogy extends BaseEntity
     @Excel(name = "供应商")
     private String supplierName;
 
-    /** 来源类型（feeding=投料, report=报工, complete=完工, transfer=调拨, rework=返工, merge=合并, split=拆分, manual=补录） */
-    @Excel(name = "来源类型", readConverterExp = "feeding=投料,report=报工,complete=完工,transfer=调拨,rework=返工,merge=合并,split=拆分,manual=补录")
+    /** 客户ID（发货谱系事件关联） */
+    private Long customerId;
+
+    /** 客户名称（发货谱系事件关联） */
+    @Excel(name = "客户")
+    private String customerName;
+
+    /** 来源类型（feeding=投料, report=报工, complete=完工, transfer=调拨, rework=返工, merge=合并, split=拆分, manual=补录, shipment=发货） */
+    @Excel(name = "来源类型", readConverterExp = "feeding=投料,report=报工,complete=完工,transfer=调拨,rework=返工,merge=合并,split=拆分,manual=补录,shipment=发货")
     private String sourceType;
 
     /** 来源单据号（幂等键：source_type+source_no 防止业务事件重复写入） */
@@ -110,6 +118,9 @@ public class QmsLotGenealogy extends BaseEntity
 
     /** 关联NCR记录（追溯用，非数据库字段） */
     private List<QmsNcr> ncrList;
+
+    /** 经销商分销流向列表（P1-08：该批次对应的下游去向明细） */
+    private List<QmsDealerFlowNode> dealerFlows;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -143,6 +154,10 @@ public class QmsLotGenealogy extends BaseEntity
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
     public String getSupplierName() { return supplierName; }
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
     public String getSourceType() { return sourceType; }
     public void setSourceType(String sourceType) { this.sourceType = sourceType; }
     public String getSourceNo() { return sourceNo; }
@@ -163,4 +178,6 @@ public class QmsLotGenealogy extends BaseEntity
     public void setInspectTasks(List<QmsInspTask> inspectTasks) { this.inspectTasks = inspectTasks; }
     public List<QmsNcr> getNcrList() { return ncrList; }
     public void setNcrList(List<QmsNcr> ncrList) { this.ncrList = ncrList; }
+    public List<QmsDealerFlowNode> getDealerFlows() { return dealerFlows; }
+    public void setDealerFlows(List<QmsDealerFlowNode> dealerFlows) { this.dealerFlows = dealerFlows; }
 }

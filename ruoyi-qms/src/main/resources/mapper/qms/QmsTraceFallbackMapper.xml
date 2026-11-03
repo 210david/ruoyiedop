@@ -197,4 +197,28 @@
         ORDER BY s.shipment_date DESC
     </select>
 
+    <!-- ==================== 出库单明细批次（发货谱系联动用） ==================== -->
+    <resultMap type="com.ruoyi.qms.domain.vo.TraceFallbackVO$OutboundDetailSummary" id="OutboundDetailSummaryResult">
+        <result property="outboundOrderNo" column="outbound_order_no"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="actualQty" column="actual_qty"/>
+    </resultMap>
+
+    <select id="selectOutboundDetailsByOrderNo" resultMap="OutboundDetailSummaryResult">
+        SELECT o.order_no AS outbound_order_no,
+               d.material_id,
+               m.material_code, m.material_name,
+               d.batch_no, d.actual_qty
+        FROM wms_outbound_order o
+        INNER JOIN wms_outbound_order_detail d ON o.order_id = d.order_id
+        LEFT JOIN wms_material m ON d.material_id = m.material_id
+        WHERE o.del_flag = '0'
+          AND d.del_flag = '0'
+          AND o.order_no = #{orderNo}
+        ORDER BY d.detail_id
+    </select>
+
 </mapper>

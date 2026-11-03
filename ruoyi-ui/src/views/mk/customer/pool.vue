@@ -356,7 +356,7 @@
                 <el-table :data="activities" border size="small" v-if="activities.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
-                  <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
+                  <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
                   <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
                   <el-table-column label="签到时间" prop="signTime" width="160" />
                 </el-table>

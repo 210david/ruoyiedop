@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkCustomerChangeLogMapper">
+
+    <resultMap type="MkCustomerChangeLog" id="MkCustomerChangeLogResult">
+        <id     property="logId"        column="log_id"/>
+        <result property="customerId"   column="customer_id"/>
+        <result property="changeType"   column="change_type"/>
+        <result property="oldValue"     column="old_value"/>
+        <result property="newValue"     column="new_value"/>
+        <result property="changeReason" column="change_reason"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="remark"       column="remark"/>
+    </resultMap>
+
+    <sql id="selectChangeLogVo">
+        select log_id, customer_id, change_type, old_value, new_value, change_reason, create_by, create_time, remark
+        from mk_customer_change_log
+    </sql>
+
+    <select id="selectChangeLogList" parameterType="MkCustomerChangeLog" resultMap="MkCustomerChangeLogResult">
+        <include refid="selectChangeLogVo"/>
+        <where>
+            <if test="customerId != null"> and customer_id = #{customerId}</if>
+            <if test="changeType != null and changeType != ''"> and change_type = #{changeType}</if>
+        </where>
+        order by log_id desc
+    </select>
+
+    <insert id="insertChangeLog" parameterType="MkCustomerChangeLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into mk_customer_change_log (customer_id, change_type, old_value, new_value, change_reason,
+            create_by, create_time, remark)
+        values (#{customerId}, #{changeType}, #{oldValue}, #{newValue}, #{changeReason},
+            #{createBy}, sysdate(), #{remark})
+    </insert>
+
+</mapper>

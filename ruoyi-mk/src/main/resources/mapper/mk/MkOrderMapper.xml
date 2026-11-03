@@ -19,6 +19,7 @@
         <result property="receiveTime"        column="receive_time"/>
         <result property="receivePerson"      column="receive_person"/>
         <result property="cancelReason"        column="cancel_reason"/>
+        <result property="settleType"          column="settle_type"/>
         <result property="auditBy"              column="audit_by"/>
         <result property="auditTime"            column="audit_time"/>
         <result property="auditOpinion"         column="audit_opinion"/>
@@ -54,7 +55,7 @@
     <sql id="selectOrderVo">
         SELECT o.order_id, o.order_no, o.contract_id, o.customer_id, o.order_amount, o.order_status,
                               o.logistics_company, o.tracking_no, o.deliver_time, o.finish_time, o.confirm_time,
-               o.receive_time, o.receive_person, o.cancel_reason,
+               o.receive_time, o.receive_person, o.cancel_reason, o.settle_type,
                o.audit_by, o.audit_time, o.audit_opinion,
                o.user_id, o.dept_id,
                o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark,
@@ -105,12 +106,12 @@
     <insert id="insertOrder" parameterType="MkOrder" useGeneratedKeys="true" keyProperty="orderId">
         INSERT INTO mk_order (order_no, contract_id, customer_id, order_amount, order_status,
             logistics_company, tracking_no, deliver_time, finish_time, confirm_time,
-            receive_time, receive_person, cancel_reason,
+            receive_time, receive_person, cancel_reason, settle_type,
             audit_by, audit_time, audit_opinion,
             user_id, dept_id, create_by, create_time, remark)
         VALUES (#{orderNo}, #{contractId}, #{customerId}, #{orderAmount}, #{orderStatus},
             #{logisticsCompany}, #{trackingNo}, #{deliverTime}, #{finishTime}, #{confirmTime},
-            #{receiveTime}, #{receivePerson}, #{cancelReason},
+            #{receiveTime}, #{receivePerson}, #{cancelReason}, #{settleType},
             #{auditBy}, #{auditTime}, #{auditOpinion},
             #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
     </insert>
@@ -136,6 +137,7 @@
             <if test="receiveTime != null">receive_time = #{receiveTime},</if>
             <if test="receivePerson != null">receive_person = #{receivePerson},</if>
             <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            <if test="settleType != null and settleType != ''">settle_type = #{settleType},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditTime != null">audit_time = #{auditTime},</if>
             <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>

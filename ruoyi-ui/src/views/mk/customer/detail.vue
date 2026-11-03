@@ -31,6 +31,7 @@
               <div class="rd-grid">
                 <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ customer.customerNo }}</div></div>
                 <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ customer.customerName }}</div></div>
+                <div class="rd-item"><span class="rd-label">客户类型</span><div class="rd-value"><dict-tag :options="mk_customer_type" :value="customer.customerType" /></div></div>
                 <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ customer.creditCode }}</div></div>
                 <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="customer.customerLevel" /></div></div>
                 <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="customer.customerSource" /></div></div>
@@ -233,7 +234,7 @@
               <el-table :data="activities" border size="small" v-if="activities.length > 0">
                 <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                 <el-table-column label="联系人" prop="contactName" width="100" />
-                <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
+                <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
                 <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_participate_status" :value="scope.row.participateStatus" /></template></el-table-column>
                 <el-table-column label="签到时间" prop="signTime" width="160" />
               </el-table>
@@ -262,11 +263,13 @@ const router = useRouter()
 const { collapsedCards, toggleCard } = useDetailCard(["d_basic", "d_company", "d_business", "d_owner", "d_remark", "d_action", "d_contacts", "d_opportunities", "d_contracts", "d_orders", "d_interactions", "d_activities"])
 const { proxy } = getCurrentInstance()
 const {
+  mk_customer_type,
   marketing_customer_level, marketing_customer_source, marketing_customer_status,
   marketing_industry, marketing_company_size,
   marketing_opportunity_status, marketing_contract_status, marketing_order_status,
   marketing_interaction_type, marketing_participate_status
 } = proxy.useDict(
+  'mk_customer_type',
   'marketing_customer_level', 'marketing_customer_source', 'marketing_customer_status',
   'marketing_industry', 'marketing_company_size',
   'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status',

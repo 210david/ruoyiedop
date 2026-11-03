@@ -27,6 +27,22 @@
           </div>
         </div>
         <div class="field">
+          <label>客户类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.customerType" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="d in mk_customer_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>手机号</label>
+          <div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field">
           <label>客户等级</label>
           <div class="control is-select">
             <el-select v-model="queryParams.customerLevel" placeholder="全部" clearable @change="handleQuery">
@@ -35,7 +51,7 @@
             </el-select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-show="showAdvanced">
           <label>客户状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.customerStatus" placeholder="全部" clearable @change="handleQuery">
@@ -116,9 +132,6 @@
           <button type="button" class="btn-soft is-outline" @click="handleImport" v-hasPermi="['marketing:customer:import']">
             <el-icon><Upload /></el-icon> 导入
           </button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['marketing:customer:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
           <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['marketing:customer:remove']">
             <el-icon><Delete /></el-icon> 删除
           </button>
@@ -136,7 +149,7 @@
         </div>
         <div class="right">
           <AiAssistButton v-hasPermi="['mk:ai:churnReport']" button-text="AI流失预警" :api="aiCustomerChurnReport" @result="d => onAiText(d, '客户流失预警报告')" />
-          <AiAssistButton v-hasPermi="['mk:ai:churnPrediction']" button-text="AI流失预测" button-type="danger" :button-plain="false" :api="aiChurnPrediction" @result="onChurnPrediction" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
+          <AiAssistButton v-hasPermi="['mk:ai:churnPrediction']" button-text="AI流失预测" button-type="danger" :button-plain="false" :api="aiChurnPrediction" @result="onChurnPrediction" @error="onChurnPrediction" /><right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="mk_customer_columns" />
         </div>
       </div>
 
@@ -153,9 +166,26 @@
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
             </template>
           </el-table-column>
+          <el-table-column label="客户类型" prop="customerType" key="customerType" :width="colWidth('customerType', 100)" resizable align="center" v-if="columns.customerType.visible">
+            <template #default="scope">
+              <el-tag :type="customerTypeTagType(scope.row.customerType)" effect="light">{{ dictLabel(mk_customer_type, scope.row.customerType, '企业客户') }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="客户标签" prop="tagNames" key="tagNames" :min-width="colWidth('tagNames', 150)" resizable show-overflow-tooltip v-if="columns.tagNames.visible">
             <template #default="scope">
               <span v-if="scope.row.tagNames">{{ scope.row.tagNames }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="手机号" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable align="center" v-if="columns.contactPhone.visible">
+            <template #default="scope">
+              <span v-if="scope.row.contactPhone" class="col-mono">{{ scope.row.contactPhone }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="上级经销商" prop="parentCustomerName" key="parentCustomerName" :min-width="colWidth('parentCustomerName', 140)" resizable show-overflow-tooltip v-if="columns.parentCustomerName.visible">
+            <template #default="scope">
+              <span v-if="scope.row.parentCustomerName">{{ scope.row.parentCustomerName }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -209,6 +239,7 @@
                 <el-dropdown-item command="release" icon="Coin" v-if="scope.row.userId && scope.row.customerStatus !== '0'">释放到公海</el-dropdown-item>
                 <el-dropdown-item command="claim" icon="Pointer" v-if="!scope.row.userId" v-hasPermi="['marketing:customer:claim']">领取客户</el-dropdown-item>
                 <el-dropdown-item command="status" icon="RefreshRight" divided>变更状态</el-dropdown-item>
+                <el-dropdown-item command="changeType" icon="Sort" v-if="scope.row.customerType !== '3'" v-hasPermi="['marketing:customer:changeType']">变更类型</el-dropdown-item>
                 <el-dropdown-item command="delete" icon="Delete" v-hasPermi="['marketing:customer:remove']" divided>删除</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -232,7 +263,7 @@
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="customerRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="customerRef" :model="form" :rules="formRules" label-width="100px">
         <div class="rd-page">
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c_basic')">
@@ -242,8 +273,19 @@
           <div class="rd-card-body" v-show="!collapsedCards.c_basic">
             <el-row>
               <el-col :span="12"><el-form-item label="客户编号" prop="customerNo"><el-input v-model="form.customerNo" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="客户名称" prop="customerName"><el-input v-model="form.customerName" placeholder="请输入客户名称" /></el-form-item></el-col>
-              <el-col :span="12"><el-form-item label="信用代码" prop="creditCode"><el-input v-model="form.creditCode" placeholder="请输入统一社会信用代码" /></el-form-item></el-col>
+              <el-col :span="12"><el-form-item label="客户类型" prop="customerType">
+                <el-select v-model="form.customerType" :disabled="form.customerId != undefined" placeholder="请选择客户类型" style="width: 100%" @change="onTypeChangeInForm">
+                  <el-option v-for="d in mk_customer_type" :key="d.value" :label="d.label" :value="d.value" />
+                </el-select>
+              </el-form-item></el-col>
+              <el-col :span="12"><el-form-item :label="isPersonal ? '姓名' : '企业名称'" prop="customerName"><el-input v-model="form.customerName" :placeholder="isPersonal ? '不填则默认为手机号' : '请输入企业名称'" /></el-form-item></el-col>
+              <el-col :span="12" v-if="!isPersonal"><el-form-item label="信用代码" prop="creditCode"><el-input v-model="form.creditCode" placeholder="请输入统一社会信用代码" /></el-form-item></el-col>
+              <el-col :span="12" v-if="isPersonal"><el-form-item label="手机号" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="11位手机号，唯一建档" maxlength="11" /></el-form-item></el-col>
+              <el-col :span="12" v-if="isDealer"><el-form-item label="上级经销商" prop="parentCustomerId">
+                <el-select v-model="form.parentCustomerId" placeholder="不选则为一级经销商" clearable filterable style="width: 100%">
+                  <el-option v-for="d in dealerOptions" :key="d.customerId" :label="d.customerName" :value="d.customerId" />
+                </el-select>
+              </el-form-item></el-col>
               <el-col :span="12"><el-form-item label="客户等级" prop="customerLevel">
                 <el-select v-model="form.customerLevel" placeholder="请选择" style="width: 100%">
                   <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
@@ -267,7 +309,7 @@
             </el-row>
           </div>
         </section>
-        <section class="rd-card">
+        <section class="rd-card" v-if="!isPersonal">
           <div class="rd-card-header" @click="toggleCard('c_company')">
             <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="9" y1="12" x2="9" y2="12.01"/><line x1="9" y1="15" x2="9" y2="15.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></span>企业信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c_company }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -500,6 +542,41 @@
       </template>
     </el-dialog>
 
+    <!-- 变更类型弹窗 -->
+    <el-dialog v-model="changeTypeOpen" width="500px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+          <span class="rd-detail-header-title">变更客户类型</span>
+        </div>
+      </template>
+      <el-form ref="changeTypeRef" :model="changeTypeForm" label-width="100px">
+        <el-form-item label="客户名称">
+          <span>{{ changeTypeForm.customerName }}</span>
+        </el-form-item>
+        <el-form-item label="变更后类型" required>
+          <el-select v-model="changeTypeForm.customerType" placeholder="请选择变更后类型" style="width: 100%" @change="onChangeTypeTarget">
+            <el-option v-for="d in mk_customer_type" :key="d.value" :label="d.label" :value="d.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="changeTypeForm.customerType === '3'" label="手机号" required>
+          <el-input v-model="changeTypeForm.contactPhone" placeholder="11位手机号，唯一建档" maxlength="11" />
+        </el-form-item>
+        <el-form-item v-if="changeTypeForm.customerType === '2'" label="上级经销商">
+          <el-select v-model="changeTypeForm.parentCustomerId" placeholder="不选则为一级经销商" clearable filterable style="width: 100%">
+            <el-option v-for="d in dealerOptions" :key="d.customerId" :label="d.customerName" :value="d.customerId" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="变更原因" required>
+          <el-input v-model="changeTypeForm.changeReason" type="textarea" :rows="3" placeholder="请输入变更原因（将记入变更日志）" maxlength="200" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="changeTypeOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitChangeType">确 定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 详情弹窗 -->
     <el-dialog v-model="viewOpen" width="900px" append-to-body draggable class="rd-dialog" @open="loadRelations">
       <template #header>
@@ -693,7 +770,7 @@
                 <el-table :data="activities" border size="small" v-if="activities.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
-                  <el-table-column label="客户名称" prop="companyName" width="180" show-overflow-tooltip />
+                  <el-table-column label="企业名称" prop="companyName" width="180" show-overflow-tooltip />
                   <el-table-column label="参与状态" prop="participateStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="partBadgeClass(scope.row.participateStatus)"><span class="dot"></span>{{ partStatusLabel(scope.row.participateStatus) }}</span></template></el-table-column>
                   <el-table-column label="签到时间" prop="signTime" width="160" />
                 </el-table>
@@ -776,7 +853,7 @@
 
 <script setup name="MkCustomer">
 import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, WarningFilled, Search, Filter, Edit, Delete, Download, User, Upload, RefreshRight } from '@element-plus/icons-vue'
-import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus, getCreditUsage } from '@/api/mk/customer'
+import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer, changeCustomerStatus, assignCustomer, releaseToPool, claimCustomer, batchAssignCustomer, batchUpdateStatus, getCreditUsage, changeCustomerType } from '@/api/mk/customer'
 import { aiCustomerChurnReport, aiChurnPrediction } from '@/api/ai/manage'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
@@ -797,7 +874,7 @@ const { collapsedCards, toggleCard } = useDetailCard(["c_basic", "c_company", "c
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_customer_index')
-const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status, mk_credit_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status', 'mk_credit_status')
+const { marketing_customer_level, marketing_customer_source, marketing_industry, marketing_company_size, marketing_customer_status, marketing_opportunity_status, marketing_contract_status, marketing_order_status, marketing_interaction_type, marketing_participate_status, mk_credit_status, mk_customer_type } = proxy.useDict('marketing_customer_level', 'marketing_customer_source', 'marketing_industry', 'marketing_company_size', 'marketing_customer_status', 'marketing_opportunity_status', 'marketing_contract_status', 'marketing_order_status', 'marketing_interaction_type', 'marketing_participate_status', 'mk_credit_status', 'mk_customer_type')
 
 const list = ref([])
 const open = ref(false)
@@ -806,6 +883,9 @@ const viewForm = ref({})
 const creditOpen = ref(false)
 const creditLoading = ref(false)
 const creditData = ref({})
+// 变更类型弹窗
+const changeTypeOpen = ref(false)
+const changeTypeForm = ref({ customerId: undefined, customerName: undefined, customerType: undefined, contactPhone: undefined, parentCustomerId: undefined, changeReason: undefined })
 const detailTab = ref('basic')
 const loading = ref(true)
 const showSearch = ref(true)
@@ -882,7 +962,7 @@ const updateKeyOptions = [
 
 const data = reactive({
   form: {},
-  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, userName: undefined, params: {} },
+  queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerType: undefined, contactPhone: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, userName: undefined, params: {} },
   rules: {
     customerName: [
       { required: true, message: '客户名称不能为空', trigger: 'blur' },
@@ -895,7 +975,6 @@ const data = reactive({
     customerLevel: [{ required: true, message: '请选择客户等级', trigger: 'change' }],
     customerSource: [{ required: true, message: '请选择客户来源', trigger: 'change' }],
     customerStatus: [{ required: true, message: '请选择客户状态', trigger: 'change' }],
-    industry: [{ required: true, message: '请选择所属行业', trigger: 'change' }],
     address: [
       { required: true, message: '详细地址不能为空', trigger: 'blur' },
       { max: 200, message: '详细地址不能超过 200 个字符', trigger: 'blur' }
@@ -909,11 +988,47 @@ const data = reactive({
 })
 const { queryParams, form, rules } = toRefs(data)
 
+/** 动态表单校验：个人客户必填手机号、免信用代码；企业/经销商必填信用代码 */
+const formRules = computed(() => {
+  const base = { ...rules.value }
+  if (isPersonal.value) {
+    base.creditCode = [{ max: 32, message: '信用代码不能超过 32 个字符', trigger: 'blur' }]
+    base.contactPhone = [
+      { required: true, message: '个人客户必须填写手机号', trigger: 'blur' },
+      { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确（11位，1开头）', trigger: 'blur' }
+    ]
+  } else {
+    base.creditCode = [
+      { required: true, message: '统一社会信用代码不能为空', trigger: 'blur' },
+      { pattern: /^[0-9A-Z]{18}$/, message: '统一社会信用代码为18位数字和大写字母', trigger: 'blur' }
+    ]
+  }
+  return base
+})
+
+/** 是否个人客户 */
+const isPersonal = computed(() => form.value.customerType === '3')
+/** 是否经销商 */
+const isDealer = computed(() => form.value.customerType === '2')
+/** 经销商下拉选项（上级经销商选择用） */
+const dealerOptions = ref([])
+function loadDealerOptions() {
+  listCustomer({ pageNum: 1, pageSize: 9999, customerType: '2' }, { suppressError: true }).then(res => { dealerOptions.value = res.rows || [] })
+}
+/** 表单内切换类型时清理不相关字段 */
+function onTypeChangeInForm(type) {
+  if (type === '3') { form.value.parentCustomerId = undefined }
+  else { form.value.contactPhone = undefined; if (type !== '2') { form.value.parentCustomerId = undefined } }
+}
+
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   customerNo: { label: '客户编号', visible: true },
   customerName: { label: '客户名称', visible: true },
+  customerType: { label: '客户类型', visible: true },
   tagNames: { label: '客户标签', visible: true },
+  contactPhone: { label: '手机号', visible: true },
+  parentCustomerName: { label: '上级经销商', visible: true },
   customerLevel: { label: '客户等级', visible: true },
   industry: { label: '所属行业', visible: true },
   customerStatus: { label: '客户状态', visible: true },
@@ -948,6 +1063,8 @@ const activeFilterCount = computed(() => {
   let count = 0
 if (queryParams.value.customerNo) count++
 if (queryParams.value.customerName) count++
+if (queryParams.value.customerType) count++
+if (queryParams.value.contactPhone) count++
 if (queryParams.value.customerLevel) count++
 if (queryParams.value.customerStatus) count++
 if (queryParams.value.industry) count++
@@ -1026,11 +1143,11 @@ function handleSelectionChange(selection) { ids.value = selection.map(i => i.cus
 function reset() {
   const today = new Date()
   const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')
-  form.value = { customerNo: undefined, customerName: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: todayStr, cooperationDate: undefined, totalAmount: 0, creditLimit: 0, creditDays: 0, creditStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
+  form.value = { customerNo: undefined, customerName: undefined, customerType: '1', contactPhone: undefined, parentCustomerId: undefined, creditCode: undefined, customerLevel: '3', customerSource: undefined, industry: undefined, companySize: undefined, address: undefined, website: undefined, customerStatus: '0', firstContactDate: todayStr, cooperationDate: undefined, totalAmount: 0, creditLimit: 0, creditDays: 0, creditStatus: '0', userId: undefined, userName: undefined, deptId: undefined, deptName: undefined, tagIds: [], remark: undefined }
   proxy.resetForm('customerRef')
 }
-function handleAdd() { reset(); open.value = true; title.value = '新增企业客户' }
-function handleUpdate(row) { reset(); getCustomer(row.customerId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改企业客户' }) }
+function handleAdd() { reset(); loadDealerOptions(); open.value = true; title.value = '新增客户' }
+function handleUpdate(row) { reset(); loadDealerOptions(); getCustomer(row.customerId || ids.value[0]).then(res => { form.value = res.data; open.value = true; title.value = '修改客户' }) }
 function handleView(row) {
   getCustomer(row.customerId).then(res => {
     viewForm.value = res.data
@@ -1085,8 +1202,45 @@ function handleCommand(cmd, row) {
   else if (cmd === 'release') handleRelease(row)
   else if (cmd === 'claim') handleClaim(row)
   else if (cmd === 'status') handleStatusSingle(row)
+  else if (cmd === 'changeType') handleChangeType(row)
   else if (cmd === 'delete') handleDelete(row)
 }
+
+// ====== 变更类型 ======
+/** 打开变更类型弹窗 */
+function handleChangeType(row) {
+  loadDealerOptions()
+  changeTypeForm.value = {
+    customerId: row.customerId,
+    customerName: row.customerName,
+    customerType: row.customerType === '3' ? undefined : row.customerType,
+    contactPhone: undefined,
+    parentCustomerId: undefined,
+    changeReason: undefined
+  }
+  changeTypeOpen.value = true
+}
+/** 变更目标类型切换时清理不相关字段 */
+function onChangeTypeTarget(type) {
+  if (type !== '3') changeTypeForm.value.contactPhone = undefined
+  if (type !== '2') changeTypeForm.value.parentCustomerId = undefined
+}
+/** 提交变更类型 */
+function submitChangeType() {
+  const f = changeTypeForm.value
+  if (!f.customerType) { proxy.$modal.msgError('请选择变更后类型'); return }
+  if (f.customerType === '3' && !/^1[3-9]\d{9}$/.test(f.contactPhone || '')) { proxy.$modal.msgError('请填写正确的11位手机号'); return }
+  if (!f.changeReason || !f.changeReason.trim()) { proxy.$modal.msgError('请填写变更原因'); return }
+  changeCustomerType(f).then(() => {
+    proxy.$modal.msgSuccess('变更成功')
+    changeTypeOpen.value = false
+    getList(); loadStatusCounts()
+  })
+}
+/** 客户类型标签颜色 */
+function customerTypeTagType(val) { return { '1': '', '2': 'warning', '3': 'success' }[val] || 'info' }
+/** 通用字典label */
+function dictLabel(list, val, defaultText) { const arr = Array.isArray(list) ? list : (list && list.value) || []; const item = arr.find(d => d.value == val); return item ? item.label : (defaultText || '-') }
 
 // 分配/转移
 function handleAssignSingle(row) {
@@ -1235,9 +1389,19 @@ function onAiText(d, title) {
 
 function onChurnPrediction(d) {
   const list = d.riskList || []
-  const lines = ['规则评分发现 ' + (d.riskCount || list.length) + ' 家流失风险客户（≥40分）：', '']
+  const lines = ['规则评分发现 ' + (d.riskCount || list.length) + ' 家流失风险客户（≥40分，经销商含附加规则）：', '']
   list.slice(0, 15).forEach((x, i) => {
-    lines.push((i + 1) + '. ' + (x.customerName || '-') + ' | 风险' + x.riskScore + '分/' + x.riskLevel + ' | 订单' + x.orderCount + '单 | 累计' + (x.totalAmount || 0) + '元')
+    let line = (i + 1) + '. ' + (x.customerName || '-') + ' | 风险' + x.riskScore + '分/' + x.riskLevel + ' | 订单' + x.orderCount + '单 | 累计' + (x.totalAmount || 0) + '元'
+    if (x.customerType === '2') {
+      const dims = []
+      if (x.dealerLevel) dims.push('层级' + (x.dealerLevel === '1' ? '一级' : x.dealerLevel === '2' ? '二级' : x.dealerLevel))
+      if (x.authRegions) dims.push('区域' + x.authRegions)
+      if (Number(x.unsettledRebate) > 0) dims.push('未结返利' + x.unsettledRebate + '元')
+      dims.push(x.lastFlowDate ? ('最近流向' + String(x.lastFlowDate).slice(0, 10)) : '流向未登记')
+      if (x.creditStatus === '1') dims.push('信用冻结')
+      line += '｜【经销商】' + dims.join('，')
+    }
+    lines.push(line)
   })
   if (list.length > 15) lines.push('…其余 ' + (list.length - 15) + ' 家略')
   aiPanelText.value = lines.join('\n') + '\n\n' + (d.aiSummary || '')

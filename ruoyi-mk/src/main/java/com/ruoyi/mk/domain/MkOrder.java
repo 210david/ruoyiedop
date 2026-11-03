@@ -49,6 +49,10 @@ public class MkOrder extends BaseEntity
     /** 订单状态列表（用于多状态查询） */
     private java.util.List<String> orderStatusList;
 
+    /** 结算方式（0现结 1账期）；个人客户强制现结 */
+    @Excel(name = "结算方式", dictType = "mk_settle_type")
+    private String settleType;
+
     /** 物流公司 */
     private String logisticsCompany;
 
@@ -128,6 +132,8 @@ private String deptName;
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
     public java.util.List<String> getOrderStatusList() { return orderStatusList; }
     public void setOrderStatusList(java.util.List<String> orderStatusList) { this.orderStatusList = orderStatusList; }
+    public String getSettleType() { return settleType; }
+    public void setSettleType(String settleType) { this.settleType = settleType; }
     public String getLogisticsCompany() { return logisticsCompany; }
     public void setLogisticsCompany(String logisticsCompany) { this.logisticsCompany = logisticsCompany; }
     public String getTrackingNo() { return trackingNo; }

@@ -7,12 +7,19 @@ import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * 企业客户 mk_customer
+ * 客户 mk_customer（多类型客户体系：企业客户/经销商/个人客户）
  *
  * @author ruoyi
  */
 public class MkCustomer extends BaseEntity
 {
+    /** 客户类型：企业客户 */
+    public static final String TYPE_ENTERPRISE = "1";
+    /** 客户类型：经销商 */
+    public static final String TYPE_DEALER = "2";
+    /** 客户类型：个人客户 */
+    public static final String TYPE_PERSONAL = "3";
+
     private static final long serialVersionUID = 1L;
 
     /** 客户ID */
@@ -22,9 +29,23 @@ public class MkCustomer extends BaseEntity
     @Excel(name = "客户编号")
     private String customerNo;
 
-    /** 企业名称 */
-    @Excel(name = "企业名称")
+    /** 客户名称 */
+    @Excel(name = "客户名称")
     private String customerName;
+
+    /** 客户类型（1企业客户 2经销商 3个人客户） */
+    @Excel(name = "客户类型", dictType = "mk_customer_type")
+    private String customerType;
+
+    /** 上级经销商ID（仅经销商使用） */
+    private Long parentCustomerId;
+
+    /** 上级经销商名称（非数据库字段，用于列表展示） */
+    private String parentCustomerName;
+
+    /** 个人客户手机号（明文存储，接口层统一脱敏） */
+    @Excel(name = "手机号")
+    private String contactPhone;
 
     /** 统一社会信用代码 */
     @Excel(name = "统一社会信用代码")
@@ -111,12 +132,26 @@ public class MkCustomer extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 变更原因（非数据库字段，类型变更专用） */
+    private String changeReason;
+
+    /** 下级经销商（非数据库字段，层级树用） */
+    private java.util.List<MkCustomer> children;
+
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getCustomerNo() { return customerNo; }
     public void setCustomerNo(String customerNo) { this.customerNo = customerNo; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public String getCustomerType() { return customerType; }
+    public void setCustomerType(String customerType) { this.customerType = customerType; }
+    public Long getParentCustomerId() { return parentCustomerId; }
+    public void setParentCustomerId(Long parentCustomerId) { this.parentCustomerId = parentCustomerId; }
+    public String getParentCustomerName() { return parentCustomerName; }
+    public void setParentCustomerName(String parentCustomerName) { this.parentCustomerName = parentCustomerName; }
+    public String getContactPhone() { return contactPhone; }
+    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
     public String getCreditCode() { return creditCode; }
     public void setCreditCode(String creditCode) { this.creditCode = creditCode; }
     public String getCustomerLevel() { return customerLevel; }
@@ -165,4 +200,8 @@ public class MkCustomer extends BaseEntity
     public void setTagNames(String tagNames) { this.tagNames = tagNames; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public String getChangeReason() { return changeReason; }
+    public void setChangeReason(String changeReason) { this.changeReason = changeReason; }
+    public java.util.List<MkCustomer> getChildren() { return children; }
+    public void setChildren(java.util.List<MkCustomer> children) { this.children = children; }
 }

@@ -14,8 +14,10 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.domain.MkContract;
 import com.ruoyi.mk.domain.MkContractApproveLog;
 import com.ruoyi.mk.domain.MkContractChangeLog;
+import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.domain.MkPaymentPlan;
 import com.ruoyi.mk.mapper.MkContractApproveLogMapper;
+import com.ruoyi.mk.mapper.MkCustomerMapper;
 import com.ruoyi.mk.mapper.MkContractChangeLogMapper;
 import com.ruoyi.mk.mapper.MkContractMapper;
 import com.ruoyi.mk.mapper.MkPaymentPlanMapper;
@@ -35,6 +37,9 @@ public class MkContractServiceImpl implements IMkContractService
 
     @Autowired
     private MkContractMapper mkContractMapper;
+
+    @Autowired
+    private MkCustomerMapper mkCustomerMapper;
 
     @Autowired
     private MkPaymentPlanMapper mkPaymentPlanMapper;
@@ -103,6 +108,23 @@ public class MkContractServiceImpl implements IMkContractService
         }
     }
 
+    /** 付款方式：一次性（个人客户现结强制，P0-05） */
+    private static final String PAYMENT_METHOD_ONCE = "4";
+
+    /** 个人客户签订合同强制一次性付款（现结） */
+    private void forcePersonalPaymentMethod(MkContract contract)
+    {
+        if (contract.getCustomerId() == null)
+        {
+            return;
+        }
+        MkCustomer customer = mkCustomerMapper.selectCustomerTypeById(contract.getCustomerId());
+        if (customer != null && MkCustomer.TYPE_PERSONAL.equals(customer.getCustomerType()))
+        {
+            contract.setPaymentMethod(PAYMENT_METHOD_ONCE);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertContract(MkContract contract)
@@ -121,6 +143,8 @@ public class MkContractServiceImpl implements IMkContractService
         {
             contract.setPaymentMethod("0");
         }
+        // 个人客户强制一次性付款
+        forcePersonalPaymentMethod(contract);
         // 自动生成合同编号
         if (StringUtils.isEmpty(contract.getContractNo()))
         {
@@ -163,6 +187,8 @@ public class MkContractServiceImpl implements IMkContractService
             throw new ServiceException("非草稿状态的合同不允许修改，请先驳回至草稿状态");
         }
         validateContractDates(contract);
+        // 个人客户强制一次性付款
+        forcePersonalPaymentMethod(contract);
         // 删除旧回款计划，重新插入
         mkPaymentPlanMapper.deletePaymentPlanByContractId(contract.getContractId());
         if (contract.getPaymentPlanList() != null)

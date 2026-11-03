@@ -32,6 +32,7 @@
         <result property="totalDealCount"   column="total_deal_count"/>
         <result property="avgDealAmount"    column="avg_deal_amount"/>
         <result property="conversionRate"   column="conversion_rate"/>
+        <result property="typeName"         column="type_name"/>
     </resultMap>
 
     <!-- 概览统计 -->
@@ -209,6 +210,51 @@
         ) t
         GROUP BY t.dt
         ORDER BY t.dt
+    </select>
+
+    <!-- P2-01: 按客户类型统计客户数/订单数/销售额（口径与概览一致：del_flag='0' 全部订单） -->
+    <select id="selectCustomerTypeStats" resultMap="MkDashboardResult">
+        SELECT c.customer_type AS code,
+               CASE c.customer_type WHEN '1' THEN '企业客户' WHEN '2' THEN '经销商' WHEN '3' THEN '个人客户' ELSE '未知' END AS type_name,
+               COUNT(DISTINCT c.customer_id) AS customer_count,
+               COUNT(o.order_id) AS order_count,
+               IFNULL(SUM(o.order_amount), 0) AS order_amount
+        FROM mk_customer c
+        LEFT JOIN mk_order o ON o.customer_id = c.customer_id AND o.del_flag = '0'
+        WHERE c.del_flag = '0'
+        GROUP BY c.customer_type
+        ORDER BY c.customer_type
+    </select>
+
+    <!-- P2-01: 客户类型月度销售额趋势（按月×类型分组） -->
+    <select id="selectCustomerTypeTrend" resultMap="MkDashboardResult">
+        SELECT DATE_FORMAT(o.create_time, '%Y-%m') AS dt,
+               c.customer_type AS code,
+               COUNT(*) AS cnt,
+               IFNULL(SUM(o.order_amount), 0) AS order_amount
+        FROM mk_order o
+        INNER JOIN mk_customer c ON o.customer_id = c.customer_id AND c.del_flag = '0'
+        WHERE o.del_flag = '0' AND o.create_time IS NOT NULL
+        GROUP BY DATE_FORMAT(o.create_time, '%Y-%m'), c.customer_type
+        ORDER BY dt, c.customer_type
+    </select>
+
+    <!-- P2-04: 个人客户消费Top10（有效订单口径，contact_phone 由 Service 层脱敏后返回，不输出明文） -->
+    <select id="selectPersonalTopCustomers" resultType="java.util.HashMap">
+        SELECT c.customer_id                                                AS customerId,
+               c.customer_name                                              AS customerName,
+               c.contact_phone                                              AS contactPhone,
+               COUNT(*)                                                     AS orderCount,
+               IFNULL(SUM(o.order_amount), 0)                               AS totalAmount,
+               IFNULL(SUM(o.order_amount), 0) / COUNT(*)                    AS avgOrderAmount,
+               MAX(o.create_time)                                           AS lastOrderTime
+        FROM mk_customer c
+        INNER JOIN mk_order o ON o.customer_id = c.customer_id
+             AND o.del_flag = '0' AND o.order_status IN ('2', '3', '4')
+        WHERE c.customer_type = '3' AND c.del_flag = '0'
+        GROUP BY c.customer_id, c.customer_name, c.contact_phone
+        ORDER BY totalAmount DESC
+        LIMIT 10
     </select>
 
 </mapper>

@@ -71,6 +71,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ORDER BY p.policy_id DESC LIMIT 1
     </select>
 
+    <select id="selectDealerPrice" resultMap="MkPricePolicyResult">
+        <include refid="selectPolicyVo"/>
+        WHERE p.del_flag = '0' AND p.status = '0' AND p.price_type = '3'
+          AND p.customer_level = #{dealerLevel} AND p.material_id = #{materialId}
+          AND p.start_date &lt;= CURDATE() AND p.end_date &gt;= CURDATE()
+        ORDER BY p.policy_id DESC LIMIT 1
+    </select>
+
     <insert id="insertPolicy" parameterType="MkPricePolicy" useGeneratedKeys="true" keyProperty="policyId">
         INSERT INTO mk_price_policy (policy_no, policy_name, price_type, customer_id, customer_level,
             material_id, unit_price, start_date, end_date, status, create_by, create_time, remark)

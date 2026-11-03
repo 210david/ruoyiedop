@@ -107,26 +107,26 @@
               </div>
             </div>
             <div class="chart-panel__body chart-panel__body--table">
-              <el-table :data="rankList" size="default" class="rank-table" :header-cell-style="{ background: '#f8fafc', color: '#475569', fontWeight: 600 }">
-                <el-table-column label="排名" width="70" align="center">
+              <el-table ref="tableRef" :data="rankList" size="default" class="rank-table" @header-dragend="onHeaderDragEnd" :header-cell-style="{ background: '#f8fafc', color: '#475569', fontWeight: 600 }">
+                <el-table-column label="排名" :width="colWidth('排名', 70)" align="center">
                   <template #default="scope"><span class="rank-num" :class="'rank-' + (scope.$index + 1)">{{ scope.$index + 1 }}</span></template>
                 </el-table-column>
-                <el-table-column label="内容包标题" prop="packageTitle" min-width="240" align="center" show-overflow-tooltip />
-                <el-table-column label="所属内容" prop="contentTitle" min-width="180" align="center" show-overflow-tooltip />
-                <el-table-column label="渠道类型" prop="channelType" width="110" align="center">
+                <el-table-column label="内容包标题" prop="packageTitle" :min-width="colWidth('packageTitle', 240)" align="center" show-overflow-tooltip />
+                <el-table-column label="所属内容" prop="contentTitle" :min-width="colWidth('contentTitle', 180)" align="center" show-overflow-tooltip />
+                <el-table-column label="渠道类型" prop="channelType" :width="colWidth('channelType', 110)" align="center">
                   <template #default="scope">
                     <span class="channel-tag" :class="'channel-tag--' + scope.row.channelType">{{ dictLabel(marketing_channel_type, scope.row.channelType) }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="状态" prop="packageStatus" width="100" align="center">
+                <el-table-column label="状态" prop="packageStatus" :width="colWidth('packageStatus', 100)" align="center">
                   <template #default="scope">
                     <el-tag :type="scope.row.packageStatus === '1' ? 'success' : 'info'" size="small" effect="light">{{ dictLabel(marketing_package_status, scope.row.packageStatus) }}</el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="曝光量" prop="exposureCount" width="110" align="center">
+                <el-table-column label="曝光量" prop="exposureCount" :width="colWidth('exposureCount', 110)" align="center">
                   <template #default="scope">{{ formatNum(scope.row.exposureCount) }}</template>
                 </el-table-column>
-                <el-table-column label="阅读量" prop="readCount" min-width="180" align="center">
+                <el-table-column label="阅读量" prop="readCount" :min-width="colWidth('readCount', 180)" align="center">
                   <template #default="scope">
                     <div class="read-bar-wrap">
                       <div class="read-bar"><div class="read-bar__fill" :style="{ width: readPercent(scope.row) + '%' }"></div></div>
@@ -134,13 +134,13 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column label="点赞量" prop="likeCount" width="100" align="center">
+                <el-table-column label="点赞量" prop="likeCount" :width="colWidth('likeCount', 100)" align="center">
                   <template #default="scope">{{ formatNum(scope.row.likeCount) }}</template>
                 </el-table-column>
-                <el-table-column label="评论量" prop="commentCount" width="100" align="center">
+                <el-table-column label="评论量" prop="commentCount" :width="colWidth('commentCount', 100)" align="center">
                   <template #default="scope">{{ formatNum(scope.row.commentCount) }}</template>
                 </el-table-column>
-                <el-table-column label="互动率" width="100" align="center">
+                <el-table-column label="互动率" :width="colWidth('互动率', 100)" align="center">
                   <template #default="scope">
                     <span class="interact-rate">{{ interactRate(scope.row) }}</span>
                   </template>
@@ -159,8 +159,10 @@ import * as echarts from 'echarts'
 import { Connection, Document, Pointer, User, TrendCharts, View, Reading, Star } from '@element-plus/icons-vue'
 import { getOverview, getChannelCompare, getContentRank, getFunnel, getTrend } from '@/api/mk/promotionReport'
 import { listActivity } from '@/api/mk/activity'
+import { useColumnResize } from '@/composables/useColumnResize'
 
 const { proxy } = getCurrentInstance()
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_promotion_report_index')
 const { marketing_channel_type, marketing_package_status } = proxy.useDict('marketing_channel_type', 'marketing_package_status')
 
 const loading = ref(true)
@@ -439,6 +441,7 @@ function loadData() {
       interactCount: Number(overview.value.likeCount || 0) + Number(overview.value.commentCount || 0)
     })
     loading.value = false
+    applySavedWidths()
     nextTick(() => {
       renderTrend(trendData.value)
       renderPie(channelCompareData.value)
