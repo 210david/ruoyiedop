@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkDealerSellFlowMapper">
+
+    <resultMap type="MkDealerSellFlow" id="MkDealerSellFlowResult">
+        <id     property="flowId"          column="flow_id"/>
+        <result property="dealerId"        column="dealer_id"/>
+        <result property="flowDate"        column="flow_date"/>
+        <result property="materialId"      column="material_id"/>
+        <result property="batchNo"         column="batch_no"/>
+        <result property="quantity"        column="quantity"/>
+        <result property="downstreamType"  column="downstream_type"/>
+        <result property="downstreamName"  column="downstream_name"/>
+        <result property="shipmentId"      column="shipment_id"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+        <result property="dealerName"      column="dealer_name"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="specModel"       column="spec_model"/>
+        <result property="unit"            column="unit"/>
+        <result property="isBatchManage"   column="is_batch_manage"/>
+        <result property="shipmentNo"      column="shipment_no"/>
+    </resultMap>
+
+    <sql id="selectFlowVo">
+        select f.flow_id, f.dealer_id, f.flow_date, f.material_id, f.batch_no, f.quantity,
+               f.downstream_type, f.downstream_name, f.shipment_id,
+               f.create_by, f.create_time, f.update_by, f.update_time, f.remark,
+               c.customer_name as dealer_name, wms_m.material_name, wms_m.spec_model, wms_m.unit, wms_m.is_batch_manage, s.shipment_no
+        from mk_dealer_sell_flow f
+        left join mk_customer c on f.dealer_id = c.customer_id
+        left join wms_material wms_m on f.material_id = wms_m.material_id
+        left join mk_shipment s on f.shipment_id = s.shipment_id
+    </sql>
+
+    <select id="selectFlowList" parameterType="MkDealerSellFlow" resultMap="MkDealerSellFlowResult">
+        <include refid="selectFlowVo"/>
+        <where>
+            <if test="dealerId != null"> and f.dealer_id = #{dealerId}</if>
+            <if test="materialId != null"> and f.material_id = #{materialId}</if>
+            <if test="batchNo != null and batchNo != ''"> and f.batch_no like concat('%', #{batchNo}, '%')</if>
+            <if test="downstreamType != null and downstreamType != ''"> and f.downstream_type = #{downstreamType}</if>
+            <if test="downstreamName != null and downstreamName != ''"> and f.downstream_name like concat('%', #{downstreamName}, '%')</if>
+            <if test="shipmentId != null"> and f.shipment_id = #{shipmentId}</if>
+            <if test="params.beginFlowDate != null and params.beginFlowDate != ''">
+                and f.flow_date >= #{params.beginFlowDate}
+            </if>
+            <if test="params.endFlowDate != null and params.endFlowDate != ''">
+                and f.flow_date &lt;= #{params.endFlowDate}
+            </if>
+        </where>
+        order by f.flow_id desc
+    </select>
+
+    <select id="selectFlowById" parameterType="Long" resultMap="MkDealerSellFlowResult">
+        <include refid="selectFlowVo"/>
+        where f.flow_id = #{flowId}
+    </select>
+
+    <select id="selectByShipmentAndMaterial" resultMap="MkDealerSellFlowResult">
+        <include refid="selectFlowVo"/>
+        where f.shipment_id = #{shipmentId} and f.material_id = #{materialId}
+        limit 1
+    </select>
+
+    <select id="selectDraftItemsByShipmentId" parameterType="Long" resultMap="MkDealerSellFlowResult">
+        select s.shipment_id, s.customer_id as dealer_id, oi.material_id,
+               wms_m.material_name, d.batch_no, d.ship_qty as quantity
+        from mk_shipment_detail d
+        inner join mk_shipment s on d.shipment_id = s.shipment_id
+        inner join mk_order_item oi on d.order_item_id = oi.item_id
+        left join wms_material wms_m on oi.material_id = wms_m.material_id
+        where d.shipment_id = #{shipmentId} and d.del_flag = '0'
+    </select>
+
+    <insert id="insertFlow" parameterType="MkDealerSellFlow" useGeneratedKeys="true" keyProperty="flowId">
+        insert into mk_dealer_sell_flow (dealer_id, flow_date, material_id, batch_no, quantity,
+            downstream_type, downstream_name, shipment_id, create_by, create_time, remark)
+        values (#{dealerId}, #{flowDate}, #{materialId}, #{batchNo}, #{quantity},
+            #{downstreamType}, #{downstreamName}, #{shipmentId}, #{createBy}, sysdate(), #{remark})
+    </insert>
+
+    <update id="updateFlow" parameterType="MkDealerSellFlow">
+        update mk_dealer_sell_flow
+        <set>
+            <if test="dealerId != null">dealer_id = #{dealerId},</if>
+            <if test="flowDate != null">flow_date = #{flowDate},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="downstreamType != null">downstream_type = #{downstreamType},</if>
+            <if test="downstreamName != null">downstream_name = #{downstreamName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where flow_id = #{flowId}
+    </update>
+
+    <delete id="deleteFlowByIds" parameterType="Long">
+        delete from mk_dealer_sell_flow where flow_id in
+        <foreach collection="array" item="flowId" open="(" separator="," close=")">
+            #{flowId}
+        </foreach>
+    </delete>
+
+</mapper>

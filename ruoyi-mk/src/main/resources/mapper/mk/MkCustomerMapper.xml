@@ -6,6 +6,9 @@
         <result property="customerId"       column="customer_id"/>
         <result property="customerNo"       column="customer_no"/>
         <result property="customerName"     column="customer_name"/>
+        <result property="customerType"     column="customer_type"/>
+        <result property="parentCustomerId" column="parent_customer_id"/>
+        <result property="contactPhone"     column="contact_phone"/>
         <result property="creditCode"       column="credit_code"/>
         <result property="customerLevel"    column="customer_level"/>
         <result property="customerSource"   column="customer_source"/>
@@ -37,19 +40,22 @@
     </resultMap>
 
     <sql id="selectCustomerVo">
-        SELECT c.customer_id, c.customer_no, c.customer_name, c.credit_code, c.customer_level,
+        SELECT c.customer_id, c.customer_no, c.customer_name, c.customer_type, c.parent_customer_id,
+               c.contact_phone, c.credit_code, c.customer_level,
                c.customer_source, c.industry, c.company_size, c.province, c.city, c.district,
                c.address, c.website, c.customer_status, c.first_contact_date, c.cooperation_date,
                c.total_amount, c.credit_limit, c.credit_days, c.credit_status,
                c.user_id, c.dept_id, c.del_flag, c.create_by, c.create_time,
                c.update_by, c.update_time, c.remark,
                u.nick_name as user_name, d.dept_name,
-               (SELECT GROUP_CONCAT(t.tag_name SEPARATOR ',') FROM mk_customer_tag_rel r 
-                LEFT JOIN mk_customer_tag t ON r.tag_id = t.tag_id 
+               p.customer_name as parent_customer_name,
+               (SELECT GROUP_CONCAT(t.tag_name SEPARATOR ',') FROM mk_customer_tag_rel r
+                LEFT JOIN mk_customer_tag t ON r.tag_id = t.tag_id
                 WHERE r.customer_id = c.customer_id) as tag_names
         FROM mk_customer c
         LEFT JOIN sys_user u ON c.user_id = u.user_id
         LEFT JOIN sys_dept d ON c.dept_id = d.dept_id
+        LEFT JOIN mk_customer p ON c.parent_customer_id = p.customer_id
     </sql>
 
     <select id="selectCustomerList" parameterType="MkCustomer" resultMap="MkCustomerResult">
@@ -58,6 +64,8 @@
             c.del_flag = '0'
             <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="customerType != null and customerType != ''"> AND c.customer_type = #{customerType}</if>
+            <if test="contactPhone != null and contactPhone != ''"> AND c.contact_phone LIKE CONCAT('%', #{contactPhone}, '%')</if>
             <if test="customerLevel != null and customerLevel != ''"> AND c.customer_level = #{customerLevel}</if>
             <if test="customerSource != null and customerSource != ''"> AND c.customer_source = #{customerSource}</if>
             <if test="industry != null and industry != ''"> AND c.industry = #{industry}</if>
@@ -80,6 +88,7 @@
             c.del_flag = '0'
             <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="customerType != null and customerType != ''"> AND c.customer_type = #{customerType}</if>
         </where>
         ORDER BY c.customer_id DESC
     </select>
@@ -89,11 +98,13 @@
     </select>
 
     <insert id="insertCustomer" parameterType="MkCustomer" useGeneratedKeys="true" keyProperty="customerId">
-        INSERT INTO mk_customer (customer_no, customer_name, credit_code, customer_level, customer_source,
+        INSERT INTO mk_customer (customer_no, customer_name, customer_type, parent_customer_id, contact_phone,
+            credit_code, customer_level, customer_source,
             industry, company_size, province, city, district, address, website, customer_status,
             first_contact_date, cooperation_date, total_amount, credit_limit, credit_days, credit_status,
             user_id, dept_id, create_by, create_time, remark)
-        VALUES (#{customerNo}, #{customerName}, #{creditCode}, #{customerLevel}, #{customerSource},
+        VALUES (#{customerNo}, #{customerName}, #{customerType}, #{parentCustomerId}, #{contactPhone},
+            #{creditCode}, #{customerLevel}, #{customerSource},
             #{industry}, #{companySize}, #{province}, #{city}, #{district}, #{address}, #{website}, #{customerStatus},
             #{firstContactDate}, #{cooperationDate}, #{totalAmount}, #{creditLimit}, #{creditDays}, #{creditStatus},
             #{userId}, #{deptId}, #{createBy}, sysdate(), #{remark})
@@ -104,6 +115,9 @@
         <set>
             <if test="customerNo != null and customerNo != ''">customer_no = #{customerNo},</if>
             <if test="customerName != null and customerName != ''">customer_name = #{customerName},</if>
+            <if test="customerType != null and customerType != ''">customer_type = #{customerType},</if>
+            parent_customer_id = #{parentCustomerId},
+            contact_phone = #{contactPhone},
             <if test="creditCode != null">credit_code = #{creditCode},</if>
             <if test="customerLevel != null and customerLevel != ''">customer_level = #{customerLevel},</if>
             <if test="customerSource != null">customer_source = #{customerSource},</if>
@@ -131,9 +145,29 @@
     </update>
 
     <delete id="deleteCustomerByIds" parameterType="Long">
-        UPDATE mk_customer SET del_flag = '2' WHERE customer_id IN
+        UPDATE mk_customer SET del_flag = '2', contact_phone = NULL WHERE customer_id IN
         <foreach item="customerId" collection="array" open="(" separator="," close=")">#{customerId}</foreach>
     </delete>
+
+    <!-- 按手机号查询（个人客户唯一性校验，排除指定ID） -->
+    <select id="selectByContactPhone" resultMap="MkCustomerResult">
+        <include refid="selectCustomerVo"/>
+        WHERE c.del_flag = '0' AND c.contact_phone = #{contactPhone}
+        <if test="excludeId != null"> AND c.customer_id != #{excludeId}</if>
+        LIMIT 1
+    </select>
+
+    <!-- 查询指定上级经销商下的下级经销商数量（删除防孤儿） -->
+    <select id="countChildDealer" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM mk_customer
+        WHERE del_flag = '0' AND customer_type = '2' AND parent_customer_id = #{parentCustomerId}
+    </select>
+
+    <!-- 查询客户类型与名称（轻量，用于层级校验/变更日志） -->
+    <select id="selectCustomerTypeById" parameterType="Long" resultMap="MkCustomerResult">
+        SELECT customer_id, customer_name, customer_type, parent_customer_id
+        FROM mk_customer WHERE customer_id = #{customerId} AND del_flag = '0'
+    </select>
 
     <!-- 客户标签关联 -->
     <delete id="deleteCustomerTags" parameterType="Long">
@@ -158,6 +192,7 @@
             c.del_flag = '0' AND c.user_id IS NULL
             <if test="customerNo != null and customerNo != ''"> AND c.customer_no LIKE CONCAT('%', #{customerNo}, '%')</if>
             <if test="customerName != null and customerName != ''"> AND c.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="customerType != null and customerType != ''"> AND c.customer_type = #{customerType}</if>
             <if test="customerLevel != null and customerLevel != ''"> AND c.customer_level = #{customerLevel}</if>
             <if test="industry != null and industry != ''"> AND c.industry = #{industry}</if>
             <if test="customerSource != null and customerSource != ''"> AND c.customer_source = #{customerSource}</if>

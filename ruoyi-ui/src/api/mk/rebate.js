@@ -34,7 +34,24 @@ export function settleRebate(data) {
   return request({ url: '/mk/rebate/settle', method: 'post', data: data })
 }
 
-// 返利兑现（redeemType 必填）
-export function redeemSettle(settleId, redeemType) {
-  return request({ url: '/mk/rebate/redeem/' + settleId, method: 'put', params: { redeemType: redeemType } })
+// ================= 返利冲抵台账 =================
+
+// 查询冲抵台账列表
+export function listOffsets(query) {
+  return request({ url: '/mk/rebate/offsetList', method: 'get', params: query })
+}
+
+// 按结算单查冲抵明细
+export function listOffsetBySettle(settleId) {
+  return request({ url: '/mk/rebate/offset/' + settleId, method: 'get' })
+}
+
+// 冲抵登记（支持拆分，推送财务待办）
+export function addOffset(data) {
+  return request({ url: '/mk/rebate/offset', method: 'post', data: data })
+}
+
+// 冲抵审核（财务一级审批）
+export function auditOffset(offsetId, data) {
+  return request({ url: '/mk/rebate/offset/audit/' + offsetId, method: 'put', data: data })
 }

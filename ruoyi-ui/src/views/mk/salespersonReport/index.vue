@@ -155,49 +155,49 @@
           <span class="chart-panel__desc">共 {{ tableData.length }} 位销售人员</span>
         </div>
         <div class="chart-panel__body" style="height: auto; padding: 0;">
-          <el-table :data="sortedTableData" border stripe size="default" :default-sort="{ prop: sortBy, order: 'descending' }">
-            <el-table-column label="排名" width="70" align="center" fixed>
+          <el-table ref="tableRef" :data="sortedTableData" border stripe size="default" @header-dragend="onHeaderDragEnd" :default-sort="{ prop: sortBy, order: 'descending' }">
+            <el-table-column label="排名" :width="colWidth('排名', 70)" align="center" fixed>
               <template #default="scope">
                 <div class="rank-badge" :class="getRankClass(scope.$index + 1)">
                   {{ scope.$index + 1 }}
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="销售人员" prop="userName" width="120" fixed show-overflow-tooltip />
-            <el-table-column label="部门" prop="deptName" width="120" show-overflow-tooltip />
-            <el-table-column label="客户数" prop="customerCount" width="80" align="center" sortable />
-            <el-table-column label="线索数" prop="leadCount" width="80" align="center" sortable />
-            <el-table-column label="商机数" prop="opportunityCount" width="80" align="center" sortable />
-            <el-table-column label="合同数" prop="contractCount" width="80" align="center" sortable />
-            <el-table-column label="订单数" prop="orderCount" width="80" align="center" sortable />
-            <el-table-column label="合同金额" prop="contractAmount" width="130" align="right" sortable>
+            <el-table-column label="销售人员" prop="userName" :width="colWidth('userName', 120)" fixed show-overflow-tooltip />
+            <el-table-column label="部门" prop="deptName" :width="colWidth('deptName', 120)" show-overflow-tooltip />
+            <el-table-column label="客户数" prop="customerCount" :width="colWidth('customerCount', 80)" align="center" sortable />
+            <el-table-column label="线索数" prop="leadCount" :width="colWidth('leadCount', 80)" align="center" sortable />
+            <el-table-column label="商机数" prop="opportunityCount" :width="colWidth('opportunityCount', 80)" align="center" sortable />
+            <el-table-column label="合同数" prop="contractCount" :width="colWidth('contractCount', 80)" align="center" sortable />
+            <el-table-column label="订单数" prop="orderCount" :width="colWidth('orderCount', 80)" align="center" sortable />
+            <el-table-column label="合同金额" prop="contractAmount" :width="colWidth('contractAmount', 130)" align="right" sortable>
               <template #default="scope">
                 <span class="amount-text">¥{{ formatAmount(scope.row.contractAmount) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="订单金额" prop="orderAmount" width="130" align="right" sortable>
+            <el-table-column label="订单金额" prop="orderAmount" :width="colWidth('orderAmount', 130)" align="right" sortable>
               <template #default="scope">
                 <span class="amount-text">¥{{ formatAmount(scope.row.orderAmount) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="回款金额" prop="paymentAmount" width="130" align="right" sortable>
+            <el-table-column label="回款金额" prop="paymentAmount" :width="colWidth('paymentAmount', 130)" align="right" sortable>
               <template #default="scope">
                 <span class="amount-text amount-text--green">¥{{ formatAmount(scope.row.paymentAmount) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="赢单金额" prop="wonAmount" width="130" align="right" sortable>
+            <el-table-column label="赢单金额" prop="wonAmount" :width="colWidth('wonAmount', 130)" align="right" sortable>
               <template #default="scope">
                 <span class="amount-text amount-text--orange">¥{{ formatAmount(scope.row.wonAmount) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="赢单/输单" width="100" align="center">
+            <el-table-column label="赢单/输单" :width="colWidth('赢单/输单', 100)" align="center">
               <template #default="scope">
                 <span style="color: #67c23a; font-weight: 600;">{{ scope.row.wonCount || 0 }}</span>
                 <span style="color: #909399;"> / </span>
                 <span style="color: #f56c6c; font-weight: 600;">{{ scope.row.lostCount || 0 }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="转化率" prop="conversionRate" width="100" align="center" sortable>
+            <el-table-column label="转化率" prop="conversionRate" :width="colWidth('conversionRate', 100)" align="center" sortable>
               <template #default="scope">
                 <el-progress :percentage="Number(scope.row.conversionRate || 0)" :stroke-width="14" :text-inside="true" :color="getProgressColor(scope.row.conversionRate)" />
               </template>
@@ -218,6 +218,9 @@
 import * as echarts from 'echarts'
 import { User, Document, ShoppingCart, Money, TrendCharts, Histogram } from '@element-plus/icons-vue'
 import { getSalespersonOverview, getSalespersonTrend } from '@/api/mk/salespersonReport'
+import { useColumnResize } from '@/composables/useColumnResize'
+
+const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_salesperson_report_index')
 
 const loading = ref(true)
 const tableData = ref([])
@@ -567,6 +570,7 @@ function loadData() {
     const data = res.data || []
     tableData.value = data
     loading.value = false
+    applySavedWidths()
     calcSummary(data)
     // 默认选中第一个销售人员
     if (data.length > 0 && !selectedUserId.value) {

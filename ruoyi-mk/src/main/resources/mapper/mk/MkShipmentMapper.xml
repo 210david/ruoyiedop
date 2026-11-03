@@ -68,6 +68,7 @@
             <if test="orderId != null"> AND order_id = #{orderId}</if>
             <if test="contractId != null"> AND contract_id = #{contractId}</if>
             <if test="customerId != null"> AND customer_id = #{customerId}</if>
+            <if test="customerType != null and customerType != ''"> AND customer_id IN (SELECT customer_id FROM mk_customer WHERE customer_type = #{customerType} AND del_flag = '0')</if>
             <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="shipperName != null and shipperName != ''"> AND shipper_name LIKE CONCAT('%', #{shipperName}, '%')</if>

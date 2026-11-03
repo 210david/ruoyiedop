@@ -3,6 +3,7 @@ package com.ruoyi.mk.service;
 import java.util.List;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.mk.domain.MkCustomer;
+import com.ruoyi.mk.domain.MkCustomerChangeLog;
 
 /**
  * 企业客户 Service接口
@@ -40,4 +41,13 @@ public interface IMkCustomerService
 
     /** 导入客户数据 */
     public AjaxResult importCustomer(List<MkCustomer> customerList, Boolean isUpdateSupport, String updateKey, String operName);
+
+    /** 变更客户类型（专用端点，记录变更日志） */
+    public int changeType(MkCustomer change);
+
+    /** 查询客户变更日志 */
+    public List<MkCustomerChangeLog> selectChangeLogList(Long customerId);
+
+    /** 查询客户列表（手机号明文，导出接口按权限选用） */
+    public List<MkCustomer> selectCustomerListPlain(MkCustomer customer);
 }

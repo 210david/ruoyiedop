@@ -176,6 +176,7 @@
           <el-table-column label="物料名称" prop="materialName" key="materialName" :width="colWidth('materialName', 160)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="工序" prop="opName" key="opName" :width="colWidth('opName', 90)" resizable align="center" v-if="columns.opName.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 130)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="客户" prop="customerName" key="customerName" :width="colWidth('customerName', 130)" resizable show-overflow-tooltip v-if="columns.customerName.visible" />
           <el-table-column label="投入量" prop="qtyIn" key="qtyIn" :width="colWidth('qtyIn', 90)" resizable align="center" v-if="columns.qtyIn.visible">
             <template #header><span>投入量</span><el-tooltip content="投入批次的数量，支持2位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
@@ -183,7 +184,7 @@
             <template #header><span>产出量</span><el-tooltip content="产出批次的数量，支持2位小数" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
           </el-table-column>
           <el-table-column label="来源" prop="sourceType" key="sourceType" :width="colWidth('sourceType', 90)" resizable align="center" v-if="columns.sourceType.visible">
-            <template #header><span>来源</span><el-tooltip content="谱系数据来源：投料/报工/完工/调拨/返工/合并/拆分/补录" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
+            <template #header><span>来源</span><el-tooltip content="谱系数据来源：投料/报工/完工/调拨/返工/合并/拆分/补录/发货" placement="top"><el-icon class="col-tip"><QuestionFilled /></el-icon></el-tooltip></template>
             <template #default="scope"><dict-tag :options="qms_genealogy_source" :value="scope.row.sourceType" /></template>
           </el-table-column>
           <el-table-column label="产线" prop="lineName" key="lineName" :width="colWidth('lineName', 90)" resizable show-overflow-tooltip v-if="columns.lineName.visible" />
@@ -245,12 +246,13 @@
             <div class="rd-item"><span class="rd-label">产线<el-tooltip content="生产产线名称" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.lineName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">操作员<el-tooltip content="执行该操作的员工" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.operator || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">供应商<el-tooltip content="原料批次关联的供应商名称" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.supplierName || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">客户<el-tooltip content="发货谱系关联的发货客户名称" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.customerName || '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('v_trace')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>来源与谱系时间</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_trace }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
           <div class="rd-card-body" v-show="!collapsedCards.v_trace" style="display:block"><div class="rd-grid">
-            <div class="rd-item"><span class="rd-label">来源类型<el-tooltip content="谱系数据来源：投料(feeding)、报工(report)、完工(complete)、调拨(transfer)、返工(rework)、合并(merge)、拆分(split)、补录(manual)" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value"><dict-tag :options="qms_genealogy_source" :value="viewData.sourceType" /></div></div>
+            <div class="rd-item"><span class="rd-label">来源类型<el-tooltip content="谱系数据来源：投料(feeding)、报工(report)、完工(complete)、调拨(transfer)、返工(rework)、合并(merge)、拆分(split)、补录(manual)、发货(shipment)" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value"><dict-tag :options="qms_genealogy_source" :value="viewData.sourceType" /></div></div>
             <div class="rd-item"><span class="rd-label">谱系时间<el-tooltip content="谱系关联建立的时间" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.traceTime || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">断点标记<el-tooltip content="断点标记：0=正常，1=断点（产出批次未登记，追溯链中断）" placement="top"><el-icon class="rd-label-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">
               <span v-if="viewData.breakFlag === 1" class="badge red"><span class="dot"></span>断点</span>
@@ -558,6 +560,7 @@ const defaultColumns = {
   materialName: { label: '物料名称', visible: true },
   opName: { label: '工序', visible: true },
   supplierName: { label: '供应商', visible: true },
+  customerName: { label: '客户', visible: true },
   qtyIn: { label: '投入量', visible: true },
   qtyOut: { label: '产出量', visible: true },
   sourceType: { label: '来源', visible: true },
