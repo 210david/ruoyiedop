@@ -263,6 +263,12 @@
               <el-table-column label="返利额" prop="rebateAmount" key="rebateAmount" :width="colWidth('rebateAmount', 110)" resizable align="right" v-if="settleColumns.rebateAmount.visible">
                 <template #default="scope"><span class="mono">{{ scope.row.rebateAmount }}</span></template>
               </el-table-column>
+              <el-table-column label="冲抵状态" prop="offsetStatus" key="offsetStatus" :width="colWidth('offsetStatus', 100)" resizable align="center" v-if="settleColumns.offsetStatus.visible">
+                <template #default="scope">
+                  <el-tag v-if="scope.row.offsetStatus && scope.row.offsetStatus !== '0'" :type="scope.row.offsetStatus === '2' ? 'success' : 'warning'" effect="light">{{ dictLabel(mk_offset_status, scope.row.offsetStatus) }}</el-tag>
+                  <span v-else class="text-muted">未冲抵</span>
+                </template>
+              </el-table-column>
               <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 90)" resizable align="center" v-if="settleColumns.status.visible">
                 <template #default="scope">
                   <span class="badge" :class="scope.row.status === '1' ? 'green' : 'amber'"><span class="dot"></span>{{ dictLabel(mk_rebate_settle_status, scope.row.status) }}</span>
@@ -277,11 +283,12 @@
               <el-table-column label="兑现时间" prop="redeemDate" key="redeemDate" :width="colWidth('redeemDate', 150)" resizable align="center" v-if="settleColumns.redeemDate.visible">
                 <template #default="scope">{{ parseTime(scope.row.redeemDate) || '—' }}</template>
               </el-table-column>
-              <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action">
+              <el-table-column label="操作" :width="colWidth('操作', 200)" align="center" fixed="right" class-name="col-action">
                 <template #default="scope">
                   <div class="action-btn-row">
                     <el-button link type="primary" icon="View" @click="handleSettleView(scope.row)">详情</el-button>
-                    <el-button v-if="scope.row.status === '0'" link type="primary" icon="Money" @click="handleRedeem(scope.row)" v-hasPermi="['marketing:rebate:redeem']">兑现</el-button>
+                    <el-button v-if="scope.row.status === '0'" link type="primary" icon="Money" @click="handleOffset(scope.row)" v-hasPermi="['marketing:rebate:offset:add']">冲抵登记</el-button>
+                    <el-button link type="primary" icon="List" @click="viewOffsets(scope.row)">冲抵记录</el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -577,8 +584,13 @@
           </el-descriptions>
         </section>
         <section class="rd-card">
-          <div class="rd-card-title" style="padding: 12px 16px 0">兑现信息</div>
+          <div class="rd-card-title" style="padding: 12px 16px 0">冲抵与兑现信息</div>
           <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
+            <el-descriptions-item label="冲抵状态">
+              <el-tag v-if="settleView.offsetStatus && settleView.offsetStatus !== '0'" :type="settleView.offsetStatus === '2' ? 'success' : 'warning'" effect="light">{{ dictLabel(mk_offset_status, settleView.offsetStatus) }}</el-tag>
+              <span v-else>未冲抵</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="已冲抵金额"><span class="mono">{{ settleView.offsetAmount || 0 }}</span></el-descriptions-item>
             <el-descriptions-item label="兑现方式">{{ settleView.redeemType || '未兑现' }}</el-descriptions-item>
             <el-descriptions-item label="兑现时间">{{ parseTime(settleView.redeemDate) || '—' }}</el-descriptions-item>
             <el-descriptions-item label="兑现操作人">{{ settleView.redeemBy || '—' }}</el-descriptions-item>
@@ -615,7 +627,7 @@
           <li>政策整组管理：修改/删除均作用于整组阶梯</li>
         </ul>
         <h4>操作流程</h4>
-        <p>新增政策（基本信息 → 考核规则 → 有效期 → 阶梯明细）→ 启用 → 到"返利结算"页签按客户+期间核算 → 生成结算单 → 兑现</p>
+        <p>新增政策（基本信息 → 考核规则 → 有效期 → 阶梯明细）→ 启用 → 到"返利结算"页签按客户+期间核算 → 生成结算单 → 冲抵登记（财务审核）</p>
       </div>
       <template #footer>
         <div class="dialog-footer"><el-button @click="showPolicyHelp = false">关 闭</el-button></div>
@@ -629,20 +641,110 @@
         <p>按"客户 + 核算期间"自动计算返利：系统统计该客户期间内已完成订单的金额/数量，匹配启用的返利政策阶梯，生成返利结算单。</p>
         <h4>状态流转</h4>
         <ul>
-          <li><b>待兑现</b>：核算生成，返利额已确认，尚未支付给客户</li>
-          <li><b>已兑现</b>：已按兑现方式（抵货款/现金等）支付，终态留痕</li>
+          <li><b>待兑现</b>：核算生成，返利额已确认，尚未冲抵给客户</li>
+          <li><b>已兑现</b>：冲抵金额经财务审核后达到返利总额，终态留痕</li>
         </ul>
         <h4>重点业务规则</h4>
         <ul>
           <li>达成额统计口径：已完成/已发货/已回款状态订单之和（与政策考核口径对应金额或数量）</li>
           <li>同一客户+同一期间+同一政策只生成一张结算单，重复核算自动跳过</li>
-          <li>兑现时必须填写兑现方式，操作人+时间自动留痕</li>
+          <li>冲抵登记支持拆分多次，累计冲抵不可超过返利总额</li>
+          <li>冲抵单经财务一级审核通过后生效，同时推送财务待办（按销售折扣处理，红票由财务开具）</li>
+          <li>全部冲抵完成后结算单自动置为"已兑现"</li>
         </ul>
         <h4>操作流程</h4>
-        <p>核算返利（选客户 → 选期间 → 开始核算）→ 查看核算结果 → 确认结算单 → 对待兑现单执行兑现（填兑现方式）→ 完成</p>
+        <p>核算返利（选客户 → 选期间 → 开始核算）→ 查看核算结果 → 确认结算单 → 冲抵登记（填冲抵金额/日期）→ 财务审核通过 → 全部冲抵后自动完成</p>
       </div>
       <template #footer>
         <div class="dialog-footer"><el-button @click="showSettleHelp = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 冲抵登记弹框 ===== -->
+    <el-dialog v-model="offsetOpen" title="返利冲抵登记" width="560px" append-to-body draggable class="rd-dialog">
+      <el-descriptions :column="2" border class="rd-desc" style="margin-bottom: 16px">
+        <el-descriptions-item label="结算单号"><span class="mono">{{ offsetSettle.settleNo }}</span></el-descriptions-item>
+        <el-descriptions-item label="客户名称">{{ offsetSettle.customerName }}</el-descriptions-item>
+        <el-descriptions-item label="返利总额"><span class="mono">{{ offsetSettle.rebateAmount }}</span></el-descriptions-item>
+        <el-descriptions-item label="可冲抵余额"><span class="mono">{{ offsetBalance }}</span></el-descriptions-item>
+      </el-descriptions>
+      <el-form ref="offsetRef" :model="offsetForm" :rules="offsetRules" label-width="100px">
+        <el-form-item label="冲抵金额" prop="offsetAmount">
+          <el-input-number v-model="offsetForm.offsetAmount" :min="0.01" :max="Number(offsetBalance)" :precision="2" :controls="false" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="冲抵日期" prop="offsetDate">
+          <el-date-picker v-model="offsetForm.offsetDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="offsetForm.remark" type="textarea" :rows="2" placeholder="可填写冲抵对应货款/订单信息" />
+        </el-form-item>
+      </el-form>
+      <div class="form-tip">提交后推送财务待办，财务审核通过后计入冲抵台账（按销售折扣处理）；支持拆分多次冲抵。</div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="offsetOpen = false">取 消</el-button>
+          <el-button type="primary" @click="submitOffset">提交并推送财务</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 冲抵台账弹框 ===== -->
+    <el-dialog v-model="offsetListOpen" title="冲抵台账" width="960px" append-to-body draggable class="rd-dialog">
+      <div class="rd-detail-header-sub" v-if="offsetListSettleNo" style="margin-bottom: 10px">结算单：<span class="mono">{{ offsetListSettleNo }}</span></div>
+      <el-table v-loading="offsetListLoading" :data="offsetList" border size="small">
+        <el-table-column label="冲抵单号" width="100" align="center">
+          <template #default="scope"><span class="mono">#{{ scope.row.offsetId }}</span></template>
+        </el-table-column>
+        <el-table-column label="冲抵金额" prop="offsetAmount" width="110" align="right">
+          <template #default="scope"><span class="mono">{{ scope.row.offsetAmount }}</span></template>
+        </el-table-column>
+        <el-table-column label="冲抵日期" width="110" align="center">
+          <template #default="scope">{{ (scope.row.offsetDate || '').substring(0, 10) }}</template>
+        </el-table-column>
+        <el-table-column label="审核状态" width="100" align="center">
+          <template #default="scope">
+            <el-tag :type="auditTagType(scope.row.auditStatus)" effect="light">{{ dictLabel(mk_offset_audit_status, scope.row.auditStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核人" prop="auditBy" width="100" align="center">
+          <template #default="scope">{{ scope.row.auditBy || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="审核时间" width="150" align="center">
+          <template #default="scope">{{ parseTime(scope.row.auditTime) || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="审核意见" prop="auditOpinion" min-width="140" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.auditOpinion || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="90" align="center" fixed="right">
+          <template #default="scope">
+            <el-button v-if="scope.row.auditStatus === '0'" link type="primary" @click="handleOffsetAudit(scope.row)" v-hasPermi="['marketing:rebate:offset:audit']">审核</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <div class="dialog-footer"><el-button @click="offsetListOpen = false">关 闭</el-button></div>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 冲抵审核弹框 ===== -->
+    <el-dialog v-model="auditOpen" title="冲抵审核" width="480px" append-to-body draggable class="rd-dialog">
+      <el-form ref="auditRef" :model="auditForm" label-width="100px">
+        <el-form-item label="冲抵金额"><span class="mono">{{ auditForm.offsetAmount }}</span></el-form-item>
+        <el-form-item label="审核结论" required>
+          <el-radio-group v-model="auditForm.auditStatus">
+            <el-radio value="1">通过</el-radio>
+            <el-radio value="2">驳回</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="审核意见" required>
+          <el-input v-model="auditForm.auditOpinion" type="textarea" :rows="3" placeholder="请输入审核意见" maxlength="200" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="auditOpen = false">取 消</el-button>
+          <el-button type="primary" @click="submitOffsetAudit">确 定</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -652,7 +754,7 @@
 </template>
 
 <script setup name="MkRebate">
-import { listPolicyGroups, addPolicyGroup, updatePolicyGroup, delPolicyGroup, listSettles, settleRebate, redeemSettle } from "@/api/mk/rebate"
+import { listPolicyGroups, addPolicyGroup, updatePolicyGroup, delPolicyGroup, listSettles, settleRebate, listOffsetBySettle, addOffset, auditOffset } from "@/api/mk/rebate"
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -660,7 +762,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('rebate_columns')
-const { mk_rebate_basis, mk_rebate_period, mk_rebate_settle_status } = proxy.useDict("mk_rebate_basis", "mk_rebate_period", "mk_rebate_settle_status")
+const { mk_rebate_basis, mk_rebate_period, mk_rebate_settle_status, mk_offset_status, mk_offset_audit_status } = proxy.useDict("mk_rebate_basis", "mk_rebate_period", "mk_rebate_settle_status", "mk_offset_status", "mk_offset_audit_status")
 
 const activeTab = ref('policy')
 const customerPickerRef = ref(null)
@@ -704,6 +806,7 @@ const settleColumns = ref({
   achieveAmount: { label: '达成额', visible: true },
   rebateRate: { label: '比例', visible: true },
   rebateAmount: { label: '返利额', visible: true },
+  offsetStatus: { label: '冲抵状态', visible: true },
   status: { label: '状态', visible: true },
   redeemType: { label: '兑现方式', visible: true },
   redeemDate: { label: '兑现时间', visible: true }
@@ -1005,20 +1108,79 @@ function submitSettle() {
   })
 }
 
-/** 兑现（仅待兑现） */
-function handleRedeem(row) {
-  proxy.$prompt('请输入兑现方式（如：抵货款/现金）', '返利兑现', {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    inputPlaceholder: "兑现方式（必填）",
-    inputPattern: /\S+/,
-    inputErrorMessage: "兑现方式不能为空"
-  }).then(({ value }) => {
-    return redeemSettle(row.settleId, value.trim())
-  }).then(() => {
-    proxy.$modal.msgSuccess("兑现成功")
+// ==================== 返利冲抵台账 ====================
+/** 冲抵登记弹框 */
+const offsetOpen = ref(false)
+const offsetSettle = ref({})
+const offsetForm = ref({ offsetAmount: undefined, offsetDate: undefined, remark: undefined })
+const offsetRules = {
+  offsetAmount: [{ required: true, message: '请填写冲抵金额', trigger: 'blur' }],
+  offsetDate: [{ required: true, message: '请选择冲抵日期', trigger: 'change' }]
+}
+/** 可冲抵余额 = 返利总额 - 已冲抵 */
+const offsetBalance = computed(() => {
+  const total = Number(offsetSettle.value.rebateAmount || 0)
+  const used = Number(offsetSettle.value.offsetAmount || 0)
+  return Math.max(total - used, 0).toFixed(2)
+})
+
+/** 冲抵台账弹框 */
+const offsetListOpen = ref(false)
+const offsetList = ref([])
+const offsetListLoading = ref(false)
+const offsetListSettleId = ref(null)
+const offsetListSettleNo = ref('')
+
+/** 审核弹框 */
+const auditOpen = ref(false)
+const auditForm = ref({ offsetId: undefined, offsetAmount: undefined, auditStatus: '1', auditOpinion: undefined })
+
+/** 打开冲抵登记 */
+function handleOffset(row) {
+  offsetSettle.value = row
+  offsetForm.value = { offsetAmount: undefined, offsetDate: proxy.parseTime(new Date(), '{y}-{m}-{d}'), remark: undefined }
+  offsetOpen.value = true
+}
+/** 提交冲抵登记（推送财务待办） */
+function submitOffset() {
+  const balance = Number(offsetBalance.value)
+  if (!offsetForm.value.offsetAmount || offsetForm.value.offsetAmount <= 0) { proxy.$modal.msgError('冲抵金额必须大于0'); return }
+  if (offsetForm.value.offsetAmount > balance) { proxy.$modal.msgError('冲抵金额超出可冲抵余额 ' + balance + ' 元'); return }
+  addOffset({ settleId: offsetSettle.value.settleId, offsetAmount: offsetForm.value.offsetAmount, offsetDate: offsetForm.value.offsetDate, remark: offsetForm.value.remark }).then(() => {
+    proxy.$modal.msgSuccess('冲抵登记成功，已推送财务待办')
+    offsetOpen.value = false
     getSettleList()
-  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('兑现失败：' + (e?.message || e)) })
+  })
+}
+/** 查看冲抵台账 */
+function viewOffsets(row) {
+  offsetListSettleId.value = row.settleId
+  offsetListSettleNo.value = row.settleNo
+  offsetListOpen.value = true
+  loadOffsetList()
+}
+function loadOffsetList() {
+  offsetListLoading.value = true
+  listOffsetBySettle(offsetListSettleId.value).then(res => {
+    offsetList.value = res.data || []
+  }).finally(() => { offsetListLoading.value = false })
+}
+/** 审核状态标签 */
+function auditTagType(val) { return { '0': 'warning', '1': 'success', '2': 'danger' }[val] || 'info' }
+/** 打开审核 */
+function handleOffsetAudit(row) {
+  auditForm.value = { offsetId: row.offsetId, offsetAmount: row.offsetAmount, auditStatus: '1', auditOpinion: undefined }
+  auditOpen.value = true
+}
+/** 提交审核 */
+function submitOffsetAudit() {
+  if (!auditForm.value.auditOpinion || !auditForm.value.auditOpinion.trim()) { proxy.$modal.msgError('请填写审核意见'); return }
+  auditOffset(auditForm.value.offsetId, { auditStatus: auditForm.value.auditStatus, auditOpinion: auditForm.value.auditOpinion.trim() }).then(() => {
+    proxy.$modal.msgSuccess(auditForm.value.auditStatus === '1' ? '审核通过，冲抵已生效' : '已驳回')
+    auditOpen.value = false
+    loadOffsetList()
+    getSettleList()
+  })
 }
 
 // ==================== 客户选择器 ====================

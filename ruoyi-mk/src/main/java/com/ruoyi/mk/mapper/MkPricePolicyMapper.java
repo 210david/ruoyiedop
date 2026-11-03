@@ -21,6 +21,9 @@ public interface MkPricePolicyMapper
     /** 取价：等级价（启用+在有效期，取最新一条） */
     public MkPricePolicy selectLevelPrice(@Param("customerLevel") String customerLevel, @Param("materialId") Long materialId);
 
+    /** 取价：经销商供货价（price_type=3，按经销层级匹配，启用+在有效期，取最新一条） */
+    public MkPricePolicy selectDealerPrice(@Param("dealerLevel") String dealerLevel, @Param("materialId") Long materialId);
+
     public int insertPolicy(MkPricePolicy policy);
 
     public int updatePolicy(MkPricePolicy policy);

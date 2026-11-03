@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mk.mapper.MkDealerReportMapper">
+
+    <resultMap type="MkDealerReport" id="MkDealerReportResult">
+        <id     property="customerId"        column="customer_id"/>
+        <result property="customerNo"        column="customer_no"/>
+        <result property="customerName"      column="customer_name"/>
+        <result property="dealerLevel"       column="dealer_level"/>
+        <result property="authRegions"       column="auth_regions"/>
+        <result property="creditStatus"      column="credit_status"/>
+        <result property="orderCount"        column="order_count"/>
+        <result property="orderAmount"       column="order_amount"/>
+        <result property="shippedQty"        column="shipped_qty"/>
+        <result property="rebateTotal"       column="rebate_total"/>
+        <result property="redeemedAmount"    column="redeemed_amount"/>
+        <result property="offsetAmount"      column="offset_amount"/>
+        <result property="unsettledRebate"   column="unsettled_rebate"/>
+        <result property="receivableAmount"  column="receivable_amount"/>
+        <result property="overdueAmount"     column="overdue_amount"/>
+        <result property="worstAgingDays"    column="worst_aging_days"/>
+        <result property="flowCount"         column="flow_count"/>
+        <result property="flowQty"           column="flow_qty"/>
+        <result property="downstreamCount"   column="downstream_count"/>
+    </resultMap>
+
+    <!-- 主体：一行一经销商，聚合 销量(订单)/返利(结算)/账龄(回款计划)/流向(分销登记) -->
+    <sql id="dealerReportBody">
+        select c.customer_id,
+               c.customer_no, c.customer_name, c.credit_status,
+               p.dealer_level, p.auth_regions,
+               ifnull(o.order_count, 0)   as order_count,
+               ifnull(o.order_amount, 0)  as order_amount,
+               ifnull(o.shipped_qty, 0)   as shipped_qty,
+               ifnull(r.rebate_total, 0)      as rebate_total,
+               ifnull(r.redeemed_amount, 0)   as redeemed_amount,
+               ifnull(r.offset_amount, 0)     as offset_amount,
+               ifnull(r.unsettled_amount, 0)  as unsettled_rebate,
+               ifnull(a.receivable_amount, 0) as receivable_amount,
+               ifnull(a.overdue_amount, 0)    as overdue_amount,
+               ifnull(a.worst_aging_days, 0)  as worst_aging_days,
+               ifnull(f.flow_count, 0)        as flow_count,
+               ifnull(f.flow_qty, 0)          as flow_qty,
+               ifnull(f.downstream_count, 0)  as downstream_count
+        from mk_dealer_profile p
+        inner join mk_customer c on p.customer_id = c.customer_id
+        left join (
+            select customer_id, count(*) as order_count, sum(order_amount) as order_amount,
+                   sum(ifnull(shipped_qty, 0)) as shipped_qty
+            from mk_order
+            where del_flag = '0' and order_status in ('2', '3', '4')
+            <if test="params.beginTime != null and params.beginTime != ''">and create_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''">and create_time &lt; date_add(#{params.endTime}, interval 1 day)</if>
+            group by customer_id
+        ) o on o.customer_id = c.customer_id
+        left join (
+            select customer_id,
+                   sum(rebate_amount) as rebate_total,
+                   sum(case when status = '1' then rebate_amount else 0 end) as redeemed_amount,
+                   sum(ifnull(offset_amount, 0)) as offset_amount,
+                   sum(case when offset_status in ('0', '1') then rebate_amount - ifnull(offset_amount, 0) else 0 end) as unsettled_amount
+            from mk_rebate_settle
+            where del_flag = '0'
+            group by customer_id
+        ) r on r.customer_id = c.customer_id
+        left join (
+            select customer_id,
+                   sum(plan_amount - ifnull(actual_amount, 0)) as receivable_amount,
+                   sum(case when plan_date &lt; curdate() then plan_amount - ifnull(actual_amount, 0) else 0 end) as overdue_amount,
+                   max(case when plan_amount - ifnull(actual_amount, 0) &gt; 0 and plan_date &lt; curdate()
+                            then datediff(curdate(), plan_date) else 0 end) as worst_aging_days
+            from mk_payment_plan
+            where plan_amount &gt; ifnull(actual_amount, 0)
+            group by customer_id
+        ) a on a.customer_id = c.customer_id
+        left join (
+            select dealer_id, count(*) as flow_count, sum(quantity) as flow_qty,
+                   count(distinct downstream_name) as downstream_count
+            from mk_dealer_sell_flow
+            where 1 = 1
+            <if test="params.beginTime != null and params.beginTime != ''">and flow_date &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''">and flow_date &lt;= #{params.endTime}</if>
+            group by dealer_id
+        ) f on f.dealer_id = c.customer_id
+        <where>
+            <if test="customerName != null and customerName != ''">and c.customer_name like concat('%', #{customerName}, '%')</if>
+            <if test="customerNo != null and customerNo != ''">and c.customer_no like concat('%', #{customerNo}, '%')</if>
+            <if test="dealerLevel != null and dealerLevel != ''">and p.dealer_level = #{dealerLevel}</if>
+            <if test="authRegions != null and authRegions != ''">and p.auth_regions like concat('%', #{authRegions}, '%')</if>
+            <if test="creditStatus != null and creditStatus != ''">and c.credit_status = #{creditStatus}</if>
+            <if test="status != null and status != ''">and p.status = #{status}</if>
+        </where>
+    </sql>
+
+    <select id="selectDealerReportList" parameterType="MkDealerReport" resultMap="MkDealerReportResult">
+        <include refid="dealerReportBody"/>
+        order by order_amount desc, c.customer_id desc
+    </select>
+
+    <!-- 合计（全量筛选结果汇总，不受分页影响） -->
+    <select id="selectDealerReportTotal" parameterType="MkDealerReport" resultType="java.util.HashMap">
+        select count(*)                                                  as dealerCount,
+               ifnull(sum(order_count), 0)                               as orderCount,
+               ifnull(sum(order_amount), 0)                              as orderAmount,
+               ifnull(sum(shipped_qty), 0)                               as shippedQty,
+               ifnull(sum(rebate_total), 0)                              as rebateTotal,
+               ifnull(sum(redeemed_amount), 0)                           as redeemedAmount,
+               ifnull(sum(offset_amount), 0)                             as offsetAmount,
+               ifnull(sum(unsettled_rebate), 0)                          as unsettledRebate,
+               ifnull(sum(receivable_amount), 0)                         as receivableAmount,
+               ifnull(sum(overdue_amount), 0)                            as overdueAmount,
+               ifnull(max(worst_aging_days), 0)                          as worstAgingDays,
+               ifnull(sum(flow_count), 0)                                as flowCount,
+               ifnull(sum(flow_qty), 0)                                  as flowQty,
+               ifnull(sum(downstream_count), 0)                          as downstreamCount
+        from (
+            <include refid="dealerReportBody"/>
+        ) t
+    </select>
+
+    <!-- 页签数量（不随筛选联动） -->
+    <select id="selectDealerReportCounts" resultType="java.util.HashMap">
+        select count(*)                                              as allCount,
+               ifnull(sum(p.dealer_level = '1'), 0)                  as level1Count,
+               ifnull(sum(p.dealer_level = '2'), 0)                  as level2Count,
+               ifnull(sum(c.credit_status = '1'), 0)                 as frozenCount
+        from mk_dealer_profile p
+        inner join mk_customer c on p.customer_id = c.customer_id
+    </select>
+
+</mapper>

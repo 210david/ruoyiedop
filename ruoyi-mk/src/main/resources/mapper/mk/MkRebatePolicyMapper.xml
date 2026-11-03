@@ -41,6 +41,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="redeemType"    column="redeem_type"/>
         <result property="redeemDate"    column="redeem_date"/>
         <result property="redeemBy"      column="redeem_by"/>
+        <result property="offsetStatus"  column="offset_status"/>
+        <result property="offsetAmount"  column="offset_amount"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -121,6 +123,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="redeemType != null">redeem_type = #{redeemType},</if>
             <if test="redeemDate != null">redeem_date = #{redeemDate},</if>
             <if test="redeemBy != null">redeem_by = #{redeemBy},</if>
+            <if test="offsetStatus != null and offsetStatus != ''">offset_status = #{offsetStatus},</if>
+            <if test="offsetAmount != null">offset_amount = #{offsetAmount},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate(),
             <if test="remark != null">remark = #{remark},</if>
@@ -149,7 +153,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectSettleExists" resultMap="MkRebateSettleResult">
         SELECT settle_id, settle_no, customer_id, customer_name, period, policy_no, policy_name,
-               achieve_amount, rebate_rate, rebate_amount, status, redeem_type, redeem_date, redeem_by
+               achieve_amount, rebate_rate, rebate_amount, status, redeem_type, redeem_date, redeem_by,
+               offset_status, offset_amount
         FROM mk_rebate_settle
         WHERE del_flag = '0' AND customer_id = #{customerId} AND period = #{period} AND policy_no = #{policyNo}
         LIMIT 1
@@ -158,6 +163,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectSettleList" parameterType="MkRebateSettle" resultMap="MkRebateSettleResult">
         SELECT s.settle_id, s.settle_no, s.customer_id, s.customer_name, s.period, s.policy_no, s.policy_name,
                s.achieve_amount, s.rebate_rate, s.rebate_amount, s.status, s.redeem_type, s.redeem_date, s.redeem_by,
+               s.offset_status, s.offset_amount,
                s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark
         FROM mk_rebate_settle s
         <where>
@@ -167,6 +173,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="period != null and period != ''"> AND s.period = #{period}</if>
             <if test="policyNo != null and policyNo != ''"> AND s.policy_no LIKE CONCAT('%', #{policyNo}, '%')</if>
             <if test="status != null and status != ''"> AND s.status = #{status}</if>
+            <if test="offsetStatus != null and offsetStatus != ''"> AND s.offset_status = #{offsetStatus}</if>
         </where>
         ORDER BY s.settle_id DESC
     </select>
@@ -174,6 +181,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectSettleById" parameterType="Long" resultMap="MkRebateSettleResult">
         SELECT settle_id, settle_no, customer_id, customer_name, period, policy_no, policy_name,
                achieve_amount, rebate_rate, rebate_amount, status, redeem_type, redeem_date, redeem_by,
+               offset_status, offset_amount,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM mk_rebate_settle WHERE settle_id = #{settleId} AND del_flag = '0'
     </select>

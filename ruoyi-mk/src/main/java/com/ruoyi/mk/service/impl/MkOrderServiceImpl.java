@@ -107,8 +107,13 @@ public class MkOrderServiceImpl implements IMkOrderService
         {
             order.setOrderAmount(totalAmount);
         }
-        // 信用控制：冻结拦截 + 额度拦截（欠款占用+本单金额 > 信用额度则禁止）
-        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount());
+        // 结算方式默认现结；个人客户强制现结（下单节点拦截）
+        if (StringUtils.isEmpty(order.getSettleType()))
+        {
+            order.setSettleType("0");
+        }
+        // 信用控制：冻结拦截 + 个人客户现结校验 + 账期额度拦截（超额提示可用余额）
+        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount(), order.getSettleType());
         int rows = mkOrderMapper.insertOrder(order);
         // 插入订单明细
         if (order.getItemList() != null)
@@ -160,8 +165,13 @@ public class MkOrderServiceImpl implements IMkOrderService
         {
             order.setOrderAmount(totalAmount);
         }
-        // 信用控制：冻结拦截 + 额度拦截（欠款占用+本单金额 > 信用额度则禁止）
-        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount());
+        // 结算方式默认现结；个人客户强制现结（编辑节点拦截）
+        if (StringUtils.isEmpty(order.getSettleType()))
+        {
+            order.setSettleType("0");
+        }
+        // 信用控制：冻结拦截 + 个人客户现结校验 + 账期额度拦截（超额提示可用余额）
+        mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount(), order.getSettleType());
         return mkOrderMapper.updateOrder(order);
     }
 
@@ -358,6 +368,11 @@ public class MkOrderServiceImpl implements IMkOrderService
         if (!"1".equals(order.getOrderStatus()))
         {
             throw new ServiceException("只有待审核状态的订单才能审核");
+        }
+        // 审核通过前二次校验（双节点拦截）：个人客户现结 + 账期信用额度
+        if ("2".equals(status))
+        {
+            mkCreditService.checkCreditForOrder(order.getCustomerId(), order.getOrderAmount(), order.getSettleType());
         }
         // 审核通过变为"已审核(2)"，驳回变为"已驳回(5)"
         String newStatus = "2".equals(status) ? "2" : "5";

@@ -45,4 +45,10 @@ public interface IMkDashboardService
 
     /** 销售人员月度业绩趋势 */
     public List<MkDashboardVO> selectSalespersonMonthlyTrend(Long userId);
+
+    /** P2-01: 客户类型维度分析（stats=类型汇总含客单价占比，trend=月度趋势） */
+    public java.util.Map<String, Object> selectCustomerTypeAnalysis();
+
+    /** P2-04: 个人客户消费Top10（手机号后端脱敏，不输出明文） */
+    public java.util.List<java.util.Map<String, Object>> selectPersonalTopCustomers();
 }

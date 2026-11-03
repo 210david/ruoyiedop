@@ -169,6 +169,7 @@
           <el-table-column label="统一信用代码" prop="unifiedCreditCode" key="unifiedCreditCode" :width="colWidth('unifiedCreditCode', 180)" resizable show-overflow-tooltip v-if="columns.unifiedCreditCode.visible" />
           <el-table-column label="联系人" prop="contactPerson" key="contactPerson" :width="colWidth('contactPerson', 100)" resizable v-if="columns.contactPerson.visible" />
           <el-table-column label="联系电话" prop="contactPhone" key="contactPhone" :width="colWidth('contactPhone', 130)" resizable v-if="columns.contactPhone.visible" />
+          <el-table-column label="固定电话" prop="fixedPhone" key="fixedPhone" :width="colWidth('fixedPhone', 130)" resizable v-if="columns.fixedPhone.visible" />
           <el-table-column label="法人代表" prop="legalPerson" key="legalPerson" :width="colWidth('legalPerson', 100)" resizable v-if="columns.legalPerson.visible" />
           <el-table-column label="企业性质" prop="enterpriseNature" key="enterpriseNature" :min-width="colWidth('enterpriseNature', 100)" show-overflow-tooltip resizable align="center" v-if="columns.enterpriseNature.visible"><template #default="scope"><span class="badge amber">{{ enterpriseNatureLabel(scope.row.enterpriseNature) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
@@ -260,9 +261,10 @@
             <div class="rd-card-body" v-show="!collapsedCards.c2">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="联系人" prop="contactPerson"><el-input v-model="form.contactPerson" placeholder="请输入" /></el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入" maxlength="11" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="手机号或座机号" maxlength="20" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="固定电话" prop="fixedPhone"><el-input v-model="form.fixedPhone" placeholder="如：0874-3311001" maxlength="20" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="传真" prop="fax"><el-input v-model="form.fax" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
@@ -387,6 +389,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewData.contactPerson || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ viewData.contactPhone || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">固定电话</span><div class="rd-value">{{ viewData.fixedPhone || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ viewData.email || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">传真</span><div class="rd-value">{{ viewData.fax || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">网址</span><div class="rd-value">{{ viewData.website || '-' }}</div></div>
@@ -501,6 +504,7 @@ const defaultColumns = {
   unifiedCreditCode: { label: '统一信用代码', visible: true },
   contactPerson: { label: '联系人', visible: true },
   contactPhone: { label: '联系电话', visible: true },
+  fixedPhone: { label: '固定电话', visible: true },
   legalPerson: { label: '法人代表', visible: true },
   enterpriseNature: { label: '企业性质', visible: true },
   status: { label: '状态', visible: true },
@@ -591,6 +595,7 @@ const importColumnLabels = {
   unifiedCreditCode: '统一社会信用代码',
   contactPerson: '联系人',
   contactPhone: '联系电话',
+  fixedPhone: '固定电话',
   email: '邮箱',
   address: '地址',
   legalPerson: '法人代表',
@@ -661,7 +666,10 @@ const data = reactive({
     ],
     contactPerson: [{ message: '联系人不能为空', trigger: 'blur' }],
     contactPhone: [
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
+      { pattern: /^[0-9\-]{5,20}$/, message: '请输入正确的电话号码（手机号或座机号，可含短横线）', trigger: 'blur' }
+    ],
+    fixedPhone: [
+      { pattern: /^[0-9\-]{5,20}$/, message: '请输入正确的固定电话号码（如：0874-3311001）', trigger: 'blur' }
     ]
   }
 })
@@ -754,6 +762,7 @@ function reset() {
     unifiedCreditCode: undefined,
     contactPerson: undefined,
     contactPhone: undefined,
+    fixedPhone: undefined,
     email: undefined,
     fax: undefined,
     website: undefined,
@@ -835,11 +844,11 @@ async function handleExport() {
   let rows = await fetchAllPages(listSupplier, queryParams.value)
   if (ids.value && ids.value.length) { rows = rows.filter(i => ids.value.includes(i.supplierId)) }
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
-  const headers = ['供应商编码', '供应商名称', '简称', '类型', '等级', '统一信用代码', '联系人', '联系电话', '法人代表', '企业性质', '状态', '创建时间']
+  const headers = ['供应商编码', '供应商名称', '简称', '类型', '等级', '统一信用代码', '联系人', '联系电话', '固定电话', '法人代表', '企业性质', '状态', '创建时间']
   downloadXlsx(`supplier_${new Date().getTime()}`, headers, rows.map(i => [
     i.supplierCode || '', i.supplierName || '', i.supplierShortName || '',
     supplierTypeLabel(i.supplierType), supplierLevelLabel(i.supplierLevel), i.unifiedCreditCode || '',
-    i.contactPerson || '', i.contactPhone || '', i.legalPerson || '',
+    i.contactPerson || '', i.contactPhone || '', i.fixedPhone || '', i.legalPerson || '',
     enterpriseNatureLabel(i.enterpriseNature), statusLabel(i.status), i.createTime || ''
   ]))
 }

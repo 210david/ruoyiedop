@@ -62,7 +62,7 @@ public class MkAiAssistController extends BaseController
         {
             if (count++ >= CUSTOMER_LIMIT) break;
             data.append(StringUtils.nvl(c.getCustomerNo(), "-"))
-                .append(" | 企业名称:").append(StringUtils.nvl(c.getCustomerName(), "-"))
+                .append(" | 客户名称:").append(StringUtils.nvl(c.getCustomerName(), "-"))
                 .append(" | 等级:").append(StringUtils.nvl(c.getCustomerLevel(), "-"))
                 .append(" | 状态:").append(StringUtils.nvl(c.getCustomerStatus(), "-"))
                 .append(" | 首次接触:").append(c.getFirstContactDate() == null ? "-" : c.getFirstContactDate())
@@ -75,7 +75,7 @@ public class MkAiAssistController extends BaseController
         String prompt = "你是客户运营分析助手。根据以下客户清单（共" + list.size() + "个客户，展示前" + count + "条），生成客户流失预警报告。\n"
                 + "结构：一、客户等级与状态分布概况 二、流失风险分级（按高/中/低三档列出重点客户名单，结合客户状态、合作开始时间、累计交易额判断）"
                 + " 三、挽回建议（针对高风险客户给出具体可执行的挽回动作）。\n"
-                + "要求：结论先行，引用具体企业名称；数据中缺失的信息一律写【待补充】，不得编造。\n\n"
+                + "要求：结论先行，引用具体客户名称；数据中缺失的信息一律写【待补充】，不得编造。\n\n"
                 + "【客户清单（前" + count + "条）】\n" + data;
 
         AiResult result = aiClient.chatCached("mk", "customer_churn_report", prompt);

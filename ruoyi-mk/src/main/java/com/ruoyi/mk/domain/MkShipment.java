@@ -44,6 +44,9 @@ public class MkShipment extends BaseEntity
     @Excel(name = "客户名称")
     private String customerName;
 
+    /** 客户类型（查询参数，非持久：流向登记选发货单时按经销商过滤用） */
+    private String customerType;
+
     /** 状态（字典 marketing_shipment_status） */
     @Excel(name = "状态", dictType = "marketing_shipment_status")
     private String status;
@@ -123,6 +126,8 @@ public class MkShipment extends BaseEntity
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public String getCustomerType() { return customerType; }
+    public void setCustomerType(String customerType) { this.customerType = customerType; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Date getShipmentDate() { return shipmentDate; }

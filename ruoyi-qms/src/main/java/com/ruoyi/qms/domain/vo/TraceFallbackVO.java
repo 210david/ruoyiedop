@@ -1,5 +1,6 @@
 package com.ruoyi.qms.domain.vo;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -344,6 +345,30 @@ public class TraceFallbackVO
         public void setLogisticsCompany(String logisticsCompany) { this.logisticsCompany = logisticsCompany; }
         public String getTrackingNo() { return trackingNo; }
         public void setTrackingNo(String trackingNo) { this.trackingNo = trackingNo; }
+    }
+
+    /** 出库单明细摘要（发货谱系联动：按出库单号取批次明细） */
+    public static class OutboundDetailSummary
+    {
+        private String outboundOrderNo;
+        private Long materialId;
+        private String materialCode;
+        private String materialName;
+        private String batchNo;
+        private BigDecimal actualQty;
+
+        public String getOutboundOrderNo() { return outboundOrderNo; }
+        public void setOutboundOrderNo(String outboundOrderNo) { this.outboundOrderNo = outboundOrderNo; }
+        public Long getMaterialId() { return materialId; }
+        public void setMaterialId(Long materialId) { this.materialId = materialId; }
+        public String getMaterialCode() { return materialCode; }
+        public void setMaterialCode(String materialCode) { this.materialCode = materialCode; }
+        public String getMaterialName() { return materialName; }
+        public void setMaterialName(String materialName) { this.materialName = materialName; }
+        public String getBatchNo() { return batchNo; }
+        public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+        public BigDecimal getActualQty() { return actualQty; }
+        public void setActualQty(BigDecimal actualQty) { this.actualQty = actualQty; }
     }
 
     // ==================== Getter / Setter ====================

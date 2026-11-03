@@ -9,6 +9,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.mk.domain.MkRebateOffset;
 import com.ruoyi.mk.domain.MkRebatePolicy;
 import com.ruoyi.mk.service.IMkRebateService;
 
@@ -82,12 +83,42 @@ public class MkRebateController extends BaseController
         return AjaxResult.success("核算完成，生成结算单 " + created.size() + " 张", created);
     }
 
-    /** 返利兑现 */
-    @Log(title = "返利兑现", businessType = BusinessType.UPDATE)
-    @PreAuthorize("@ss.hasPermi('marketing:rebate:redeem')")
-    @PutMapping("/redeem/{settleId}")
-    public AjaxResult redeem(@PathVariable Long settleId, @RequestParam String redeemType)
+    // ====== 返利冲抵台账（财务性质按销售折扣处理，红票由财务据待办开具） ======
+
+    /** 冲抵台账列表 */
+    @PreAuthorize("@ss.hasPermi('marketing:rebate:offset:list')")
+    @GetMapping("/offsetList")
+    public TableDataInfo offsetList(MkRebateOffset offset)
     {
-        return toAjax(mkRebateService.redeem(settleId, redeemType));
+        startPage();
+        List<MkRebateOffset> list = mkRebateService.selectOffsetList(offset);
+        return getDataTable(list);
+    }
+
+    /** 按结算单查冲抵明细 */
+    @PreAuthorize("@ss.hasPermi('marketing:rebate:list')")
+    @GetMapping("/offset/{settleId}")
+    public AjaxResult offsetBySettle(@PathVariable Long settleId)
+    {
+        return AjaxResult.success(mkRebateService.selectOffsetListBySettleId(settleId));
+    }
+
+    /** 冲抵登记（支持拆分，推送财务待办） */
+    @Log(title = "返利冲抵登记", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('marketing:rebate:offset:add')")
+    @PostMapping("/offset")
+    public AjaxResult addOffset(@RequestBody MkRebateOffset offset)
+    {
+        return toAjax(mkRebateService.insertOffset(offset));
+    }
+
+    /** 冲抵审核（财务一级审批） */
+    @Log(title = "返利冲抵审核", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:rebate:offset:audit')")
+    @PutMapping("/offset/audit/{offsetId}")
+    public AjaxResult auditOffset(@PathVariable Long offsetId, @RequestBody MkRebateOffset audit)
+    {
+        audit.setOffsetId(offsetId);
+        return toAjax(mkRebateService.auditOffset(audit));
     }
 }

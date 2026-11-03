@@ -54,3 +54,13 @@ export function getWinLossAnalysis() {
 export function getSalesForecast() {
   return request({ url: '/mk/dashboard/salesForecast', method: 'get' })
 }
+
+// P2-01: 客户类型维度分析（企业/经销商/个人）
+export function getCustomerTypeAnalysis() {
+  return request({ url: '/mk/dashboard/customerTypeAnalysis', method: 'get' })
+}
+
+// P2-04: 个人客户消费Top10（脱敏口径，不输出明文手机号）
+export function getPersonalTop() {
+  return request({ url: '/mk/dashboard/personalTop', method: 'get' })
+}

@@ -117,3 +117,12 @@ export function getCreditUsage(customerId) {
     method: 'get'
   })
 }
+
+// 变更客户类型（企业/经销商/个人）
+export function changeCustomerType(data) {
+  return request({
+    url: '/mk/customer/changeType/' + data.customerId,
+    method: 'put',
+    data: data
+  })
+}
