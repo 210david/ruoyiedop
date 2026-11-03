@@ -23,7 +23,7 @@
             <el-table-column label="考核周期" prop="periodType" key="periodType" :width="colWidthScheme('periodType', 110)" resizable align="center" v-if="schemeColumns.periodType.visible"><template #default="scope"><span v-if="dictLabel(periodTypeOptions, scope.row.periodType)" class="badge blue"><span class="dot"></span>{{ dictLabel(periodTypeOptions, scope.row.periodType) }}</span></template></el-table-column>
             <el-table-column label="状态" prop="schemeStatus" key="schemeStatus" :width="colWidthScheme('schemeStatus', 100)" resizable align="center" v-if="schemeColumns.schemeStatus.visible"><template #default="scope"><span class="badge" :class="schemeStatusClass(scope.row.schemeStatus)"><span class="dot"></span>{{ schemeStatusLabel(scope.row.schemeStatus) }}</span></template></el-table-column>
             <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidthScheme('createTime', 160)" resizable align="center" v-if="schemeColumns.createTime.visible"><template #default="scope"><span>{{ parseTime(scope.row.createTime) }}</span></template></el-table-column>
-            <el-table-column label="操作" width="300" align="center" fixed="right" class-name="col-action">
+            <el-table-column label="操作" :width="colWidthScheme('操作', 300)" align="center" fixed="right" class-name="col-action">
               <template #default="scope">
                 <div class="action-btn-row">
                   <el-button link type="primary" icon="Edit" @click="handleEditScheme(scope.row)" v-hasPermi="['hr:kpi:add']">编辑</el-button>
@@ -94,7 +94,7 @@
             <el-table-column label="上级评分" prop="superiorScore" key="superiorScore" :width="colWidthRecord('superiorScore', 100)" resizable align="center" v-if="recordColumns.superiorScore.visible" />
             <el-table-column label="最终得分" prop="finalScore" key="finalScore" :width="colWidthRecord('finalScore', 100)" resizable align="center" v-if="recordColumns.finalScore.visible" />
             <el-table-column label="状态" prop="kpiStatus" key="kpiStatus" :width="colWidthRecord('kpiStatus', 100)" resizable align="center" v-if="recordColumns.kpiStatus.visible"><template #default="scope"><span class="badge" :class="kpiStatusClass(scope.row.kpiStatus)"><span class="dot"></span>{{ kpiStatusLabel(scope.row.kpiStatus) }}</span></template></el-table-column>
-            <el-table-column label="操作" width="320" align="center" fixed="right" class-name="col-action">
+            <el-table-column label="操作" :width="colWidthRecord('操作', 320)" align="center" fixed="right" class-name="col-action">
               <template #default="scope">
                 <div class="action-btn-row">
                   <el-button link type="primary" @click="openScore(scope.row, 'self')" v-hasPermi="['hr:kpi:score']" v-if="scope.row.kpiStatus === '0'">自评</el-button>

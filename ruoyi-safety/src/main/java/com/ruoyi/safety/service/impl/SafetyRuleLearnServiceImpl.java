@@ -16,6 +16,8 @@ import com.ruoyi.safety.mapper.SafetyRuleLearnMapper;
 import com.ruoyi.safety.mapper.SafetyRuleMapper;
 import com.ruoyi.safety.service.ISafetyRuleLearnService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.system.domain.SysMessage;
+import com.ruoyi.system.service.ISysMessageService;
 
 /**
  * 安全守则学习任务/签阅 Service业务层处理（需求一）
@@ -34,6 +36,9 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
 
+    @Autowired
+    private ISysMessageService messageService;
+
     @Override
     public List<SafetyRuleLearnTask> selectTaskList(SafetyRuleLearnTask task) { return mapper.selectTaskList(task); }
 
@@ -41,7 +46,6 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
     public SafetyRuleLearnTask selectTaskById(Long taskId) { return mapper.selectTaskById(taskId); }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int insertTask(SafetyRuleLearnTask task) {
         if (task.getRuleId() == null) throw new ServiceException("请选择守则");
         SafetyRule rule = ruleMapper.selectRuleById(task.getRuleId());
@@ -50,10 +54,11 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
         if (!"1".equals(rule.getRuleStatus())) throw new ServiceException("仅「生效」状态的守则可发起学习任务");
         if (task.getDeadline() == null) throw new ServiceException("请设置完成期限");
         if (StringUtils.isEmpty(task.getTaskNo())) {
+            // 编号生成失败不影响主流程（在事务外尝试，避免内部事务异常导致外层 rollback-only）
             try {
                 task.setTaskNo(mkNumberRuleService.generateNumber("biz_safety_rule_learn_task"));
             } catch (Exception e) {
-                task.setTaskNo("SLT" + DateUtils.dateTimeNow("yyyyMMddHHmmssSSS"));
+                task.setTaskNo("XXRW-" + DateUtils.dateTimeNow("yyyy") + "-" + DateUtils.dateTimeNow("HHmmssSSS"));
             }
         }
         task.setRuleName(rule.getRuleName());
@@ -62,8 +67,35 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
         task.setDelFlag("0");
         task.setCreateBy(SecurityUtils.getUsername());
         int rows = mapper.insertTask(task);
-        // TODO 消息中心：向学习对象推送学习提醒（接入消息中心组件后补充）
+        // 学习对象人员名单随任务保存（SR-03 名单只可追加）
+        if (task.getLearns() != null && !task.getLearns().isEmpty()) {
+            task.getLearns().forEach(l -> { l.setTaskId(task.getTaskId()); l.setRuleId(task.getRuleId()); l.setCreateBy(SecurityUtils.getUsername()); });
+            mapper.appendLearnBatch(task.getLearns());
+            sendLearnRemind(task, task.getLearns());
+        }
         return rows;
+    }
+
+    /** 向学习对象发送点对点学习提醒消息（失败不影响主流程） */
+    private void sendLearnRemind(SafetyRuleLearnTask task, List<SafetyRuleLearn> learns) {
+        try {
+            for (SafetyRuleLearn l : learns) {
+                if (l.getUserId() == null) continue;
+                SysMessage msg = new SysMessage();
+                msg.setMessageTitle("安全守则学习任务：" + task.getTaskName());
+                msg.setMessageContent("守则《" + task.getRuleName() + "》（v" + task.getRuleVersionNo() + "）学习任务，请于 " + DateUtils.parseDateToStr("yyyy-MM-dd", task.getDeadline()) + " 前完成阅读并签阅");
+                msg.setMessageType("3");
+                msg.setMessageLevel("2");
+                msg.setBizSource("safety");
+                msg.setBizId(task.getTaskId());
+                msg.setRedirectUrl("/safety/ruleLearn");
+                msg.setRecipientId(l.getUserId());
+                msg.setStatus("1");
+                messageService.insertMessage(msg);
+            }
+        } catch (Exception e) {
+            // 消息发送失败不影响主业务流程
+        }
     }
 
     @Override
@@ -83,7 +115,9 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
         }
         if (toAdd.isEmpty()) return 0;
         toAdd.forEach(l -> { l.setTaskId(task.getTaskId()); l.setRuleId(existing.getRuleId()); l.setCreateBy(SecurityUtils.getUsername()); });
-        return mapper.appendLearnBatch(toAdd);
+        int rows = mapper.appendLearnBatch(toAdd);
+        sendLearnRemind(existing, toAdd);
+        return rows;
     }
 
     @Override

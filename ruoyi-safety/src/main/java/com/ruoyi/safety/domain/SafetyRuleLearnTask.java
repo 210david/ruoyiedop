@@ -71,4 +71,9 @@ public class SafetyRuleLearnTask extends BaseEntity {
     public void setTaskStatus(String taskStatus) { this.taskStatus = taskStatus; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+
+    /** 学习对象人员名单（发起/追加时随任务提交，非表字段） */
+    private java.util.List<SafetyRuleLearn> learns;
+    public java.util.List<SafetyRuleLearn> getLearns() { return learns; }
+    public void setLearns(java.util.List<SafetyRuleLearn> learns) { this.learns = learns; }
 }

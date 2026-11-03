@@ -70,7 +70,7 @@
           <el-table-column label="职级" prop="salesLevel" key="salesLevel" :width="colWidth('salesLevel', 100)" resizable align="center" v-if="columns.salesLevel.visible"><template #default="scope"><span v-if="dictLabel(salesLevelOptions, scope.row.salesLevel)" class="badge blue"><span class="dot"></span>{{ dictLabel(salesLevelOptions, scope.row.salesLevel) }}</span></template></el-table-column>
           <el-table-column label="提成方案" key="commissionPlanId" :min-width="colWidth('commissionPlanId', 180)" resizable show-overflow-tooltip v-if="columns.commissionPlanId.visible"><template #default="scope"><span>{{ planName(scope.row.commissionPlanId) }}</span></template></el-table-column>
           <el-table-column label="年度营销目标" prop="entryTarget" key="entryTarget" :width="colWidth('entryTarget', 140)" resizable align="right" v-if="columns.entryTarget.visible" />
-          <el-table-column label="操作" width="180" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 180)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:salesProfile:edit']">修改</el-button>

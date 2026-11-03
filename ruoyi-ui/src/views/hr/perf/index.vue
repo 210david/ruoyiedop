@@ -93,7 +93,7 @@
             <el-table-column label="状态" prop="perfStatus" key="perfStatus" :width="colWidthManual('perfStatus', 100)" resizable align="center" v-if="manualColumns.perfStatus.visible"><template #default="scope"><span v-if="dictLabel(manualStatusOptions, scope.row.perfStatus)" class="badge" :class="statusClass(scope.row.perfStatus)"><span class="dot"></span>{{ dictLabel(manualStatusOptions, scope.row.perfStatus) }}</span></template></el-table-column>
             <el-table-column label="审批人" prop="approver" key="approver" :width="colWidthManual('approver', 100)" resizable v-if="manualColumns.approver.visible" />
             <el-table-column label="审批意见" prop="approveOpinion" key="approveOpinion" :min-width="colWidthManual('approveOpinion', 150)" resizable show-overflow-tooltip v-if="manualColumns.approveOpinion.visible" />
-            <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
+            <el-table-column label="操作" :width="colWidthPerf('操作', 200)" align="center" fixed="right" class-name="col-action">
               <template #default="scope">
                 <div class="action-btn-row">
                   <template v-if="scope.row.perfStatus === '0'">

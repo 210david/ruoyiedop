@@ -219,6 +219,27 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 INSERT INTO sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
 VALUES ('安全守则学习逾期提醒', 'DEFAULT', 'safetyRuleOverdueTask.handle()', '0 30 8 * * ?', '3', '1', '0', 'admin', NOW(), '每日检查守则学习任务签阅情况，逾期未签阅置为逾期并提醒（SR-03）');
 
+-- ----------------------------
+-- 8. 编号规则：守则学习任务编号 XXRW-年份-流水（幂等）
+-- ----------------------------
+INSERT INTO mk_number_rule (rule_code, module, rule_name, prefix, date_format, reset_type, seq_length, seq_start, step, connector, status, auto_enabled, create_by, create_time, remark)
+SELECT 'biz_safety_rule_learn_task', 'safety', '守则学习任务编号', 'XXRW', 'yyyy', '1', 3, 1, 1, '-', '0', '1', 'admin', NOW(), '守则学习任务编号：XXRW-年份-流水' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code = 'biz_safety_rule_learn_task');
+
+-- ----------------------------
+-- 9. 编号规则：守则执行检查编号 JC-年份-流水（幂等）
+-- ----------------------------
+INSERT INTO mk_number_rule (rule_code, module, rule_name, prefix, date_format, reset_type, seq_length, seq_start, step, connector, status, auto_enabled, create_by, create_time, remark)
+SELECT 'biz_safety_rule_check', 'safety', '守则执行检查编号', 'JC', 'yyyy', '1', 4, 1, 1, '-', '0', '1', 'admin', NOW(), '守则执行检查编号：JC-年份-流水' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code = 'biz_safety_rule_check');
+
+-- ----------------------------
+-- 10. 编号规则：安全守则编号 AQGZ-年份-流水（幂等）
+-- ----------------------------
+INSERT INTO mk_number_rule (rule_code, module, rule_name, prefix, date_format, reset_type, seq_length, seq_start, step, connector, status, auto_enabled, create_by, create_time, remark)
+SELECT 'biz_safety_rule', 'safety', '安全守则编号', 'AQGZ', 'yyyy', '1', 3, 1, 1, '-', '0', '1', 'admin', NOW(), '安全守则编号：AQGZ-年份-流水' FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM mk_number_rule WHERE rule_code = 'biz_safety_rule');
+
 -- 验证
 SELECT '--- 守则相关新表 ---' AS info;
 SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN ('biz_safety_rule','biz_safety_rule_version','biz_safety_rule_learn_task','biz_safety_rule_learn','biz_safety_rule_check');

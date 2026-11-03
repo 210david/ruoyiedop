@@ -126,7 +126,7 @@
               <el-tag v-else size="small" type="info" effect="plain">手工</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="130" align="center" fixed="right">
+          <el-table-column label="操作" :width="colWidth('操作', 130)" align="center" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['marketing:flow:edit']">修改</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['marketing:flow:remove']">删除</el-button>

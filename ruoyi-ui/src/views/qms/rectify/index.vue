@@ -99,7 +99,7 @@
           <el-table-column label="回复时限" prop="replyDeadline" key="replyDeadline" :width="colWidth('replyDeadline', 110)" resizable align="center" v-if="columns.replyDeadline.visible"><template #default="scope"><span>{{ parseTime(scope.row.replyDeadline, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="状态" prop="rectifyStatus" key="rectifyStatus" :width="colWidth('rectifyStatus', 110)" resizable align="center" v-if="columns.rectifyStatus.visible"><template #default="scope"><span v-if="dictLabel(statusOptions, scope.row.rectifyStatus)" class="badge" :class="statusClass(scope.row.rectifyStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, scope.row.rectifyStatus) }}</span></template></el-table-column>
           <el-table-column label="回复时间" prop="replyTime" key="replyTime" :width="colWidth('replyTime', 150)" resizable align="center" v-if="columns.replyTime.visible"><template #default="scope"><span>{{ scope.row.replyTime ? parseTime(scope.row.replyTime) : '-' }}</span></template></el-table-column>
-          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 200)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>

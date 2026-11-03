@@ -34,7 +34,6 @@ public class SafetyRuleCheckServiceImpl implements ISafetyRuleCheckService {
     public SafetyRuleCheck selectCheckById(Long checkId) { return mapper.selectCheckById(checkId); }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int insertCheck(SafetyRuleCheck check) {
         // SR-04：不符合项必须填写整改责任人、期限
         if ("2".equals(check.getCheckResult())) {
@@ -42,10 +41,11 @@ public class SafetyRuleCheckServiceImpl implements ISafetyRuleCheckService {
             if (check.getRectifyDeadline() == null) throw new ServiceException("不符合项必须填写整改期限（SR-04）");
         }
         if (StringUtils.isEmpty(check.getCheckNo())) {
+            // 编号生成失败不影响主流程（在事务外尝试，避免内部事务异常导致外层 rollback-only）
             try {
                 check.setCheckNo(mkNumberRuleService.generateNumber("biz_safety_rule_check"));
             } catch (Exception e) {
-                check.setCheckNo("SRC" + DateUtils.dateTimeNow("yyyyMMddHHmmssSSS"));
+                check.setCheckNo("JC-" + DateUtils.dateTimeNow("yyyy") + "-" + DateUtils.dateTimeNow("HHmmssSSS"));
             }
         }
         check.setCheckStatus("2".equals(check.getCheckResult()) ? "0" : "2");

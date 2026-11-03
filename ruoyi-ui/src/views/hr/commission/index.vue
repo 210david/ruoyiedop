@@ -24,7 +24,7 @@
             <el-table-column label="类型" prop="planType" key="planType" :width="colWidthPlan('planType', 110)" resizable align="center" v-if="planColumns.planType.visible"><template #default="scope"><span v-if="dictLabel(typeOptions, scope.row.planType)" class="badge gray"><span class="dot"></span>{{ dictLabel(typeOptions, scope.row.planType) }}</span></template></el-table-column>
             <el-table-column label="状态" prop="planStatus" key="planStatus" :width="colWidthPlan('planStatus', 100)" resizable align="center" v-if="planColumns.planStatus.visible"><template #default="scope"><span class="badge" :class="planStatusClass(scope.row.planStatus)"><span class="dot"></span>{{ planStatusLabel(scope.row.planStatus) }}</span></template></el-table-column>
             <el-table-column label="锁定" prop="locked" key="locked" :width="colWidthPlan('locked', 90)" resizable align="center" v-if="planColumns.locked.visible"><template #default="scope"><span v-if="scope.row.locked === '1'" class="badge red"><span class="dot"></span>已锁定</span><span v-else>-</span></template></el-table-column>
-            <el-table-column label="操作" width="240" align="center" fixed="right" class-name="col-action">
+            <el-table-column label="操作" :width="colWidthPlan('操作', 240)" align="center" fixed="right" class-name="col-action">
               <template #default="scope">
                 <div class="action-btn-row">
                   <el-button link type="primary" icon="Edit" @click="handleEditPlan(scope.row)" v-hasPermi="['hr:commission:edit']" v-if="scope.row.locked !== '1'">编辑</el-button>
@@ -96,7 +96,7 @@
             <el-table-column label="提成金额" prop="commissionAmount" key="commissionAmount" :width="colWidthBill('commissionAmount', 130)" resizable align="right" v-if="billColumns.commissionAmount.visible"><template #default="scope"><span class="amount-strong">￥{{ formatAmount(scope.row.commissionAmount) }}</span></template></el-table-column>
             <el-table-column label="状态" prop="billStatus" key="billStatus" :width="colWidthBill('billStatus', 100)" resizable align="center" v-if="billColumns.billStatus.visible"><template #default="scope"><span class="badge" :class="billStatusClass(scope.row.billStatus)"><span class="dot"></span>{{ billStatusLabel(scope.row.billStatus) }}</span></template></el-table-column>
             <el-table-column label="确认人" prop="confirmer" key="confirmer" :width="colWidthBill('confirmer', 100)" resizable v-if="billColumns.confirmer.visible" />
-            <el-table-column label="操作" width="110" align="center" fixed="right" class-name="col-action">
+            <el-table-column label="操作" :width="colWidthBill('操作', 110)" align="center" fixed="right" class-name="col-action">
               <template #default="scope">
                 <div class="action-btn-row">
                   <el-button link type="success" icon="CircleCheck" @click="handleConfirm(scope.row)" v-hasPermi="['hr:commission:confirm']" v-if="scope.row.billStatus === '0'">确认</el-button>

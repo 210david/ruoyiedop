@@ -77,11 +77,11 @@
           <el-table-column label="任务编号" prop="taskNo" key="taskNo" :width="colWidth('taskNo', 170)" resizable show-overflow-tooltip v-if="columns.taskNo.visible" />
           <el-table-column label="任务名称" prop="taskName" key="taskName" :min-width="colWidth('taskName', 170)" resizable show-overflow-tooltip v-if="columns.taskName.visible" />
           <el-table-column label="守则" prop="ruleName" key="ruleName" :min-width="colWidth('ruleName', 160)" resizable show-overflow-tooltip v-if="columns.ruleName.visible" />
-          <el-table-column label="学习版本" prop="ruleVersionNo" key="ruleVersionNo" :width="colWidth('ruleVersionNo', 90)" resizable align="center" v-if="columns.ruleVersionNo.visible" />
+          <el-table-column label="学习版本" prop="ruleVersionNo" key="ruleVersionNo" :width="colWidth('ruleVersionNo', 90)" resizable align="center" v-if="columns.ruleVersionNo.visible"><template #default="scope"><span>v{{ scope.row.ruleVersionNo || 1 }}</span></template></el-table-column>
           <el-table-column label="学习对象" prop="targetDesc" key="targetDesc" :min-width="colWidth('targetDesc', 150)" resizable show-overflow-tooltip v-if="columns.targetDesc.visible" />
           <el-table-column label="完成期限" prop="deadline" key="deadline" :width="colWidth('deadline', 110)" resizable align="center" v-if="columns.deadline.visible"><template #default="scope"><span>{{ parseTime(scope.row.deadline, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="状态" prop="taskStatus" key="taskStatus" :width="colWidth('taskStatus', 100)" resizable align="center" v-if="columns.taskStatus.visible"><template #default="scope"><span v-if="dictLabel(taskStatusOptions, scope.row.taskStatus)" class="badge" :class="statusClass(scope.row.taskStatus)"><span class="dot"></span>{{ dictLabel(taskStatusOptions, scope.row.taskStatus) }}</span></template></el-table-column>
-          <el-table-column label="操作" width="220" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 220)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleLearns(scope.row)" v-hasPermi="['safety:ruleLearn:query']">签阅名单</el-button>
@@ -122,8 +122,17 @@
                 </el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="学习对象" prop="targetDesc"><el-input v-model="form.targetDesc" placeholder="如：生产一部全体、包装岗" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="学习对象" prop="targetDesc">
+                  <el-input v-model="form.targetDesc" readonly placeholder="请选择学习人员（可多选）" @click="openTargetPicker">
+                    <template #append><el-button icon="Search" @click="openTargetPicker" /></template>
+                  </el-input>
+                </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="完成期限" prop="deadline"><el-date-picker v-model="form.deadline" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20" v-if="form.learns && form.learns.length">
+                <el-col :span="24"><el-form-item label="已选人员">
+                  <el-tag v-for="u in form.learns" :key="u.userId" closable style="margin-right:6px" @close="removeLearner(u)">{{ u.nickName }}</el-tag>
+                </el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -141,6 +150,9 @@
       <template #footer><div class="dialog-footer"><el-button type="primary" @click="submitForm">确 定</el-button><el-button @click="cancel">取 消</el-button></div></template>
     </el-dialog>
 
+    <!-- 选择器 -->
+    <user-picker ref="targetPickerRef" title="选择学习对象（可多选）" multiple @confirm="onTargetPickerConfirm" />
+    <user-picker ref="appendPickerRef" title="选择追加人员（可多选）" multiple @confirm="onAppendPickerConfirm" />
     <!-- 签阅名单 Dialog -->
     <el-dialog v-model="learnOpen" width="943px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -159,7 +171,9 @@
           </div>
           <div class="rd-card-body">
             <div style="display:flex; gap:8px; align-items:center;">
-              <el-input v-model="appendUsers" placeholder="追加人员姓名，多个用逗号分隔" style="flex:1" @keyup.enter="submitAppend" />
+              <el-input :model-value="appendTargetNames" readonly placeholder="请选择追加人员（可多选）" @click="openAppendPicker" style="flex:1">
+                <template #append><el-button icon="Search" @click="openAppendPicker" /></template>
+              </el-input>
               <el-button type="primary" plain icon="Plus" @click="submitAppend" v-hasPermi="['safety:ruleLearn:add']">追加</el-button>
             </div>
           </div>
@@ -242,6 +256,7 @@
 <script setup name="SafetyRuleLearn">
 import { listLearnTask, addLearnTask, listLearns, appendLearns, signLearn } from '@/api/safety/ruleLearn'
 import { listRule } from '@/api/safety/rule'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
@@ -294,6 +309,7 @@ const learnOpen = ref(false)
 const currentTask = ref({})
 const learns = ref([])
 const appendUsers = ref('')
+const appendTargetUsers = ref([])
 const ruleOptions = ref([])
 const showStatusHelp = ref(false)
 const title = ref('')
@@ -358,14 +374,26 @@ function submitForm() {
     if (valid) addLearnTask(form.value).then(() => { proxy.$modal.msgSuccess('发起成功'); open.value = false; getList() })
   })
 }
-function handleLearns(row) { currentTask.value = row; appendUsers.value = ''; listLearns(row.taskId).then(res => { learns.value = res.data || []; learnOpen.value = true }) }
+function handleLearns(row) { currentTask.value = row; appendTargetUsers.value = []; listLearns(row.taskId).then(res => { learns.value = res.data || []; learnOpen.value = true }) }
+function handleAppend(row) { currentTask.value = row; appendTargetUsers.value = []; openAppendPicker() }
+const appendTargetNames = computed(() => (appendTargetUsers.value || []).map(u => u.nickName).join('、'))
+function openTargetPicker() { proxy.$refs.targetPickerRef.open((form.value.learns || []).map(u => u.userId)) }
+function onTargetPickerConfirm(users) {
+  form.value.learns = (users || []).map(u => ({ userId: u.userId, userName: u.nickName, deptId: u.deptId, deptName: u.deptName }))
+  form.value.targetDesc = form.value.learns.map(u => u.userName).join('、')
+}
+function removeLearner(u) {
+  form.value.learns = form.value.learns.filter(x => x.userId !== u.userId)
+  form.value.targetDesc = form.value.learns.map(x => x.userName).join('、')
+}
+function openAppendPicker() { proxy.$refs.appendPickerRef.open((appendTargetUsers.value || []).map(u => u.userId)) }
+function onAppendPickerConfirm(users) { appendTargetUsers.value = users || [] }
 function submitAppend() {
-  if (!appendUsers.value || !appendUsers.value.trim()) { proxy.$modal.msgError('请输入追加人员姓名'); return }
-  const names = appendUsers.value.split(/[,，]/).map(s => s.trim()).filter(s => s)
-  const payload = names.map(n => ({ userName: n }))
+  if (!appendTargetUsers.value || !appendTargetUsers.value.length) { proxy.$modal.msgError('请选择追加人员'); return }
+  const payload = appendTargetUsers.value.map(u => ({ userId: u.userId, userName: u.nickName, deptId: u.deptId, deptName: u.deptName }))
   appendLearns(currentTask.value.taskId, payload).then(() => {
     proxy.$modal.msgSuccess('追加成功（已存在人员自动跳过）')
-    appendUsers.value = ''
+    appendTargetUsers.value = []
     listLearns(currentTask.value.taskId).then(r => { learns.value = r.data || [] })
     getList()
   })
@@ -377,7 +405,7 @@ function handleSign(row) {
     getList()
   }).catch(() => {})
 }
-function reset() { form.value = { taskName: undefined, ruleId: undefined, targetDesc: undefined, deadline: undefined, remark: undefined }; proxy.resetForm('taskRef') }
+function reset() { form.value = { taskName: undefined, ruleId: undefined, targetDesc: undefined, deadline: undefined, remark: undefined, learns: [] }; proxy.resetForm('taskRef') }
 function cancel() { open.value = false; reset() }
 getList()
 </script>

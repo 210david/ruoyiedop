@@ -96,7 +96,7 @@
           <el-table-column label="状态" prop="ruleStatus" key="ruleStatus" :width="colWidth('ruleStatus', 90)" resizable align="center" v-if="columns.ruleStatus.visible"><template #default="scope"><span v-if="dictLabel(statusOptions, scope.row.ruleStatus)" class="badge" :class="statusClass(scope.row.ruleStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, scope.row.ruleStatus) }}</span></template></el-table-column>
           <el-table-column label="生效日期" prop="effectiveDate" key="effectiveDate" :width="colWidth('effectiveDate', 110)" resizable align="center" v-if="columns.effectiveDate.visible"><template #default="scope"><span>{{ parseTime(scope.row.effectiveDate, '{y}-{m}-{d}') }}</span></template></el-table-column>
           <el-table-column label="关联制度" prop="regulationName" key="regulationName" :min-width="colWidth('regulationName', 150)" resizable show-overflow-tooltip v-if="columns.regulationName.visible"><template #default="scope"><span>{{ scope.row.regulationName || '-' }}</span></template></el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 280)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>

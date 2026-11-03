@@ -91,7 +91,7 @@
           <el-table-column label="整改责任人" prop="rectifyUser" key="rectifyUser" :width="colWidth('rectifyUser', 110)" resizable v-if="columns.rectifyUser.visible" />
           <el-table-column label="整改期限" prop="rectifyDeadline" key="rectifyDeadline" :width="colWidth('rectifyDeadline', 110)" resizable align="center" v-if="columns.rectifyDeadline.visible"><template #default="scope"><span>{{ scope.row.rectifyDeadline ? parseTime(scope.row.rectifyDeadline, '{y}-{m}-{d}') : '-' }}</span></template></el-table-column>
           <el-table-column label="状态" prop="checkStatus" key="checkStatus" :width="colWidth('checkStatus', 100)" resizable align="center" v-if="columns.checkStatus.visible"><template #default="scope"><span v-if="dictLabel(checkStatusOptions, scope.row.checkStatus)" class="badge" :class="statusClass(scope.row.checkStatus)"><span class="dot"></span>{{ dictLabel(checkStatusOptions, scope.row.checkStatus) }}</span></template></el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 280)" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>

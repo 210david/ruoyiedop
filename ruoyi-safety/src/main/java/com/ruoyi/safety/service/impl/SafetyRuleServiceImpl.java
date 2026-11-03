@@ -36,14 +36,14 @@ public class SafetyRuleServiceImpl implements ISafetyRuleService {
     public SafetyRule selectRuleById(Long ruleId) { return mapper.selectRuleById(ruleId); }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int insertRule(SafetyRule rule) {
         // 守则编号：空则生成（沿用安全模块 generateNumber 约定；未配置编号规则时退化为日期+序号）
         if (StringUtils.isEmpty(rule.getRuleNo())) {
+            // 编号生成失败不影响主流程（在事务外尝试，避免内部事务异常导致外层 rollback-only）
             try {
                 rule.setRuleNo(mkNumberRuleService.generateNumber("biz_safety_rule"));
             } catch (Exception e) {
-                rule.setRuleNo("SR" + DateUtils.dateTimeNow("yyyyMMddHHmmssSSS"));
+                rule.setRuleNo("AQGZ-" + DateUtils.dateTimeNow("yyyy") + "-" + DateUtils.dateTimeNow("HHmmssSSS"));
             }
         }
         if (rule.getVersionNo() == null) rule.setVersionNo(1);
