@@ -345,51 +345,8 @@
       @success="getList"
     />
 
-    <!-- 客户选择弹窗 -->
-    <el-dialog v-model="customerPickerOpen" width="860px" append-to-body draggable class="rd-dialog" @open="onCustomerPickerOpen">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7l1.5-4h15L21 7M3 7v14M21 7v14M9 21v-7h6v7"/></svg></div>
-          <span class="rd-detail-header-title">选择所属客户</span>
-        </div>
-      </template>
-      <div class="customer-picker">
-        <div class="customer-picker-search">
-          <el-input v-model="customerPickerQuery.customerName" placeholder="企业名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-input v-model="customerPickerQuery.creditCode" placeholder="信用代码" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleCustomerPickerQuery">
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleCustomerPickerQuery">查询</el-button>
-          <el-button icon="RefreshLeft" size="small" @click="resetCustomerPickerQuery">重置</el-button>
-        </div>
-        <div class="customer-picker-table">
-          <el-table ref="customerTableRef" v-loading="customerPickerLoading" :data="customerPickerList" highlight-current-row @row-click="onCustomerRowClick" @row-dblclick="onCustomerRowDblClick" height="360" size="small">
-            <el-table-column width="45" align="center">
-              <template #default="{ row }">
-                <el-radio :model-value="customerPickerSelectedId" :value="row.customerId" @click.stop="onCustomerRowClick(row)"><span /></el-radio>
-              </template>
-            </el-table-column>
-            <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
-            <el-table-column label="信用代码" prop="creditCode" width="160" show-overflow-tooltip />
-            <el-table-column label="客户等级" width="100" align="center">
-              <template #default="scope">{{ levelLabel(scope.row.customerLevel) }}</template>
-            </el-table-column>
-            <el-table-column label="客户状态" width="100" align="center">
-              <template #default="scope">{{ statusLabel(scope.row.customerStatus) }}</template>
-            </el-table-column>
-          </el-table>
-        </div>
-        <div class="customer-picker-pager">
-          <el-pagination v-model:current-page="customerPickerQuery.pageNum" v-model:page-size="customerPickerQuery.pageSize" :total="customerPickerTotal" layout="total, prev, pager, next" small @current-change="getCustomerPickerList" />
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="customerPickerOpen = false">取 消</el-button>
-        <el-button type="primary" @click="confirmCustomerPicker" :disabled="!customerPickerSelectedId">确 定</el-button>
-      </template>
-    </el-dialog>
+    <!-- 客户选择弹窗（复用全局 CustomerPicker 组件，统一筛选维度与交互） -->
+    <customer-picker ref="customerPickerRef" title="选择所属客户" @confirm="onCustomerPickerConfirm" />
 
     <!-- 负责人选择弹窗 -->
     <user-picker ref="formUserPickerRef" title="选择销售人员" @confirm="onFormUserPickerConfirm" />
@@ -647,18 +604,18 @@ import { UploadFilled, CircleClose, ArrowRight, ArrowDown, QuestionFilled, Searc
 import { listContact, getContact, addContact, updateContact, delContact, checkDuplicate, mergeContacts, setPrimary, batchSetKey, assignContact } from '@/api/mk/contact'
 import { listInteraction, addInteraction } from '@/api/mk/interaction'
 import { listParticipant } from '@/api/mk/participant'
-import { listCustomer } from '@/api/mk/customer'
 import { listUser } from '@/api/system/user'
 import { getToken } from '@/utils/auth'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
+import CustomerPicker from '@/components/CustomerPicker/index.vue'
 const { collapsedCards, toggleCard } = useDetailCard(['formBasic', 'formContact', 'formRole', 'formOther', 'viewBasic', 'viewContact', 'viewOwner', 'viewOther', 'viewInteractions', 'viewActivities'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_contact_index')
-const { marketing_contact_role, marketing_interaction_type, marketing_participate_status, marketing_customer_level, marketing_customer_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status', 'marketing_customer_level', 'marketing_customer_status')
+const { marketing_contact_role, marketing_interaction_type, marketing_participate_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status')
 
 const list = ref([])
 const open = ref(false)
@@ -929,90 +886,20 @@ function handleImport() { proxy.$refs['importRef'].open() }
 getUserOptions()
 getList()
 
-// ===== 客户选择弹窗 =====
-const customerPickerOpen = ref(false)
-const customerPickerLoading = ref(false)
-const customerPickerList = ref([])
-const customerPickerTotal = ref(0)
-const customerPickerSelectedId = ref(null)
-const customerPickerSelectedRow = ref(null)
-const customerTableRef = ref(null)
-const customerPickerQuery = reactive({ pageNum: 1, pageSize: 10, customerName: undefined, creditCode: undefined, customerStatus: '0' })
-
+// ===== 客户选择弹窗（复用全局 CustomerPicker 组件） =====
 /** 打开客户选择弹窗 */
 function openCustomerPicker() {
-  customerPickerOpen.value = true
+  proxy.$refs.customerPickerRef.open(form.value.customerId || undefined, form.value.customerName)
 }
-/** 弹窗打开时初始化 */
-function onCustomerPickerOpen() {
-  customerPickerQuery.customerName = undefined
-  customerPickerQuery.creditCode = undefined
-  customerPickerQuery.pageNum = 1
-  customerPickerSelectedId.value = form.value.customerId || null
-  customerPickerSelectedRow.value = null
-  getCustomerPickerList()
-}
-/** 加载客户列表 */
-function getCustomerPickerList() {
-  customerPickerLoading.value = true
-  listCustomer(customerPickerQuery).then(res => {
-    customerPickerList.value = res.rows
-    customerPickerTotal.value = res.total
-    customerPickerLoading.value = false
-    if (customerPickerSelectedId.value) {
-      nextTick(() => {
-        if (customerTableRef.value) {
-          customerTableRef.value.setCurrentRow(customerPickerList.value.find(r => r.customerId === customerPickerSelectedId.value))
-        }
-      })
-    }
-  }).catch(() => { customerPickerLoading.value = false })
-}
-/** 弹窗查询 */
-function handleCustomerPickerQuery() {
-  customerPickerQuery.pageNum = 1
-  getCustomerPickerList()
-}
-/** 弹窗重置 */
-function resetCustomerPickerQuery() {
-  customerPickerQuery.customerName = undefined
-  customerPickerQuery.creditCode = undefined
-  handleCustomerPickerQuery()
-}
-/** 行点击选中 */
-function onCustomerRowClick(row) {
-  customerPickerSelectedId.value = row.customerId
-  customerPickerSelectedRow.value = row
-}
-/** 行双击确认 */
-function onCustomerRowDblClick(row) {
-  onCustomerRowClick(row)
-  confirmCustomerPicker()
-}
-/** 确认选择 */
-function confirmCustomerPicker() {
-  if (!customerPickerSelectedRow.value) {
-    proxy.$modal.msgWarning('请选择一个客户')
-    return
-  }
-  form.value.customerId = customerPickerSelectedRow.value.customerId
-  form.value.customerName = customerPickerSelectedRow.value.customerName
-  customerPickerOpen.value = false
+/** 客户选择确认回调 */
+function onCustomerPickerConfirm(customer) {
+  form.value.customerId = customer.customerId
+  form.value.customerName = customer.customerName
 }
 /** 清除所属客户 */
 function clearCustomer() {
   form.value.customerId = undefined
   form.value.customerName = undefined
-}
-/** 客户等级标签 */
-function levelLabel(level) {
-  const item = marketing_customer_level.value?.find(d => d.value == level)
-  return item ? item.label : '-'
-}
-/** 客户状态标签 */
-function statusLabel(status) {
-  const item = marketing_customer_status.value?.find(d => d.value == status)
-  return item ? item.label : '-'
 }
 
 const showStatusHelp = ref(false)
@@ -1036,13 +923,6 @@ const showStatusHelp = ref(false)
   cursor: pointer;
 }
 /* 客户选择弹窗 */
-.customer-picker { display: flex; flex-direction: column; }
-.customer-picker-search { display: flex; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
-.customer-picker-table { border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; }
-.customer-picker-table :deep(.el-table__row) { cursor: pointer; }
-.customer-picker-table :deep(.el-table__row:hover > td) { background: #f0f7ff; }
-.customer-picker-table :deep(.el-table__row.is-current > td) { background: #e6f0fd; }
-.customer-picker-pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 
 .status-help-content {
   max-height: 500px;
