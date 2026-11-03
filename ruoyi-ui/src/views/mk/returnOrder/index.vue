@@ -923,7 +923,7 @@
     </el-dialog>
 
     <!-- 订单选择弹窗 -->
-    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
+    <order-picker ref="orderPickerRef" title="选择销售订单" biz-type="mk" :statuses="['2','3','4']" hint="仅显示已审核 / 部分发货 / 已完成的销售订单" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
