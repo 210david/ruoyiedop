@@ -23,6 +23,9 @@
         <el-select v-model="queryParams.customerLevel" placeholder="客户等级" clearable size="small" style="width: 120px; margin-left: 8px" @change="handleQuery">
           <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
+        <el-select v-model="queryParams.customerStatus" placeholder="客户状态（全部）" clearable size="small" style="width: 140px; margin-left: 8px" @change="handleQuery">
+          <el-option v-for="d in marketing_customer_status" :key="d.value" :label="d.label" :value="d.value" />
+        </el-select>
         <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
         <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
       </div>
@@ -38,6 +41,7 @@
           @row-dblclick="onRowDblClick"
           height="360"
           size="small"
+          empty-text="未找到客户，请调整筛选条件或先在客户管理中新增客户"
         >
           <el-table-column width="45" align="center">
             <template #default="{ row }">
@@ -52,6 +56,7 @@
           <el-table-column label="客户状态" prop="customerStatus" width="100" align="center">
             <template #default="scope"><dict-tag :options="marketing_customer_status" :value="scope.row.customerStatus" /></template>
           </el-table-column>
+          <el-table-column label="信用代码" prop="creditCode" width="150" show-overflow-tooltip />
         </el-table>
       </div>
 
@@ -75,7 +80,7 @@
 </template>
 
 <script setup>
-import { listCustomer } from '@/api/mk/customer'
+import { listCustomer, getCustomer } from '@/api/mk/customer'
 
 const { proxy } = getCurrentInstance()
 const { marketing_customer_level, marketing_customer_status } = proxy.useDict('marketing_customer_level', 'marketing_customer_status')
@@ -97,12 +102,16 @@ const selectedId = ref(null)
 const selectedRow = ref(null)
 const tableRef = ref()
 
+/** 打开时由父页面带入的当前选中客户，用于回显 */
+let pending = { id: null, name: '' }
+
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   customerNo: undefined,
   customerName: undefined,
-  customerLevel: undefined
+  customerLevel: undefined,
+  customerStatus: undefined
 })
 
 /** 弹窗打开时初始化 */
@@ -110,9 +119,26 @@ function onOpen() {
   queryParams.customerNo = undefined
   queryParams.customerName = undefined
   queryParams.customerLevel = undefined
+  queryParams.customerStatus = undefined
   queryParams.pageNum = 1
-  selectedId.value = null
+  selectedId.value = pending.id || null
   selectedRow.value = null
+  // 修改场景：先回填当前所属客户，避免其不在当前页时确定按钮不可用
+  if (pending.id) {
+    if (pending.name) {
+      selectedRow.value = { customerId: pending.id, customerName: pending.name }
+    } else {
+      // 调用方只传了ID：补拉详情，防止直接点确定时把客户名称写成空值
+      getCustomer(pending.id).then(res => {
+        const d = res.data || {}
+        if (selectedId.value === pending.id) {
+          selectedRow.value = { customerId: d.customerId || pending.id, customerName: d.customerName, customerNo: d.customerNo }
+        }
+      }).catch(() => {
+        // 详情拉取失败时不阻塞选择，用户仍可在列表中重新选
+      })
+    }
+  }
   getList()
 }
 
@@ -123,11 +149,15 @@ function getList() {
     list.value = res.rows
     total.value = res.total
     loading.value = false
-    // 回显选中行
+    // 回显选中行：命中当前页时用行数据补全名称等信息
     if (selectedId.value) {
+      const hit = (list.value || []).find(r => r.customerId === selectedId.value)
+      if (hit) {
+        selectedRow.value = hit
+      }
       nextTick(() => {
-        if (tableRef.value) {
-          tableRef.value.setCurrentRow(list.value.find(r => r.customerId === selectedId.value))
+        if (tableRef.value && hit) {
+          tableRef.value.setCurrentRow(hit)
         }
       })
     }
@@ -145,6 +175,7 @@ function resetQuery() {
   queryParams.customerNo = undefined
   queryParams.customerName = undefined
   queryParams.customerLevel = undefined
+  queryParams.customerStatus = undefined
   handleQuery()
 }
 
@@ -162,22 +193,36 @@ function onRowDblClick(row) {
 }
 
 /** 确认选择 */
-function handleConfirm() {
+async function handleConfirm() {
   if (!selectedId.value) return
+  let row = selectedRow.value
+  if (!row) {
+    // 仅回显了ID且详情尚未取到：确认时补拉一次，避免按钮点了没反应
+    try {
+      const res = await getCustomer(selectedId.value)
+      const d = res.data || {}
+      row = { customerId: d.customerId || selectedId.value, customerName: d.customerName, customerNo: d.customerNo }
+    } catch (e) {
+      proxy.$modal.msgWarning('未能获取客户信息，请重新选择客户')
+      return
+    }
+  }
   emit('confirm', {
-    customerId: selectedRow.value.customerId,
-    customerNo: selectedRow.value.customerNo,
-    customerName: selectedRow.value.customerName
+    customerId: row.customerId,
+    customerNo: row.customerNo,
+    customerName: row.customerName
   })
   visible.value = false
 }
 
-/** 打开弹窗 */
-function open(currentCustomerId) {
+/**
+ * 打开弹窗
+ * @param {Number|String} currentCustomerId 当前已选客户ID（回显用）
+ * @param {String} currentCustomerName 当前已选客户名称（回显用，缺省时仅保留ID）
+ */
+function open(currentCustomerId, currentCustomerName) {
+  pending = { id: currentCustomerId || null, name: currentCustomerName || '' }
   visible.value = true
-  if (currentCustomerId) {
-    selectedId.value = currentCustomerId
-  }
 }
 
 defineExpose({ open })
