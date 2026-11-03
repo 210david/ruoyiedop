@@ -152,6 +152,80 @@
         </el-col>
       </el-row>
 
+      <!-- P2-01: 客户类型维度分析 -->
+      <el-row :gutter="16" class="chart-row">
+        <el-col :xs="24" :lg="12">
+          <div class="chart-panel">
+            <div class="chart-panel__head">
+              <span class="chart-panel__title">客户类型销售构成</span>
+              <span class="chart-panel__desc">企业/经销商/个人：销售额、订单数、客单价与占比</span>
+            </div>
+            <div ref="custTypeChart" class="chart-panel__body chart-panel__body--pie"></div>
+            <el-table :data="custTypeStats" border size="small" class="cust-type-table">
+              <el-table-column label="客户类型" prop="typeName" width="90" />
+              <el-table-column label="客户数" prop="customerCount" align="center" />
+              <el-table-column label="订单数" prop="orderCount" align="center" />
+              <el-table-column label="销售额(¥)" align="right">
+                <template #default="s">{{ formatAmount(s.row.orderAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="客单价(¥)" align="right">
+                <template #default="s">{{ formatAmount(s.row.avgOrderAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="销售额占比" align="center">
+                <template #default="s">{{ s.row.amountRatio || 0 }}%</template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <div class="chart-panel">
+            <div class="chart-panel__head">
+              <span class="chart-panel__title">客户类型月度趋势</span>
+              <span class="chart-panel__desc">按月堆叠各类型销售额，悬浮可见当月占比</span>
+            </div>
+            <div ref="custTypeTrendChart" class="chart-panel__body"></div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <!-- P2-04: 个人客户消费Top分析 -->
+      <el-row :gutter="16" class="chart-row">
+        <el-col :xs="24" :lg="12">
+          <div class="chart-panel">
+            <div class="chart-panel__head">
+              <span class="chart-panel__title">个人客户消费 Top10</span>
+              <span class="chart-panel__desc">按累计消费金额排名（有效订单），手机号脱敏展示</span>
+            </div>
+            <div ref="personalTopChart" class="chart-panel__body"></div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <div class="chart-panel">
+            <div class="chart-panel__head">
+              <span class="chart-panel__title">个人客户消费明细</span>
+              <span class="chart-panel__desc">脱敏统计口径，响应不含明文手机号</span>
+            </div>
+            <el-table :data="personalTopRows" border size="small" class="cust-type-table">
+              <el-table-column label="排名" type="index" width="60" align="center" />
+              <el-table-column label="客户名称" prop="customerName" show-overflow-tooltip />
+              <el-table-column label="手机号(脱敏)" prop="contactPhone" width="120" align="center">
+                <template #default="s">{{ s.row.contactPhone || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="订单数" prop="orderCount" width="70" align="center" />
+              <el-table-column label="累计消费(¥)" align="right" width="110">
+                <template #default="s">{{ formatAmount(s.row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="客单价(¥)" align="right" width="100">
+                <template #default="s">{{ formatAmount(s.row.avgOrderAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="最近消费" width="105" align="center">
+                <template #default="s">{{ (s.row.lastOrderTime || '').toString().slice(0, 10) || '—' }}</template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+      </el-row>
+
       <!-- 图表区域 第三行 -->
       <el-row :gutter="16" class="chart-row">
         <el-col :xs="24" :lg="12">
@@ -226,7 +300,7 @@
 <script setup name="MkDashboard">
 import * as echarts from 'echarts'
 import { User, Connection, TrendCharts, Document, ShoppingCart, Promotion } from '@element-plus/icons-vue'
-import { getOverview, getLeadFunnel, getOpportunityPipeline, getCustomerByIndustry, getCustomerByLevel, getSalesRanking, getRevenueTrend, getActivityResult, getFollowUpReminders, getWinLossAnalysis, getSalesForecast } from '@/api/mk/dashboard'
+import { getOverview, getLeadFunnel, getOpportunityPipeline, getCustomerByIndustry, getCustomerByLevel, getSalesRanking, getRevenueTrend, getActivityResult, getFollowUpReminders, getWinLossAnalysis, getSalesForecast, getCustomerTypeAnalysis, getPersonalTop } from '@/api/mk/dashboard'
 
 const { proxy } = getCurrentInstance()
 const { marketing_lead_status, marketing_customer_level, marketing_industry, marketing_activity_type } = proxy.useDict('marketing_lead_status', 'marketing_customer_level', 'marketing_industry', 'marketing_activity_type')
@@ -246,6 +320,9 @@ const revenueChart = ref(null)
 const salesRankChart = ref(null)
 const winLossChart = ref(null)
 const forecastChart = ref(null)
+const custTypeChart = ref(null)
+const custTypeTrendChart = ref(null)
+const personalTopChart = ref(null)
 
 // 图表实例
 let leadFunnelInstance = null
@@ -257,6 +334,15 @@ let revenueInstance = null
 let salesRankInstance = null
 let winLossInstance = null
 let forecastInstance = null
+let custTypeInstance = null
+let custTypeTrendInstance = null
+let personalTopInstance = null
+
+// P2-01: 客户类型统计数据（stats 明细表）
+const custTypeStats = ref([])
+
+// P2-04: 个人客户消费Top10（明细表）
+const personalTopRows = ref([])
 
 // 主题色
 const isDark = computed(() => document.documentElement.classList.contains('dark'))
@@ -522,6 +608,117 @@ function renderForecast(data) {
   })
 }
 
+/** P2-01: 客户类型销售构成饼图（按销售额占比） */
+function renderCustType(data) {
+  if (!custTypeChart.value) return
+  const typeColors = { '1': '#409eff', '2': '#e6a23c', '3': '#67c23a' }
+  const chartData = (data || []).map(d => ({
+    name: d.typeName || d.code,
+    value: Number(d.orderAmount || 0),
+    itemStyle: { color: typeColors[d.code] || '#909399' }
+  })).filter(d => d.value > 0)
+
+  if (custTypeInstance) custTypeInstance.dispose()
+  custTypeInstance = echarts.init(custTypeChart.value)
+  custTypeInstance.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}<br/>销售额: ¥{c} ({d}%)' },
+    legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 12, color: chartTextColor.value } },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '65%'],
+      center: ['50%', '42%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', formatter: '{b}\n¥{c} ({d}%)' } },
+      data: chartData.length > 0 ? chartData : [{ name: '暂无数据', value: 1, itemStyle: { color: '#e0e0e0' } }]
+    }]
+  })
+}
+
+/** P2-01: 客户类型月度销售额趋势（堆叠柱状图，tooltip 含当月占比） */
+function renderCustTypeTrend(data) {
+  if (!custTypeTrendChart.value) return
+  const typeOrder = ['1', '2', '3']
+  const typeNames = { '1': '企业客户', '2': '经销商', '3': '个人客户' }
+  const typeColors = { '1': '#409eff', '2': '#e6a23c', '3': '#67c23a' }
+  const rows = data || []
+  const months = [...new Set(rows.map(d => d.date))].sort()
+  // 组装 map[month][type] = { cnt, amount }
+  const map = {}
+  rows.forEach(d => {
+    if (!map[d.date]) map[d.date] = {}
+    const prev = map[d.date][d.code] || { cnt: 0, amount: 0 }
+    map[d.date][d.code] = { cnt: prev.cnt + (d.count || 0), amount: prev.amount + Number(d.orderAmount || 0) }
+  })
+
+  if (custTypeTrendInstance) custTypeTrendInstance.dispose()
+  custTypeTrendInstance = echarts.init(custTypeTrendChart.value)
+  custTypeTrendInstance.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: function(params) {
+        let html = params[0].axisValue + '<br/>'
+        let total = 0
+        params.forEach(p => { total += p.value || 0 })
+        params.forEach(p => {
+          const pct = total > 0 ? ((p.value || 0) / total * 100).toFixed(1) : '0.0'
+          html += `${p.marker}${p.seriesName}: ¥${formatAmount(p.value || 0)} (${pct}%)<br/>`
+        })
+        html += `当月合计: ¥${formatAmount(total)}`
+        return html
+      }
+    },
+    legend: { data: typeOrder.map(c => typeNames[c]), bottom: 0, textStyle: { color: chartTextColor.value } },
+    grid: { left: '3%', right: '4%', bottom: '12%', top: '5%', containLabel: true },
+    xAxis: { type: 'category', data: months, axisLabel: { color: chartTextColor.value, rotate: months.length > 6 ? 30 : 0 } },
+    yAxis: { type: 'value', name: '销售额', splitLine: { lineStyle: { color: chartSplitColor.value } }, axisLabel: { color: chartTextColor.value } },
+    series: typeOrder.map(code => ({
+      name: typeNames[code],
+      type: 'bar',
+      stack: 'total',
+      barWidth: '40%',
+      emphasis: { focus: 'series' },
+      itemStyle: { color: typeColors[code] },
+      data: months.map(m => (map[m] && map[m][code] ? map[m][code].amount : 0))
+    }))
+  })
+}
+
+/** P2-04: 个人客户消费Top10横向条形图（按累计消费金额） */
+function renderPersonalTop(data) {
+  if (!personalTopChart.value) return
+  const rows = (data || []).filter(d => Number(d.totalAmount || 0) > 0)
+  // 横向条形图：yAxis 自下而上，反转数组使第一名在顶部
+  const chartData = [...rows].reverse()
+
+  if (personalTopInstance) personalTopInstance.dispose()
+  personalTopInstance = echarts.init(personalTopChart.value)
+  personalTopInstance.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: function(params) {
+        const p = params[0]
+        const row = chartData[p.dataIndex] || {}
+        return `${p.name}<br/>累计消费: ¥${formatAmount(p.value)}<br/>订单数: ${row.orderCount || 0} 单<br/>客单价: ¥${formatAmount(row.avgOrderAmount)}<br/>手机号: ${row.contactPhone || '—'}`
+      }
+    },
+    grid: { left: '3%', right: '8%', bottom: '6%', top: '5%', containLabel: true },
+    xAxis: { type: 'value', name: '累计消费', splitLine: { lineStyle: { color: chartSplitColor.value } }, axisLabel: { color: chartTextColor.value } },
+    yAxis: { type: 'category', data: chartData.map(d => d.customerName || '未知'), axisLabel: { color: chartTextColor.value, width: 110, overflow: 'truncate' } },
+    series: [{
+      name: '累计消费',
+      type: 'bar',
+      barWidth: '55%',
+      itemStyle: { color: '#67c23a', borderRadius: [0, 4, 4, 0] },
+      label: { show: true, position: 'right', color: chartTextColor.value, fontSize: 11, formatter: p => '¥' + formatAmount(p.value) },
+      data: chartData.map(d => Number(d.totalAmount || 0))
+    }]
+  })
+}
+
 /** 窗口自适应 */
 function handleResize() {
   leadFunnelInstance && leadFunnelInstance.resize()
@@ -533,6 +730,9 @@ function handleResize() {
   salesRankInstance && salesRankInstance.resize()
   winLossInstance && winLossInstance.resize()
   forecastInstance && forecastInstance.resize()
+  custTypeInstance && custTypeInstance.resize()
+  custTypeTrendInstance && custTypeTrendInstance.resize()
+  personalTopInstance && personalTopInstance.resize()
 }
 
 /** 加载所有数据 */
@@ -548,8 +748,10 @@ function loadData() {
     getRevenueTrend(),
     getActivityResult(),
     getWinLossAnalysis(),
-    getSalesForecast()
-  ]).then(([ovRes, lfRes, opRes, indRes, lvlRes, srRes, revRes, actRes, wlRes, fcRes]) => {
+    getSalesForecast(),
+    getCustomerTypeAnalysis(),
+    getPersonalTop()
+  ]).then(([ovRes, lfRes, opRes, indRes, lvlRes, srRes, revRes, actRes, wlRes, fcRes, ctRes, ptRes]) => {
     overview.value = ovRes.data || {}
     loading.value = false
     lastUpdate.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -563,6 +765,11 @@ function loadData() {
       renderSalesRank(srRes.data || [])
       renderWinLoss(wlRes.data || [])
       renderForecast(fcRes.data || [])
+      custTypeStats.value = ctRes.data?.stats || []
+      renderCustType(ctRes.data?.stats || [])
+      renderCustTypeTrend(ctRes.data?.trend || [])
+      personalTopRows.value = ptRes.data || []
+      renderPersonalTop(ptRes.data || [])
     })
   }).catch(() => {
     loading.value = false
@@ -585,6 +792,15 @@ watch(isDark, () => {
       getSalesRanking().then(res => renderSalesRank(res.data || []))
       getWinLossAnalysis().then(res => renderWinLoss(res.data || []))
       getSalesForecast().then(res => renderForecast(res.data || []))
+      getCustomerTypeAnalysis().then(res => {
+        custTypeStats.value = res.data?.stats || []
+        renderCustType(res.data?.stats || [])
+        renderCustTypeTrend(res.data?.trend || [])
+      })
+      getPersonalTop().then(res => {
+        personalTopRows.value = res.data || []
+        renderPersonalTop(res.data || [])
+      })
     })
   }
 })
@@ -605,6 +821,9 @@ onBeforeUnmount(() => {
   salesRankInstance && salesRankInstance.dispose()
   winLossInstance && winLossInstance.dispose()
   forecastInstance && forecastInstance.dispose()
+  custTypeInstance && custTypeInstance.dispose()
+  custTypeTrendInstance && custTypeTrendInstance.dispose()
+  personalTopInstance && personalTopInstance.dispose()
 })
 </script>
 
@@ -721,6 +940,12 @@ onBeforeUnmount(() => {
 .chart-panel__body {
   height: 320px;
   width: 100%;
+}
+.chart-panel__body--pie {
+  height: 240px;
+}
+.cust-type-table {
+  margin-top: 4px;
 }
 
 /* 暗色模式 */

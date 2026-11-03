@@ -120,4 +120,86 @@ public class MkDashboardServiceImpl implements IMkDashboardService
     {
         return mkDashboardMapper.selectSalespersonMonthlyTrend(userId);
     }
+
+    @Override
+    public java.util.Map<String, Object> selectCustomerTypeAnalysis()
+    {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        List<MkDashboardVO> stats = mkDashboardMapper.selectCustomerTypeStats();
+        // 派生指标：客单价、销售额占比、客户数占比
+        java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
+        long totalCustomers = 0L;
+        for (MkDashboardVO vo : stats)
+        {
+            totalAmount = totalAmount.add(vo.getOrderAmount() != null ? vo.getOrderAmount() : java.math.BigDecimal.ZERO);
+            totalCustomers += vo.getCustomerCount() != null ? vo.getCustomerCount() : 0L;
+        }
+        for (MkDashboardVO vo : stats)
+        {
+            java.math.BigDecimal amount = vo.getOrderAmount() != null ? vo.getOrderAmount() : java.math.BigDecimal.ZERO;
+            int orderCnt = vo.getOrderCount() != null ? vo.getOrderCount() : 0;
+            // 客单价 = 销售额 / 订单数
+            if (orderCnt > 0)
+            {
+                vo.setAvgOrderAmount(amount.divide(java.math.BigDecimal.valueOf(orderCnt), 2, java.math.RoundingMode.HALF_UP));
+            }
+            else
+            {
+                vo.setAvgOrderAmount(java.math.BigDecimal.ZERO);
+            }
+            // 销售额占比 = 该类型销售额 / 总销售额 * 100
+            if (totalAmount.compareTo(java.math.BigDecimal.ZERO) > 0)
+            {
+                vo.setAmountRatio(amount.multiply(java.math.BigDecimal.valueOf(100))
+                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP));
+            }
+            else
+            {
+                vo.setAmountRatio(java.math.BigDecimal.ZERO);
+            }
+            // 客户数占比
+            if (totalCustomers > 0 && vo.getCustomerCount() != null)
+            {
+                vo.setCustomerRatio(java.math.BigDecimal.valueOf(vo.getCustomerCount())
+                        .multiply(java.math.BigDecimal.valueOf(100))
+                        .divide(java.math.BigDecimal.valueOf(totalCustomers), 2, java.math.RoundingMode.HALF_UP));
+            }
+            else
+            {
+                vo.setCustomerRatio(java.math.BigDecimal.ZERO);
+            }
+        }
+        result.put("stats", stats);
+        result.put("trend", mkDashboardMapper.selectCustomerTypeTrend());
+        return result;
+    }
+
+    @Override
+    public java.util.List<java.util.Map<String, Object>> selectPersonalTopCustomers()
+    {
+        List<java.util.Map<String, Object>> list = mkDashboardMapper.selectPersonalTopCustomers();
+        // P2-04 脱敏：后端统一返回脱敏手机号（138****8888），响应中不含明文
+        if (list != null)
+        {
+            for (java.util.Map<String, Object> row : list)
+            {
+                Object phone = row.get("contactPhone");
+                if (phone != null)
+                {
+                    row.put("contactPhone", maskPhone(String.valueOf(phone)));
+                }
+            }
+        }
+        return list;
+    }
+
+    /** 手机号脱敏：保留前3后4（幂等，含 * 不重复处理；非11位不处理） */
+    private String maskPhone(String phone)
+    {
+        if (phone == null || phone.isEmpty() || phone.contains("*") || phone.length() != 11)
+        {
+            return phone;
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(7);
+    }
 }

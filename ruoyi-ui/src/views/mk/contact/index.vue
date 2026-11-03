@@ -355,12 +355,15 @@
       </template>
       <div class="customer-picker">
         <div class="customer-picker-search">
-          <el-input v-model="customerPickerQuery.customerName" placeholder="企业名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
+          <el-input v-model="customerPickerQuery.customerName" placeholder="客户名称" clearable size="small" style="width: 200px" @keyup.enter="handleCustomerPickerQuery">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-input v-model="customerPickerQuery.creditCode" placeholder="信用代码" clearable size="small" style="width: 200px; margin-left: 8px" @keyup.enter="handleCustomerPickerQuery">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
+          <el-select v-model="customerPickerQuery.customerType" placeholder="客户类型" clearable size="small" style="width: 130px; margin-left: 8px" @change="handleCustomerPickerQuery">
+            <el-option v-for="d in mk_customer_type" :key="d.value" :label="d.label" :value="d.value" />
+          </el-select>
           <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleCustomerPickerQuery">查询</el-button>
           <el-button icon="RefreshLeft" size="small" @click="resetCustomerPickerQuery">重置</el-button>
         </div>
@@ -371,7 +374,10 @@
                 <el-radio :model-value="customerPickerSelectedId" :value="row.customerId" @click.stop="onCustomerRowClick(row)"><span /></el-radio>
               </template>
             </el-table-column>
-            <el-table-column label="企业名称" prop="customerName" min-width="180" show-overflow-tooltip />
+            <el-table-column label="客户名称" prop="customerName" min-width="170" show-overflow-tooltip />
+            <el-table-column label="客户类型" width="95" align="center">
+              <template #default="scope"><dict-tag :options="mk_customer_type" :value="scope.row.customerType" /></template>
+            </el-table-column>
             <el-table-column label="信用代码" prop="creditCode" width="160" show-overflow-tooltip />
             <el-table-column label="客户等级" width="100" align="center">
               <template #default="scope">{{ levelLabel(scope.row.customerLevel) }}</template>
@@ -658,7 +664,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['formBasic', 'formContact'
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('mk_contact_index')
-const { marketing_contact_role, marketing_interaction_type, marketing_participate_status, marketing_customer_level, marketing_customer_status } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status', 'marketing_customer_level', 'marketing_customer_status')
+const { marketing_contact_role, marketing_interaction_type, marketing_participate_status, marketing_customer_level, marketing_customer_status, mk_customer_type } = proxy.useDict('marketing_contact_role', 'marketing_interaction_type', 'marketing_participate_status', 'marketing_customer_level', 'marketing_customer_status', 'mk_customer_type')
 
 const list = ref([])
 const open = ref(false)
@@ -937,7 +943,7 @@ const customerPickerTotal = ref(0)
 const customerPickerSelectedId = ref(null)
 const customerPickerSelectedRow = ref(null)
 const customerTableRef = ref(null)
-const customerPickerQuery = reactive({ pageNum: 1, pageSize: 10, customerName: undefined, creditCode: undefined, customerStatus: '0' })
+const customerPickerQuery = reactive({ pageNum: 1, pageSize: 10, customerName: undefined, creditCode: undefined, customerType: undefined, customerStatus: '0' })
 
 /** 打开客户选择弹窗 */
 function openCustomerPicker() {
@@ -947,6 +953,7 @@ function openCustomerPicker() {
 function onCustomerPickerOpen() {
   customerPickerQuery.customerName = undefined
   customerPickerQuery.creditCode = undefined
+  customerPickerQuery.customerType = undefined
   customerPickerQuery.pageNum = 1
   customerPickerSelectedId.value = form.value.customerId || null
   customerPickerSelectedRow.value = null
@@ -977,6 +984,7 @@ function handleCustomerPickerQuery() {
 function resetCustomerPickerQuery() {
   customerPickerQuery.customerName = undefined
   customerPickerQuery.creditCode = undefined
+  customerPickerQuery.customerType = undefined
   handleCustomerPickerQuery()
 }
 /** 行点击选中 */

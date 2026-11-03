@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsDealerFlowMapper">
+
+    <select id="selectFlowsByBatchNo" parameterType="String" resultType="com.ruoyi.qms.domain.vo.QmsDealerFlowNode">
+        select f.flow_date as flowDate, f.batch_no as batchNo, f.downstream_type as downstreamType,
+               f.downstream_name as downstreamName, f.quantity,
+               c.customer_name as dealerName,
+               m.material_name as materialName,
+               s.shipment_no as shipmentNo
+        from mk_dealer_sell_flow f
+        left join mk_customer c on f.dealer_id = c.customer_id
+        left join mk_shipment s on f.shipment_id = s.shipment_id
+        left join wms_material m on f.material_id = m.material_id
+        where f.batch_no = #{batchNo}
+        order by f.flow_date desc, f.flow_id desc
+    </select>
+
+</mapper>

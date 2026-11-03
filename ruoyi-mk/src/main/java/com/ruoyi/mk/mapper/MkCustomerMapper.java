@@ -35,4 +35,13 @@ public interface MkCustomerMapper
 
     /** 批量更新客户状态 */
     public int batchUpdateStatus(@Param("customerIds") Long[] customerIds, @Param("customerStatus") String customerStatus);
+
+    /** 按手机号查询（个人客户唯一性校验，排除指定ID） */
+    public MkCustomer selectByContactPhone(@Param("contactPhone") String contactPhone, @Param("excludeId") Long excludeId);
+
+    /** 查询指定上级经销商下的下级经销商数量（删除防孤儿） */
+    public int countChildDealer(@Param("parentCustomerId") Long parentCustomerId);
+
+    /** 查询客户类型与名称（轻量，用于层级校验/变更日志） */
+    public MkCustomer selectCustomerTypeById(Long customerId);
 }

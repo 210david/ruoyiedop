@@ -224,13 +224,36 @@
         <el-descriptions-item label="追溯方向">{{ queryParams.direction === 'forward' ? '正向（原料→成品）' : '反向（成品→原料）' }}</el-descriptions-item>
         <el-descriptions-item label="关联节点数">{{ countNodes(traceData) }}</el-descriptions-item>
         <el-descriptions-item label="追溯时间">{{ traceData.traceTime }}</el-descriptions-item>
+        <el-descriptions-item label="经销商流向">{{ traceData.dealerFlows?.length || 0 }} 条</el-descriptions-item>
       </el-descriptions>
+
+      <!-- 经销商分销流向（P1-08：查询批次本身的下游去向，召回演练依据） -->
+      <template v-if="traceData.dealerFlows?.length">
+        <el-alert type="warning" :closable="false" show-icon class="mb15"
+          :title="`该批次共有 ${traceData.dealerFlows.length} 条经销商分销流向记录，召回时需按此清单逆向通知到位`" />
+        <el-table :data="traceData.dealerFlows" border size="small" class="mb15">
+          <el-table-column label="流向日期" prop="flowDate" min-width="100" />
+          <el-table-column label="物料" prop="materialName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="经销商" prop="dealerName" min-width="160" show-overflow-tooltip />
+          <el-table-column label="下游类型" min-width="90" align="center">
+            <template #default="s">
+              <el-tag size="small">{{ { '1': '企业', '2': '经销商', '3': '个人', '4': '终端不详' }[s.row.downstreamType] || '-' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="下游客户" prop="downstreamName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="数量" prop="quantity" min-width="90" align="right" />
+          <el-table-column label="发货单号" prop="shipmentNo" min-width="130" />
+        </el-table>
+      </template>
 
       <!-- 追溯树 -->
       <el-table :data="traceData.children || []" row-key="id" :tree-props="{ children: 'children' }" border default-expand-all>
         <el-table-column :label="queryParams.direction === 'forward' ? '产出批次' : '投入批次'" prop="queryParams.direction === 'forward' ? childBatchNo : parentBatchNo'" min-width="160">
           <template #default="scope">
-            <el-tag :type="scope.row.breakFlag === 1 ? 'danger' : 'success'" size="small">
+            <el-tag v-if="scope.row.sourceType === 'shipment'" type="primary" size="small" effect="plain">
+              发货 → {{ scope.row.customerName || '客户' }}
+            </el-tag>
+            <el-tag v-else :type="scope.row.breakFlag === 1 ? 'danger' : 'success'" size="small">
               {{ queryParams.direction === 'forward' ? (scope.row.childBatchNo || '断点') : (scope.row.parentBatchNo || '断点') }}
             </el-tag>
           </template>
@@ -249,6 +272,7 @@
         <el-table-column label="工单号" prop="workOrderNo" min-width="120" />
         <el-table-column label="工序" prop="opName" min-width="100" />
         <el-table-column label="供应商" prop="supplierName" min-width="140" />
+        <el-table-column label="客户" prop="customerName" min-width="140" show-overflow-tooltip />
         <el-table-column label="投入数量" prop="qtyIn" min-width="90" align="center" />
         <el-table-column label="产出数量" prop="qtyOut" min-width="90" align="center" />
         <el-table-column label="来源" prop="sourceType" min-width="80">
@@ -266,7 +290,7 @@
         </el-table-column>
         <el-table-column label="关联记录" min-width="120" align="center">
           <template #default="scope">
-            <el-badge :value="(scope.row.inspectTasks?.length || 0) + (scope.row.ncrList?.length || 0)" :hidden="!scope.row.inspectTasks?.length && !scope.row.ncrList?.length" type="primary">
+            <el-badge :value="(scope.row.inspectTasks?.length || 0) + (scope.row.ncrList?.length || 0) + (scope.row.dealerFlows?.length || 0)" :hidden="!scope.row.inspectTasks?.length && !scope.row.ncrList?.length && !scope.row.dealerFlows?.length" type="primary">
               <el-button text size="small" @click="handleViewDetail(scope.row)">详情</el-button>
             </el-badge>
           </template>
@@ -313,6 +337,22 @@
             <el-table-column label="发现时间" prop="discoverTime" min-width="150" />
           </el-table>
           <el-empty v-if="!currentDetail.ncrList?.length" description="无NCR记录" :image-size="60" />
+        </el-tab-pane>
+        <el-tab-pane label="经销商流向" name="dealerFlow">
+          <el-table :data="currentDetail.dealerFlows || []" border size="small">
+            <el-table-column label="流向日期" prop="flowDate" min-width="100" />
+            <el-table-column label="物料" prop="materialName" min-width="140" />
+            <el-table-column label="经销商" prop="dealerName" min-width="150" />
+            <el-table-column label="下游类型" min-width="90">
+              <template #default="s">
+                <el-tag size="small">{{ { '1': '企业', '2': '经销商', '3': '个人', '4': '终端不详' }[s.row.downstreamType] || '-' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="下游客户" prop="downstreamName" min-width="140" />
+            <el-table-column label="数量" prop="quantity" min-width="80" align="right" />
+            <el-table-column label="发货单号" prop="shipmentNo" min-width="120" />
+          </el-table>
+          <el-empty v-if="!currentDetail.dealerFlows?.length" description="无经销商流向记录" :image-size="60" />
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
@@ -374,8 +414,9 @@
           <el-descriptions-item label="工单号">该谱系关联的生产工单编号</el-descriptions-item>
           <el-descriptions-item label="工序">谱系关联的生产工序名称</el-descriptions-item>
           <el-descriptions-item label="供应商">原料批次关联的供应商名称（反向追溯时重点关注）</el-descriptions-item>
+          <el-descriptions-item label="客户">发货节点关联的发货客户名称（正向追溯链终端，来自发货单）</el-descriptions-item>
           <el-descriptions-item label="投入产出数量">该节点投入和产出的物料数量</el-descriptions-item>
-          <el-descriptions-item label="来源">谱系数据来源类型：投料/报工/完工/调拨/返工/合并/拆分/补录</el-descriptions-item>
+          <el-descriptions-item label="来源">谱系数据来源类型：投料/报工/完工/调拨/返工/合并/拆分/补录/发货（发货节点展示"发货 → 客户"，为追溯链终端）</el-descriptions-item>
           <el-descriptions-item label="断点">该节点是否为谱系断点，断点会导致追溯链中断</el-descriptions-item>
           <el-descriptions-item label="关联记录">该节点关联的检验记录和NCR数量，点击"详情"可查看具体记录</el-descriptions-item>
         </el-descriptions>
@@ -576,13 +617,15 @@ function handlePrint() {
   const trs = rows.map(r => {
     const indent = r._level ? 'padding-left:' + (12 + r._level * 22) + 'px' : 'padding-left:12px'
     const prefix = r._level ? '<span style="color:#94a3b8;margin-right:6px">└</span>' : ''
-    const nodeBatch = isForward ? (r.childBatchNo || '断点') : (r.parentBatchNo || '断点')
+    const nodeBatch = r.sourceType === 'shipment'
+      ? '发货 → ' + (r.customerName || '客户')
+      : (isForward ? (r.childBatchNo || '断点') : (r.parentBatchNo || '断点'))
     const peerBatch = isForward ? (r.parentBatchNo || '-') : (r.childBatchNo || '-')
     return '<tr>' +
-      `<td style="${indent}">${prefix}${esc(nodeBatch)}${r.breakFlag === 1 ? ' <span class="bk">断点</span>' : ''}</td>` +
+      `<td style="${indent}">${prefix}${esc(nodeBatch)}${r.sourceType !== 'shipment' && r.breakFlag === 1 ? ' <span class="bk">断点</span>' : ''}</td>` +
       `<td>${esc(peerBatch)}</td>` +
       `<td>${r.materialCode ? esc(r.materialCode + ' / ' + r.materialName) : '-'}</td>` +
-      `<td>${esc(r.workOrderNo)}</td><td>${esc(r.opName)}</td><td>${esc(r.supplierName)}</td>` +
+      `<td>${esc(r.workOrderNo)}</td><td>${esc(r.opName)}</td><td>${esc(r.supplierName)}</td><td>${esc(r.customerName)}</td>` +
       `<td class="num">${r.qtyIn == null ? '-' : r.qtyIn}</td><td class="num">${r.qtyOut == null ? '-' : r.qtyOut}</td>` +
       `<td>${esc(dictLabel(r.sourceType))}</td><td>${esc(r.operator)}</td><td>${esc(r.traceTime)}</td>` +
       '</tr>'
@@ -610,8 +653,8 @@ function handlePrint() {
     '<tr><td>关联节点数</td><td>' + rows.length + '</td><td>断点节点数</td><td>' + breakCount + '</td></tr>' +
     '<tr><td>追溯时间</td><td>' + esc(traceData.value.traceTime) + '</td><td>报告生成时间</td><td>' + now + '</td></tr></table>' +
     '<h2>二、谱系追溯明细</h2><table><thead><tr>' +
-    '<th>' + (isForward ? '产出批次' : '投入批次') + '</th><th>批次号</th><th>物料</th><th>工单号</th><th>工序</th><th>供应商</th><th>投入数量</th><th>产出数量</th><th>来源</th><th>操作员</th><th>谱系时间</th>' +
-    '</tr></thead><tbody>' + (trs || '<tr><td colspan="11" style="text-align:center;color:#9ca3af">无追溯节点</td></tr>') + '</tbody></table>' +
+    '<th>' + (isForward ? '产出批次' : '投入批次') + '</th><th>批次号</th><th>物料</th><th>工单号</th><th>工序</th><th>供应商</th><th>客户</th><th>投入数量</th><th>产出数量</th><th>来源</th><th>操作员</th><th>谱系时间</th>' +
+    '</tr></thead><tbody>' + (trs || '<tr><td colspan="12" style="text-align:center;color:#9ca3af">无追溯节点</td></tr>') + '</tbody></table>' +
     '<div class="foot"><span>报告生成人：系统管理员（自动生成）</span><span>第 1 / 1 页</span></div></div>' +
     '<script>document.getElementById("btnPrint").onclick=function(){window.print()};' +
     'document.getElementById("btnDl").onclick=function(){var b=new Blob([document.documentElement.outerHTML],{type:"text/html;charset=utf-8"});' +

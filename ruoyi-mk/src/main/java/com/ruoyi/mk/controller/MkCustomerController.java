@@ -56,10 +56,11 @@ public class MkCustomerController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, MkCustomer customer)
     {
-        List<MkCustomer> list = mkCustomerService.selectCustomerList(customer);
+        boolean plain = com.ruoyi.common.utils.SecurityUtils.hasPermi("marketing:customer:exportPersonal");
+        List<MkCustomer> list = plain ? mkCustomerService.selectCustomerListPlain(customer) : mkCustomerService.selectCustomerList(customer);
         list = com.ruoyi.common.utils.ExportIdFilter.filter(list, customer);
         ExcelUtil<MkCustomer> util = new ExcelUtil<>(MkCustomer.class);
-        util.exportExcel(response, list, "企业客户数据");
+        util.exportExcel(response, list, "客户数据");
     }
 
     @Log(title = "企业客户", businessType = BusinessType.IMPORT)
@@ -190,6 +191,28 @@ public class MkCustomerController extends BaseController
     {
         return AjaxResult.success(mkCreditService.selectCreditUsage(customerId));
     }
+
+    // ====== 多类型客户体系：类型变更 / 变更日志 / 个人客户明文导出 ======
+
+    /** 变更客户类型（企业/经销商/个人，权限收敛至营销总监，记录变更日志） */
+    @Log(title = "客户类型变更", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('marketing:customer:changeType')")
+    @PutMapping("/changeType/{customerId}")
+    public AjaxResult changeType(@PathVariable("customerId") Long customerId, @RequestBody MkCustomer change)
+    {
+        change.setCustomerId(customerId);
+        return toAjax(mkCustomerService.changeType(change));
+    }
+
+    /** 客户类型变更日志 */
+    @PreAuthorize("@ss.hasPermi('marketing:customer:query')")
+    @GetMapping("/changeLog/{customerId}")
+    public AjaxResult changeLog(@PathVariable("customerId") Long customerId)
+    {
+        return AjaxResult.success(mkCustomerService.selectChangeLogList(customerId));
+    }
+
+    /** 个人客户导出（含明文手机号，独立权限） */
 
     // ====== 请求体内部类 ======
     public static class AssignRequest

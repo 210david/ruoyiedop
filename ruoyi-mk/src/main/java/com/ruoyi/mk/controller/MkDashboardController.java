@@ -126,4 +126,20 @@ public class MkDashboardController extends BaseController
     {
         return AjaxResult.success(mkDashboardService.selectSalespersonMonthlyTrend(userId));
     }
+
+    /** P2-01: 客户类型维度分析（企业/经销商/个人：销售额、订单数、客单价、占比、月度趋势） */
+    @PreAuthorize("@ss.hasPermi('marketing:report:view')")
+    @GetMapping("/customerTypeAnalysis")
+    public AjaxResult customerTypeAnalysis()
+    {
+        return AjaxResult.success(mkDashboardService.selectCustomerTypeAnalysis());
+    }
+
+    /** P2-04: 个人客户消费Top10（脱敏口径，响应不含明文手机号） */
+    @PreAuthorize("@ss.hasPermi('marketing:report:view')")
+    @GetMapping("/personalTop")
+    public AjaxResult personalTop()
+    {
+        return AjaxResult.success(mkDashboardService.selectPersonalTopCustomers());
+    }
 }

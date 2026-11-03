@@ -58,7 +58,7 @@ public class MkCreditServiceImpl implements IMkCreditService
     }
 
     @Override
-    public void checkCreditForOrder(Long customerId, BigDecimal orderAmount)
+    public void checkCreditForOrder(Long customerId, BigDecimal orderAmount, String settleType)
     {
         if (customerId == null)
         {
@@ -73,6 +73,16 @@ public class MkCreditServiceImpl implements IMkCreditService
         {
             throw new ServiceException("客户【" + customer.getCustomerName() + "】信用已冻结，禁止下单");
         }
+        // 个人客户强制现结（下单+审核双节点拦截，settle_type=0现结 1账期）
+        if (MkCustomer.TYPE_PERSONAL.equals(customer.getCustomerType()) && !"0".equals(settleType))
+        {
+            throw new ServiceException("个人客户【" + customer.getCustomerName() + "】强制现结，不允许账期结算");
+        }
+        // 现结订单不占用信用额度，跳过额度校验
+        if ("0".equals(settleType))
+        {
+            return;
+        }
         BigDecimal limit = customer.getCreditLimit() != null ? customer.getCreditLimit() : BigDecimal.ZERO;
         if (limit.compareTo(BigDecimal.ZERO) <= 0)
         {
@@ -85,8 +95,9 @@ public class MkCreditServiceImpl implements IMkCreditService
         if (used.add(amount).compareTo(limit) > 0)
         {
             throw new ServiceException(String.format(
-                    "客户【%s】超出信用额度：已占用欠款 %s 元 + 本单 %s 元 > 信用额度 %s 元，禁止下单",
-                    customer.getCustomerName(), used.toPlainString(), amount.toPlainString(), limit.toPlainString()));
+                    "客户【%s】超出信用额度：已占用欠款 %s 元 + 本单 %s 元 > 信用额度 %s 元（当前可用额度 %s 元），禁止下单",
+                    customer.getCustomerName(), used.toPlainString(), amount.toPlainString(), limit.toPlainString(),
+                    limit.subtract(used).toPlainString()));
         }
     }
 }

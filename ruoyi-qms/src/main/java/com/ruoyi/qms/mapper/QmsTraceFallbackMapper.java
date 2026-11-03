@@ -36,4 +36,9 @@ public interface QmsTraceFallbackMapper
      * 查询销售发货记录（MK→WMS，通过 mk_shipment.outbound_order_no → wms_outbound_order_detail.batch_no 关联）
      */
     List<TraceFallbackVO.ShipmentSummary> selectShipmentsByBatchNo(@Param("batchNo") String batchNo);
+
+    /**
+     * 按出库单号查明细批次（发货确认写谱系用：mk_shipment.outbound_order_no → wms_outbound_order_detail.batch_no）
+     */
+    List<TraceFallbackVO.OutboundDetailSummary> selectOutboundDetailsByOrderNo(@Param("orderNo") String orderNo);
 }

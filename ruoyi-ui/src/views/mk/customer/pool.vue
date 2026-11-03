@@ -19,7 +19,7 @@
           </div>
         </div>
         <div class="field">
-          <label>企业名称</label>
+          <label>客户名称</label>
           <div class="control">
             <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
@@ -119,7 +119,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="客户编号" prop="customerNo" key="customerNo" :width="colWidth('customerNo', 150)" resizable v-if="columns.customerNo.visible" />
-          <el-table-column label="企业名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
+          <el-table-column label="客户名称" prop="customerName" key="customerName" :min-width="colWidth('customerName', 200)" resizable show-overflow-tooltip v-if="columns.customerName.visible">
             <template #default="scope">
               <el-button link type="primary" @click="handleView(scope.row)">{{ scope.row.customerName }}</el-button>
             </template>
@@ -188,7 +188,7 @@
               <div class="rd-card-body" v-show="!collapsedCards.v_basic">
                 <div class="rd-grid">
                   <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ viewForm.customerNo }}</div></div>
-                  <div class="rd-item"><span class="rd-label">企业名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
+                  <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewForm.customerName }}</div></div>
                   <div class="rd-item"><span class="rd-label">信用代码</span><div class="rd-value">{{ viewForm.creditCode }}</div></div>
                   <div class="rd-item"><span class="rd-label">客户等级</span><div class="rd-value"><dict-tag :options="marketing_customer_level" :value="viewForm.customerLevel" /></div></div>
                   <div class="rd-item"><span class="rd-label">客户来源</span><div class="rd-value"><dict-tag :options="marketing_customer_source" :value="viewForm.customerSource" /></div></div>
@@ -452,7 +452,7 @@ const { queryParams } = toRefs(data)
 // 列显隐配置 - 从 localStorage 恢复保存的设置
 const defaultColumns = {
   customerNo: { label: '客户编号', visible: true },
-  customerName: { label: '企业名称', visible: true },
+  customerName: { label: '客户名称', visible: true },
   customerLevel: { label: '客户等级', visible: true },
   industry: { label: '所属行业', visible: true },
   customerStatus: { label: '客户状态', visible: true },

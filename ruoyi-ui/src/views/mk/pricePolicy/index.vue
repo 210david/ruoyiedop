@@ -107,7 +107,7 @@
             <template #default="scope">{{ scope.row.customerName || '—' }}</template>
           </el-table-column>
           <el-table-column label="客户等级" prop="customerLevel" key="customerLevel" :width="colWidth('customerLevel', 100)" resizable align="center" v-if="columns.customerLevel.visible">
-            <template #default="scope"><dict-tag v-if="scope.row.customerLevel" :options="marketing_customer_level" :value="scope.row.customerLevel" /><span v-else class="text-muted">—</span></template>
+            <template #default="scope"><dict-tag v-if="scope.row.customerLevel" :options="scope.row.priceType === '3' ? mk_dealer_level : marketing_customer_level" :value="scope.row.customerLevel" /><span v-else class="text-muted">—</span></template>
           </el-table-column>
           <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 150)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="政策单价" prop="unitPrice" key="unitPrice" :width="colWidth('unitPrice', 110)" resizable align="center" v-if="columns.unitPrice.visible">
@@ -157,15 +157,16 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="12">
+                <el-col :span="24">
                   <el-form-item label="价格类型" prop="priceType">
                     <el-radio-group v-model="form.priceType" @change="onPriceTypeChange">
                       <el-radio value="1">客户专价</el-radio>
                       <el-radio value="2">等级价</el-radio>
+                      <el-radio value="3">经销商供货价</el-radio>
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
+                <el-col :span="24">
                   <el-form-item label="政策名称" prop="policyName">
                     <el-input v-model="form.policyName" placeholder="如：A客户专价/一级客户价" maxlength="100" />
                   </el-form-item>
@@ -193,6 +194,14 @@
                     <el-select v-model="form.customerLevel" placeholder="请选择客户等级（等级价必选）" clearable style="width: 100%">
                       <el-option v-for="d in marketing_customer_level" :key="d.value" :label="d.label" :value="d.value" />
                     </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col v-if="form.priceType === '3'" :span="24">
+                  <el-form-item label="经销层级" prop="customerLevel">
+                    <el-select v-model="form.customerLevel" placeholder="请选择经销层级（供货价必选）" clearable style="width: 100%">
+                      <el-option v-for="d in mk_dealer_level" :key="d.value" :label="d.label" :value="d.value" />
+                    </el-select>
+                    <div style="width:100%;color:var(--ink-500);font-size:12px;line-height:1.6">按经销商层级供货：一级/二级经销商下单时自动匹配对应层级供货价</div>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -287,8 +296,8 @@
         <section class="rd-card">
           <div class="rd-card-title" style="padding: 12px 16px 0">适用对象</div>
           <el-descriptions :column="2" border class="rd-desc" style="margin: 10px 16px 16px">
-            <el-descriptions-item label="客户名称">{{ viewForm.priceType === '1' ? (viewForm.customerName || '—') : '按客户等级通用' }}</el-descriptions-item>
-            <el-descriptions-item label="客户等级"><dict-tag v-if="viewForm.customerLevel" :options="marketing_customer_level" :value="viewForm.customerLevel" /><span v-else>—</span></el-descriptions-item>
+            <el-descriptions-item label="客户名称">{{ viewForm.priceType === '1' ? (viewForm.customerName || '—') : (viewForm.priceType === '3' ? '按经销层级通用' : '按客户等级通用') }}</el-descriptions-item>
+            <el-descriptions-item :label="viewForm.priceType === '3' ? '经销层级' : '客户等级'"><dict-tag v-if="viewForm.customerLevel" :options="viewForm.priceType === '3' ? mk_dealer_level : marketing_customer_level" :value="viewForm.customerLevel" /><span v-else>—</span></el-descriptions-item>
           </el-descriptions>
         </section>
         <section class="rd-card">
@@ -326,6 +335,7 @@
         <ul>
           <li><b>客户专价</b>：绑定单个客户 + 单个物料，适用大客户谈判价</li>
           <li><b>等级价</b>：绑定客户等级 + 单个物料，同等级客户共享价格</li>
+          <li><b>经销商供货价</b>：绑定经销层级（一级/二级）+ 单个物料，经销商下单按层级自动匹配供货价，取价优先级高于等级价</li>
         </ul>
         <h4>状态说明</h4>
         <ul>
@@ -362,7 +372,7 @@ const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pricePolicy_index')
-const { mk_price_type, marketing_customer_level } = proxy.useDict("mk_price_type", "marketing_customer_level")
+const { mk_price_type, marketing_customer_level, mk_dealer_level } = proxy.useDict("mk_price_type", "marketing_customer_level", "mk_dealer_level")
 
 // 列显隐配置
 const defaultColumns = {
@@ -552,6 +562,10 @@ function submitForm() {
       }
       if (form.value.priceType === '2' && !form.value.customerLevel) {
         proxy.$modal.msgWarning("等级价必须选择客户等级")
+        return
+      }
+      if (form.value.priceType === '3' && !form.value.customerLevel) {
+        proxy.$modal.msgWarning("经销商供货价必须选择经销层级")
         return
       }
       if (form.value.unitPrice == null || form.value.unitPrice <= 0) {

@@ -17,6 +17,7 @@ import com.ruoyi.qms.mapper.QmsLotGenealogyMapper;
 import com.ruoyi.qms.mapper.QmsInspTaskMapper;
 import com.ruoyi.qms.mapper.QmsNcrMapper;
 import com.ruoyi.qms.mapper.QmsTraceFallbackMapper;
+import com.ruoyi.qms.mapper.QmsDealerFlowMapper;
 import com.ruoyi.qms.service.IQmsTraceService;
 
 /**
@@ -48,6 +49,9 @@ public class QmsTraceServiceImpl implements IQmsTraceService
 
     @Autowired
     private QmsTraceFallbackMapper traceFallbackMapper;
+
+    @Autowired
+    private QmsDealerFlowMapper qmsDealerFlowMapper;
 
     @Override
     public List<QmsLotGenealogy> selectGenealogyList(QmsLotGenealogy genealogy)
@@ -158,6 +162,8 @@ public class QmsTraceServiceImpl implements IQmsTraceService
         visited.add(batchNo);
         List<QmsLotGenealogy> children = buildForwardTree(batchNo, 1, visited);
         root.setChildren(children);
+        // 经销商分销流向：查询批次本身的下游去向（P1-08 追溯链接入）
+        root.setDealerFlows(qmsDealerFlowMapper.selectFlowsByBatchNo(batchNo));
         log.info("正向追溯完成：{}，找到 {} 条直接下游", batchNo, children.size());
         return root;
     }
@@ -188,6 +194,9 @@ public class QmsTraceServiceImpl implements IQmsTraceService
                 ncrQuery.setBatchNo(node.getChildBatchNo());
                 List<QmsNcr> ncrs = qmsNcrMapper.selectNcrList(ncrQuery);
                 node.setNcrList(ncrs);
+
+                // 关联经销商分销流向（P1-08：发货客户节点下挂下游去向）
+                node.setDealerFlows(qmsDealerFlowMapper.selectFlowsByBatchNo(node.getChildBatchNo()));
             }
             // 递归查找下游
             if (StringUtils.isNotEmpty(node.getChildBatchNo()) && !visited.contains(node.getChildBatchNo()))
@@ -260,6 +269,9 @@ public class QmsTraceServiceImpl implements IQmsTraceService
                 ncrQuery.setBatchNo(node.getParentBatchNo());
                 List<QmsNcr> ncrs = qmsNcrMapper.selectNcrList(ncrQuery);
                 node.setNcrList(ncrs);
+
+                // 关联经销商分销流向（P1-08：发货客户节点下挂下游去向）
+                node.setDealerFlows(qmsDealerFlowMapper.selectFlowsByBatchNo(node.getChildBatchNo()));
             }
             // 递归查找上游
             if (StringUtils.isNotEmpty(node.getParentBatchNo()) && !visited.contains(node.getParentBatchNo()))
@@ -616,10 +628,18 @@ public class QmsTraceServiceImpl implements IQmsTraceService
         }
         else if (StringUtils.isEmpty(event.getChildBatchNo()))
         {
-            event.setBreakFlag(1);
-            if (StringUtils.isEmpty(event.getBreakReason()))
+            if ("shipment".equals(event.getSourceType()))
             {
-                event.setBreakReason("产出批次未登记");
+                // 发货事件为终端节点：成品批次 → 发货客户，无产出批次属正常语义，不算断点
+                event.setBreakFlag(0);
+            }
+            else
+            {
+                event.setBreakFlag(1);
+                if (StringUtils.isEmpty(event.getBreakReason()))
+                {
+                    event.setBreakReason("产出批次未登记");
+                }
             }
         }
         else
