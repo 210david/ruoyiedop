@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyRuleLearnMapper">
+    <resultMap type="SafetyRuleLearnTask" id="SafetyRuleLearnTaskResult">
+        <result property="taskId" column="task_id"/>
+        <result property="taskNo" column="task_no"/>
+        <result property="taskName" column="task_name"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="ruleVersionNo" column="rule_version_no"/>
+        <result property="targetDesc" column="target_desc"/>
+        <result property="deadline" column="deadline"/>
+        <result property="taskStatus" column="task_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <resultMap type="SafetyRuleLearn" id="SafetyRuleLearnResult">
+        <result property="learnId" column="learn_id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="signStatus" column="sign_status"/>
+        <result property="signTime" column="sign_time"/>
+        <result property="signIp" column="sign_ip"/>
+        <result property="signTerminal" column="sign_terminal"/>
+        <result property="examScore" column="exam_score"/>
+        <result property="isPass" column="is_pass"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="taskVo">
+        SELECT task_id, task_no, task_name, rule_id, rule_name, rule_version_no, target_desc, deadline, task_status,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_rule_learn_task
+    </sql>
+    <select id="selectTaskList" parameterType="SafetyRuleLearnTask" resultMap="SafetyRuleLearnTaskResult">
+        <include refid="taskVo"/>
+        <where> del_flag = '0'
+            <if test="taskNo != null and taskNo != ''"> AND task_no LIKE CONCAT('%', #{taskNo}, '%')</if>
+            <if test="taskName != null and taskName != ''"> AND task_name LIKE CONCAT('%', #{taskName}, '%')</if>
+            <if test="ruleId != null"> AND rule_id = #{ruleId}</if>
+            <if test="ruleName != null and ruleName != ''"> AND rule_name LIKE CONCAT('%', #{ruleName}, '%')</if>
+            <if test="taskStatus != null and taskStatus != ''"> AND task_status = #{taskStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectTaskById" parameterType="Long" resultMap="SafetyRuleLearnTaskResult">
+        <include refid="taskVo"/> WHERE task_id = #{taskId}
+    </select>
+    <insert id="insertTask" parameterType="SafetyRuleLearnTask" useGeneratedKeys="true" keyProperty="taskId">
+        INSERT INTO biz_safety_rule_learn_task (task_no, task_name, rule_id, rule_name, rule_version_no, target_desc,
+            deadline, task_status, del_flag, create_by, create_time, remark)
+        VALUES (#{taskNo}, #{taskName}, #{ruleId}, #{ruleName}, #{ruleVersionNo}, #{targetDesc},
+            #{deadline}, #{taskStatus}, #{delFlag}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateTask" parameterType="SafetyRuleLearnTask">
+        UPDATE biz_safety_rule_learn_task <set>
+            <if test="taskName != null"> task_name = #{taskName},</if>
+            <if test="ruleVersionNo != null"> rule_version_no = #{ruleVersionNo},</if>
+            <if test="targetDesc != null"> target_desc = #{targetDesc},</if>
+            <if test="deadline != null"> deadline = #{deadline},</if>
+            <if test="taskStatus != null"> task_status = #{taskStatus},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE task_id = #{taskId}
+    </update>
+    <sql id="learnVo">
+        SELECT learn_id, task_id, rule_id, user_id, user_name, dept_id, dept_name, sign_status, sign_time, sign_ip,
+               sign_terminal, exam_score, is_pass, del_flag, create_by, create_time, remark
+        FROM biz_safety_rule_learn
+    </sql>
+    <select id="selectLearnList" parameterType="SafetyRuleLearn" resultMap="SafetyRuleLearnResult">
+        <include refid="learnVo"/>
+        <where> del_flag = '0'
+            <if test="taskId != null"> AND task_id = #{taskId}</if>
+            <if test="ruleId != null"> AND rule_id = #{ruleId}</if>
+            <if test="userName != null and userName != ''"> AND user_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="signStatus != null and signStatus != ''"> AND sign_status = #{signStatus}</if>
+        </where>
+        ORDER BY learn_id ASC
+    </select>
+    <select id="selectLearnById" parameterType="Long" resultMap="SafetyRuleLearnResult">
+        <include refid="learnVo"/> WHERE learn_id = #{learnId}
+    </select>
+    <insert id="insertLearn" parameterType="SafetyRuleLearn" useGeneratedKeys="true" keyProperty="learnId">
+        INSERT INTO biz_safety_rule_learn (task_id, rule_id, user_id, user_name, dept_id, dept_name, sign_status,
+            sign_terminal, del_flag, create_by, create_time, remark)
+        VALUES (#{taskId}, #{ruleId}, #{userId}, #{userName}, #{deptId}, #{deptName}, '0',
+            'PC', '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <insert id="appendLearnBatch">
+        INSERT INTO biz_safety_rule_learn (task_id, rule_id, user_id, user_name, dept_id, dept_name, sign_status, sign_terminal, del_flag, create_by, create_time)
+        VALUES
+        <foreach item="item" collection="learns" separator=",">
+            (#{item.taskId}, #{item.ruleId}, #{item.userId}, #{item.userName}, #{item.deptId}, #{item.deptName}, '0', 'PC', '0', #{item.createBy}, sysdate())
+        </foreach>
+    </insert>
+    <update id="signLearn" parameterType="SafetyRuleLearn">
+        UPDATE biz_safety_rule_learn SET sign_status = '1', sign_time = sysdate(),
+            sign_ip = #{signIp}, sign_terminal = #{signTerminal},
+            <if test="examScore != null"> exam_score = #{examScore},</if>
+            <if test="isPass != null"> is_pass = #{isPass},</if>
+            update_by = #{updateBy}, update_time = sysdate()
+        WHERE learn_id = #{learnId} AND del_flag = '0'
+    </update>
+    <update id="markLearnOverdue">
+        UPDATE biz_safety_rule_learn l JOIN biz_safety_rule_learn_task t ON l.task_id = t.task_id
+        SET l.sign_status = '2', l.update_time = sysdate(), t.task_status = '2'
+        WHERE l.sign_status = '0' AND l.del_flag = '0' AND t.task_status = '0'
+          AND t.deadline IS NOT NULL AND t.deadline &lt; CURDATE()
+    </update>
+    <update id="completeTasksIfAllSigned">
+        UPDATE biz_safety_rule_learn_task t
+        SET t.task_status = '1', t.update_time = sysdate()
+        WHERE t.task_status IN ('0','2') AND t.del_flag = '0'
+          AND NOT EXISTS (SELECT 1 FROM biz_safety_rule_learn l WHERE l.task_id = t.task_id AND l.sign_status = '0' AND l.del_flag = '0')
+          AND EXISTS (SELECT 1 FROM biz_safety_rule_learn l2 WHERE l2.task_id = t.task_id AND l2.del_flag = '0')
+    </update>
+    <select id="selectTaskStatList" resultMap="SafetyRuleLearnTaskResult">
+        SELECT t.task_id, t.task_no, t.task_name, t.rule_id, t.rule_name, t.rule_version_no, t.target_desc, t.deadline, t.task_status,
+               t.create_by, t.create_time,
+               (SELECT COUNT(*) FROM biz_safety_rule_learn l WHERE l.task_id = t.task_id AND l.del_flag = '0') AS remark
+        FROM biz_safety_rule_learn_task t WHERE t.del_flag = '0' ORDER BY t.create_time DESC
+    </select>
+</mapper>

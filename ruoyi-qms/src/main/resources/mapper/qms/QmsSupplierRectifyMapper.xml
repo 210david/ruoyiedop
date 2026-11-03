@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qms.mapper.QmsSupplierRectifyMapper">
+    <resultMap type="QmsSupplierRectify" id="QmsSupplierRectifyResult">
+        <result property="rectifyId" column="rectify_id"/>
+        <result property="rectifyNo" column="rectify_no"/>
+        <result property="complaintId" column="complaint_id"/>
+        <result property="complaintNo" column="complaint_no"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="materialName" column="material_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="rectifyRequirement" column="rectify_requirement"/>
+        <result property="evidenceAttachment" column="evidence_attachment"/>
+        <result property="rectifyResult" column="rectify_result"/>
+        <result property="supplierReply" column="supplier_reply"/>
+        <result property="replyTime" column="reply_time"/>
+        <result property="replyDeadline" column="reply_deadline"/>
+        <result property="rectifyStatus" column="rectify_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT rectify_id, rectify_no, complaint_id, complaint_no, supplier_id, supplier_name, material_name, batch_no,
+               rectify_requirement, evidence_attachment, rectify_result, supplier_reply, reply_time, reply_deadline,
+               rectify_status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM qms_supplier_rectify
+    </sql>
+    <select id="selectRectifyList" parameterType="QmsSupplierRectify" resultMap="QmsSupplierRectifyResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="rectifyNo != null and rectifyNo != ''"> AND rectify_no LIKE CONCAT('%', #{rectifyNo}, '%')</if>
+            <if test="complaintNo != null and complaintNo != ''"> AND complaint_no LIKE CONCAT('%', #{complaintNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="rectifyStatus != null and rectifyStatus != ''"> AND rectify_status = #{rectifyStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectRectifyById" parameterType="Long" resultMap="QmsSupplierRectifyResult">
+        <include refid="selectVo"/> WHERE rectify_id = #{rectifyId}
+    </select>
+    <insert id="insertRectify" parameterType="QmsSupplierRectify" useGeneratedKeys="true" keyProperty="rectifyId">
+        INSERT INTO qms_supplier_rectify (rectify_no, complaint_id, complaint_no, supplier_id, supplier_name, material_name, batch_no,
+            rectify_requirement, evidence_attachment, rectify_result, supplier_reply, reply_time, reply_deadline,
+            rectify_status, del_flag, create_by, create_time, remark)
+        VALUES (#{rectifyNo}, #{complaintId}, #{complaintNo}, #{supplierId}, #{supplierName}, #{materialName}, #{batchNo},
+            #{rectifyRequirement}, #{evidenceAttachment}, #{rectifyResult}, #{supplierReply}, #{replyTime}, #{replyDeadline},
+            #{rectifyStatus}, #{delFlag}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateRectify" parameterType="QmsSupplierRectify">
+        UPDATE qms_supplier_rectify <set>
+            <if test="rectifyNo != null"> rectify_no = #{rectifyNo},</if>
+            <if test="complaintId != null"> complaint_id = #{complaintId},</if>
+            <if test="complaintNo != null"> complaint_no = #{complaintNo},</if>
+            <if test="supplierId != null"> supplier_id = #{supplierId},</if>
+            <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="materialName != null"> material_name = #{materialName},</if>
+            <if test="batchNo != null"> batch_no = #{batchNo},</if>
+            <if test="rectifyRequirement != null"> rectify_requirement = #{rectifyRequirement},</if>
+            <if test="evidenceAttachment != null"> evidence_attachment = #{evidenceAttachment},</if>
+            <if test="rectifyResult != null"> rectify_result = #{rectifyResult},</if>
+            <if test="supplierReply != null"> supplier_reply = #{supplierReply},</if>
+            <if test="replyTime != null"> reply_time = #{replyTime},</if>
+            <if test="replyDeadline != null"> reply_deadline = #{replyDeadline},</if>
+            <if test="rectifyStatus != null"> rectify_status = #{rectifyStatus},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE rectify_id = #{rectifyId}
+    </update>
+    <delete id="deleteRectifyByIds" parameterType="Long">
+        UPDATE qms_supplier_rectify SET del_flag = '2' WHERE rectify_id IN
+        <foreach item="rectifyId" collection="array" open="(" separator="," close=")">#{rectifyId}</foreach>
+    </delete>
+    <!-- KR-03：逾期未回复自动升级 -->
+    <update id="markOverdue">
+        UPDATE qms_supplier_rectify SET rectify_status = '2', update_time = sysdate(),
+               remark = CONCAT(IFNULL(remark, ''), ' 系统自动升级提醒（', DATE_FORMAT(NOW(), '%Y-%m-%d'), '）：回复时限已过，逾期未回复')
+        WHERE rectify_status = '0' AND reply_deadline IS NOT NULL AND reply_deadline &lt; CURDATE()
+    </update>
+</mapper>

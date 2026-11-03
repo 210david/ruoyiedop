@@ -101,6 +101,8 @@
           <el-table-column label="严重程度" prop="severity" key="severity" :width="colWidth('severity', 100)" resizable align="center" v-if="columns.severity.visible"><template #default="scope"><span v-if="dictLabel(severityOptions, scope.row.severity)" class="badge" :class="severityClass(scope.row.severity)"><span class="dot"></span>{{ dictLabel(severityOptions, scope.row.severity) }}</span></template></el-table-column>
           <el-table-column label="退货金额" prop="returnAmt" key="returnAmt" :width="colWidth('returnAmt', 120)" resizable align="right" v-if="columns.returnAmt.visible"><template #default="scope"><span class="rd-amount">{{ scope.row.returnAmt != null ? '￥' + formatAmount(scope.row.returnAmt) : '-' }}</span></template></el-table-column>
           <el-table-column label="索赔金额" prop="claimAmt" key="claimAmt" :width="colWidth('claimAmt', 120)" resizable align="right" v-if="columns.claimAmt.visible"><template #default="scope"><span class="rd-amount">{{ scope.row.claimAmt != null ? '￥' + formatAmount(scope.row.claimAmt) : '-' }}</span></template></el-table-column>
+          <el-table-column label="供应商" prop="supplierName" key="supplierName" :width="colWidth('supplierName', 160)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
+          <el-table-column label="责任类型" prop="responsibilityType" key="responsibilityType" :width="colWidth('responsibilityType', 110)" resizable align="center" v-if="columns.responsibilityType.visible"><template #default="scope"><span v-if="dictLabel(responsibilityOptions, scope.row.responsibilityType)" class="badge" :class="responsibilityClass(scope.row.responsibilityType)"><span class="dot"></span>{{ dictLabel(responsibilityOptions, scope.row.responsibilityType) }}</span></template></el-table-column>
           <el-table-column label="状态" prop="complaintStatus" key="complaintStatus" :width="colWidth('complaintStatus', 100)" resizable align="center" v-if="columns.complaintStatus.visible"><template #default="scope"><span v-if="dictLabel(statusOptions, scope.row.complaintStatus)" class="badge" :class="statusClass(scope.row.complaintStatus)"><span class="dot"></span>{{ dictLabel(statusOptions, scope.row.complaintStatus) }}</span></template></el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -120,7 +122,7 @@
     </div>
 
     <!-- View Dialog -->
-    <el-dialog v-model="viewOpen" width="820px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="viewOpen" width="943px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
@@ -154,6 +156,20 @@
           <div class="rd-card-body" v-show="!collapsedCards.vc1"><div class="rd-grid">
             <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ viewData.customerName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">客户编号</span><div class="rd-value">{{ viewData.customerCode || '-' }}</div></div>
+          </div></div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('vc6')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>供应商信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.vc6 }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" v-show="!collapsedCards.vc6"><div class="rd-grid">
+            <div class="rd-item"><span class="rd-label">供应商名称</span><div class="rd-value">{{ viewData.supplierName || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">责任类型</span><div class="rd-value"><span v-if="dictLabel(responsibilityOptions, viewData.responsibilityType)" class="badge" :class="responsibilityClass(viewData.responsibilityType)"><span class="dot"></span>{{ dictLabel(responsibilityOptions, viewData.responsibilityType) }}</span><span v-else>-</span></div></div>
+            <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewData.supplierContact || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ viewData.supplierPhone || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">供货批次号/送货单号</span><div class="rd-value">{{ viewData.deliveryNo || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">供货日期</span><div class="rd-value">{{ viewData.supplyDate ? parseTime(viewData.supplyDate, '{y}-{m}-{d}') : '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card">
@@ -204,7 +220,7 @@
     </el-dialog>
 
     <!-- Add/Edit Dialog (只填写客诉信息，不包含处理信息) -->
-    <el-dialog v-model="open" width="820px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="943px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
@@ -260,6 +276,27 @@
             </div>
           </section>
           <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('ec5')">
+              <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>供应商信息（可选）</div>
+              <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ec5 }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.ec5">
+              <el-alert type="info" :closable="false" show-icon style="margin-bottom:12px"><template #title>供应商从供应商档案中选择（不允许手工填写）；判定为「供应商责任」时须关联供应商，可发起供应商整改单跟踪处理</template></el-alert>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="供应商"><el-input v-model="form.supplierName" readonly placeholder="请选择供应商" style="width: 100%" @click="openSupplierPicker"><template #append><el-button icon="Search" @click="openSupplierPicker" /></template><template #suffix><el-icon v-if="form.supplierName" class="rd-form-tip" style="cursor:pointer" @click.stop="clearSupplier"><CircleClose /></el-icon></template></el-input></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="责任类型"><el-select v-model="form.responsibilityType" placeholder="请选择" clearable style="width: 100%"><el-option v-for="d in responsibilityOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="联系人"><el-input v-model="form.supplierContact" readonly placeholder="选择供应商后自动带出" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="联系电话"><el-input v-model="form.supplierPhone" readonly placeholder="选择供应商后自动带出" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="供货批次号"><el-input v-model="form.deliveryNo" placeholder="请输入供货批次号/送货单号" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="供货日期"><el-date-picker v-model="form.supplyDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item></el-col>
+              </el-row>
+            </div>
+          </section>
+          <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('ec3')">
               <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>缺陷描述</div>
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.ec3 }" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -283,7 +320,7 @@
     </el-dialog>
 
     <!-- Process Dialog (处理对话框 - 填写处理信息) -->
-    <el-dialog v-model="processOpen" width="820px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="processOpen" width="943px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-1 1z"/></svg></div>
@@ -305,6 +342,8 @@
               <div class="rd-item"><span class="rd-label">投诉日期</span><div class="rd-value">{{ processForm.complaintDate ? parseTime(processForm.complaintDate, '{y}-{m}-{d}') : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">客户名称</span><div class="rd-value">{{ processForm.customerName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">物料名称</span><div class="rd-value">{{ processForm.materialName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">供应商</span><div class="rd-value">{{ processForm.supplierName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">责任类型</span><div class="rd-value"><span v-if="dictLabel(responsibilityOptions, processForm.responsibilityType)" class="badge" :class="responsibilityClass(processForm.responsibilityType)"><span class="dot"></span>{{ dictLabel(responsibilityOptions, processForm.responsibilityType) }}</span><span v-else>-</span></div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">缺陷描述</span><div class="rd-value">{{ processForm.defectDesc || '-' }}</div></div>
             </div></div>
           </section>
@@ -336,6 +375,8 @@
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
     <!-- 物料选择器 -->
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <!-- 供应商选择器 -->
+    <supplier-picker ref="supplierPickerRef" title="选择供应商" @confirm="onSupplierPickerConfirm" />
 
     <!-- 业务操作说明对话框 -->
     <el-dialog v-model="showStatusHelp" title="客诉台账业务操作说明" width="820px" append-to-body>
@@ -442,12 +483,13 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount } from '@/composables/useDetailCard'
 import CustomerPicker from '@/components/CustomerPicker/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
+import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import { CircleClose } from '@element-plus/icons-vue'
 import { QuestionFilled, ArrowRight } from '@element-plus/icons-vue'
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_complaint_index')
-const { collapsedCards, toggleCard } = useDetailCard(['vc0','vc1','vc2','vc3','vc4','vc5','ec0','ec1','ec2','ec3','ec4'])
+const { collapsedCards, toggleCard } = useDetailCard(['vc0','vc1','vc2','vc3','vc4','vc5','vc6','ec0','ec1','ec2','ec3','ec4','ec5'])
 const { proxy } = getCurrentInstance()
-const { qms_complaint_type: typeOptions, qms_complaint_status: statusOptions, qms_complaint_severity: severityOptions, qms_complaint_handle_result: handleResultOptions } = proxy.useDict('qms_complaint_type', 'qms_complaint_status', 'qms_complaint_severity', 'qms_complaint_handle_result')
+const { qms_complaint_type: typeOptions, qms_complaint_status: statusOptions, qms_complaint_severity: severityOptions, qms_complaint_handle_result: handleResultOptions, qms_responsibility_type: responsibilityOptions } = proxy.useDict('qms_complaint_type', 'qms_complaint_status', 'qms_complaint_severity', 'qms_complaint_handle_result', 'qms_responsibility_type')
 
 const defaultColumns = {
   complaintNo: { label: '客诉编号', visible: true },
@@ -458,6 +500,8 @@ const defaultColumns = {
   severity: { label: '严重程度', visible: true },
   returnAmt: { label: '退货金额', visible: true },
   claimAmt: { label: '索赔金额', visible: true },
+  supplierName: { label: '供应商', visible: true },
+  responsibilityType: { label: '责任类型', visible: true },
   complaintStatus: { label: '状态', visible: true }
 }
 function loadColumnVisibility() {
@@ -497,6 +541,7 @@ const selectedId = ref(null)
 const selectedIds = ref([])
 const customerPickerRef = ref()
 const materialPickerRef = ref()
+const supplierPickerRef = ref()
 const data = reactive({ form: {}, queryParams: { pageNum: 1, pageSize: 10 } })
 const { queryParams, form } = toRefs(data)
 const rules = {
@@ -602,6 +647,19 @@ function clearMaterial() {
   form.value.materialCode = undefined
   form.value.materialName = undefined
 }
+function openSupplierPicker() { supplierPickerRef.value.open(form.value.supplierId) }
+function onSupplierPickerConfirm(supplier) {
+  form.value.supplierId = supplier.supplierId
+  form.value.supplierName = supplier.supplierName
+  form.value.supplierContact = supplier.contactPerson
+  form.value.supplierPhone = supplier.contactPhone
+}
+function clearSupplier() {
+  form.value.supplierId = undefined
+  form.value.supplierName = undefined
+  form.value.supplierContact = undefined
+  form.value.supplierPhone = undefined
+}
 function handleSelectionChange(selection) { selectedIds.value = selection.map(item => item.complaintId); selectedId.value = selectedIds.value[0] }
 function submitForm() {
   proxy.$refs['complaintRef'].validate(valid => {
@@ -619,7 +677,7 @@ function handleClose(row) {
   proxy.$modal.confirm('确认关闭客诉 "' + row.complaintNo + '"？').then(() => closeComplaint(row.complaintId)).then(() => { getList(); loadStatusCounts(); proxy.$modal.msgSuccess('关闭成功') }).catch(() => {})
 }
 function handleExport() { proxy.download('qms/complaint/export', proxy.withExportIds({ ...queryParams.value }, selectedIds.value, 'complaintId'), `complaint_${new Date().getTime()}.xlsx`) }
-function reset() { form.value = { complaintId: null, complaintNo: undefined, customerId: undefined, customerName: undefined, customerCode: undefined, materialId: undefined, materialName: undefined, materialCode: undefined, batchNo: undefined, complaintType: undefined, severity: undefined, complaintDate: new Date().toISOString().slice(0,10), defectDesc: undefined }; proxy.resetForm('complaintRef') }
+function reset() { form.value = { complaintId: null, complaintNo: undefined, customerId: undefined, customerName: undefined, customerCode: undefined, materialId: undefined, materialName: undefined, materialCode: undefined, batchNo: undefined, complaintType: undefined, severity: undefined, complaintDate: new Date().toISOString().slice(0,10), defectDesc: undefined, supplierId: undefined, supplierName: undefined, supplierContact: undefined, supplierPhone: undefined, deliveryNo: undefined, supplyDate: undefined, responsibilityType: undefined }; proxy.resetForm('complaintRef') }
 function cancel() { open.value = false; reset() }
 function dictLabel(options, val) { const arr = Array.isArray(options) ? options : options.value; const item = arr?.find(d => d.value == val); return item ? item.label : '' }
 function statusClass(val) {
@@ -628,6 +686,10 @@ function statusClass(val) {
 }
 function severityClass(val) {
   const map = { '1': 'red', '2': 'amber', '3': 'gray' }
+  return map[val] || 'gray'
+}
+function responsibilityClass(val) {
+  const map = { '0': 'red', '1': 'blue', '2': 'amber', '3': 'gray', '4': 'gray' }
   return map[val] || 'gray'
 }
 function loadStatusCounts() {

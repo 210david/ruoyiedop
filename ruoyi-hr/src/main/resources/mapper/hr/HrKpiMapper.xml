@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrKpiMapper">
+    <resultMap type="HrKpiScheme" id="HrKpiSchemeResult">
+        <result property="schemeId" column="scheme_id"/>
+        <result property="schemeName" column="scheme_name"/>
+        <result property="periodType" column="period_type"/>
+        <result property="schemeStatus" column="scheme_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="schemeVo">
+        SELECT scheme_id, scheme_name, period_type, scheme_status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_kpi_scheme
+    </sql>
+    <select id="selectSchemeList" parameterType="HrKpiScheme" resultMap="HrKpiSchemeResult">
+        <include refid="schemeVo"/>
+        <where> del_flag = '0'
+            <if test="schemeName != null and schemeName != ''"> AND scheme_name LIKE CONCAT('%', #{schemeName}, '%')</if>
+            <if test="periodType != null and periodType != ''"> AND period_type = #{periodType}</if>
+            <if test="schemeStatus != null and schemeStatus != ''"> AND scheme_status = #{schemeStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectSchemeById" parameterType="Long" resultMap="HrKpiSchemeResult">
+        <include refid="schemeVo"/> WHERE scheme_id = #{schemeId}
+    </select>
+    <insert id="insertScheme" parameterType="HrKpiScheme" useGeneratedKeys="true" keyProperty="schemeId">
+        INSERT INTO biz_hr_kpi_scheme (scheme_name, period_type, scheme_status, del_flag, create_by, create_time, remark)
+        VALUES (#{schemeName}, #{periodType}, '0', '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateScheme" parameterType="HrKpiScheme">
+        UPDATE biz_hr_kpi_scheme <set>
+            <if test="schemeName != null"> scheme_name = #{schemeName},</if>
+            <if test="periodType != null"> period_type = #{periodType},</if>
+            <if test="schemeStatus != null"> scheme_status = #{schemeStatus},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE scheme_id = #{schemeId}
+    </update>
+    <delete id="deleteSchemeByIds" parameterType="Long">
+        UPDATE biz_hr_kpi_scheme SET del_flag = '2' WHERE scheme_id IN
+        <foreach item="schemeId" collection="array" open="(" separator="," close=")">#{schemeId}</foreach>
+    </delete>
+
+    <resultMap type="HrKpiItem" id="HrKpiItemResult">
+        <result property="itemId" column="item_id"/>
+        <result property="schemeId" column="scheme_id"/>
+        <result property="indicatorName" column="indicator_name"/>
+        <result property="weight" column="weight"/>
+        <result property="targetValue" column="target_value"/>
+        <result property="scoreRule" column="score_rule"/>
+    </resultMap>
+    <select id="selectItemsByScheme" parameterType="Long" resultMap="HrKpiItemResult">
+        SELECT item_id, scheme_id, indicator_name, weight, target_value, score_rule
+        FROM biz_hr_kpi_item WHERE scheme_id = #{schemeId} ORDER BY item_id
+    </select>
+    <insert id="insertItem" parameterType="HrKpiItem" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO biz_hr_kpi_item (scheme_id, indicator_name, weight, target_value, score_rule)
+        VALUES (#{schemeId}, #{indicatorName}, #{weight}, #{targetValue}, #{scoreRule})
+    </insert>
+    <delete id="deleteItemsByScheme" parameterType="Long">
+        DELETE FROM biz_hr_kpi_item WHERE scheme_id = #{schemeId}
+    </delete>
+
+    <resultMap type="HrKpiRecord" id="HrKpiRecordResult">
+        <result property="recordId" column="record_id"/>
+        <result property="schemeId" column="scheme_id"/>
+        <result property="schemeName" column="scheme_name"/>
+        <result property="period" column="period"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="selfScore" column="self_score"/>
+        <result property="selfComment" column="self_comment"/>
+        <result property="superiorScore" column="superior_score"/>
+        <result property="superiorComment" column="superior_comment"/>
+        <result property="finalScore" column="final_score"/>
+        <result property="kpiStatus" column="kpi_status"/>
+        <result property="appealReason" column="appeal_reason"/>
+        <result property="appealResult" column="appeal_result"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="recordVo">
+        SELECT r.record_id, r.scheme_id, s.scheme_name, r.period, r.employee_id, r.employee_name, r.self_score,
+               r.self_comment, r.superior_score, r.superior_comment, r.final_score, r.kpi_status, r.appeal_reason,
+               r.appeal_result, r.del_flag, r.create_by, r.create_time, r.remark
+        FROM biz_hr_kpi_record r
+        LEFT JOIN biz_hr_kpi_scheme s ON r.scheme_id = s.scheme_id
+    </sql>
+    <select id="selectRecordList" parameterType="HrKpiRecord" resultMap="HrKpiRecordResult">
+        <include refid="recordVo"/>
+        <where> r.del_flag = '0'
+            <if test="schemeId != null"> AND r.scheme_id = #{schemeId}</if>
+            <if test="period != null and period != ''"> AND r.period = #{period}</if>
+            <if test="employeeId != null"> AND r.employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND r.employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="kpiStatus != null and kpiStatus != ''"> AND r.kpi_status = #{kpiStatus}</if>
+        </where>
+        ORDER BY r.create_time DESC
+    </select>
+    <select id="selectRecordById" parameterType="Long" resultMap="HrKpiRecordResult">
+        <include refid="recordVo"/> WHERE r.record_id = #{recordId}
+    </select>
+    <select id="selectRecordRank" parameterType="String" resultMap="HrKpiRecordResult">
+        <include refid="recordVo"/>
+        WHERE r.del_flag = '0' AND r.period = #{period} AND r.kpi_status IN ('3','5') AND r.final_score IS NOT NULL
+        ORDER BY r.final_score DESC LIMIT 50
+    </select>
+    <insert id="insertRecord" parameterType="HrKpiRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO biz_hr_kpi_record (scheme_id, period, employee_id, employee_name, self_score, self_comment,
+            superior_score, superior_comment, final_score, kpi_status, appeal_reason, appeal_result, del_flag,
+            create_by, create_time, remark)
+        VALUES (#{schemeId}, #{period}, #{employeeId}, #{employeeName}, #{selfScore}, #{selfComment},
+            #{superiorScore}, #{superiorComment}, #{finalScore}, #{kpiStatus}, #{appealReason}, #{appealResult},
+            '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateRecord" parameterType="HrKpiRecord">
+        UPDATE biz_hr_kpi_record <set>
+            <if test="selfScore != null"> self_score = #{selfScore},</if>
+            <if test="selfComment != null"> self_comment = #{selfComment},</if>
+            <if test="superiorScore != null"> superior_score = #{superiorScore},</if>
+            <if test="superiorComment != null"> superior_comment = #{superiorComment},</if>
+            <if test="finalScore != null"> final_score = #{finalScore},</if>
+            <if test="kpiStatus != null"> kpi_status = #{kpiStatus},</if>
+            <if test="appealReason != null"> appeal_reason = #{appealReason},</if>
+            <if test="appealResult != null"> appeal_result = #{appealResult},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE record_id = #{recordId}
+    </update>
+</mapper>

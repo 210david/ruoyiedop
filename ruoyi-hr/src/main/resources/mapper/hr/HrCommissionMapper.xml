@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrCommissionMapper">
+    <resultMap type="HrCommissionPlan" id="HrCommissionPlanResult">
+        <result property="planId" column="plan_id"/>
+        <result property="planName" column="plan_name"/>
+        <result property="calcBase" column="calc_base"/>
+        <result property="planType" column="plan_type"/>
+        <result property="baseRatio" column="base_ratio"/>
+        <result property="bonusThreshold" column="bonus_threshold"/>
+        <result property="bonusRatio" column="bonus_ratio"/>
+        <result property="planStatus" column="plan_status"/>
+        <result property="locked" column="locked"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="planVo">
+        SELECT plan_id, plan_name, calc_base, plan_type, base_ratio, bonus_threshold, bonus_ratio, plan_status,
+               locked, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_commission_plan
+    </sql>
+    <select id="selectPlanList" parameterType="HrCommissionPlan" resultMap="HrCommissionPlanResult">
+        <include refid="planVo"/>
+        <where> del_flag = '0'
+            <if test="planName != null and planName != ''"> AND plan_name LIKE CONCAT('%', #{planName}, '%')</if>
+            <if test="calcBase != null and calcBase != ''"> AND calc_base = #{calcBase}</if>
+            <if test="planType != null and planType != ''"> AND plan_type = #{planType}</if>
+            <if test="planStatus != null and planStatus != ''"> AND plan_status = #{planStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectPlanById" parameterType="Long" resultMap="HrCommissionPlanResult">
+        <include refid="planVo"/> WHERE plan_id = #{planId}
+    </select>
+    <insert id="insertPlan" parameterType="HrCommissionPlan" useGeneratedKeys="true" keyProperty="planId">
+        INSERT INTO biz_hr_commission_plan (plan_name, calc_base, plan_type, base_ratio, bonus_threshold, bonus_ratio,
+            plan_status, locked, del_flag, create_by, create_time, remark)
+        VALUES (#{planName}, #{calcBase}, #{planType}, #{baseRatio}, #{bonusThreshold}, #{bonusRatio},
+            '0', '0', '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updatePlan" parameterType="HrCommissionPlan">
+        UPDATE biz_hr_commission_plan <set>
+            <if test="planName != null"> plan_name = #{planName},</if>
+            <if test="calcBase != null"> calc_base = #{calcBase},</if>
+            <if test="planType != null"> plan_type = #{planType},</if>
+            <if test="baseRatio != null"> base_ratio = #{baseRatio},</if>
+            <if test="bonusThreshold != null"> bonus_threshold = #{bonusThreshold},</if>
+            <if test="bonusRatio != null"> bonus_ratio = #{bonusRatio},</if>
+            <if test="planStatus != null"> plan_status = #{planStatus},</if>
+            <if test="locked != null"> locked = #{locked},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE plan_id = #{planId}
+    </update>
+    <delete id="deletePlanByIds" parameterType="Long">
+        UPDATE biz_hr_commission_plan SET del_flag = '2' WHERE plan_id IN
+        <foreach item="planId" collection="array" open="(" separator="," close=")">#{planId}</foreach>
+    </delete>
+
+    <resultMap type="HrCommissionTier" id="HrCommissionTierResult">
+        <result property="tierId" column="tier_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="minAmount" column="min_amount"/>
+        <result property="maxAmount" column="max_amount"/>
+        <result property="ratio" column="ratio"/>
+    </resultMap>
+    <select id="selectTiersByPlan" parameterType="Long" resultMap="HrCommissionTierResult">
+        SELECT tier_id, plan_id, min_amount, max_amount, ratio FROM biz_hr_commission_tier
+        WHERE plan_id = #{planId} ORDER BY min_amount
+    </select>
+    <insert id="insertTier" parameterType="HrCommissionTier" useGeneratedKeys="true" keyProperty="tierId">
+        INSERT INTO biz_hr_commission_tier (plan_id, min_amount, max_amount, ratio)
+        VALUES (#{planId}, #{minAmount}, #{maxAmount}, #{ratio})
+    </insert>
+    <delete id="deleteTiersByPlan" parameterType="Long">
+        DELETE FROM biz_hr_commission_tier WHERE plan_id = #{planId}
+    </delete>
+
+    <resultMap type="HrCommissionBill" id="HrCommissionBillResult">
+        <result property="billId" column="bill_id"/>
+        <result property="period" column="period"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="planId" column="plan_id"/>
+        <result property="planName" column="plan_name"/>
+        <result property="calcBase" column="calc_base"/>
+        <result property="baseAmount" column="base_amount"/>
+        <result property="commissionAmount" column="commission_amount"/>
+        <result property="billStatus" column="bill_status"/>
+        <result property="confirmer" column="confirmer"/>
+        <result property="confirmTime" column="confirm_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="billVo">
+        SELECT bill_id, period, employee_id, employee_name, plan_id, plan_name, calc_base, base_amount,
+               commission_amount, bill_status, confirmer, confirm_time, del_flag, create_by, create_time, remark
+        FROM biz_hr_commission_bill
+    </sql>
+    <select id="selectBillList" parameterType="HrCommissionBill" resultMap="HrCommissionBillResult">
+        <include refid="billVo"/>
+        <where> del_flag = '0'
+            <if test="period != null and period != ''"> AND period = #{period}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="planId != null"> AND plan_id = #{planId}</if>
+            <if test="billStatus != null and billStatus != ''"> AND bill_status = #{billStatus}</if>
+        </where>
+        ORDER BY commission_amount DESC
+    </select>
+    <select id="selectBillById" parameterType="Long" resultMap="HrCommissionBillResult">
+        <include refid="billVo"/> WHERE bill_id = #{billId}
+    </select>
+    <insert id="insertBill" parameterType="HrCommissionBill" useGeneratedKeys="true" keyProperty="billId">
+        INSERT INTO biz_hr_commission_bill (period, employee_id, employee_name, plan_id, plan_name, calc_base,
+            base_amount, commission_amount, bill_status, del_flag, create_by, create_time, remark)
+        VALUES (#{period}, #{employeeId}, #{employeeName}, #{planId}, #{planName}, #{calcBase},
+            #{baseAmount}, #{commissionAmount}, '0', '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateBill" parameterType="HrCommissionBill">
+        UPDATE biz_hr_commission_bill <set>
+            <if test="commissionAmount != null"> commission_amount = #{commissionAmount},</if>
+            <if test="billStatus != null"> bill_status = #{billStatus},</if>
+            <if test="confirmer != null"> confirmer = #{confirmer},</if>
+            <if test="confirmTime != null"> confirm_time = #{confirmTime},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE bill_id = #{billId}
+    </update>
+    <delete id="deleteBillByPeriod">
+        UPDATE biz_hr_commission_bill SET del_flag = '2' WHERE period = #{period} AND bill_status = '0'
+    </delete>
+    <select id="countLockedBills" parameterType="String" resultType="int">
+        SELECT COUNT(1) FROM biz_hr_commission_bill WHERE period = #{period} AND bill_status = '2' AND del_flag = '0'
+    </select>
+</mapper>

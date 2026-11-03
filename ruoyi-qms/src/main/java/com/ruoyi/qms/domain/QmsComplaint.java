@@ -24,6 +24,20 @@ public class QmsComplaint extends BaseEntity {
     private BigDecimal claimAmt;
     private String handleDesc;
     private String handleResult;
+    /** 供应商ID（引用wms_supplier） */
+    private Long supplierId;
+    /** 供应商名称 */
+    @Excel(name = "供应商名称") private String supplierName;
+    /** 供应商联系人 */
+    private String supplierContact;
+    /** 供应商联系电话 */
+    private String supplierPhone;
+    /** 供货批次号/送货单号 */
+    @Excel(name = "供货批次号/送货单号") private String deliveryNo;
+    /** 供货日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd") @Excel(name = "供货日期", dateFormat = "yyyy-MM-dd") private Date supplyDate;
+    /** 责任类型（0供应商责任 1自产责任 2物流责任 3客户原因 4待定） */
+    @Excel(name = "责任类型", dictType = "qms_responsibility_type") private String responsibilityType;
     @Excel(name = "状态", dictType = "qms_complaint_status") private String complaintStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") private Date closeTime;
     private String delFlag;
@@ -65,6 +79,20 @@ public class QmsComplaint extends BaseEntity {
     public void setComplaintStatus(String complaintStatus) { this.complaintStatus = complaintStatus; }
     public Date getCloseTime() { return closeTime; }
     public void setCloseTime(Date closeTime) { this.closeTime = closeTime; }
+    public Long getSupplierId() { return supplierId; }
+    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
+    public String getSupplierContact() { return supplierContact; }
+    public void setSupplierContact(String supplierContact) { this.supplierContact = supplierContact; }
+    public String getSupplierPhone() { return supplierPhone; }
+    public void setSupplierPhone(String supplierPhone) { this.supplierPhone = supplierPhone; }
+    public String getDeliveryNo() { return deliveryNo; }
+    public void setDeliveryNo(String deliveryNo) { this.deliveryNo = deliveryNo; }
+    public Date getSupplyDate() { return supplyDate; }
+    public void setSupplyDate(Date supplyDate) { this.supplyDate = supplyDate; }
+    public String getResponsibilityType() { return responsibilityType; }
+    public void setResponsibilityType(String responsibilityType) { this.responsibilityType = responsibilityType; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getStatus() { return status; }

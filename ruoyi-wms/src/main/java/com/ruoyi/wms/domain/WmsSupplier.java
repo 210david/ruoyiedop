@@ -50,6 +50,10 @@ public class WmsSupplier extends BaseEntity
     @Excel(name = "联系电话")
     private String contactPhone;
 
+    /** 固定电话 */
+    @Excel(name = "固定电话")
+    private String fixedPhone;
+
     /** 邮箱 */
     @Excel(name = "邮箱")
     private String email;
@@ -170,6 +174,8 @@ public class WmsSupplier extends BaseEntity
     public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
     public String getContactPhone() { return contactPhone; }
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+    public String getFixedPhone() { return fixedPhone; }
+    public void setFixedPhone(String fixedPhone) { this.fixedPhone = fixedPhone; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getFax() { return fax; }

@@ -168,7 +168,7 @@
           <!-- 已生效/已过期：续签 -->
           <el-button v-if="scope.row.contractStatus === '2' || scope.row.contractStatus === '3'" link type="primary" icon="RefreshRight" @click="handleRenew(scope.row)" v-hasPermi="['marketing:contract:renew']">续签</el-button>
           <!-- 已过期：恢复为已生效 -->
-          <el-button v-if="scope.row.contractStatus === '3'" link type="success" icon="RefreshLeft" @click="handleRestore(row)" v-hasPermi="['marketing:contract:edit']">恢复生效</el-button>
+          <el-button v-if="scope.row.contractStatus === '3'" link type="success" icon="RefreshLeft" @click="handleRestore(scope.row)" v-hasPermi="['marketing:contract:edit']">恢复生效</el-button>
           <!-- 已生效：终止 -->
           <el-button v-if="scope.row.contractStatus === '2'" link type="danger" icon="CircleClose" @click="handleTerminate(scope.row)" v-hasPermi="['marketing:contract:edit']">终止</el-button>
           </div>

@@ -16,6 +16,13 @@
         <result property="returnQty" column="return_qty"/>
         <result property="returnAmt" column="return_amt"/>
         <result property="claimAmt" column="claim_amt"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="supplierContact" column="supplier_contact"/>
+        <result property="supplierPhone" column="supplier_phone"/>
+        <result property="deliveryNo" column="delivery_no"/>
+        <result property="supplyDate" column="supply_date"/>
+        <result property="responsibilityType" column="responsibility_type"/>
         <result property="handleDesc" column="handle_desc"/>
         <result property="handleResult" column="handle_result"/>
         <result property="complaintStatus" column="complaint_status"/>
@@ -31,6 +38,7 @@
     <sql id="selectVo">
         SELECT complaint_id, complaint_no, customer_name, customer_code, material_name, material_code, batch_no,
                complaint_date, complaint_type, defect_desc, severity, return_qty, return_amt, claim_amt,
+               supplier_id, supplier_name, supplier_contact, supplier_phone, delivery_no, supply_date, responsibility_type,
                handle_desc, handle_result, complaint_status, close_time, del_flag, status,
                create_by, create_time, update_by, update_time, remark
         FROM qms_complaint
@@ -42,6 +50,8 @@
             <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
             <if test="complaintType != null and complaintType != ''"> AND complaint_type = #{complaintType}</if>
             <if test="complaintStatus != null and complaintStatus != ''"> AND complaint_status = #{complaintStatus}</if>
+            <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
+            <if test="responsibilityType != null and responsibilityType != ''"> AND responsibility_type = #{responsibilityType}</if>
             <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
                 AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
             </if>
@@ -58,9 +68,11 @@
     <insert id="insertComplaint" parameterType="QmsComplaint" useGeneratedKeys="true" keyProperty="complaintId">
         INSERT INTO qms_complaint (complaint_no, customer_name, customer_code, material_name, material_code, batch_no,
             complaint_date, complaint_type, defect_desc, severity, return_qty, return_amt, claim_amt,
+            supplier_id, supplier_name, supplier_contact, supplier_phone, delivery_no, supply_date, responsibility_type,
             handle_desc, handle_result, complaint_status, close_time, del_flag, status, create_by, create_time, remark)
         VALUES (#{complaintNo}, #{customerName}, #{customerCode}, #{materialName}, #{materialCode}, #{batchNo},
             #{complaintDate}, #{complaintType}, #{defectDesc}, #{severity}, #{returnQty}, #{returnAmt}, #{claimAmt},
+            #{supplierId}, #{supplierName}, #{supplierContact}, #{supplierPhone}, #{deliveryNo}, #{supplyDate}, #{responsibilityType},
             #{handleDesc}, #{handleResult}, #{complaintStatus}, #{closeTime}, #{delFlag}, #{status}, #{createBy}, sysdate(), #{remark})
     </insert>
     <update id="updateComplaint" parameterType="QmsComplaint">
@@ -78,6 +90,13 @@
             <if test="returnQty != null"> return_qty = #{returnQty},</if>
             <if test="returnAmt != null"> return_amt = #{returnAmt},</if>
             <if test="claimAmt != null"> claim_amt = #{claimAmt},</if>
+            <if test="supplierId != null"> supplier_id = #{supplierId},</if>
+            <if test="supplierName != null"> supplier_name = #{supplierName},</if>
+            <if test="supplierContact != null"> supplier_contact = #{supplierContact},</if>
+            <if test="supplierPhone != null"> supplier_phone = #{supplierPhone},</if>
+            <if test="deliveryNo != null"> delivery_no = #{deliveryNo},</if>
+            <if test="supplyDate != null"> supply_date = #{supplyDate},</if>
+            <if test="responsibilityType != null"> responsibility_type = #{responsibilityType},</if>
             <if test="handleDesc != null"> handle_desc = #{handleDesc},</if>
             <if test="handleResult != null"> handle_result = #{handleResult},</if>
             <if test="complaintStatus != null"> complaint_status = #{complaintStatus},</if>

@@ -13,6 +13,8 @@ import com.ruoyi.qms.domain.QmsComplaint;
 import com.ruoyi.qms.mapper.QmsComplaintMapper;
 import com.ruoyi.qms.service.IQmsComplaintService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
+import com.ruoyi.wms.domain.WmsSupplier;
+import com.ruoyi.wms.service.IWmsSupplierService;
 
 @Service
 public class QmsComplaintServiceImpl implements IQmsComplaintService {
@@ -21,6 +23,9 @@ public class QmsComplaintServiceImpl implements IQmsComplaintService {
 
     @Autowired
     private IMkNumberRuleService mkNumberRuleService;
+
+    @Autowired
+    private IWmsSupplierService wmsSupplierService;
 
     @Override
     @DataScope(deptAlias = "qms_complaint")
@@ -41,11 +46,12 @@ public class QmsComplaintServiceImpl implements IQmsComplaintService {
         }
         complaint.setDelFlag("0"); complaint.setStatus("0");
         if (complaint.getComplaintStatus() == null) complaint.setComplaintStatus("0");
+        validateSupplier(complaint);
         return mapper.insertComplaint(complaint);
     }
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateComplaint(QmsComplaint complaint) { return mapper.updateComplaint(complaint); }
+    public int updateComplaint(QmsComplaint complaint) { validateSupplier(complaint); return mapper.updateComplaint(complaint); }
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteComplaintByIds(Long[] complaintIds) { return mapper.deleteComplaintByIds(complaintIds); }
@@ -108,10 +114,36 @@ public class QmsComplaintServiceImpl implements IQmsComplaintService {
         QmsComplaint complaint = mapper.selectComplaintById(complaintId);
         if (complaint == null) throw new RuntimeException("客诉不存在");
         if (!"2".equals(complaint.getComplaintStatus())) throw new RuntimeException("当前状态不允许关闭，需为「待确认」");
+        // KR-02：责任类型为「待定」时，关闭前须补充判定依据（填写于备注）
+        if ("4".equals(complaint.getResponsibilityType()) && (complaint.getRemark() == null || complaint.getRemark().trim().isEmpty())) {
+            throw new RuntimeException("责任类型为「待定」，关闭前须在备注中补充判定依据后再关闭（KR-02）");
+        }
         QmsComplaint update = new QmsComplaint();
         update.setComplaintId(complaintId);
         update.setComplaintStatus("3");
         update.setCloseTime(new Date());
         return mapper.updateComplaint(update);
+    }
+
+    /**
+     * 需求二/KR-01 供应商信息校验：
+     * 1. 供应商必须从供应商档案（wms_supplier）选择，不允许手工填写名称；
+     * 2. 责任类型为「供应商责任」时必须关联供应商；
+     * 3. 已选供应商时，名称/联系人/电话以档案主数据为准自动带出，保证主数据一致。
+     */
+    private void validateSupplier(QmsComplaint complaint) {
+        if (complaint.getSupplierName() != null && !complaint.getSupplierName().isEmpty() && complaint.getSupplierId() == null) {
+            throw new RuntimeException("供应商必须从供应商档案中选择，不允许手工填写（KR-01）");
+        }
+        if ("0".equals(complaint.getResponsibilityType()) && complaint.getSupplierId() == null) {
+            throw new RuntimeException("责任类型为「供应商责任」时必须关联供应商");
+        }
+        if (complaint.getSupplierId() != null) {
+            WmsSupplier supplier = wmsSupplierService.selectSupplierById(complaint.getSupplierId());
+            if (supplier == null) throw new RuntimeException("所选供应商不存在，请重新从供应商档案中选择");
+            complaint.setSupplierName(supplier.getSupplierName());
+            complaint.setSupplierContact(supplier.getContactPerson());
+            complaint.setSupplierPhone(supplier.getContactPhone());
+        }
     }
 }

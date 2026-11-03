@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrSalesPerfMapper">
+    <resultMap type="HrSalesProfile" id="HrSalesProfileResult">
+        <result property="profileId" column="profile_id"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="salesRegion" column="sales_region"/>
+        <result property="channelName" column="channel_name"/>
+        <result property="salesLevel" column="sales_level"/>
+        <result property="commissionPlanId" column="commission_plan_id"/>
+        <result property="entryTarget" column="entry_target"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="profileVo">
+        SELECT profile_id, employee_id, employee_no, employee_name, user_id, sales_region, channel_name, sales_level,
+               commission_plan_id, entry_target, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_hr_sales_profile
+    </sql>
+    <select id="selectProfileList" parameterType="HrSalesProfile" resultMap="HrSalesProfileResult">
+        <include refid="profileVo"/>
+        <where> del_flag = '0'
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND employee_no LIKE CONCAT('%', #{employeeNo}, '%')</if>
+            <if test="salesRegion != null and salesRegion != ''"> AND sales_region LIKE CONCAT('%', #{salesRegion}, '%')</if>
+            <if test="channelName != null and channelName != ''"> AND channel_name LIKE CONCAT('%', #{channelName}, '%')</if>
+            <if test="salesLevel != null and salesLevel != ''"> AND sales_level = #{salesLevel}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectProfileById" parameterType="Long" resultMap="HrSalesProfileResult">
+        <include refid="profileVo"/> WHERE profile_id = #{profileId}
+    </select>
+    <select id="selectProfileByEmployeeId" parameterType="Long" resultMap="HrSalesProfileResult">
+        <include refid="profileVo"/> WHERE employee_id = #{employeeId} AND del_flag = '0'
+    </select>
+    <insert id="insertProfile" parameterType="HrSalesProfile" useGeneratedKeys="true" keyProperty="profileId">
+        INSERT INTO biz_hr_sales_profile (employee_id, employee_no, employee_name, user_id, sales_region, channel_name,
+            sales_level, commission_plan_id, entry_target, del_flag, create_by, create_time, remark)
+        VALUES (#{employeeId}, #{employeeNo}, #{employeeName}, #{userId}, #{salesRegion}, #{channelName},
+            #{salesLevel}, #{commissionPlanId}, #{entryTarget}, '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateProfile" parameterType="HrSalesProfile">
+        UPDATE biz_hr_sales_profile <set>
+            <if test="employeeNo != null"> employee_no = #{employeeNo},</if>
+            <if test="employeeName != null"> employee_name = #{employeeName},</if>
+            <if test="userId != null"> user_id = #{userId},</if>
+            <if test="salesRegion != null"> sales_region = #{salesRegion},</if>
+            <if test="channelName != null"> channel_name = #{channelName},</if>
+            <if test="salesLevel != null"> sales_level = #{salesLevel},</if>
+            <if test="commissionPlanId != null"> commission_plan_id = #{commissionPlanId},</if>
+            <if test="entryTarget != null"> entry_target = #{entryTarget},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE profile_id = #{profileId}
+    </update>
+    <delete id="deleteProfileByIds" parameterType="Long">
+        UPDATE biz_hr_sales_profile SET del_flag = '2' WHERE profile_id IN
+        <foreach item="profileId" collection="array" open="(" separator="," close=")">#{profileId}</foreach>
+    </delete>
+
+    <resultMap type="HrPerfManual" id="HrPerfManualResult">
+        <result property="manualId" column="manual_id"/>
+        <result property="period" column="period"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="manualAmount" column="manual_amount"/>
+        <result property="manualReason" column="manual_reason"/>
+        <result property="perfStatus" column="perf_status"/>
+        <result property="approver" column="approver"/>
+        <result property="approveTime" column="approve_time"/>
+        <result property="approveOpinion" column="approve_opinion"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <select id="selectManualList" parameterType="HrPerfManual" resultMap="HrPerfManualResult">
+        SELECT manual_id, period, employee_id, employee_name, manual_amount, manual_reason, perf_status, approver,
+               approve_time, approve_opinion, del_flag, create_by, create_time, remark
+        FROM biz_hr_perf_manual
+        <where> del_flag = '0'
+            <if test="period != null and period != ''"> AND period = #{period}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+            <if test="perfStatus != null and perfStatus != ''"> AND perf_status = #{perfStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectManualById" parameterType="Long" resultMap="HrPerfManualResult">
+        SELECT manual_id, period, employee_id, employee_name, manual_amount, manual_reason, perf_status, approver,
+               approve_time, approve_opinion, del_flag, create_by, create_time, remark
+        FROM biz_hr_perf_manual WHERE manual_id = #{manualId}
+    </select>
+    <insert id="insertManual" parameterType="HrPerfManual" useGeneratedKeys="true" keyProperty="manualId">
+        INSERT INTO biz_hr_perf_manual (period, employee_id, employee_name, manual_amount, manual_reason, perf_status,
+            del_flag, create_by, create_time, remark)
+        VALUES (#{period}, #{employeeId}, #{employeeName}, #{manualAmount}, #{manualReason}, '0',
+            '0', #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateManual" parameterType="HrPerfManual">
+        UPDATE biz_hr_perf_manual <set>
+            <if test="manualAmount != null"> manual_amount = #{manualAmount},</if>
+            <if test="manualReason != null"> manual_reason = #{manualReason},</if>
+            <if test="perfStatus != null"> perf_status = #{perfStatus},</if>
+            <if test="approver != null"> approver = #{approver},</if>
+            <if test="approveTime != null"> approve_time = #{approveTime},</if>
+            <if test="approveOpinion != null"> approve_opinion = #{approveOpinion},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE manual_id = #{manualId}
+    </update>
+
+    <resultMap type="HrPerfMonth" id="HrPerfMonthResult">
+        <result property="perfId" column="perf_id"/>
+        <result property="period" column="period"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="dealAmount" column="deal_amount"/>
+        <result property="paymentAmount" column="payment_amount"/>
+        <result property="newCustomerCount" column="new_customer_count"/>
+        <result property="manualAmount" column="manual_amount"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="aggTime" column="agg_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="perfVo">
+        SELECT perf_id, period, employee_id, employee_name, user_id, deal_amount, payment_amount, new_customer_count,
+               manual_amount, total_amount, agg_time, del_flag, remark
+        FROM biz_hr_perf_month
+    </sql>
+    <select id="selectPerfList" parameterType="HrPerfMonth" resultMap="HrPerfMonthResult">
+        <include refid="perfVo"/>
+        <where> del_flag = '0'
+            <if test="period != null and period != ''"> AND period = #{period}</if>
+            <if test="employeeId != null"> AND employee_id = #{employeeId}</if>
+            <if test="employeeName != null and employeeName != ''"> AND employee_name LIKE CONCAT('%', #{employeeName}, '%')</if>
+        </where>
+        ORDER BY total_amount DESC
+    </select>
+    <select id="selectPerfById" parameterType="Long" resultMap="HrPerfMonthResult">
+        <include refid="perfVo"/> WHERE perf_id = #{perfId}
+    </select>
+    <select id="selectPerfRank" parameterType="String" resultMap="HrPerfMonthResult">
+        <include refid="perfVo"/> WHERE del_flag = '0' AND period = #{period} ORDER BY total_amount DESC LIMIT 50
+    </select>
+    <insert id="insertPerf" parameterType="HrPerfMonth" useGeneratedKeys="true" keyProperty="perfId">
+        INSERT INTO biz_hr_perf_month (period, employee_id, employee_name, user_id, deal_amount, payment_amount,
+            new_customer_count, manual_amount, total_amount, agg_time, del_flag, create_by, create_time)
+        VALUES (#{period}, #{employeeId}, #{employeeName}, #{userId}, #{dealAmount}, #{paymentAmount},
+            #{newCustomerCount}, #{manualAmount}, #{totalAmount}, sysdate(), '0', #{createBy}, sysdate())
+    </insert>
+    <update id="updatePerf" parameterType="HrPerfMonth">
+        UPDATE biz_hr_perf_month <set>
+            <if test="dealAmount != null"> deal_amount = #{dealAmount},</if>
+            <if test="paymentAmount != null"> payment_amount = #{paymentAmount},</if>
+            <if test="newCustomerCount != null"> new_customer_count = #{newCustomerCount},</if>
+            <if test="manualAmount != null"> manual_amount = #{manualAmount},</if>
+            <if test="totalAmount != null"> total_amount = #{totalAmount},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+        </set>
+        WHERE perf_id = #{perfId}
+    </update>
+    <delete id="deletePerfByPeriod">
+        UPDATE biz_hr_perf_month SET del_flag = '2' WHERE period = #{period}
+    </delete>
+
+    <!-- 聚合：成交金额（口径：订单创建时间归属周期，业务归属=客户 user_id） -->
+    <select id="aggDealAmount" resultType="java.util.HashMap">
+        SELECT c.user_id AS userId, SUM(o.order_amount) AS amount
+        FROM mk_order o JOIN mk_customer c ON o.customer_id = c.customer_id
+        WHERE o.del_flag = '0' AND c.del_flag = '0' AND c.user_id IS NOT NULL
+          AND DATE_FORMAT(o.create_time, '%Y-%m') = #{period}
+        GROUP BY c.user_id
+    </select>
+    <!-- 聚合：回款金额（口径：回款记录创建时间归属周期） -->
+    <select id="aggPaymentAmount" resultType="java.util.HashMap">
+        SELECT c.user_id AS userId, SUM(p.this_amount) AS amount
+        FROM mk_payment_record p JOIN mk_customer c ON p.customer_id = c.customer_id
+        WHERE c.del_flag = '0' AND c.user_id IS NOT NULL
+          AND DATE_FORMAT(p.create_time, '%Y-%m') = #{period}
+        GROUP BY c.user_id
+    </select>
+    <!-- 聚合：新开客户数（周期内建档且完成首笔成交） -->
+    <select id="aggNewCustomer" resultType="java.util.HashMap">
+        SELECT c.user_id AS userId, COUNT(DISTINCT c.customer_id) AS amount
+        FROM mk_customer c
+        WHERE c.del_flag = '0' AND c.user_id IS NOT NULL
+          AND DATE_FORMAT(c.create_time, '%Y-%m') = #{period}
+          AND EXISTS (SELECT 1 FROM mk_order o WHERE o.customer_id = c.customer_id AND o.del_flag = '0')
+        GROUP BY c.user_id
+    </select>
+    <!-- 聚合：审批通过的补录合计 -->
+    <select id="aggManualAmount" resultType="java.util.HashMap">
+        SELECT e.user_id AS userId, SUM(m.manual_amount) AS amount
+        FROM biz_hr_perf_manual m
+        JOIN biz_hr_sales_profile p ON m.employee_id = p.employee_id AND p.del_flag = '0'
+        LEFT JOIN sys_user e ON p.user_id = e.user_id
+        WHERE m.del_flag = '0' AND m.perf_status = '1' AND m.period = #{period} AND p.user_id IS NOT NULL
+        GROUP BY e.user_id
+    </select>
+</mapper>

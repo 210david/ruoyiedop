@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyRuleMapper">
+    <resultMap type="SafetyRule" id="SafetyRuleResult">
+        <result property="ruleId" column="rule_id"/>
+        <result property="ruleNo" column="rule_no"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="postName" column="post_name"/>
+        <result property="workScene" column="work_scene"/>
+        <result property="ruleContent" column="rule_content"/>
+        <result property="attachment" column="attachment"/>
+        <result property="regulationName" column="regulation_name"/>
+        <result property="regulationAttachment" column="regulation_attachment"/>
+        <result property="versionNo" column="version_no"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="ruleStatus" column="rule_status"/>
+        <result property="author" column="author"/>
+        <result property="approver" column="approver"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT rule_id, rule_no, rule_name, dept_id, dept_name, post_name, work_scene, rule_content, attachment,
+               regulation_name, regulation_attachment, version_no, effective_date, expire_date, rule_status, author, approver,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_rule
+    </sql>
+    <select id="selectRuleList" parameterType="SafetyRule" resultMap="SafetyRuleResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="ruleNo != null and ruleNo != ''"> AND rule_no LIKE CONCAT('%', #{ruleNo}, '%')</if>
+            <if test="ruleName != null and ruleName != ''"> AND rule_name LIKE CONCAT('%', #{ruleName}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="postName != null and postName != ''"> AND post_name LIKE CONCAT('%', #{postName}, '%')</if>
+            <if test="workScene != null and workScene != ''"> AND work_scene LIKE CONCAT('%', #{workScene}, '%')</if>
+            <if test="ruleStatus != null and ruleStatus != ''"> AND rule_status = #{ruleStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectRuleById" parameterType="Long" resultMap="SafetyRuleResult">
+        <include refid="selectVo"/> WHERE rule_id = #{ruleId}
+    </select>
+    <insert id="insertRule" parameterType="SafetyRule" useGeneratedKeys="true" keyProperty="ruleId">
+        INSERT INTO biz_safety_rule (rule_no, rule_name, dept_id, dept_name, post_name, work_scene, rule_content, attachment,
+            regulation_name, regulation_attachment, version_no, effective_date, expire_date, rule_status, author, approver,
+            del_flag, create_by, create_time, remark)
+        VALUES (#{ruleNo}, #{ruleName}, #{deptId}, #{deptName}, #{postName}, #{workScene}, #{ruleContent}, #{attachment},
+            #{regulationName}, #{regulationAttachment}, #{versionNo}, #{effectiveDate}, #{expireDate}, #{ruleStatus}, #{author}, #{approver},
+            #{delFlag}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateRule" parameterType="SafetyRule">
+        UPDATE biz_safety_rule <set>
+            <if test="ruleName != null"> rule_name = #{ruleName},</if>
+            <if test="deptId != null"> dept_id = #{deptId},</if>
+            <if test="deptName != null"> dept_name = #{deptName},</if>
+            <if test="postName != null"> post_name = #{postName},</if>
+            <if test="workScene != null"> work_scene = #{workScene},</if>
+            <if test="ruleContent != null"> rule_content = #{ruleContent},</if>
+            <if test="attachment != null"> attachment = #{attachment},</if>
+            <if test="regulationName != null"> regulation_name = #{regulationName},</if>
+            <if test="regulationAttachment != null"> regulation_attachment = #{regulationAttachment},</if>
+            <if test="versionNo != null"> version_no = #{versionNo},</if>
+            <if test="effectiveDate != null"> effective_date = #{effectiveDate},</if>
+            <if test="expireDate != null"> expire_date = #{expireDate},</if>
+            <if test="ruleStatus != null"> rule_status = #{ruleStatus},</if>
+            <if test="author != null"> author = #{author},</if>
+            <if test="approver != null"> approver = #{approver},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE rule_id = #{ruleId}
+    </update>
+    <delete id="deleteRuleByIds" parameterType="Long">
+        UPDATE biz_safety_rule SET del_flag = '2' WHERE rule_id IN
+        <foreach item="ruleId" collection="array" open="(" separator="," close=")">#{ruleId}</foreach>
+    </delete>
+    <resultMap type="SafetyRuleVersion" id="SafetyRuleVersionResult">
+        <result property="versionId" column="version_id"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="ruleNo" column="rule_no"/>
+        <result property="versionNo" column="version_no"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="postName" column="post_name"/>
+        <result property="workScene" column="work_scene"/>
+        <result property="ruleContent" column="rule_content"/>
+        <result property="attachment" column="attachment"/>
+        <result property="regulationName" column="regulation_name"/>
+        <result property="effectiveDate" column="effective_date"/>
+        <result property="expireDate" column="expire_date"/>
+        <result property="ruleStatus" column="rule_status"/>
+        <result property="changeNote" column="change_note"/>
+        <result property="changeBy" column="change_by"/>
+        <result property="changeTime" column="change_time"/>
+    </resultMap>
+    <insert id="insertRuleVersion" parameterType="SafetyRuleVersion" useGeneratedKeys="true" keyProperty="versionId">
+        INSERT INTO biz_safety_rule_version (rule_id, rule_no, version_no, rule_name, dept_name, post_name, work_scene,
+            rule_content, attachment, regulation_name, effective_date, expire_date, rule_status, change_note, change_by, change_time)
+        VALUES (#{ruleId}, #{ruleNo}, #{versionNo}, #{ruleName}, #{deptName}, #{postName}, #{workScene},
+            #{ruleContent}, #{attachment}, #{regulationName}, #{effectiveDate}, #{expireDate}, #{ruleStatus}, #{changeNote}, #{changeBy}, sysdate())
+    </insert>
+    <select id="selectRuleVersionList" parameterType="Long" resultMap="SafetyRuleVersionResult">
+        SELECT version_id, rule_id, rule_no, version_no, rule_name, dept_name, post_name, work_scene, rule_content, attachment,
+               regulation_name, effective_date, expire_date, rule_status, change_note, change_by, change_time
+        FROM biz_safety_rule_version WHERE rule_id = #{ruleId} ORDER BY version_no DESC
+    </select>
+    <select id="selectRuleVersionById" parameterType="Long" resultMap="SafetyRuleVersionResult">
+        SELECT version_id, rule_id, rule_no, version_no, rule_name, dept_name, post_name, work_scene, rule_content, attachment,
+               regulation_name, effective_date, expire_date, rule_status, change_note, change_by, change_time
+        FROM biz_safety_rule_version WHERE version_id = #{versionId}
+    </select>
+    <select id="countLearnTotalByRule" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_rule_learn WHERE del_flag = '0' AND rule_id = #{ruleId}
+    </select>
+    <select id="countLearnSignedByRule" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_rule_learn WHERE del_flag = '0' AND rule_id = #{ruleId} AND sign_status = '1'
+    </select>
+</mapper>

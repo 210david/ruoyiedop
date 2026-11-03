@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyRuleCheckMapper">
+    <resultMap type="SafetyRuleCheck" id="SafetyRuleCheckResult">
+        <result property="checkId" column="check_id"/>
+        <result property="checkNo" column="check_no"/>
+        <result property="checkDate" column="check_date"/>
+        <result property="checker" column="checker"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="ruleName" column="rule_name"/>
+        <result property="checkResult" column="check_result"/>
+        <result property="problemDesc" column="problem_desc"/>
+        <result property="rectifyRequirement" column="rectify_requirement"/>
+        <result property="rectifyUser" column="rectify_user"/>
+        <result property="rectifyDeadline" column="rectify_deadline"/>
+        <result property="rectifyResult" column="rectify_result"/>
+        <result property="reviewer" column="reviewer"/>
+        <result property="reviewTime" column="review_time"/>
+        <result property="checkStatus" column="check_status"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <sql id="selectVo">
+        SELECT check_id, check_no, check_date, checker, dept_id, dept_name, rule_id, rule_name, check_result,
+               problem_desc, rectify_requirement, rectify_user, rectify_deadline, rectify_result, reviewer, review_time,
+               check_status, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_safety_rule_check
+    </sql>
+    <select id="selectCheckList" parameterType="SafetyRuleCheck" resultMap="SafetyRuleCheckResult">
+        <include refid="selectVo"/>
+        <where> del_flag = '0'
+            <if test="checkNo != null and checkNo != ''"> AND check_no LIKE CONCAT('%', #{checkNo}, '%')</if>
+            <if test="ruleId != null"> AND rule_id = #{ruleId}</if>
+            <if test="ruleName != null and ruleName != ''"> AND rule_name LIKE CONCAT('%', #{ruleName}, '%')</if>
+            <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="checkResult != null and checkResult != ''"> AND check_result = #{checkResult}</if>
+            <if test="checkStatus != null and checkStatus != ''"> AND check_status = #{checkStatus}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    <select id="selectCheckById" parameterType="Long" resultMap="SafetyRuleCheckResult">
+        <include refid="selectVo"/> WHERE check_id = #{checkId}
+    </select>
+    <insert id="insertCheck" parameterType="SafetyRuleCheck" useGeneratedKeys="true" keyProperty="checkId">
+        INSERT INTO biz_safety_rule_check (check_no, check_date, checker, dept_id, dept_name, rule_id, rule_name,
+            check_result, problem_desc, rectify_requirement, rectify_user, rectify_deadline, rectify_result,
+            check_status, del_flag, create_by, create_time, remark)
+        VALUES (#{checkNo}, #{checkDate}, #{checker}, #{deptId}, #{deptName}, #{ruleId}, #{ruleName},
+            #{checkResult}, #{problemDesc}, #{rectifyRequirement}, #{rectifyUser}, #{rectifyDeadline}, #{rectifyResult},
+            #{checkStatus}, #{delFlag}, #{createBy}, sysdate(), #{remark})
+    </insert>
+    <update id="updateCheck" parameterType="SafetyRuleCheck">
+        UPDATE biz_safety_rule_check <set>
+            <if test="checkDate != null"> check_date = #{checkDate},</if>
+            <if test="checker != null"> checker = #{checker},</if>
+            <if test="deptId != null"> dept_id = #{deptId},</if>
+            <if test="deptName != null"> dept_name = #{deptName},</if>
+            <if test="ruleId != null"> rule_id = #{ruleId},</if>
+            <if test="ruleName != null"> rule_name = #{ruleName},</if>
+            <if test="checkResult != null"> check_result = #{checkResult},</if>
+            <if test="problemDesc != null"> problem_desc = #{problemDesc},</if>
+            <if test="rectifyRequirement != null"> rectify_requirement = #{rectifyRequirement},</if>
+            <if test="rectifyUser != null"> rectify_user = #{rectifyUser},</if>
+            <if test="rectifyDeadline != null"> rectify_deadline = #{rectifyDeadline},</if>
+            <if test="rectifyResult != null"> rectify_result = #{rectifyResult},</if>
+            <if test="reviewer != null"> reviewer = #{reviewer},</if>
+            <if test="reviewTime != null"> review_time = #{reviewTime},</if>
+            <if test="checkStatus != null"> check_status = #{checkStatus},</if>
+            <if test="updateBy != null"> update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null"> remark = #{remark},</if>
+        </set>
+        WHERE check_id = #{checkId}
+    </update>
+    <delete id="deleteCheckByIds" parameterType="Long">
+        UPDATE biz_safety_rule_check SET del_flag = '2' WHERE check_id IN
+        <foreach item="checkId" collection="array" open="(" separator="," close=")">#{checkId}</foreach>
+    </delete>
+    <select id="countChecks" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_rule_check WHERE del_flag = '0'
+    </select>
+    <select id="countQualified" resultType="int">
+        SELECT COUNT(*) FROM biz_safety_rule_check WHERE del_flag = '0' AND check_result = '1'
+    </select>
+</mapper>
