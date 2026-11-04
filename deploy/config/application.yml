@@ -58,7 +58,7 @@ spring:
       enabled: false
   data:
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
       # YLSP 环境使用 db1（CFSP 使用 db0，共用实例互不干扰）
       database: 1
