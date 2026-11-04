@@ -1,25 +1,18 @@
-# ============================================================
-# 企业数字化运营平台 - 生产环境配置
-# 部署路径: D:\EDOP\app\application.yml
-# 说明: 此文件会覆盖jar包内部同名配置，修改后重启服务即可生效
-# ============================================================
-
-# 项目相关配置
+# 项目相关配置（YLSP 生产环境 - 外部覆盖配置）
 ruoyi:
   name: RuoYi
   version: 3.9.2
   copyrightYear: 2026
-  # 文件上传根目录（优先级：环境变量 EDOP_UPLOAD_PATH > 本文件 > 默认 ${user.dir}/uploadPath）
-  # 生产环境实际使用 D:/EDOP/uploadPath；如需改名/迁移，改此处或设环境变量 EDOP_UPLOAD_PATH 即可
-  profile: D:/EDOP/uploadPath
+  # 文件上传根目录（本业务目录内，互不干扰）
+  profile: D:/EDOP/YLSP/uploadPath
   addressEnabled: false
   captchaType: math
-  # 文件加密密钥（AES-128，需至少16位字符，生产环境请务必修改）
   fileEncryptionKey: EDOP2026SecureK3y!
 
-# 开发环境配置
+# 服务端口：YLSP 后端 82
 server:
   port: 82
+  address: 127.0.0.1
   servlet:
     context-path: /
   tomcat:
@@ -35,14 +28,14 @@ logging:
     com.ruoyi: info
     org.springframework: warn
   file:
-    name: D:/EDOP/app/logs/ruoyi.log
+    name: logs/ruoyi.log
 
 # 用户配置
 user:
   password:
     maxRetryCount: 5
     lockTime: 30
-    onlineCount: 1
+    onlineCount: 5
     onlineMode: kick
     passwordExpireDays: 90
 
@@ -54,23 +47,23 @@ spring:
     active: druid
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 20MB
+      max-file-size: 100MB
+      max-request-size: 200MB
   jackson:
     time-zone: GMT+8
     date-format: yyyy-MM-dd HH:mm:ss
-  # 生产环境关闭热部署
   devtools:
     restart:
+      # 生产环境必须关闭热部署
       enabled: false
   data:
     redis:
-      # Redis地址（本机部署用localhost，远程部署改为实际IP）
       host: localhost
       port: 6379
-      database: 2
-      # Redis密码（生产环境强烈建议设置密码）
-      password:
+      # YLSP 环境使用 db1（CFSP 使用 db0，共用实例互不干扰）
+      database: 1
+      # Redis 密码（与 redis.windows.conf 的 requirepass 一致）
+      password: 
       timeout: 10s
       lettuce:
         pool:
@@ -82,9 +75,9 @@ spring:
 # token配置
 token:
   header: Authorization
-  # 生产环境请修改此密钥！！！
-  secret: abcdefghijklmnopqrstuvwxyz
-  expireTime: 30
+  # JWT 签名密钥（随机生成，泄露或更换会使所有登录态失效）
+  secret: V-DJVozmaNXl31x_6uC1pGqKJT2uLTX8csP4RQXj1rwXNqIc-l55gNceKRBIrxzT
+  expireTime: 120
 
 # MyBatis配置
 mybatis:
@@ -102,9 +95,9 @@ pagehelper:
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: false
   swagger-ui:
-    # 生产环境可设为false关闭Swagger
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     tags-sorter: alpha
   group-configs:
@@ -121,5 +114,12 @@ referer:
 # 防止XSS攻击
 xss:
   enabled: true
-  excludes: /system/notice
-  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*
+  excludes: /system/notice,/mk/invoice/recognize
+  urlPatterns: /system/*,/monitor/*,/tool/*,/wms/*,/dms/*,/mk/*,/pms/*,/safety/*,/mms/*,/hr/*,/qms/*
+
+# 采购管理模块配置
+pms:
+  enterprise-lookup:
+    mode: simulation
+    api-url: https://api.tianyancha.com/cloud-originapi/companyinfo
+    api-key:
