@@ -492,7 +492,7 @@
     <contract-picker ref="contractPickerRef" title="选择营销合同" biz-type="mk" :statuses="['2','3','5']" hint="仅显示已生效 / 已过期 / 变更审批中的营销合同（不含草稿 / 审批中 / 已终止）" @confirm="onContractPickerConfirm" />
 
     <!-- 订单选择弹窗 -->
-    <order-picker ref="orderPickerRef" title="选择订单" :order-statuses="['2','3','4']" @confirm="onOrderPickerConfirm" />
+    <order-picker ref="orderPickerRef" title="选择销售订单" biz-type="mk" :statuses="['2','3','4']" hint="仅显示已审核 / 部分发货 / 已完成的销售订单" @confirm="onOrderPickerConfirm" />
   </div>
 </template>
 
@@ -650,7 +650,8 @@ function onOrderPickerConfirm(order) {
   form.value.orderNo = order.orderNo
   form.value.customerId = order.customerId
   form.value.customerName = order.customerName
-  form.value.invoiceAmount = order.totalAmount
+  // 销售订单金额字段为 orderAmount（采购侧为 totalAmount），二者兼容
+  form.value.invoiceAmount = order.orderAmount != null ? order.orderAmount : order.totalAmount
   form.value.invoiceTitle = order.customerName
 }
 /** 清除订单 */
