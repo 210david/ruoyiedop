@@ -74,7 +74,8 @@ const openedTopPath = ref('')
 
 function getTopLevelPath(path) {
   const segments = (path || '').split('/').filter(Boolean)
-  return segments.length ? '/' + segments[0] : ''
+  // 菜单子项注册的 index 不带前导斜杠（如 project），与 SidebarItem 的 getNormalPath 输出一致
+  return segments.length ? segments[0] : ''
 }
 
 function syncOpenedMenu(path) {
@@ -82,11 +83,16 @@ function syncOpenedMenu(path) {
   if (!menuRef.value || !top) {
     return
   }
-  if (openedTopPath.value && openedTopPath.value !== top) {
-    menuRef.value.close(openedTopPath.value)
+  try {
+    if (openedTopPath.value && openedTopPath.value !== top) {
+      menuRef.value.close(openedTopPath.value)
+    }
+    // open() 内部对未注册 index 会抛错，这里捕获以保证不影响路由跳转
+    menuRef.value.open(top)
+    openedTopPath.value = top
+  } catch (e) {
+    // 展开失败不影响路由跳转
   }
-  menuRef.value.open(top)
-  openedTopPath.value = top
 }
 
 onMounted(() => syncOpenedMenu(route.path))
