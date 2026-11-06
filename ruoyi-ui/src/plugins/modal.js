@@ -69,6 +69,10 @@ export default {
   },
   // 打开遮罩层
   loading(content) {
+    // 先关闭已存在的遮罩，避免多次调用叠加多层无法关闭的遮罩
+    if (loadingInstance) {
+      loadingInstance.close()
+    }
     loadingInstance = ElLoading.service({
       lock: true,
       text: content,
