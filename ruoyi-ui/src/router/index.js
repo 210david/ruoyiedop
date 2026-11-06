@@ -154,6 +154,12 @@ export const constantRoutes = [
         component: () => import('@/views/system/user/profile/index'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
+      },
+      {
+        path: 'connector-auth',
+        component: () => import('@/views/system/connectorAuth/index'),
+        name: 'ConnectorAuth',
+        meta: { title: 'AI 连接器授权', icon: 'key' }
       }
     ]
   }
