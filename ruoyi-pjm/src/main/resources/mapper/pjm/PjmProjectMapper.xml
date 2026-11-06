@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmProjectMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmProject" id="PjmProjectResult">
+        <id     property="projectId"       column="project_id"/>
+        <result property="projectNo"       column="project_no"/>
+        <result property="projectName"     column="project_name"/>
+        <result property="projectType"     column="project_type"/>
+        <result property="engineeringCategory" column="engineering_category"/>
+        <result property="priority"        column="priority"/>
+        <result property="status"          column="status"/>
+        <result property="progress"        column="progress"/>
+        <result property="budgetAmount"    column="budget_amount"/>
+        <result property="plannedPurchase" column="planned_purchase"/>
+        <result property="actualPurchase"  column="actual_purchase"/>
+        <result property="receivedAmount"  column="received_amount"/>
+        <result property="invoiceAmount"   column="invoice_amount"/>
+        <result property="paidAmount"      column="paid_amount"/>
+        <result property="purchaseCount"   column="purchase_count"/>
+        <result property="startDate"       column="start_date"/>
+        <result property="endDate"         column="end_date"/>
+        <result property="actualStartDate" column="actual_start_date"/>
+        <result property="actualEndDate"   column="actual_end_date"/>
+        <result property="managerId"       column="manager_id"/>
+        <result property="managerName"     column="manager_name"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="deptName"        column="dept_name"/>
+        <result property="ownerUnit"       column="owner_unit"/>
+        <result property="buildUnit"       column="build_unit"/>
+        <result property="supervisorUnit"  column="supervisor_unit"/>
+        <result property="designUnit"      column="design_unit"/>
+        <result property="projectAddress"  column="project_address"/>
+        <result property="buildScale"      column="build_scale"/>
+        <result property="contractDuration" column="contract_duration"/>
+        <result property="commenceDate"    column="commence_date"/>
+        <result property="completionDate"  column="completion_date"/>
+        <result property="qualityStandard" column="quality_standard"/>
+        <result property="contractAmount"  column="contract_amount"/>
+        <result property="customer"        column="customer"/>
+        <result property="description"    column="description"/>
+        <result property="scope"           column="scope"/>
+        <result property="deliverables"    column="deliverables"/>
+        <result property="auditBy"         column="audit_by"/>
+        <result property="auditTime"       column="audit_time"/>
+        <result property="auditOpinion"    column="audit_opinion"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+    </resultMap>
+
+    <sql id="selectProjectVo">
+        select project_id, project_no, project_name, project_type, engineering_category, priority, status, progress,
+               budget_amount, planned_purchase, actual_purchase, received_amount,
+               invoice_amount, paid_amount, purchase_count,
+               start_date, end_date, actual_start_date, actual_end_date,
+               manager_id, manager_name, dept_id, dept_name, customer,
+               owner_unit, build_unit, supervisor_unit, design_unit,
+               project_address, build_scale, contract_duration, commence_date, completion_date, quality_standard, contract_amount,
+               description, scope, deliverables,
+               audit_by, audit_time, audit_opinion,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        from pjm_project
+    </sql>
+
+    <select id="selectProjectList" parameterType="com.ruoyi.pjm.domain.PjmProject"
+            resultMap="PjmProjectResult">
+        <include refid="selectProjectVo"/>
+        <where>
+            <if test="projectNo != null and projectNo != ''">
+                AND project_no like concat('%', #{projectNo}, '%')
+            </if>
+            <if test="projectName != null and projectName != ''">
+                AND project_name like concat('%', #{projectName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="projectType != null and projectType != ''">
+                AND project_type = #{projectType}
+            </if>
+            <if test="engineeringCategory != null and engineeringCategory != ''">
+                AND engineering_category = #{engineeringCategory}
+            </if>
+            <if test="priority != null and priority != ''">
+                AND priority = #{priority}
+            </if>
+            <if test="managerName != null and managerName != ''">
+                AND manager_name like concat('%', #{managerName}, '%')
+            </if>
+            <if test="managerId != null">
+                AND manager_id = #{managerId}
+            </if>
+            <if test="deptId != null">
+                AND dept_id = #{deptId}
+            </if>
+            <if test="params.beginStartDate != null and params.beginStartDate != ''">
+                AND start_date &gt;= #{params.beginStartDate}
+            </if>
+            <if test="params.endStartDate != null and params.endStartDate != ''">
+                AND start_date &lt;= #{params.endStartDate}
+            </if>
+            AND del_flag = '0'
+            <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectProjectById" parameterType="Long" resultMap="PjmProjectResult">
+        <include refid="selectProjectVo"/>
+        where project_id = #{projectId}
+    </select>
+
+    <insert id="insertProject" parameterType="com.ruoyi.pjm.domain.PjmProject"
+            useGeneratedKeys="true" keyProperty="projectId">
+        insert into pjm_project
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="projectNo != null">project_no,</if>
+            <if test="projectName != null">project_name,</if>
+            <if test="projectType != null">project_type,</if>
+            <if test="engineeringCategory != null">engineering_category,</if>
+            <if test="priority != null">priority,</if>
+            <if test="status != null">status,</if>
+            <if test="progress != null">progress,</if>
+            <if test="budgetAmount != null">budget_amount,</if>
+            <if test="plannedPurchase != null">planned_purchase,</if>
+            <if test="actualPurchase != null">actual_purchase,</if>
+            <if test="receivedAmount != null">received_amount,</if>
+            <if test="invoiceAmount != null">invoice_amount,</if>
+            <if test="paidAmount != null">paid_amount,</if>
+            <if test="purchaseCount != null">purchase_count,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="managerId != null">manager_id,</if>
+            <if test="managerName != null">manager_name,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="deptName != null">dept_name,</if>
+            <if test="customer != null">customer,</if>
+            <if test="ownerUnit != null">owner_unit,</if>
+            <if test="buildUnit != null">build_unit,</if>
+            <if test="supervisorUnit != null">supervisor_unit,</if>
+            <if test="designUnit != null">design_unit,</if>
+            <if test="projectAddress != null">project_address,</if>
+            <if test="buildScale != null">build_scale,</if>
+            <if test="contractDuration != null">contract_duration,</if>
+            <if test="commenceDate != null">commence_date,</if>
+            <if test="completionDate != null">completion_date,</if>
+            <if test="qualityStandard != null">quality_standard,</if>
+            <if test="contractAmount != null">contract_amount,</if>
+            <if test="description != null">description,</if>
+            <if test="scope != null">scope,</if>
+            <if test="deliverables != null">deliverables,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="projectNo != null">#{projectNo},</if>
+            <if test="projectName != null">#{projectName},</if>
+            <if test="projectType != null">#{projectType},</if>
+            <if test="engineeringCategory != null">#{engineeringCategory},</if>
+            <if test="priority != null">#{priority},</if>
+            <if test="status != null">#{status},</if>
+            <if test="progress != null">#{progress},</if>
+            <if test="budgetAmount != null">#{budgetAmount},</if>
+            <if test="plannedPurchase != null">#{plannedPurchase},</if>
+            <if test="actualPurchase != null">#{actualPurchase},</if>
+            <if test="receivedAmount != null">#{receivedAmount},</if>
+            <if test="invoiceAmount != null">#{invoiceAmount},</if>
+            <if test="paidAmount != null">#{paidAmount},</if>
+            <if test="purchaseCount != null">#{purchaseCount},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="managerId != null">#{managerId},</if>
+            <if test="managerName != null">#{managerName},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="deptName != null">#{deptName},</if>
+            <if test="customer != null">#{customer},</if>
+            <if test="ownerUnit != null">#{ownerUnit},</if>
+            <if test="buildUnit != null">#{buildUnit},</if>
+            <if test="supervisorUnit != null">#{supervisorUnit},</if>
+            <if test="designUnit != null">#{designUnit},</if>
+            <if test="projectAddress != null">#{projectAddress},</if>
+            <if test="buildScale != null">#{buildScale},</if>
+            <if test="contractDuration != null">#{contractDuration},</if>
+            <if test="commenceDate != null">#{commenceDate},</if>
+            <if test="completionDate != null">#{completionDate},</if>
+            <if test="qualityStandard != null">#{qualityStandard},</if>
+            <if test="contractAmount != null">#{contractAmount},</if>
+            <if test="description != null">#{description},</if>
+            <if test="scope != null">#{scope},</if>
+            <if test="deliverables != null">#{deliverables},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateProject" parameterType="com.ruoyi.pjm.domain.PjmProject">
+        update pjm_project
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectNo != null">project_no = #{projectNo},</if>
+            <if test="projectName != null">project_name = #{projectName},</if>
+            <if test="projectType != null">project_type = #{projectType},</if>
+            <if test="engineeringCategory != null">engineering_category = #{engineeringCategory},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="progress != null">progress = #{progress},</if>
+            <if test="budgetAmount != null">budget_amount = #{budgetAmount},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="actualStartDate != null">actual_start_date = #{actualStartDate},</if>
+            <if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
+            <if test="managerId != null">manager_id = #{managerId},</if>
+            <if test="managerName != null">manager_name = #{managerName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="customer != null">customer = #{customer},</if>
+            <if test="ownerUnit != null">owner_unit = #{ownerUnit},</if>
+            <if test="buildUnit != null">build_unit = #{buildUnit},</if>
+            <if test="supervisorUnit != null">supervisor_unit = #{supervisorUnit},</if>
+            <if test="designUnit != null">design_unit = #{designUnit},</if>
+            <if test="projectAddress != null">project_address = #{projectAddress},</if>
+            <if test="buildScale != null">build_scale = #{buildScale},</if>
+            <if test="contractDuration != null">contract_duration = #{contractDuration},</if>
+            <if test="commenceDate != null">commence_date = #{commenceDate},</if>
+            <if test="completionDate != null">completion_date = #{completionDate},</if>
+            <if test="qualityStandard != null">quality_standard = #{qualityStandard},</if>
+            <if test="contractAmount != null">contract_amount = #{contractAmount},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="scope != null">scope = #{scope},</if>
+            <if test="deliverables != null">deliverables = #{deliverables},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where project_id = #{projectId}
+    </update>
+
+    <delete id="deleteProjectById" parameterType="Long">
+        update pjm_project set del_flag = '2' where project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteProjectByIds" parameterType="String">
+        update pjm_project set del_flag = '2' where project_id in
+        <foreach collection="array" item="projectId" open="(" separator="," close=")">
+            #{projectId}
+        </foreach>
+    </delete>
+
+    <!-- ★ 刷新项目采购汇总（来自 PMS 聚合） -->
+    <update id="refreshPurchaseSummary" parameterType="Long">
+        update pjm_project pj
+        set
+            pj.planned_purchase = COALESCE((
+                select sum(req.total_amount) from pms_purchase_request req
+                where req.source_project_id = pj.project_id and req.del_flag = '0'
+            ), 0),
+            pj.actual_purchase = COALESCE((
+                select sum(ord.total_amount) from pms_purchase_order ord
+                where ord.source_project_id = pj.project_id and ord.del_flag = '0'
+            ), 0),
+            pj.invoice_amount = COALESCE((
+                select sum(iv.invoice_amount) from pms_invoice iv
+                join pms_purchase_order ord on ord.order_id = iv.order_id
+                where ord.source_project_id = pj.project_id
+                  and iv.del_flag = '0' and ord.del_flag = '0'
+            ), 0),
+            pj.paid_amount = COALESCE((
+                select sum(ip.payment_amount) from pms_invoice_payment ip
+                join pms_invoice iv on iv.invoice_id = ip.invoice_id
+                join pms_purchase_order ord on ord.order_id = iv.order_id
+                where ord.source_project_id = pj.project_id
+                  and ip.del_flag = '0' and iv.del_flag = '0' and ord.del_flag = '0'
+            ), 0),
+            pj.purchase_count = (
+                select count(*) from pms_purchase_request req
+                where req.source_project_id = pj.project_id and req.del_flag = '0'
+            )
+        where pj.project_id = #{projectId}
+    </update>
+
+    <!-- ★ 刷新项目进度（WBS 任务平均进度） -->
+    <update id="refreshProgress" parameterType="Long">
+        update pjm_project pj
+        set pj.progress = COALESCE((
+            select round(avg(t.progress), 2) from pjm_wbs_task t
+            where t.project_id = pj.project_id and t.del_flag = '0'
+        ), 0)
+        where pj.project_id = #{projectId}
+    </update>
+
+</mapper>

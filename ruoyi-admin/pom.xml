@@ -132,6 +132,12 @@
             <artifactId>ruoyi-pdm</artifactId>
         </dependency>
 
+        <!-- PJM项目管理模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-pjm</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

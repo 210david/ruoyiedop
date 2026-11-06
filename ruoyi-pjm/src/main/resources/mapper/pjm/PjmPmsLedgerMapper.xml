@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmPmsLedgerMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmPmsLedger" id="PjmPmsLedgerResult">
+        <result property="docType"      column="doc_type"/>
+        <result property="docId"        column="doc_id"/>
+        <result property="docNo"        column="doc_no"/>
+        <result property="title"        column="title"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="status"       column="status"/>
+        <result property="amount"       column="amount"/>
+        <result property="paidAmount"   column="paid_amount"/>
+        <result property="docDate"      column="doc_date"/>
+        <result property="relNo"        column="rel_no"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <!-- 同库直连 pms 模块 4 张单据表，按 source_project_id 聚合 -->
+    <select id="selectLedgerList" parameterType="com.ruoyi.pjm.domain.PjmPmsLedger" resultMap="PjmPmsLedgerResult">
+        select * from (
+        <if test="docType == null or docType == '' or docType == 'request'">
+            select 'request' as doc_type, request_id as doc_id, request_no as doc_no, title,
+                   null as supplier_name, status, total_amount as amount, null as paid_amount,
+                   expect_date as doc_date, plan_no as rel_no, create_time
+            from pms_purchase_request
+            where del_flag = '0' and source_project_id = #{projectId}
+            <if test="docNo != null and docNo != ''">
+                and request_no like concat('%', #{docNo}, '%')
+            </if>
+            <if test="status != null and status != '' and (docType == null or docType == '' or docType == 'request')">
+                and status = #{status}
+            </if>
+        </if>
+        <if test="docType == null or docType == '' or docType == 'plan'">
+            <if test="docType == null or docType == '' or docType == 'request'">union all</if>
+            select 'plan' as doc_type, plan_id as doc_id, plan_no as doc_no, title,
+                   null as supplier_name, status, budget_amount as amount, actual_amount as paid_amount,
+                   start_date as doc_date, null as rel_no, create_time
+            from pms_purchase_plan
+            where del_flag = '0' and source_project_id = #{projectId}
+            <if test="docNo != null and docNo != ''">
+                and plan_no like concat('%', #{docNo}, '%')
+            </if>
+            <if test="status != null and status != '' and (docType == null or docType == '' or docType == 'plan')">
+                and status = #{status}
+            </if>
+        </if>
+        <if test="docType == null or docType == '' or docType == 'order'">
+            <if test="docType == null or docType == '' or docType == 'request' or docType == 'plan'">union all</if>
+            select 'order' as doc_type, order_id as doc_id, order_no as doc_no,
+                   concat('采购订单 - ', ifnull(supplier_name, '')) as title,
+                   supplier_name, status, total_amount as amount, paid_amount,
+                   order_date as doc_date, request_no as rel_no, create_time
+            from pms_purchase_order
+            where del_flag = '0' and source_project_id = #{projectId}
+            <if test="docNo != null and docNo != ''">
+                and order_no like concat('%', #{docNo}, '%')
+            </if>
+            <if test="status != null and status != '' and (docType == null or docType == '' or docType == 'order')">
+                and status = #{status}
+            </if>
+        </if>
+        <if test="docType == null or docType == '' or docType == 'contract'">
+            <if test="docType == null or docType == '' or docType == 'request' or docType == 'plan' or docType == 'order'">union all</if>
+            select 'contract' as doc_type, contract_id as doc_id, contract_no as doc_no, contract_name as title,
+                   supplier_name, status, contract_amount as amount, paid_amount,
+                   sign_date as doc_date, order_no as rel_no, create_time
+            from pms_contract
+            where del_flag = '0' and source_project_id = #{projectId}
+            <if test="docNo != null and docNo != ''">
+                and contract_no like concat('%', #{docNo}, '%')
+            </if>
+            <if test="status != null and status != '' and (docType == null or docType == '' or docType == 'contract')">
+                and status = #{status}
+            </if>
+        </if>
+        ) t
+        order by t.create_time desc
+    </select>
+
+</mapper>

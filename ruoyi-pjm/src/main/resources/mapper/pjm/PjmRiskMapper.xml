@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmRiskMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmRisk" id="PjmRiskResult">
+        <id     property="riskId"        column="risk_id"/>
+        <result property="projectId"     column="project_id"/>
+        <result property="taskId"        column="task_id"/>
+        <result property="riskType"      column="risk_type"/>
+        <result property="engineeringCategory" column="engineering_category"/>
+        <result property="riskPointId"   column="risk_point_id"/>
+        <result property="riskStdCode"   column="risk_std_code"/>
+        <result property="title"         column="title"/>
+        <result property="level"         column="level"/>
+        <result property="status"        column="status"/>
+        <result property="ownerId"       column="owner_id"/>
+        <result property="ownerName"     column="owner_name"/>
+        <result property="occurDate"     column="occur_date"/>
+        <result property="resolveDate"   column="resolve_date"/>
+        <result property="solution"      column="solution"/>
+        <result property="description"   column="description"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="projectName"   column="project_name"/>
+        <result property="taskName"      column="task_name"/>
+    </resultMap>
+
+    <sql id="selectRiskVo">
+        select r.risk_id, r.project_id, r.task_id, r.risk_type,
+               r.engineering_category, r.risk_point_id, r.risk_std_code,
+               r.title, r.level,
+               r.status, r.owner_id, r.owner_name, r.occur_date, r.resolve_date,
+               r.solution, r.description, r.del_flag,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               p.project_name, t.task_name
+        from pjm_risk r
+        left join pjm_project p on p.project_id = r.project_id
+        left join pjm_wbs_task t on t.task_id = r.task_id
+    </sql>
+
+    <select id="selectRiskList" parameterType="com.ruoyi.pjm.domain.PjmRisk"
+            resultMap="PjmRiskResult">
+        <include refid="selectRiskVo"/>
+        <where>
+            <if test="projectId != null">AND r.project_id = #{projectId}</if>
+            <if test="taskId != null">AND r.task_id = #{taskId}</if>
+            <if test="title != null and title != ''">AND r.title like concat('%', #{title}, '%')</if>
+            <if test="riskType != null and riskType != ''">AND r.risk_type = #{riskType}</if>
+            <if test="engineeringCategory != null and engineeringCategory != ''">AND r.engineering_category = #{engineeringCategory}</if>
+            <if test="level != null and level != ''">AND r.level = #{level}</if>
+            <if test="status != null and status != ''">AND r.status = #{status}</if>
+            AND r.del_flag = '0'
+        </where>
+        order by r.risk_id desc
+    </select>
+
+    <select id="selectRiskById" parameterType="Long" resultMap="PjmRiskResult">
+        <include refid="selectRiskVo"/>
+        where r.risk_id = #{riskId}
+    </select>
+
+    <insert id="insertRisk" parameterType="com.ruoyi.pjm.domain.PjmRisk"
+            useGeneratedKeys="true" keyProperty="riskId">
+        insert into pjm_risk
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">project_id,</if>
+            <if test="taskId != null">task_id,</if>
+            <if test="riskType != null">risk_type,</if>
+            <if test="engineeringCategory != null">engineering_category,</if>
+            <if test="riskPointId != null">risk_point_id,</if>
+            <if test="riskStdCode != null">risk_std_code,</if>
+            <if test="title != null">title,</if>
+            <if test="level != null">level,</if>
+            <if test="status != null">status,</if>
+            <if test="ownerId != null">owner_id,</if>
+            <if test="ownerName != null">owner_name,</if>
+            <if test="occurDate != null">occur_date,</if>
+            <if test="resolveDate != null">resolve_date,</if>
+            <if test="solution != null">solution,</if>
+            <if test="description != null">description,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">#{projectId},</if>
+            <if test="taskId != null">#{taskId},</if>
+            <if test="riskType != null">#{riskType},</if>
+            <if test="engineeringCategory != null">#{engineeringCategory},</if>
+            <if test="riskPointId != null">#{riskPointId},</if>
+            <if test="riskStdCode != null">#{riskStdCode},</if>
+            <if test="title != null">#{title},</if>
+            <if test="level != null">#{level},</if>
+            <if test="status != null">#{status},</if>
+            <if test="ownerId != null">#{ownerId},</if>
+            <if test="ownerName != null">#{ownerName},</if>
+            <if test="occurDate != null">#{occurDate},</if>
+            <if test="resolveDate != null">#{resolveDate},</if>
+            <if test="solution != null">#{solution},</if>
+            <if test="description != null">#{description},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRisk" parameterType="com.ruoyi.pjm.domain.PjmRisk">
+        update pjm_risk
+        <set>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="riskType != null">risk_type = #{riskType},</if>
+            <if test="engineeringCategory != null">engineering_category = #{engineeringCategory},</if>
+            <if test="riskPointId != null">risk_point_id = #{riskPointId},</if>
+            <if test="riskStdCode != null">risk_std_code = #{riskStdCode},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="level != null">level = #{level},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="ownerId != null">owner_id = #{ownerId},</if>
+            <if test="ownerName != null">owner_name = #{ownerName},</if>
+            <if test="occurDate != null">occur_date = #{occurDate},</if>
+            <if test="resolveDate != null">resolve_date = #{resolveDate},</if>
+            <if test="solution != null">solution = #{solution},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where risk_id = #{riskId}
+    </update>
+
+    <update id="deleteRiskByIds">
+        update pjm_risk set del_flag = '2' where risk_id in
+        <foreach item="riskId" collection="array" open="(" separator="," close=")">
+            #{riskId}
+        </foreach>
+    </update>
+
+</mapper>

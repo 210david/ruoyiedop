@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmProjectAttachmentMapper">
+
+    <resultMap type="PjmProjectAttachment" id="PjmProjectAttachmentResult">
+        <id     property="attachmentId"   column="attachment_id"/>
+        <result property="projectId"      column="project_id"/>
+        <result property="attachmentType" column="attachment_type"/>
+        <result property="fileName"       column="file_name"/>
+        <result property="fileUrl"        column="file_url"/>
+        <result property="fileSize"       column="file_size"/>
+        <result property="fileExt"        column="file_ext"/>
+        <result property="remark"         column="remark"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+    </resultMap>
+
+    <sql id="selectAttachmentVo">
+        SELECT attachment_id, project_id, attachment_type, file_name, file_url,
+               file_size, file_ext, remark, del_flag, create_by, create_time, update_by, update_time
+        FROM pjm_project_attachment
+    </sql>
+
+    <select id="selectPjmProjectAttachmentById" parameterType="Long" resultMap="PjmProjectAttachmentResult">
+        <include refid="selectAttachmentVo"/>
+        WHERE attachment_id = #{attachmentId} AND del_flag = '0'
+    </select>
+
+    <select id="selectPjmProjectAttachmentList" parameterType="PjmProjectAttachment" resultMap="PjmProjectAttachmentResult">
+        <include refid="selectAttachmentVo"/>
+        <where>
+            del_flag = '0'
+            <if test="projectId != null"> AND project_id = #{projectId}</if>
+            <if test="attachmentType != null and attachmentType != ''"> AND attachment_type = #{attachmentType}</if>
+            <if test="fileName != null and fileName != ''"> AND file_name LIKE CONCAT('%', #{fileName}, '%')</if>
+        </where>
+        ORDER BY attachment_id DESC
+    </select>
+
+    <select id="selectByProjectId" parameterType="Long" resultMap="PjmProjectAttachmentResult">
+        <include refid="selectAttachmentVo"/>
+        WHERE project_id = #{projectId} AND del_flag = '0'
+        ORDER BY attachment_type ASC, attachment_id ASC
+    </select>
+
+    <select id="selectByProjectIdAndType" resultMap="PjmProjectAttachmentResult">
+        <include refid="selectAttachmentVo"/>
+        WHERE project_id = #{projectId} AND attachment_type = #{attachmentType} AND del_flag = '0'
+        ORDER BY attachment_id ASC
+    </select>
+
+    <insert id="insertPjmProjectAttachment" parameterType="PjmProjectAttachment" useGeneratedKeys="true" keyProperty="attachmentId">
+        INSERT INTO pjm_project_attachment (
+            project_id, attachment_type, file_name, file_url, file_size, file_ext,
+            remark, del_flag, create_by, create_time
+        ) VALUES (
+            #{projectId}, #{attachmentType}, #{fileName}, #{fileUrl}, #{fileSize}, #{fileExt},
+            #{remark}, #{delFlag}, #{createBy}, sysdate()
+        )
+    </insert>
+
+    <update id="updatePjmProjectAttachment" parameterType="PjmProjectAttachment">
+        UPDATE pjm_project_attachment
+        <set>
+            <if test="attachmentType != null">attachment_type = #{attachmentType},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="fileExt != null">file_ext = #{fileExt},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE attachment_id = #{attachmentId}
+    </update>
+
+    <delete id="deletePjmProjectAttachmentByIds">
+        UPDATE pjm_project_attachment SET del_flag = '2' WHERE attachment_id IN
+        <foreach item="attachmentId" collection="array" open="(" separator="," close=")">#{attachmentId}</foreach>
+    </delete>
+
+    <delete id="deletePjmProjectAttachmentById" parameterType="Long">
+        UPDATE pjm_project_attachment SET del_flag = '2' WHERE attachment_id = #{attachmentId}
+    </delete>
+
+    <delete id="deleteByProjectId" parameterType="Long">
+        UPDATE pjm_project_attachment SET del_flag = '2' WHERE project_id = #{projectId}
+    </delete>
+
+</mapper>

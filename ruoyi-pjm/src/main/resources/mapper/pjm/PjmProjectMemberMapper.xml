@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmProjectMemberMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmProjectMember" id="PjmProjectMemberResult">
+        <id property="memberId"   column="member_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="userName"  column="user_name"/>
+        <result property="deptId"    column="dept_id"/>
+        <result property="deptName"  column="dept_name"/>
+        <result property="roleType"   column="role_type"/>
+        <result property="joinDate"   column="join_date"/>
+        <result property="leaveDate"  column="leave_date"/>
+        <result property="workload"   column="workload"/>
+        <result property="taskCount"  column="task_count"/>
+        <result property="delFlag"    column="del_flag"/>
+        <result property="createBy"   column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy"   column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark"     column="remark"/>
+        <result property="projectName" column="project_name"/>
+    </resultMap>
+
+    <sql id="selectMemberVo">
+        select m.member_id, m.project_id, m.user_id, m.user_name, m.dept_id, m.dept_name,
+               m.role_type, m.join_date, m.leave_date, m.workload, m.task_count, m.del_flag,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark, p.project_name
+        from pjm_project_member m
+        left join pjm_project p on p.project_id = m.project_id
+    </sql>
+
+    <select id="selectMemberList" parameterType="com.ruoyi.pjm.domain.PjmProjectMember" resultMap="PjmProjectMemberResult">
+        <include refid="selectMemberVo"/>
+        <where>
+            <if test="projectId != null">AND m.project_id = #{projectId}</if>
+            <if test="userId != null">AND m.user_id = #{userId}</if>
+            <if test="roleType != null and roleType != ''">AND m.role_type = #{roleType}</if>
+            AND m.del_flag = '0'
+        </where>
+        order by m.role_type, m.join_date
+    </select>
+
+    <select id="selectMemberById" parameterType="Long" resultMap="PjmProjectMemberResult">
+        <include refid="selectMemberVo"/>
+        where m.member_id = #{memberId}
+    </select>
+
+    <select id="selectByProjectId" parameterType="Long" resultMap="PjmProjectMemberResult">
+        <include refid="selectMemberVo"/>
+        where m.project_id = #{projectId} AND m.del_flag = '0'
+        order by m.role_type, m.join_date
+    </select>
+
+    <delete id="deleteByProjectId" parameterType="Long">
+        delete from pjm_project_member where project_id = #{projectId}
+    </delete>
+
+    <insert id="insertMember" parameterType="com.ruoyi.pjm.domain.PjmProjectMember" useGeneratedKeys="true" keyProperty="memberId">
+        insert into pjm_project_member
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">project_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="userName != null">user_name,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="deptName != null">dept_name,</if>
+            <if test="roleType != null">role_type,</if>
+            <if test="joinDate != null">join_date,</if>
+            <if test="leaveDate != null">leave_date,</if>
+            <if test="workload != null">workload,</if>
+            <if test="taskCount != null">task_count,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">#{projectId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="userName != null">#{userName},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="deptName != null">#{deptName},</if>
+            <if test="roleType != null">#{roleType},</if>
+            <if test="joinDate != null">#{joinDate},</if>
+            <if test="leaveDate != null">#{leaveDate},</if>
+            <if test="workload != null">#{workload},</if>
+            <if test="taskCount != null">#{taskCount},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateMember" parameterType="com.ruoyi.pjm.domain.PjmProjectMember">
+        update pjm_project_member
+        <set>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="roleType != null">role_type = #{roleType},</if>
+            <if test="leaveDate != null">leave_date = #{leaveDate},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where member_id = #{memberId}
+    </update>
+
+    <update id="deleteMemberByIds">
+        update pjm_project_member set del_flag = '2' where member_id in
+        <foreach item="memberId" collection="array" open="(" separator="," close=")">#{memberId}</foreach>
+    </update>
+
+    <update id="refreshMemberWorkload" parameterType="Long">
+        update pjm_project_member m
+        set m.workload = (
+            select coalesce(sum(w.work_hours), 0) from pjm_task_worklog w
+            where w.project_id = m.project_id and w.user_id = m.user_id and w.del_flag = '0'
+        )
+        where m.member_id = #{memberId}
+    </update>
+</mapper>

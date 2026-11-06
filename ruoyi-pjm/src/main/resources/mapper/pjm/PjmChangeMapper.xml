@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmChangeMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmChange" id="PjmChangeResult">
+        <id     property="changeId"       column="change_id"/>
+        <result property="changeNo"       column="change_no"/>
+        <result property="projectId"      column="project_id"/>
+        <result property="changeType"     column="change_type"/>
+        <result property="title"          column="title"/>
+        <result property="reason"         column="reason"/>
+        <result property="impactAnalysis" column="impact_analysis"/>
+        <result property="scheduleImpact" column="schedule_impact"/>
+        <result property="costImpact"     column="cost_impact"/>
+        <result property="status"         column="status"/>
+        <result property="requesterId"    column="requester_id"/>
+        <result property="requesterName"  column="requester_name"/>
+        <result property="auditBy"        column="audit_by"/>
+        <result property="auditTime"      column="audit_time"/>
+        <result property="auditOpinion"   column="audit_opinion"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+        <result property="projectName"    column="project_name"/>
+    </resultMap>
+
+    <sql id="selectChangeVo">
+        select c.change_id, c.change_no, c.project_id, c.change_type, c.title, c.reason, c.impact_analysis,
+               c.schedule_impact, c.cost_impact, c.status, c.requester_id, c.requester_name,
+               c.audit_by, c.audit_time, c.audit_opinion, c.del_flag, c.create_by, c.create_time,
+               c.update_by, c.update_time, c.remark, p.project_name
+        from pjm_change c
+        left join pjm_project p on p.project_id = c.project_id
+    </sql>
+
+    <select id="selectChangeList" parameterType="com.ruoyi.pjm.domain.PjmChange" resultMap="PjmChangeResult">
+        <include refid="selectChangeVo"/>
+        <where>
+            <if test="projectId != null">AND c.project_id = #{projectId}</if>
+            <if test="changeType != null and changeType != ''">AND c.change_type = #{changeType}</if>
+            <if test="status != null and status != ''">AND c.status = #{status}</if>
+            <if test="title != null and title != ''">AND c.title like concat('%', #{title}, '%')</if>
+            AND c.del_flag = '0'
+        </where>
+        order by c.change_id desc
+    </select>
+
+    <select id="selectChangeById" parameterType="Long" resultMap="PjmChangeResult">
+        <include refid="selectChangeVo"/>
+        where c.change_id = #{changeId}
+    </select>
+
+    <insert id="insertChange" parameterType="com.ruoyi.pjm.domain.PjmChange" useGeneratedKeys="true" keyProperty="changeId">
+        insert into pjm_change
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="changeNo != null">change_no,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="changeType != null">change_type,</if>
+            <if test="title != null">title,</if>
+            <if test="reason != null">reason,</if>
+            <if test="impactAnalysis != null">impact_analysis,</if>
+            <if test="scheduleImpact != null">schedule_impact,</if>
+            <if test="costImpact != null">cost_impact,</if>
+            <if test="status != null">status,</if>
+            <if test="requesterId != null">requester_id,</if>
+            <if test="requesterName != null">requester_name,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="changeNo != null">#{changeNo},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="changeType != null">#{changeType},</if>
+            <if test="title != null">#{title},</if>
+            <if test="reason != null">#{reason},</if>
+            <if test="impactAnalysis != null">#{impactAnalysis},</if>
+            <if test="scheduleImpact != null">#{scheduleImpact},</if>
+            <if test="costImpact != null">#{costImpact},</if>
+            <if test="status != null">#{status},</if>
+            <if test="requesterId != null">#{requesterId},</if>
+            <if test="requesterName != null">#{requesterName},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateChange" parameterType="com.ruoyi.pjm.domain.PjmChange">
+        update pjm_change
+        <set>
+            <if test="changeType != null">change_type = #{changeType},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="impactAnalysis != null">impact_analysis = #{impactAnalysis},</if>
+            <if test="scheduleImpact != null">schedule_impact = #{scheduleImpact},</if>
+            <if test="costImpact != null">cost_impact = #{costImpact},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where change_id = #{changeId}
+    </update>
+
+    <update id="deleteChangeByIds">
+        update pjm_change set del_flag = '2' where change_id in
+        <foreach item="changeId" collection="array" open="(" separator="," close=")">#{changeId}</foreach>
+    </update>
+</mapper>

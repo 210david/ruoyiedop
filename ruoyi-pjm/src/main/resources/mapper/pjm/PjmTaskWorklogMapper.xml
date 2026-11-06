@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmTaskWorklogMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmTaskWorklog" id="PjmTaskWorklogResult">
+        <id     property="worklogId"    column="worklog_id"/>
+        <result property="worklogNo"    column="worklog_no"/>
+        <result property="taskId"       column="task_id"/>
+        <result property="projectId"    column="project_id"/>
+        <result property="userId"       column="user_id"/>
+        <result property="userName"     column="user_name"/>
+        <result property="workDate"     column="work_date"/>
+        <result property="workHours"    column="work_hours"/>
+        <result property="workContent"  column="work_content"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateBy"     column="update_by"/>
+        <result property="updateTime"   column="update_time"/>
+        <result property="remark"       column="remark"/>
+        <result property="projectName"  column="project_name"/>
+        <result property="taskName"     column="task_name"/>
+    </resultMap>
+
+    <sql id="selectWorklogVo">
+        select w.worklog_id, w.worklog_no, w.task_id, w.project_id, w.user_id, w.user_name,
+               w.work_date, w.work_hours, w.work_content, w.del_flag,
+               w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
+               p.project_name, t.task_name
+        from pjm_task_worklog w
+        left join pjm_project p on p.project_id = w.project_id
+        left join pjm_wbs_task t on t.task_id = w.task_id and t.del_flag = '0'
+    </sql>
+
+    <select id="selectWorklogList" parameterType="com.ruoyi.pjm.domain.PjmTaskWorklog" resultMap="PjmTaskWorklogResult">
+        <include refid="selectWorklogVo"/>
+        <where>
+            <if test="projectId != null">AND w.project_id = #{projectId}</if>
+            <if test="taskId != null">AND w.task_id = #{taskId}</if>
+            <if test="userId != null">AND w.user_id = #{userId}</if>
+            <if test="workDate != null">AND w.work_date = #{workDate}</if>
+            AND w.del_flag = '0'
+        </where>
+        order by w.work_date desc, w.worklog_id desc
+    </select>
+
+    <select id="selectWorklogById" parameterType="Long" resultMap="PjmTaskWorklogResult">
+        <include refid="selectWorklogVo"/>
+        where w.worklog_id = #{worklogId}
+    </select>
+
+    <insert id="insertWorklog" parameterType="com.ruoyi.pjm.domain.PjmTaskWorklog" useGeneratedKeys="true" keyProperty="worklogId">
+        insert into pjm_task_worklog
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="worklogNo != null">worklog_no,</if>
+            <if test="taskId != null">task_id,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="userName != null">user_name,</if>
+            <if test="workDate != null">work_date,</if>
+            <if test="workHours != null">work_hours,</if>
+            <if test="workContent != null">work_content,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="worklogNo != null">#{worklogNo},</if>
+            <if test="taskId != null">#{taskId},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="userName != null">#{userName},</if>
+            <if test="workDate != null">#{workDate},</if>
+            <if test="workHours != null">#{workHours},</if>
+            <if test="workContent != null">#{workContent},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWorklog" parameterType="com.ruoyi.pjm.domain.PjmTaskWorklog">
+        update pjm_task_worklog
+        <set>
+            <if test="workDate != null">work_date = #{workDate},</if>
+            <if test="workHours != null">work_hours = #{workHours},</if>
+            <if test="workContent != null">work_content = #{workContent},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where worklog_id = #{worklogId}
+    </update>
+
+    <update id="deleteWorklogByIds">
+        update pjm_task_worklog set del_flag = '2' where worklog_id in
+        <foreach item="worklogId" collection="array" open="(" separator="," close=")">#{worklogId}</foreach>
+    </update>
+
+    <!-- ★ 刷新 WBS 实际工时（来自 pjm_task_worklog 聚合） -->
+    <update id="refreshTaskActualHours" parameterType="Long">
+        update pjm_wbs_task t
+        set t.actual_hours = (
+            select coalesce(sum(w.work_hours), 0) from pjm_task_worklog w
+            where w.task_id = t.task_id and w.del_flag = '0'
+        )
+        where t.task_id = #{taskId}
+    </update>
+</mapper>

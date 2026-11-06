@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmPaymentMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmPayment" id="PjmPaymentResult">
+        <id     property="paymentId"   column="payment_id"/>
+        <result property="paymentNo"   column="payment_no"/>
+        <result property="projectId"   column="project_id"/>
+        <result property="periodNo"    column="period_no"/>
+        <result property="amount"      column="amount"/>
+        <result property="paymentDate" column="payment_date"/>
+        <result property="payer"       column="payer"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"    column="create_by"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateBy"    column="update_by"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="remark"      column="remark"/>
+        <result property="projectName" column="project_name"/>
+        <result property="projectNo"   column="project_no"/>
+        <result property="contractAmount" column="contract_amount"/>
+        <result property="receivedAmount" column="received_amount"/>
+    </resultMap>
+
+    <sql id="selectPaymentVo">
+        select pm.payment_id, pm.payment_no, pm.project_id, pm.period_no, pm.amount,
+               pm.payment_date, pm.payer, pm.del_flag,
+               pm.create_by, pm.create_time, pm.update_by, pm.update_time, pm.remark,
+               p.project_name, p.project_no
+        from pjm_payment pm
+        left join pjm_project p on p.project_id = pm.project_id
+    </sql>
+
+    <select id="selectPaymentList" parameterType="com.ruoyi.pjm.domain.PjmPayment"
+            resultMap="PjmPaymentResult">
+        <include refid="selectPaymentVo"/>
+        <where>
+            <if test="projectId != null">AND pm.project_id = #{projectId}</if>
+            <if test="paymentNo != null and paymentNo != ''">AND pm.payment_no like concat('%', #{paymentNo}, '%')</if>
+            AND pm.del_flag = '0'
+        </where>
+        order by pm.payment_date desc, pm.payment_id desc
+    </select>
+
+    <select id="selectPaymentById" parameterType="Long" resultMap="PjmPaymentResult">
+        <include refid="selectPaymentVo"/>
+        where pm.payment_id = #{paymentId}
+    </select>
+
+    <select id="selectPaymentSummary" parameterType="com.ruoyi.pjm.domain.PjmPayment"
+            resultMap="PjmPaymentResult">
+        select p.project_id, p.project_no, p.project_name,
+               p.contract_amount,
+               coalesce(sum(pm.amount), 0) as received_amount
+        from pjm_project p
+        left join pjm_payment pm on pm.project_id = p.project_id and pm.del_flag = '0'
+        <where>
+            <if test="projectId != null">AND p.project_id = #{projectId}</if>
+            <if test="projectName != null and projectName != ''">AND p.project_name like concat('%', #{projectName}, '%')</if>
+            AND p.del_flag = '0'
+        </where>
+        group by p.project_id, p.project_no, p.project_name, p.contract_amount
+        order by p.project_id
+    </select>
+
+    <insert id="insertPayment" parameterType="com.ruoyi.pjm.domain.PjmPayment"
+            useGeneratedKeys="true" keyProperty="paymentId">
+        insert into pjm_payment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="paymentNo != null">payment_no,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="periodNo != null">period_no,</if>
+            <if test="amount != null">amount,</if>
+            <if test="paymentDate != null">payment_date,</if>
+            <if test="payer != null">payer,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="paymentNo != null">#{paymentNo},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="periodNo != null">#{periodNo},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="paymentDate != null">#{paymentDate},</if>
+            <if test="payer != null">#{payer},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePayment" parameterType="com.ruoyi.pjm.domain.PjmPayment">
+        update pjm_payment
+        <set>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="periodNo != null">period_no = #{periodNo},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="paymentDate != null">payment_date = #{paymentDate},</if>
+            <if test="payer != null">payer = #{payer},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where payment_id = #{paymentId}
+    </update>
+
+    <update id="deletePaymentByIds">
+        update pjm_payment set del_flag = '2' where payment_id in
+        <foreach item="paymentId" collection="array" open="(" separator="," close=")">
+            #{paymentId}
+        </foreach>
+    </update>
+
+</mapper>

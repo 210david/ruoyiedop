@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmMilestoneMapper">
+
+    <resultMap type="com.ruoyi.pjm.domain.PjmMilestone" id="PjmMilestoneResult">
+        <id     property="milestoneId"   column="milestone_id"/>
+        <result property="projectId"     column="project_id"/>
+        <result property="milestoneName" column="milestone_name"/>
+        <result property="planDate"      column="plan_date"/>
+        <result property="actualDate"    column="actual_date"/>
+        <result property="status"        column="status"/>
+        <result property="ownerId"       column="owner_id"/>
+        <result property="ownerName"     column="owner_name"/>
+        <result property="description"   column="description"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="projectName"   column="project_name"/>
+    </resultMap>
+
+    <sql id="selectMilestoneVo">
+        select m.milestone_id, m.project_id, m.milestone_name, m.plan_date, m.actual_date,
+               m.status, m.owner_id, m.owner_name, m.description, m.del_flag,
+               m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
+               p.project_name
+        from pjm_milestone m
+        left join pjm_project p on p.project_id = m.project_id
+    </sql>
+
+    <select id="selectMilestoneList" parameterType="com.ruoyi.pjm.domain.PjmMilestone"
+            resultMap="PjmMilestoneResult">
+        <include refid="selectMilestoneVo"/>
+        <where>
+            <if test="projectId != null">AND m.project_id = #{projectId}</if>
+            <if test="milestoneName != null and milestoneName != ''">AND m.milestone_name like concat('%', #{milestoneName}, '%')</if>
+            <if test="status != null and status != ''">AND m.status = #{status}</if>
+            AND m.del_flag = '0'
+        </where>
+        order by m.plan_date, m.milestone_id
+    </select>
+
+    <select id="selectMilestoneById" parameterType="Long" resultMap="PjmMilestoneResult">
+        <include refid="selectMilestoneVo"/>
+        where m.milestone_id = #{milestoneId}
+    </select>
+
+    <insert id="insertMilestone" parameterType="com.ruoyi.pjm.domain.PjmMilestone"
+            useGeneratedKeys="true" keyProperty="milestoneId">
+        insert into pjm_milestone
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">project_id,</if>
+            <if test="milestoneName != null">milestone_name,</if>
+            <if test="planDate != null">plan_date,</if>
+            <if test="actualDate != null">actual_date,</if>
+            <if test="status != null">status,</if>
+            <if test="ownerId != null">owner_id,</if>
+            <if test="ownerName != null">owner_name,</if>
+            <if test="description != null">description,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="projectId != null">#{projectId},</if>
+            <if test="milestoneName != null">#{milestoneName},</if>
+            <if test="planDate != null">#{planDate},</if>
+            <if test="actualDate != null">#{actualDate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="ownerId != null">#{ownerId},</if>
+            <if test="ownerName != null">#{ownerName},</if>
+            <if test="description != null">#{description},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateMilestone" parameterType="com.ruoyi.pjm.domain.PjmMilestone">
+        update pjm_milestone
+        <set>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="milestoneName != null">milestone_name = #{milestoneName},</if>
+            <if test="planDate != null">plan_date = #{planDate},</if>
+            <if test="actualDate != null">actual_date = #{actualDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="ownerId != null">owner_id = #{ownerId},</if>
+            <if test="ownerName != null">owner_name = #{ownerName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where milestone_id = #{milestoneId}
+    </update>
+
+    <update id="deleteMilestoneByIds">
+        update pjm_milestone set del_flag = '2' where milestone_id in
+        <foreach item="milestoneId" collection="array" open="(" separator="," close=")">
+            #{milestoneId}
+        </foreach>
+    </update>
+
+</mapper>

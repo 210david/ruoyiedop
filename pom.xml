@@ -269,6 +269,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- PJM项目管理模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-pjm</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- HTML解析-->
             <dependency>
                 <groupId>org.jsoup</groupId>
@@ -299,6 +306,7 @@
         <module>ruoyi-bid</module>
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
+        <module>ruoyi-pjm</module>
     </modules>
     <packaging>pom</packaging>
 

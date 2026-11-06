@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pjm.mapper.PjmProjectProcurementMapper">
+
+    <resultMap type="PjmProjectProcurement" id="PjmProjectProcurementResult">
+        <id     property="procurementId" column="procurement_id"/>
+        <result property="projectId"      column="project_id"/>
+        <result property="materialId"     column="material_id"/>
+        <result property="detailType"     column="detail_type"/>
+        <result property="itemNo"        column="item_no"/>
+        <result property="itemCode"      column="item_code"/>
+        <result property="itemName"      column="item_name"/>
+        <result property="specModel"     column="spec_model"/>
+        <result property="unit"          column="unit"/>
+        <result property="qty"            column="qty"/>
+        <result property="unitPrice"     column="unit_price"/>
+        <result property="amount"        column="amount"/>
+        <result property="remark"        column="remark"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+    </resultMap>
+
+    <sql id="selectProcurementVo">
+        SELECT procurement_id, project_id, material_id, detail_type, item_no, item_code, item_name, spec_model, unit,
+               qty, unit_price, amount, remark, del_flag, create_by, create_time, update_by, update_time
+        FROM pjm_project_procurement
+    </sql>
+
+    <select id="selectPjmProjectProcurementById" parameterType="Long" resultMap="PjmProjectProcurementResult">
+        <include refid="selectProcurementVo"/>
+        WHERE procurement_id = #{procurementId} AND del_flag = '0'
+    </select>
+
+    <select id="selectPjmProjectProcurementList" parameterType="PjmProjectProcurement" resultMap="PjmProjectProcurementResult">
+        <include refid="selectProcurementVo"/>
+        <where>
+            del_flag = '0'
+            <if test="projectId != null"> AND project_id = #{projectId}</if>
+            <if test="itemName != null and itemName != ''"> AND item_name LIKE CONCAT('%', #{itemName}, '%')</if>
+        </where>
+        ORDER BY project_id, item_no ASC, procurement_id ASC
+    </select>
+
+    <select id="selectByProjectId" parameterType="Long" resultMap="PjmProjectProcurementResult">
+        <include refid="selectProcurementVo"/>
+        WHERE project_id = #{projectId} AND del_flag = '0'
+        ORDER BY item_no ASC, procurement_id ASC
+    </select>
+
+    <insert id="insertPjmProjectProcurement" parameterType="PjmProjectProcurement" useGeneratedKeys="true" keyProperty="procurementId">
+        INSERT INTO pjm_project_procurement (
+            project_id, material_id, detail_type, item_no, item_code, item_name, spec_model, unit,
+            qty, unit_price, amount, remark, del_flag, create_by, create_time
+        ) VALUES (
+            #{projectId}, #{materialId}, IFNULL(#{detailType}, '1'), #{itemNo}, #{itemCode}, #{itemName}, #{specModel}, #{unit},
+            #{qty}, #{unitPrice}, #{amount}, #{remark}, #{delFlag}, #{createBy}, sysdate()
+        )
+    </insert>
+
+    <update id="updatePjmProjectProcurement" parameterType="PjmProjectProcurement">
+        UPDATE pjm_project_procurement
+        <set>
+            <if test="detailType != null and detailType != ''">detail_type = #{detailType},</if>
+            <if test="itemNo != null">item_no = #{itemNo},</if>
+            <if test="itemCode != null">item_code = #{itemCode},</if>
+            <if test="itemName != null">item_name = #{itemName},</if>
+            <if test="specModel != null">spec_model = #{specModel},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="qty != null">qty = #{qty},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE procurement_id = #{procurementId}
+    </update>
+
+    <delete id="deletePjmProjectProcurementByIds">
+        UPDATE pjm_project_procurement SET del_flag = '2' WHERE procurement_id IN
+        <foreach item="procurementId" collection="array" open="(" separator="," close=")">#{procurementId}</foreach>
+    </delete>
+
+    <delete id="deletePjmProjectProcurementById" parameterType="Long">
+        UPDATE pjm_project_procurement SET del_flag = '2' WHERE procurement_id = #{procurementId}
+    </delete>
+
+    <delete id="deleteByProjectId" parameterType="Long">
+        UPDATE pjm_project_procurement SET del_flag = '2' WHERE project_id = #{projectId}
+    </delete>
+
+</mapper>
