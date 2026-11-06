@@ -110,6 +110,11 @@ public class SysPasswordService
             return;
         }
         long diffDays = (System.currentTimeMillis() - pwdUpdateDate.getTime()) / (1000L * 60 * 60 * 24);
+        // 配置 0 或负数表示永不过期
+        if (passwordExpireDays <= 0)
+        {
+            return;
+        }
         if (diffDays >= passwordExpireDays)
         {
             throw new UserPasswordExpireException();
