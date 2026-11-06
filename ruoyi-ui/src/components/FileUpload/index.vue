@@ -101,6 +101,8 @@ const props = defineProps({
 const { proxy } = getCurrentInstance()
 const emit = defineEmits()
 const number = ref(0)
+// 真实的在途上传请求数：成功/失败回调各递减一次，避免计数错位导致 loading 永不关闭
+const inflightCount = ref(0)
 const uploadList = ref([])
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + props.action) // 上传文件服务器地址
@@ -188,6 +190,7 @@ function handleBeforeUpload(file) {
   uploading.value = true
   proxy.$modal.loading("正在上传文件，请稍候...")
   number.value++
+  inflightCount.value++
   return true
 }
 
@@ -207,6 +210,7 @@ function handleUploadProgress(event, file) {
 
 // 上传失败
 function handleUploadError(err) {
+  inflightCount.value = Math.max(0, inflightCount.value - 1)
   uploading.value = false
   uploadPercent.value = 0
   // 大文件被网关拦截时给出可判断的提示，而不是笼统的「上传文件失败」
@@ -227,6 +231,7 @@ function handleUploadError(err) {
 
 // 上传成功回调
 function handleUploadSuccess(res, file) {
+  inflightCount.value = Math.max(0, inflightCount.value - 1)
   uploading.value = false
   uploadPercent.value = 100
   if (res.code === 200) {
@@ -254,15 +259,19 @@ function handleDelete(index) {
 
 // 上传结束处理
 function uploadedSuccessfully() {
-  if (number.value > 0 && uploadList.value.length === number.value) {
+  // 仍有在途请求时等待最后一个请求结束后统一收尾
+  if (inflightCount.value > 0) {
+    return
+  }
+  if (uploadList.value.length > 0) {
     fileList.value = fileList.value.filter(f => f.url !== undefined).concat(uploadList.value)
     uploadList.value = []
-    number.value = 0
     emit("update:modelValue", listToString(fileList.value))
-    uploading.value = false
-    uploadPercent.value = 0
-    proxy.$modal.closeLoading()
   }
+  number.value = 0
+  uploading.value = false
+  uploadPercent.value = 0
+  proxy.$modal.closeLoading()
 }
 
 // 获取文件名称
