@@ -1,0 +1,19 @@
+{
+  "name": "edop-mcp-gateway",
+  "version": "1.0.0",
+  "description": "EDOP enterprise platform MCP gateway for WorkBuddy connector",
+  "type": "module",
+  "main": "gateway.mjs",
+  "scripts": {
+    "start": "node gateway.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "bcryptjs": "^2.4.3",
+    "express": "^5.3.0",
+    "zod": "^3.23.0"
+  }
+}
