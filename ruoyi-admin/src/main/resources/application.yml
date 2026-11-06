@@ -168,3 +168,9 @@ pms:
     api-url: https://api.tianyancha.com/cloud-originapi/companyinfo
     # 第三方API密钥，mode=api时需配置
     api-key:
+
+# EDOP 智能助手连接器配置
+edop:
+  connector:
+    # MCP 网关地址（系统内授权页据此生成客户端 MCP 配置）
+    gateway-url: http://127.0.0.1:3000
