@@ -1,0 +1,25 @@
+# EDOP MCP 网关 docker-compose 编排模板
+# 用法：客户服务器上把本目录随分支代码拉下后，按客户环境修改 environment 与挂载路径，再 docker compose up -d
+services:
+  mcp-gateway:
+    build: ..
+    container_name: edop-mcp-gateway
+    restart: unless-stopped
+    environment:
+      # 客户差异全部通过 profile 注入，镜像/代码永远单源
+      EDOP_PROFILE: "standard"            # 改成客户 profile 名：dwx / lyjs ...
+      EDOP_GATEWAY_MODE: "http"
+      EDOP_AUDIT_FILE: "/app/logs/audit.log"  # 审计日志落挂载卷，容器重建不丢
+      TZ: Asia/Shanghai
+    ports:
+      - "3000:3000"                        # 仅映射到内网网卡时改为 "192.168.x.x:3000:3000"
+    volumes:
+      # 真实凭据永不进镜像/仓库，只存在于客户服务器本目录
+      - ./profiles:/app/profiles
+      # 审计日志持久化（容器重建不丢）
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>r.json()).then(j=>process.exit(j.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
