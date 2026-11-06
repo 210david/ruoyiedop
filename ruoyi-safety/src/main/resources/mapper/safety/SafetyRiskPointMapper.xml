@@ -6,6 +6,7 @@
         <result property="riskPointId"     column="risk_point_id"/>
         <result property="riskCode"        column="risk_code"/>
         <result property="riskName"        column="risk_name"/>
+        <result property="engineeringCategory" column="engineering_category"/>
         <result property="areaId"          column="area_id"/>
         <result property="areaName"        column="area_name"/>
         <result property="hazardDesc"      column="hazard_desc"/>
@@ -43,7 +44,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT risk_point_id, risk_code, risk_name, area_id, area_name, hazard_desc, accident_type,
+        SELECT risk_point_id, risk_code, risk_name, engineering_category, area_id, area_name, hazard_desc, accident_type,
                l_value, e_value, c_value, d_value, risk_level, control_level,
                measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency,
                check_standard, check_frequency, is_major_hazard, major_hazard_rule, compliance_file,
@@ -59,6 +60,7 @@
             del_flag = '0'
             <if test="riskCode != null and riskCode != ''"> AND risk_code LIKE CONCAT('%', #{riskCode}, '%')</if>
             <if test="riskName != null and riskName != ''"> AND risk_name LIKE CONCAT('%', #{riskName}, '%')</if>
+            <if test="engineeringCategory != null and engineeringCategory != ''"> AND engineering_category = #{engineeringCategory}</if>
             <if test="areaId != null"> AND area_id = #{areaId}</if>
             <if test="riskLevel != null and riskLevel != ''"> AND risk_level = #{riskLevel}</if>
             <if test="controlLevel != null and controlLevel != ''"> AND control_level = #{controlLevel}</if>
@@ -88,14 +90,14 @@
 
     <insert id="insertSafetyRiskPoint" parameterType="SafetyRiskPoint" useGeneratedKeys="true" keyProperty="riskPointId">
         INSERT INTO biz_safety_risk_point (
-            risk_code, risk_name, area_id, area_name, hazard_desc, accident_type,
+            risk_code, risk_name, engineering_category, area_id, area_name, hazard_desc, accident_type,
             l_value, e_value, c_value, d_value, risk_level, control_level,
             measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency,
             check_standard, check_frequency, is_major_hazard, major_hazard_rule, compliance_file,
             x_coord, y_coord, person_id, person_name,
             evaluate_date, re_evaluate_date, enterprise_id, status, create_by, create_time, remark
         ) VALUES (
-            #{riskCode}, #{riskName}, #{areaId}, #{areaName}, #{hazardDesc}, #{accidentType},
+            #{riskCode}, #{riskName}, #{engineeringCategory}, #{areaId}, #{areaName}, #{hazardDesc}, #{accidentType},
             #{lValue}, #{eValue}, #{cValue}, #{dValue}, #{riskLevel}, #{controlLevel},
             #{measureEngine}, #{measureManage}, #{measureTraining}, #{measurePpe}, #{measureEmergency},
             #{checkStandard}, #{checkFrequency}, #{isMajorHazard}, #{majorHazardRule}, #{complianceFile},
@@ -109,6 +111,7 @@
         <set>
             <if test="riskCode != null and riskCode != ''">risk_code = #{riskCode},</if>
             <if test="riskName != null and riskName != ''">risk_name = #{riskName},</if>
+            <if test="engineeringCategory != null">engineering_category = #{engineeringCategory},</if>
             <if test="areaId != null">area_id = #{areaId},</if>
             <if test="areaName != null">area_name = #{areaName},</if>
             <if test="hazardDesc != null">hazard_desc = #{hazardDesc},</if>

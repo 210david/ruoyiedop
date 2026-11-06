@@ -25,6 +25,10 @@ public class SafetyRiskPoint extends BaseEntity
     @Excel(name = "风险点名称")
     private String riskName;
 
+    /** 工程类别（对应工程类项目类型） */
+    @Excel(name = "工程类别", dictType = "pjm_engineering_category")
+    private String engineeringCategory;
+
     /** 所属区域ID */
     private Long areaId;
 
@@ -134,6 +138,8 @@ public class SafetyRiskPoint extends BaseEntity
     public void setRiskCode(String riskCode) { this.riskCode = riskCode; }
     public String getRiskName() { return riskName; }
     public void setRiskName(String riskName) { this.riskName = riskName; }
+    public String getEngineeringCategory() { return engineeringCategory; }
+    public void setEngineeringCategory(String engineeringCategory) { this.engineeringCategory = engineeringCategory; }
     public Long getAreaId() { return areaId; }
     public void setAreaId(Long areaId) { this.areaId = areaId; }
     public String getAreaName() { return areaName; }

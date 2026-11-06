@@ -25,6 +25,14 @@
           </div>
         </div>
         <div class="field">
+          <label>工程类别</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.engineeringCategory" placeholder="全部" clearable @change="handleQuery">
+              <el-option v-for="dict in engineeringCategoryOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </div>
+        </div>
+        <div class="field">
           <label>风险等级</label>
           <div class="control is-select">
             <el-select v-model="queryParams.riskLevel" placeholder="全部" clearable @change="handleQuery">
@@ -80,6 +88,12 @@
           <el-table-column type="index" label="序号" key="序号" :width="colWidth('序号', 85)" align="center" resizable />
           <el-table-column label="风险点编号" prop="riskCode" key="riskCode" :width="colWidth('riskCode', 130)" resizable v-if="columns.riskCode.visible" />
           <el-table-column label="风险点名称" prop="riskName" key="riskName" :min-width="colWidth('riskName', 180)" resizable show-overflow-tooltip v-if="columns.riskName.visible" />
+          <el-table-column label="工程类别" prop="engineeringCategory" key="engineeringCategory" :width="colWidth('engineeringCategory', 130)" resizable align="center" v-if="columns.engineeringCategory.visible">
+            <template #default="scope">
+              <span v-if="scope.row.engineeringCategory" class="badge" :class="engCatBadge(scope.row.engineeringCategory)">{{ engCatLabel(scope.row.engineeringCategory) }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="所属区域" prop="areaName" key="areaName" :width="colWidth('areaName', 130)" resizable show-overflow-tooltip v-if="columns.areaName.visible" />
           <el-table-column label="事故类别" prop="accidentType" key="accidentType" :width="colWidth('accidentType', 120)" resizable align="center" v-if="columns.accidentType.visible">
             <template #default="scope">
@@ -148,6 +162,16 @@
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="风险点编号" prop="riskCode"><el-input v-model="form.riskCode" placeholder="保存后自动生成" disabled /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="风险点名称" prop="riskName"><el-input v-model="form.riskName" placeholder="请输入风险点名称" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="工程类别" prop="engineeringCategory">
+                  <div style="display:flex;gap:8px;width:100%">
+                    <el-select v-model="form.engineeringCategory" placeholder="请选择工程类别" clearable style="flex:1">
+                      <el-option v-for="dict in engineeringCategoryOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+                    </el-select>
+                    <el-button plain type="warning" icon="CollectionTag" :disabled="!form.engineeringCategory" @click="openStdDialog">从国家标准带出</el-button>
+                  </div>
+                </el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="所属区域" prop="areaId">
@@ -298,6 +322,40 @@
       <template #footer><el-button @click="viewOpen = false">关 闭</el-button></template>
     </el-dialog>
 
+    <!-- 国家标准风险点选择弹窗 -->
+    <el-dialog v-model="stdOpen" width="980px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <span class="rd-detail-header-title">国家标准风险点</span>
+          <span class="rd-detail-header-divider"></span>
+          <span class="rd-detail-header-no">{{ engCatLabel(form.engineeringCategory) }}</span>
+        </div>
+      </template>
+      <el-table ref="stdTableRef" v-loading="stdLoading" :data="stdList" height="400" size="small" highlight-current-row @row-click="onStdRowClick" @row-dblclick="onStdRowDblClick">
+        <el-table-column width="45" align="center">
+          <template #default="{ row }">
+            <el-radio :model-value="stdSelectedId" :value="row.riskPointId" @click.stop="onStdRowClick(row)"><span /></el-radio>
+          </template>
+        </el-table-column>
+        <el-table-column label="标准编号" prop="riskCode" width="130" class-name="col-mono" />
+        <el-table-column label="风险点名称" prop="riskName" min-width="200" show-overflow-tooltip />
+        <el-table-column label="危险源描述" prop="hazardDesc" min-width="320" show-overflow-tooltip />
+        <el-table-column label="事故类别" width="110" align="center">
+          <template #default="{ row }">{{ accidentTypeLabel(row.accidentType) }}</template>
+        </el-table-column>
+        <el-table-column label="风险等级" width="110" align="center">
+          <template #default="{ row }"><span class="badge" :class="riskBadgeClass(row.riskLevel)"><span class="dot"></span>{{ riskLevelLabel(row.riskLevel) }}</span></template>
+        </el-table-column>
+        <el-table-column label="D值" prop="dValue" width="80" align="center" />
+      </el-table>
+      <div class="std-dialog-hint">共 {{ stdList.length }} 条国家标准风险点，双击行可直接带出</div>
+      <template #footer>
+        <el-button @click="stdOpen = false">取 消</el-button>
+        <el-button type="primary" :disabled="!stdSelectedId" @click="applyStdRisk">带出到表单</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 责任人选择弹窗 -->
     <user-picker ref="userPickerRef" title="选择责任人" @confirm="onUserPickerConfirm" />
   </div>
@@ -312,7 +370,8 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, CircleClose, QuestionFilled, ArrowDown } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
-const { safety_risk_level, safety_control_level, safety_check_frequency, safety_accident_type } = proxy.useDict('safety_risk_level', 'safety_control_level', 'safety_check_frequency', 'safety_accident_type')
+const { safety_risk_level, safety_control_level, safety_check_frequency, safety_accident_type, pjm_engineering_category } = proxy.useDict('safety_risk_level', 'safety_control_level', 'safety_check_frequency', 'safety_accident_type', 'pjm_engineering_category')
+const engineeringCategoryOptions = computed(() => (pjm_engineering_category.value || []).map(d => ({ ...d, value: String(d.value) })))
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('safety_risk_index')
 const { collapsedCards, toggleCard } = useDetailCard(["c0","c1","c2","c3","c4","vc0","vc1","vc2","vc3","vc4"])
 
@@ -333,6 +392,7 @@ const title = ref('')
 const defaultColumns = {
   riskCode: { label: '风险点编号', visible: true },
   riskName: { label: '风险点名称', visible: true },
+  engineeringCategory: { label: '工程类别', visible: true },
   areaName: { label: '所属区域', visible: true },
   accidentType: { label: '事故类别', visible: true },
   lValue: { label: 'L值', visible: true },
@@ -395,6 +455,7 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.riskName) count++
   if (queryParams.value.riskCode) count++
+  if (queryParams.value.engineeringCategory) count++
   if (queryParams.value.riskLevel) count++
   if (queryParams.value.controlLevel) count++
   if (queryParams.value.accidentType) count++
@@ -403,7 +464,7 @@ const activeFilterCount = computed(() => {
 
 function getList() { loading.value = true; listRiskPoint(queryParams.value).then(response => { riskList.value = response.rows; total.value = response.total; loading.value = false; applySavedWidths() }).catch(error => { console.error(error) }).finally(() => { loading.value = false }) }
 function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum = 1; getList() }
-function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.params = {}; handleQuery() }
+function resetQuery() { queryParams.value.riskName = undefined; queryParams.value.riskCode = undefined; queryParams.value.engineeringCategory = undefined; queryParams.value.riskLevel = undefined; queryParams.value.controlLevel = undefined; queryParams.value.accidentType = undefined; queryParams.value.params = {}; handleQuery() }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function handleSelectionChange(selection) { ids.value = selection.map(item => item.riskPointId); single.value = selection.length !== 1; multiple.value = !selection.length }
 function handleAdd() { reset(); collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false; collapsedCards.c4 = false; const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); form.value.evaluateDate = `${y}-${m}-${d}`; open.value = true; title.value = '添加风险点' }
@@ -468,7 +529,7 @@ function handleDelete(row) { const riskPointIds = row.riskPointId || ids.value; 
 function handleExport() { proxy.download('safety/risk/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'riskPointId'), `risk_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { riskPointId: undefined, riskCode: undefined, riskName: undefined, areaId: undefined, areaName: undefined, hazardDesc: undefined, accidentType: undefined, lValue: undefined, eValue: undefined, cValue: undefined, dValue: undefined, riskLevel: undefined, controlLevel: undefined, measureEngine: undefined, measureManage: undefined, measureTraining: undefined, measurePpe: undefined, measureEmergency: undefined, checkStandard: undefined, checkFrequency: undefined, isMajorHazard: '0', majorHazardRule: undefined, complianceFile: undefined, personId: undefined, personName: undefined, evaluateDate: undefined, reEvaluateDate: undefined, remark: undefined }
+  form.value = { riskPointId: undefined, riskCode: undefined, riskName: undefined, engineeringCategory: undefined, areaId: undefined, areaName: undefined, hazardDesc: undefined, accidentType: undefined, lValue: undefined, eValue: undefined, cValue: undefined, dValue: undefined, riskLevel: undefined, controlLevel: undefined, measureEngine: undefined, measureManage: undefined, measureTraining: undefined, measurePpe: undefined, measureEmergency: undefined, checkStandard: undefined, checkFrequency: undefined, isMajorHazard: '0', majorHazardRule: undefined, complianceFile: undefined, personId: undefined, personName: undefined, evaluateDate: undefined, reEvaluateDate: undefined, remark: undefined }
   proxy.resetForm('riskRef')
 }
 /** 打开责任人选择弹窗 */
@@ -484,6 +545,59 @@ function onAreaChange(val) { const item = areaOptions.value.find(a => a.areaId =
 function loadAreas() { listArea({ pageNum: 1, pageSize: 1000 }).then(response => { areaOptions.value = response.rows }) }
 /** 事故类别字典翻译 */
 function accidentTypeLabel(val) { const item = safety_accident_type.value.find(d => d.value == val); return item ? item.label : '-' }
+/** 工程类别字典翻译（兼容字符串/数字） */
+function engCatLabel(val) { const item = engineeringCategoryOptions.value.find(d => String(d.value) === String(val)); return item ? item.label : (val || '-') }
+/** 工程类别胶囊配色 */
+function engCatBadge(val) { const map = { '1': 'blue', '2': 'green', '3': 'amber', '4': 'red', '5': 'violet', '6': 'cyan', '7': 'amber', '8': 'blue', '9': 'green', '10': 'red', '11': 'gray' }; return map[String(val)] || 'gray' }
+
+/** 国家标准风险点选择 */
+const stdOpen = ref(false)
+const stdLoading = ref(false)
+const stdList = ref([])
+const stdSelectedId = ref(null)
+const stdSelectedRow = ref(null)
+const stdTableRef = ref()
+
+function openStdDialog() {
+  if (!form.value.engineeringCategory) { proxy.$modal.msgWarning('请先选择工程类别'); return }
+  stdOpen.value = true
+  stdSelectedId.value = null
+  stdSelectedRow.value = null
+  stdLoading.value = true
+  listRiskPoint({ pageNum: 1, pageSize: 200, engineeringCategory: form.value.engineeringCategory, riskCode: 'GB-RISK' }).then(res => {
+    stdList.value = (res.rows || []).filter(r => String(r.riskCode || '').startsWith('GB-RISK'))
+  }).finally(() => { stdLoading.value = false })
+}
+
+function onStdRowClick(row) { stdSelectedId.value = row.riskPointId; stdSelectedRow.value = row }
+function onStdRowDblClick(row) { onStdRowClick(row); applyStdRisk() }
+
+/** 把国家标准风险点回填到表单 */
+function applyStdRisk() {
+  const r = stdSelectedRow.value
+  if (!r) return
+  form.value.riskName = r.riskName
+  form.value.hazardDesc = r.hazardDesc
+  form.value.accidentType = r.accidentType != null ? String(r.accidentType) : form.value.accidentType
+  form.value.engineeringCategory = r.engineeringCategory != null ? String(r.engineeringCategory) : form.value.engineeringCategory
+  form.value.lValue = r.lValue
+  form.value.eValue = r.eValue
+  form.value.cValue = r.cValue
+  form.value.dValue = r.dValue
+  form.value.riskLevel = r.riskLevel != null ? String(r.riskLevel) : form.value.riskLevel
+  form.value.controlLevel = r.controlLevel != null ? String(r.controlLevel) : form.value.controlLevel
+  form.value.checkFrequency = r.checkFrequency != null ? String(r.checkFrequency) : form.value.checkFrequency
+  form.value.measureEngine = r.measureEngine
+  form.value.measureManage = r.measureManage
+  form.value.measureTraining = r.measureTraining
+  form.value.measurePpe = r.measurePpe
+  form.value.measureEmergency = r.measureEmergency
+  form.value.checkStandard = r.checkStandard
+  form.value.complianceFile = r.complianceFile || form.value.complianceFile
+  stdOpen.value = false
+  collapsedCards.c0 = false; collapsedCards.c1 = false; collapsedCards.c2 = false; collapsedCards.c3 = false
+  proxy.$modal.msgSuccess('已带出国家标准风险点：' + r.riskName)
+}
 function riskLevelLabel(level) { const item = safety_risk_level.value.find(d => d.value == level); return item ? item.label : '-' }
 function riskBadgeClass(level) { const map = { '1': 'red', '2': 'amber', '3': 'blue', '4': 'green' }; return map[level] || 'gray' }
 function controlLevelLabel(level) { const item = safety_control_level.value.find(d => d.value == level); return item ? item.label : '-' }
@@ -539,8 +653,9 @@ getList()
 .safety-risk-page .rd-form-tip:hover { color: #909399; }
 @media (max-width:1100px) { .safety-risk-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .safety-risk-page .filter-card .filter-bar { grid-template-columns:1fr; } }
-.clear-icon { cursor: pointer; color: #c0c4cc; font-size: 14px; }
+.clear-icon { cursor: pointer; color: #c0c4cc; }
 .clear-icon:hover { color: #909399; }
+.std-dialog-hint { margin-top: 8px; font-size: 12px; color: #909399; }
 
 /* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
 :deep(.col-action) { padding: 6px 4px !important; }
