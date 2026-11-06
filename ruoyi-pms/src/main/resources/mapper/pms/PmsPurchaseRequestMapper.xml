@@ -20,6 +20,9 @@
         <result property="auditOpinion"  column="audit_opinion"/>
         <result property="planId"         column="plan_id"/>
         <result property="planNo"         column="plan_no"/>
+        <result property="purchaseType"   column="purchase_type"/>
+        <result property="sourceProjectId"  column="source_project_id"/>
+        <result property="sourceProjectNo"  column="source_project_no"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -50,7 +53,8 @@
     <sql id="selectRequestVo">
         SELECT request_id, request_no, title, status, priority, expect_date, purpose, total_amount,
                requester_id, requester_name, dept_id, dept_name, audit_by, audit_time, audit_opinion,
-               plan_id, plan_no,
+               plan_id, plan_no, source_project_id, source_project_no,
+               purchase_type,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM pms_purchase_request
     </sql>
@@ -65,6 +69,9 @@
             <if test="priority != null and priority != ''"> AND priority = #{priority}</if>
             <if test="requesterName != null and requesterName != ''"> AND requester_name LIKE CONCAT('%', #{requesterName}, '%')</if>
             <if test="deptId != null"> AND dept_id = #{deptId}</if>
+            <if test="sourceProjectId != null"> AND source_project_id = #{sourceProjectId}</if>
+            <if test="sourceProjectNo != null and sourceProjectNo != ''"> AND source_project_no LIKE CONCAT('%', #{sourceProjectNo}, '%')</if>
+            <if test="purchaseType != null and purchaseType != ''"> AND purchase_type = #{purchaseType}</if>
             <if test="params.beginDate != null and params.beginDate != ''"> AND date(create_time) &gt;= #{params.beginDate}</if>
             <if test="params.endDate != null and params.endDate != ''"> AND date(create_time) &lt;= #{params.endDate}</if>
                   <if test="params.dataScope != null and params.dataScope != ''">${params.dataScope}</if>
@@ -81,12 +88,14 @@
         INSERT INTO pms_purchase_request (
             request_no, title, status, priority, expect_date, purpose, total_amount,
             requester_id, requester_name, dept_id, dept_name, audit_by, audit_time, audit_opinion,
-            plan_id, plan_no,
+            plan_id, plan_no, source_project_id, source_project_no,
+            purchase_type,
             del_flag, create_by, create_time, remark
         ) VALUES (
             #{requestNo}, #{title}, #{status}, #{priority}, #{expectDate}, #{purpose}, #{totalAmount},
             #{requesterId}, #{requesterName}, #{deptId}, #{deptName}, #{auditBy}, #{auditTime}, #{auditOpinion},
-            #{planId}, #{planNo},
+            #{planId}, #{planNo}, #{sourceProjectId}, #{sourceProjectNo},
+            #{purchaseType},
             #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -110,6 +119,9 @@
             <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
             <if test="planId != null">plan_id = #{planId},</if>
             <if test="planNo != null">plan_no = #{planNo},</if>
+            <if test="sourceProjectId != null">source_project_id = #{sourceProjectId},</if>
+            <if test="sourceProjectNo != null">source_project_no = #{sourceProjectNo},</if>
+            <if test="purchaseType != null">purchase_type = #{purchaseType},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()

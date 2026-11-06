@@ -14,6 +14,8 @@
         <result property="outboundDate"  column="outbound_date"/>
         <result property="completeDate"  column="complete_date"/>
         <result property="totalQty"      column="total_qty"/>
+        <result property="sourceProjectId" column="source_project_id"/>
+        <result property="sourceProjectNo" column="source_project_no"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
@@ -48,7 +50,8 @@
     <sql id="selectOutboundOrderVo">
         SELECT o.order_id, o.order_no, o.order_type, o.warehouse_id, w.warehouse_name,
                o.status, o.wave_id, v.wave_no, o.outbound_date, o.complete_date,
-               o.total_qty, o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark
+               o.total_qty, o.source_project_id, o.source_project_no,
+               o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark
         FROM wms_outbound_order o
         LEFT JOIN wms_warehouse w ON o.warehouse_id = w.warehouse_id
         LEFT JOIN wms_wave v ON o.wave_id = v.wave_id
@@ -80,9 +83,9 @@
 
     <insert id="insertOutboundOrder" parameterType="WmsOutboundOrder" useGeneratedKeys="true" keyProperty="orderId">
         INSERT INTO wms_outbound_order (order_no, order_type, warehouse_id, status, wave_id,
-            outbound_date, total_qty, create_by, create_time, remark)
+            outbound_date, total_qty, source_project_id, source_project_no, create_by, create_time, remark)
         VALUES (#{orderNo}, #{orderType}, #{warehouseId}, #{status}, #{waveId},
-            #{outboundDate}, #{totalQty}, #{createBy}, sysdate(), #{remark})
+            #{outboundDate}, #{totalQty}, #{sourceProjectId}, #{sourceProjectNo}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateOutboundOrder" parameterType="WmsOutboundOrder">

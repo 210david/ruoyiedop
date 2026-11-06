@@ -7,6 +7,8 @@
         <result property="orderNo"            column="order_no"/>
         <result property="requestId"          column="request_id"/>
         <result property="requestNo"          column="request_no"/>
+        <result property="sourceProjectId"    column="source_project_id"/>
+        <result property="sourceProjectNo"    column="source_project_no"/>
         <result property="contractId"         column="contract_id"/>
         <result property="contractNo"         column="contract_no"/>
         <result property="supplierId"         column="supplier_id"/>
@@ -27,6 +29,7 @@
         <result property="paymentMethod"      column="payment_method"/>
         <result property="paymentDays"        column="payment_days"/>
         <result property="settlementType"     column="settlement_type"/>
+        <result property="purchaseType"       column="purchase_type"/>
         <result property="currency"           column="currency"/>
         <result property="deliveryAddress"    column="delivery_address"/>
         <result property="auditBy"            column="audit_by"/>
@@ -63,9 +66,10 @@
 
     <sql id="selectOrderVo">
         SELECT order_id, order_no, request_id, request_no, contract_id, contract_no, supplier_id, supplier_name, warehouse_id,
+               source_project_id, source_project_no,
                status, order_date, expect_delivery_date, actual_delivery_date, total_qty, total_amount,
                received_amount, paid_amount, buyer_id, buyer_name, dept_id, dept_name, payment_method, payment_days,
-               settlement_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
+               settlement_type, purchase_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
                del_flag, create_by, create_time, update_by, update_time, remark
         FROM pms_purchase_order
     </sql>
@@ -76,6 +80,8 @@
             del_flag = '0'
             <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
             <if test="requestNo != null and requestNo != ''"> AND request_no LIKE CONCAT('%', #{requestNo}, '%')</if>
+            <if test="sourceProjectId != null"> AND source_project_id = #{sourceProjectId}</if>
+            <if test="sourceProjectNo != null and sourceProjectNo != ''"> AND source_project_no LIKE CONCAT('%', #{sourceProjectNo}, '%')</if>
             <if test="contractNo != null and contractNo != ''"> AND contract_no LIKE CONCAT('%', #{contractNo}, '%')</if>
             <if test="supplierName != null and supplierName != ''"> AND supplier_name LIKE CONCAT('%', #{supplierName}, '%')</if>
             <if test="supplierId != null"> AND supplier_id = #{supplierId}</if>
@@ -99,15 +105,17 @@
     <insert id="insertPurchaseOrder" parameterType="PmsPurchaseOrder" useGeneratedKeys="true" keyProperty="orderId">
         INSERT INTO pms_purchase_order (
             order_no, request_id, request_no, contract_id, contract_no, supplier_id, supplier_name, warehouse_id,
+            source_project_id, source_project_no,
             status, order_date, expect_delivery_date, actual_delivery_date, total_qty, total_amount,
             received_amount, buyer_id, buyer_name, dept_id, dept_name, payment_method, payment_days,
-            settlement_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
+            settlement_type, purchase_type, currency, delivery_address, audit_by, audit_time, audit_opinion,
             del_flag, create_by, create_time, remark
         ) VALUES (
             #{orderNo}, #{requestId}, #{requestNo}, #{contractId}, #{contractNo}, #{supplierId}, #{supplierName}, #{warehouseId},
+            #{sourceProjectId}, #{sourceProjectNo},
             #{status}, #{orderDate}, #{expectDeliveryDate}, #{actualDeliveryDate}, #{totalQty}, #{totalAmount},
             #{receivedAmount}, #{buyerId}, #{buyerName}, #{deptId}, #{deptName}, #{paymentMethod}, #{paymentDays},
-            #{settlementType}, #{currency}, #{deliveryAddress}, #{auditBy}, #{auditTime}, #{auditOpinion},
+            #{settlementType}, #{purchaseType}, #{currency}, #{deliveryAddress}, #{auditBy}, #{auditTime}, #{auditOpinion},
             #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -118,6 +126,8 @@
             <if test="orderNo != null and orderNo != ''">order_no = #{orderNo},</if>
             <if test="requestId != null">request_id = #{requestId},</if>
             <if test="requestNo != null">request_no = #{requestNo},</if>
+            <if test="sourceProjectId != null">source_project_id = #{sourceProjectId},</if>
+            <if test="sourceProjectNo != null">source_project_no = #{sourceProjectNo},</if>
             <if test="contractId != null">contract_id = #{contractId},</if>
             <if test="contractNo != null">contract_no = #{contractNo},</if>
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
@@ -138,6 +148,7 @@
             <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
             <if test="paymentDays != null">payment_days = #{paymentDays},</if>
             <if test="settlementType != null">settlement_type = #{settlementType},</if>
+            <if test="purchaseType != null">purchase_type = #{purchaseType},</if>
             <if test="currency != null">currency = #{currency},</if>
             <if test="deliveryAddress != null">delivery_address = #{deliveryAddress},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>

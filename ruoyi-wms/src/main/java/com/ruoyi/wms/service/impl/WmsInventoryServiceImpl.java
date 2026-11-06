@@ -1,8 +1,10 @@
 package com.ruoyi.wms.service.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,16 @@ public class WmsInventoryServiceImpl implements IWmsInventoryService
     public WmsInventory selectInventoryById(Long inventoryId)
     {
         return wmsInventoryMapper.selectInventoryById(inventoryId);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectStockSummaryByMaterialIds(List<Long> materialIds)
+    {
+        if (materialIds == null || materialIds.isEmpty())
+        {
+            return new ArrayList<>();
+        }
+        return wmsInventoryMapper.selectStockSummaryByMaterialIds(materialIds);
     }
 
     @Override

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.pms.mapper.PmsConsumptionMapper">
+
+    <resultMap type="PmsConsumption" id="PmsConsumptionResult">
+        <id     property="consumptionId"   column="consumption_id"/>
+        <result property="consumptionNo"   column="consumption_no"/>
+        <result property="orderId"         column="order_id"/>
+        <result property="orderNo"         column="order_no"/>
+        <result property="receiveId"       column="receive_id"/>
+        <result property="receiveNo"       column="receive_no"/>
+        <result property="supplierName"    column="supplier_name"/>
+        <result property="totalQty"        column="total_qty"/>
+        <result property="totalAmount"     column="total_amount"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="deptName"        column="dept_name"/>
+        <result property="userId"          column="user_id"/>
+        <result property="userName"        column="user_name"/>
+        <result property="useDate"         column="use_date"/>
+        <result property="usagePurpose"    column="usage_purpose"/>
+        <result property="status"          column="status"/>
+        <result property="remark"          column="remark"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+    </resultMap>
+
+    <resultMap type="PmsConsumptionDetail" id="PmsConsumptionDetailResult">
+        <id     property="detailId"        column="detail_id"/>
+        <result property="consumptionId"   column="consumption_id"/>
+        <result property="materialId"      column="material_id"/>
+        <result property="materialCode"    column="material_code"/>
+        <result property="materialName"    column="material_name"/>
+        <result property="specModel"       column="spec_model"/>
+        <result property="unit"            column="unit"/>
+        <result property="qty"             column="qty"/>
+        <result property="unitPrice"       column="unit_price"/>
+        <result property="amount"          column="amount"/>
+        <result property="delFlag"         column="del_flag"/>
+    </resultMap>
+
+    <sql id="selectConsumptionVo">
+        select consumption_id, consumption_no, order_id, order_no, receive_id, receive_no, supplier_name,
+               total_qty, total_amount, dept_id, dept_name, user_id, user_name, use_date, usage_purpose,
+               status, remark, del_flag, create_by, create_time, update_by, update_time
+        from pms_consumption
+    </sql>
+
+    <select id="selectConsumptionList" parameterType="PmsConsumption" resultMap="PmsConsumptionResult">
+        <include refid="selectConsumptionVo"/>
+        <where>
+            <if test="consumptionNo != null and consumptionNo != ''"> AND consumption_no LIKE CONCAT('%', #{consumptionNo}, '%')</if>
+            <if test="orderNo != null and orderNo != ''"> AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="orderId != null"> AND order_id = #{orderId}</if>
+            <if test="deptName != null and deptName != ''"> AND dept_name LIKE CONCAT('%', #{deptName}, '%')</if>
+            <if test="userName != null and userName != ''"> AND user_name LIKE CONCAT('%', #{userName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            AND del_flag = '0'
+        </where>
+        ORDER BY consumption_id DESC
+    </select>
+
+    <select id="selectConsumptionById" parameterType="Long" resultMap="PmsConsumptionResult">
+        <include refid="selectConsumptionVo"/>
+        where consumption_id = #{consumptionId} and del_flag = '0'
+    </select>
+
+    <select id="selectConsumptionDetailByConsumptionId" parameterType="Long" resultMap="PmsConsumptionDetailResult">
+        select detail_id, consumption_id, material_id, material_code, material_name, spec_model, unit,
+               qty, unit_price, amount, del_flag
+        from pms_consumption_detail
+        where consumption_id = #{consumptionId} and del_flag = '0'
+    </select>
+
+    <insert id="insertConsumption" parameterType="PmsConsumption" useGeneratedKeys="true" keyProperty="consumptionId">
+        INSERT INTO pms_consumption (
+            consumption_no, order_id, order_no, receive_id, receive_no, supplier_name,
+            total_qty, total_amount, dept_id, dept_name, user_id, user_name, use_date, usage_purpose,
+            status, remark, del_flag, create_by, create_time
+        ) VALUES (
+            #{consumptionNo}, #{orderId}, #{orderNo}, #{receiveId}, #{receiveNo}, #{supplierName},
+            #{totalQty}, #{totalAmount}, #{deptId}, #{deptName}, #{userId}, #{userName}, #{useDate}, #{usagePurpose},
+            #{status}, #{remark}, #{delFlag}, #{createBy}, sysdate()
+        )
+    </insert>
+
+    <insert id="insertConsumptionDetail" parameterType="PmsConsumptionDetail" useGeneratedKeys="true" keyProperty="detailId">
+        INSERT INTO pms_consumption_detail (
+            consumption_id, material_id, material_code, material_name, spec_model, unit,
+            qty, unit_price, amount, del_flag
+        ) VALUES (
+            #{consumptionId}, #{materialId}, #{materialCode}, #{materialName}, #{specModel}, #{unit},
+            #{qty}, #{unitPrice}, #{amount}, #{delFlag}
+        )
+    </insert>
+
+    <update id="updateConsumption" parameterType="PmsConsumption">
+        UPDATE pms_consumption
+        <set>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="deptName != null">dept_name = #{deptName},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="useDate != null">use_date = #{useDate},</if>
+            <if test="usagePurpose != null">usage_purpose = #{usagePurpose},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE consumption_id = #{consumptionId}
+    </update>
+
+    <update id="deleteConsumptionByIds">
+        UPDATE pms_consumption SET del_flag = '2' WHERE consumption_id IN
+        <foreach item="consumptionId" collection="array" open="(" separator="," close=")">
+            #{consumptionId}
+        </foreach>
+    </update>
+
+</mapper>

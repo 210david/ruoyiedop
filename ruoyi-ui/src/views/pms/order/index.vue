@@ -141,6 +141,11 @@
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 120)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template>
           </el-table-column>
+          <el-table-column label="采购类型" prop="purchaseType" key="purchaseType" :width="colWidth('purchaseType', 100)" resizable align="center" v-if="columns.purchaseType.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.purchaseType === '2' ? 'violet' : 'blue'">{{ scope.row.purchaseType === '2' ? '零散采购' : '正常采购' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="预计到货日期" prop="orderDate" key="orderDate" :width="colWidth('orderDate', 130)" resizable align="center" sortable="custom" v-if="columns.orderDate.visible" />
           <el-table-column label="总数量" prop="totalQty" key="totalQty" :width="colWidth('totalQty', 110)" resizable align="right" sortable="custom" v-if="columns.totalQty.visible" />
           <el-table-column label="总金额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 130)" resizable align="right" sortable="custom" v-if="columns.totalAmount.visible">
@@ -156,6 +161,12 @@
             <template #default="scope"><span class="rd-amount" :style="{ color: (scope.row.totalAmount - scope.row.paidAmount) > 0 ? '#f56c6c' : '#67c23a' }">{{ formatMoney((scope.row.totalAmount || 0) - (scope.row.paidAmount || 0)) }}</span></template>
           </el-table-column>
           <el-table-column label="采购员" prop="buyerName" key="buyerName" :width="colWidth('buyerName', 120)" resizable v-if="columns.buyerName.visible" />
+          <el-table-column label="关联项目" prop="sourceProjectNo" key="sourceProjectNo" :width="colWidth('sourceProjectNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceProjectNo.visible">
+            <template #default="scope">
+              <span v-if="scope.row.sourceProjectNo" class="col-mono">{{ scope.row.sourceProjectNo }}</span>
+              <span v-else class="muted-dash">—</span>
+            </template>
+          </el-table-column>
           <el-table-column label="付款方式" prop="paymentMethod" key="paymentMethod" :width="colWidth('paymentMethod', 120)" resizable align="center" v-if="columns.paymentMethod.visible">
             <template #default="scope"><span class="badge blue">{{ paymentMethodLabel(scope.row.paymentMethod) }}</span></template>
           </el-table-column>
@@ -284,6 +295,13 @@
                 <el-col :span="12">
                   <el-form-item label="部门" prop="deptName">
                     <el-input v-model="form.deptName" placeholder="选择采购员后自动带出" disabled />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="关联项目" prop="sourceProjectId">
+                    <el-select v-model="form.sourceProjectId" filterable clearable placeholder="可选，关联后计入项目采购台账" style="width: 100%" @change="onProjectChange">
+                      <el-option v-for="p in projectOptions" :key="p.projectId" :label="p.projectNo + ' ' + p.projectName" :value="p.projectId" />
+                    </el-select>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -821,6 +839,7 @@ import { listOrder, getOrder, addOrder, updateOrder, delOrder, submitOrder, audi
 import { getRequest } from '@/api/pms/request'
 import { listReceive, getReceive } from '@/api/pms/receive'
 import { listInvoice } from '@/api/pms/invoice'
+import { listProject } from '@/api/pjm/project'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -842,6 +861,7 @@ const defaultColumns = {
   requestNo: { label: '关联申请单号', visible: true },
   supplierName: { label: '供应商', visible: true },
   status: { label: '状态', visible: true },
+  purchaseType: { label: '采购类型', visible: true },
   orderDate: { label: '预计到货日期', visible: true },
   totalQty: { label: '总数量', visible: true },
   totalAmount: { label: '总金额', visible: true },
@@ -849,6 +869,7 @@ const defaultColumns = {
   paidAmount: { label: '已付金额', visible: true },
   orderUnpaidAmount: { label: '未付金额', visible: true },
   buyerName: { label: '采购员', visible: true },
+  sourceProjectNo: { label: '关联项目', visible: true },
   paymentMethod: { label: '付款方式', visible: true },
   createTime: { label: '创建时间', visible: true }
 }
@@ -1033,6 +1054,9 @@ function reset() {
     orderNo: undefined,
     requestId: undefined,
     requestNo: undefined,
+    purchaseType: '1',
+    sourceProjectId: undefined,
+    sourceProjectNo: undefined,
     contractId: undefined,
     contractNo: undefined,
     supplierId: undefined,
@@ -1054,6 +1078,18 @@ function reset() {
   }
   proxy.resetForm('orderRef')
 }
+
+// 关联项目选项
+const projectOptions = ref([])
+function loadProjectOptions() {
+  listProject({ pageNum: 1, pageSize: 999 }).then(res => { projectOptions.value = res.rows || [] })
+}
+function onProjectChange(projectId) {
+  const p = projectOptions.value.find(i => i.projectId === projectId)
+  form.value.sourceProjectNo = p ? p.projectNo : undefined
+  if (!projectId) form.value.sourceProjectId = undefined
+}
+loadProjectOptions()
 
 function handleAdd() {
   reset()
@@ -1239,6 +1275,7 @@ function openRequestPicker() {
 function onRequestPickerConfirm(request) {
   form.value.requestId = request.requestId
   form.value.requestNo = request.requestNo
+  form.value.purchaseType = request.purchaseType || '1'
   applyRequestDetail(request.requestId)
 }
 
@@ -1246,6 +1283,7 @@ function onRequestPickerConfirm(request) {
 function clearRequest() {
   form.value.requestId = undefined
   form.value.requestNo = undefined
+  form.value.purchaseType = '1'
 }
 
 /** 获取采购申请详情，带出物料明细 */
@@ -1253,6 +1291,7 @@ function applyRequestDetail(requestId) {
   if (!requestId) return
   getRequest(requestId).then(res => {
     const requestData = res.data
+    form.value.purchaseType = requestData.purchaseType || form.value.purchaseType || '1'
     if (requestData.detailList && requestData.detailList.length > 0) {
       // 如果已有明细，提示用户是否覆盖
       if (form.value.detailList && form.value.detailList.length > 0) {

@@ -40,6 +40,15 @@
             </el-select>
           </div>
         </div>
+        <div class="field">
+          <label>采购类型</label>
+          <div class="control is-select">
+            <el-select v-model="queryParams.purchaseType" placeholder="全部" clearable @change="handleQuery">
+              <el-option label="正常采购" value="1" />
+              <el-option label="零散采购" value="2" />
+            </el-select>
+          </div>
+        </div>
         <div class="field" v-show="showAdvanced">
           <label>申请人</label>
           <div class="control">
@@ -136,12 +145,23 @@
           <el-table-column label="优先级" prop="priority" key="priority" :width="colWidth('priority', 100)" resizable align="center" sortable="custom" v-if="columns.priority.visible">
             <template #default="scope"><span class="badge amber">{{ priorityLabel(scope.row.priority) }}</span></template>
           </el-table-column>
+          <el-table-column label="采购类型" prop="purchaseType" key="purchaseType" :width="colWidth('purchaseType', 100)" resizable align="center" v-if="columns.purchaseType.visible">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.purchaseType === '2' ? 'violet' : 'blue'">{{ scope.row.purchaseType === '2' ? '零散采购' : '正常采购' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="期望交货日期" prop="expectDate" key="expectDate" :width="colWidth('expectDate', 130)" resizable align="center" sortable="custom" v-if="columns.expectDate.visible" />
           <el-table-column label="预估总金额" prop="totalAmount" key="totalAmount" :width="colWidth('totalAmount', 130)" resizable align="right" sortable="custom" v-if="columns.totalAmount.visible">
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.totalAmount) }}</span></template>
           </el-table-column>
           <el-table-column label="申请人" prop="requesterName" key="requesterName" :width="colWidth('requesterName', 120)" resizable v-if="columns.requesterName.visible" />
           <el-table-column label="申请部门" prop="deptName" key="deptName" :width="colWidth('deptName', 140)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
+          <el-table-column label="关联项目" prop="sourceProjectNo" key="sourceProjectNo" :width="colWidth('sourceProjectNo', 150)" resizable show-overflow-tooltip v-if="columns.sourceProjectNo.visible">
+            <template #default="scope">
+              <span v-if="scope.row.sourceProjectNo" class="col-mono">{{ scope.row.sourceProjectNo }}</span>
+              <span v-else class="muted-dash">—</span>
+            </template>
+          </el-table-column>
           <el-table-column label="审批人" prop="auditBy" key="auditBy" :width="colWidth('auditBy', 120)" resizable v-if="columns.auditBy.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -198,6 +218,15 @@
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
+                  <el-form-item label="采购类型" prop="purchaseType">
+                    <el-radio-group v-model="form.purchaseType">
+                      <el-radio value="1">正常采购</el-radio>
+                      <el-radio value="2">零散采购</el-radio>
+                    </el-radio-group>
+                    <div class="field-hint" v-if="form.purchaseType === '2'">零散采购到货验收后不入库，直接登记耗用</div>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
                   <el-form-item label="期望交货日期" prop="expectDate">
                     <el-date-picker v-model="form.expectDate" type="date" placeholder="请选择" value-format="YYYY-MM-DD" style="width: 100%" />
                   </el-form-item>
@@ -240,6 +269,15 @@
                       <template v-if="form.planNo" #append><el-button icon="CircleClose" @click.stop="clearPlan" /></template>
                       <template v-else #append><el-button icon="Search" @click="openPlanPicker" /></template>
                     </el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="关联项目" prop="sourceProjectId">
+                    <el-select v-model="form.sourceProjectId" filterable clearable placeholder="可选，关联后计入项目采购台账" style="width: 100%" @change="onProjectChange">
+                      <el-option v-for="p in projectOptions" :key="p.projectId" :label="p.projectNo + ' ' + p.projectName" :value="p.projectId" />
+                    </el-select>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -342,6 +380,7 @@
               <div class="rd-item"><span class="rd-label">标题</span><div class="rd-value">{{ viewData.title || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="pms_request_status" :value="viewData.status" /></div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="pms_priority" :value="viewData.priority" /></div></div>
+              <div class="rd-item"><span class="rd-label">采购类型</span><div class="rd-value"><el-tag :type="viewData.purchaseType === '2' ? 'warning' : 'primary'" size="small">{{ viewData.purchaseType === '2' ? '零散采购' : '正常采购' }}</el-tag></div></div>
               <div class="rd-item"><span class="rd-label">期望交货日期</span><div class="rd-value">{{ viewData.expectDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">预估总金额</span><div class="rd-value rd-amount">{{ formatMoney(viewData.totalAmount) }}</div></div>
               <div class="rd-item"><span class="rd-label">申请人</span><div class="rd-value">{{ viewData.requesterName || '-' }}</div></div>
@@ -436,6 +475,7 @@
               <div class="rd-item"><span class="rd-label">申请标题</span><div class="rd-value">{{ auditData.title || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="pms_request_status" :value="auditData.status" /></div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value"><dict-tag :options="pms_priority" :value="auditData.priority" /></div></div>
+              <div class="rd-item"><span class="rd-label">采购类型</span><div class="rd-value"><el-tag :type="auditData.purchaseType === '2' ? 'warning' : 'primary'" size="small">{{ auditData.purchaseType === '2' ? '零散采购' : '正常采购' }}</el-tag></div></div>
               <div class="rd-item"><span class="rd-label">期望交货日期</span><div class="rd-value">{{ auditData.expectDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">预估总额</span><div class="rd-value rd-amount">{{ formatMoney(auditData.totalAmount) }}</div></div>
               <div class="rd-item"><span class="rd-label">申请人</span><div class="rd-value">{{ auditData.requesterName || '-' }}</div></div>
@@ -640,6 +680,7 @@ import { aiRequestAdvice } from '@/api/ai/assist'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { getPlan } from '@/api/pms/plan'
+import { listProject } from '@/api/pjm/project'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard, formatAmount, formatMoney } from '@/composables/useDetailCard'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
@@ -663,10 +704,12 @@ const defaultColumns = {
   title: { label: '标题', visible: true },
   status: { label: '状态', visible: true },
   priority: { label: '优先级', visible: true },
+  purchaseType: { label: '采购类型', visible: true },
   expectDate: { label: '期望交货日期', visible: true },
   totalAmount: { label: '预估总金额', visible: true },
   requesterName: { label: '申请人', visible: true },
   deptName: { label: '申请部门', visible: true },
+  sourceProjectNo: { label: '关联项目', visible: true },
   auditBy: { label: '审批人', visible: true },
   createTime: { label: '创建时间', visible: true }
 }
@@ -734,6 +777,7 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.title) count++
   if (queryParams.value.status) count++
   if (queryParams.value.priority) count++
+  if (queryParams.value.purchaseType) count++
   if (queryParams.value.requesterName) count++
   if (queryParams.value.auditBy) count++
   if (queryParams.value.purpose) count++
@@ -770,6 +814,7 @@ const data = reactive({
     title: undefined,
     status: undefined,
     priority: undefined,
+    purchaseType: undefined,
     requesterName: undefined,
     auditBy: undefined,
     purpose: undefined,
@@ -811,6 +856,7 @@ function resetQuery() {
   queryParams.value.title = undefined
   queryParams.value.status = undefined
   queryParams.value.priority = undefined
+  queryParams.value.purchaseType = undefined
   queryParams.value.requesterName = undefined
   queryParams.value.auditBy = undefined
   queryParams.value.purpose = undefined
@@ -833,9 +879,21 @@ function handleSortChange(column) {
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.requestId); single.value = selection.length !== 1; multiple.value = !selection.length }
 
 function reset() {
-  form.value = { requestId: undefined, requestNo: undefined, title: undefined, status: '0', priority: '0', expectDate: undefined, purpose: undefined, totalAmount: 0, requesterId: undefined, requesterName: undefined, deptId: undefined, deptName: undefined, planId: undefined, planNo: undefined, planTitle: undefined, remark: undefined, detailList: [] }
+  form.value = { requestId: undefined, requestNo: undefined, title: undefined, status: '0', priority: '0', purchaseType: '1', expectDate: undefined, purpose: undefined, totalAmount: 0, requesterId: undefined, requesterName: undefined, deptId: undefined, deptName: undefined, planId: undefined, planNo: undefined, planTitle: undefined, sourceProjectId: undefined, sourceProjectNo: undefined, remark: undefined, detailList: [] }
   proxy.resetForm('requestRef')
 }
+
+// 关联项目选项（进行中的项目）
+const projectOptions = ref([])
+function loadProjectOptions() {
+  listProject({ pageNum: 1, pageSize: 999 }).then(res => { projectOptions.value = res.rows || [] })
+}
+function onProjectChange(projectId) {
+  const p = projectOptions.value.find(i => i.projectId === projectId)
+  form.value.sourceProjectNo = p ? p.projectNo : undefined
+  if (!projectId) form.value.sourceProjectId = undefined
+}
+loadProjectOptions()
 
 function handleAdd() {
   reset()

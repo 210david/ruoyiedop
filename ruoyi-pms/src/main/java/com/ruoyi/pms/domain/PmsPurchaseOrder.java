@@ -30,6 +30,13 @@ public class PmsPurchaseOrder extends BaseEntity
     @Excel(name = "关联申请单号")
     private String requestNo;
 
+    /** 来源项目ID（关联项目管理模块） */
+    private Long sourceProjectId;
+
+    /** 来源项目编号（冗余） */
+    @Excel(name = "关联项目")
+    private String sourceProjectNo;
+
     /** 关联合同ID */
     private Long contractId;
 
@@ -108,6 +115,10 @@ public class PmsPurchaseOrder extends BaseEntity
     @Excel(name = "结算方式", readConverterExp = "0=银行转账,1=承兑汇票,2=现金")
     private String settlementType;
 
+    /** 采购类型（1正常采购 2零散采购） */
+    @Excel(name = "采购类型", readConverterExp = "1=正常采购,2=零散采购")
+    private String purchaseType;
+
     /** 结算币种（字典 wms_currency） */
     @Excel(name = "结算币种")
     private String currency;
@@ -145,6 +156,12 @@ public class PmsPurchaseOrder extends BaseEntity
     public void setRequestId(Long requestId) { this.requestId = requestId; }
     public String getRequestNo() { return requestNo; }
     public void setRequestNo(String requestNo) { this.requestNo = requestNo; }
+
+    public Long getSourceProjectId() { return sourceProjectId; }
+    public void setSourceProjectId(Long sourceProjectId) { this.sourceProjectId = sourceProjectId; }
+
+    public String getSourceProjectNo() { return sourceProjectNo; }
+    public void setSourceProjectNo(String sourceProjectNo) { this.sourceProjectNo = sourceProjectNo; }
     public Long getContractId() { return contractId; }
     public void setContractId(Long contractId) { this.contractId = contractId; }
     public String getContractNo() { return contractNo; }
@@ -185,6 +202,8 @@ public class PmsPurchaseOrder extends BaseEntity
     public void setPaymentDays(Integer paymentDays) { this.paymentDays = paymentDays; }
     public String getSettlementType() { return settlementType; }
     public void setSettlementType(String settlementType) { this.settlementType = settlementType; }
+    public String getPurchaseType() { return purchaseType; }
+    public void setPurchaseType(String purchaseType) { this.purchaseType = purchaseType; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public String getDeliveryAddress() { return deliveryAddress; }

@@ -35,6 +35,10 @@ public class PmsPurchaseRequest extends BaseEntity
     @Excel(name = "优先级", readConverterExp = "0=普通,1=紧急,2=特急")
     private String priority;
 
+    /** 采购类型（1正常采购 2零散采购） */
+    @Excel(name = "采购类型", readConverterExp = "1=正常采购,2=零散采购")
+    private String purchaseType;
+
     /** 期望交货日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "期望交货日期", width = 20, dateFormat = "yyyy-MM-dd")
@@ -80,6 +84,12 @@ public class PmsPurchaseRequest extends BaseEntity
     /** 关联采购计划单号 */
     private String planNo;
 
+    /** ★ 来源项目ID（PJM 联动） */
+    private Long sourceProjectId;
+
+    /** ★ 来源项目编号（PJM 联动） */
+    private String sourceProjectNo;
+
     /** 删除标志 */
     private String delFlag;
 
@@ -99,6 +109,8 @@ public class PmsPurchaseRequest extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+    public String getPurchaseType() { return purchaseType; }
+    public void setPurchaseType(String purchaseType) { this.purchaseType = purchaseType; }
     public Date getExpectDate() { return expectDate; }
     public void setExpectDate(Date expectDate) { this.expectDate = expectDate; }
     public String getPurpose() { return purpose; }
@@ -123,6 +135,10 @@ public class PmsPurchaseRequest extends BaseEntity
     public void setPlanId(Long planId) { this.planId = planId; }
     public String getPlanNo() { return planNo; }
     public void setPlanNo(String planNo) { this.planNo = planNo; }
+    public Long getSourceProjectId() { return sourceProjectId; }
+    public void setSourceProjectId(Long sourceProjectId) { this.sourceProjectId = sourceProjectId; }
+    public String getSourceProjectNo() { return sourceProjectNo; }
+    public void setSourceProjectNo(String sourceProjectNo) { this.sourceProjectNo = sourceProjectNo; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<PmsPurchaseRequestDetail> getDetailList() { return detailList; }

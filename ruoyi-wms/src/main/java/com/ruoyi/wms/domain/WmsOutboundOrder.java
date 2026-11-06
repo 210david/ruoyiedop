@@ -57,6 +57,12 @@ public class WmsOutboundOrder extends BaseEntity
     @Excel(name = "总数量")
     private BigDecimal totalQty;
 
+    /** ★ 来源项目ID（PJM联动） */
+    private Long sourceProjectId;
+
+    /** ★ 来源项目编号（PJM联动） */
+    private String sourceProjectNo;
+
     /** 删除标志 */
     private String delFlag;
 
@@ -85,6 +91,10 @@ public class WmsOutboundOrder extends BaseEntity
     public void setCompleteDate(Date completeDate) { this.completeDate = completeDate; }
     public BigDecimal getTotalQty() { return totalQty; }
     public void setTotalQty(BigDecimal totalQty) { this.totalQty = totalQty; }
+    public Long getSourceProjectId() { return sourceProjectId; }
+    public void setSourceProjectId(Long sourceProjectId) { this.sourceProjectId = sourceProjectId; }
+    public String getSourceProjectNo() { return sourceProjectNo; }
+    public void setSourceProjectNo(String sourceProjectNo) { this.sourceProjectNo = sourceProjectNo; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public List<WmsOutboundOrderDetail> getDetailList() { return detailList; }

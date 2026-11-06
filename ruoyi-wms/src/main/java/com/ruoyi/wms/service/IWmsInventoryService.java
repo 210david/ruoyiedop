@@ -3,6 +3,7 @@ package com.ruoyi.wms.service;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.domain.WmsInventoryLog;
 
@@ -10,6 +11,8 @@ public interface IWmsInventoryService
 {
     public List<WmsInventory> selectInventoryList(WmsInventory inventory);
     public WmsInventory selectInventoryById(Long inventoryId);
+    /** ★ 按物料批量汇总各仓库可用库存（PJM 项目采购库存检查用） */
+    public List<Map<String, Object>> selectStockSummaryByMaterialIds(List<Long> materialIds);
     public int addInventory(Long materialId, Long warehouseId, Long locationId, String batchNo,
                             BigDecimal qty, String changeType, String refOrderType, String refOrderNo, 
                             String createBy, Date productionDate, Date expiryDate);

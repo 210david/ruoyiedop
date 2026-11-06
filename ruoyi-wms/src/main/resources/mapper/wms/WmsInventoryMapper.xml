@@ -87,6 +87,19 @@ AND i.location_id = #{locationId} AND i.batch_no = #{batchNo}
     ORDER BY i.create_time ASC, i.inventory_id ASC
 </select>
 
+<!-- ★ 按物料批量汇总各仓库可用库存（PJM 项目采购库存检查用） -->
+<select id="selectStockSummaryByMaterialIds" resultType="java.util.HashMap">
+    SELECT i.material_id AS materialId, i.warehouse_id AS warehouseId,
+           w.warehouse_name AS warehouseName, SUM(i.qty) AS availQty
+    FROM wms_inventory i
+    LEFT JOIN wms_warehouse w ON i.warehouse_id = w.warehouse_id
+    WHERE i.material_id IN
+    <foreach item="id" collection="materialIds" open="(" separator="," close=")">#{id}</foreach>
+    AND i.qty > 0 AND (i.del_flag IS NULL OR i.del_flag != '2')
+    GROUP BY i.material_id, i.warehouse_id, w.warehouse_name
+    ORDER BY i.material_id, i.warehouse_id
+</select>
+
     <select id="selectInventoryForUpdate" parameterType="Long" resultMap="WmsInventoryResult">
         <include refid="selectInventoryVo"/> WHERE i.inventory_id = #{inventoryId} FOR UPDATE
     </select>

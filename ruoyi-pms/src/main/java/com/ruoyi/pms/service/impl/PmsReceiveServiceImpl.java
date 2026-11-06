@@ -19,6 +19,9 @@ import com.ruoyi.pms.mapper.PmsReceiveMapper;
 import com.ruoyi.pms.mapper.PmsReceiveAuditLogMapper;
 import com.ruoyi.pms.service.IPmsReceiveService;
 import com.ruoyi.pms.service.IPmsPurchaseOrderService;
+import com.ruoyi.pms.service.IPmsConsumptionService;
+import com.ruoyi.pms.domain.PmsConsumption;
+import com.ruoyi.pms.domain.PmsConsumptionDetail;
 import com.ruoyi.wms.domain.WmsInboundOrder;
 import com.ruoyi.wms.domain.WmsInboundOrderDetail;
 import com.ruoyi.wms.service.IWmsInboundOrderService;
@@ -46,6 +49,9 @@ public class PmsReceiveServiceImpl implements IPmsReceiveService
 
     @Autowired
     private IWmsInboundOrderService wmsInboundOrderService;
+
+    @Autowired
+    private IPmsConsumptionService pmsConsumptionService;
 
     @Override
     @DataScope(deptAlias = "pms_receive")
@@ -547,23 +553,30 @@ public class PmsReceiveServiceImpl implements IPmsReceiveService
                 }
             }
 
-            // 自动生成采购入库单（异常不影响审核流程）
+            // 自动生成后续单据：零散采购→耗用登记，正常采购→入库单（异常不影响审核流程）
             try
             {
-                WmsInboundOrder inboundOrder = createReceiveInboundOrder(receive, details);
-                if (inboundOrder != null)
+                if (isScatteredOrder(receive.getOrderId()))
                 {
-                    // 将入库单ID写入收货单
-                    PmsReceive updateReceive = new PmsReceive();
-                    updateReceive.setReceiveId(receiveId);
-                    updateReceive.setInboundOrderId(inboundOrder.getOrderId());
-                    pmsReceiveMapper.updateReceive(updateReceive);
+                    createConsumptionFromReceive(receive, details);
+                }
+                else
+                {
+                    WmsInboundOrder inboundOrder = createReceiveInboundOrder(receive, details);
+                    if (inboundOrder != null)
+                    {
+                        // 将入库单ID写入收货单
+                        PmsReceive updateReceive = new PmsReceive();
+                        updateReceive.setReceiveId(receiveId);
+                        updateReceive.setInboundOrderId(inboundOrder.getOrderId());
+                        pmsReceiveMapper.updateReceive(updateReceive);
+                    }
                 }
             }
             catch (ServiceException e)
             {
                 // 捕获异常，记录错误信息但不影响审核流程
-                System.err.println("收货单 " + receive.getReceiveNo() + " 审核通过后生成入库单失败：" + e.getMessage());
+                System.err.println("收货单 " + receive.getReceiveNo() + " 审核通过后生成后续单据失败：" + e.getMessage());
             }
         }
 
@@ -666,25 +679,32 @@ public class PmsReceiveServiceImpl implements IPmsReceiveService
                 }
             }
 
-            // 自动生成采购入库单（异常不影响审核流程）
+            // 自动生成后续单据：零散采购→耗用登记，正常采购→入库单（异常不影响审核流程）
             try
             {
-                WmsInboundOrder inboundOrder = createReceiveInboundOrder(receive, details);
-                if (inboundOrder != null)
+                if (isScatteredOrder(receive.getOrderId()))
                 {
-                    inboundOrderNo = inboundOrder.getOrderNo();
-                    // 将入库单ID写入收货单（只更新入库单相关字段，不更新状态）
-                    PmsReceive updateReceive = new PmsReceive();
-                    updateReceive.setReceiveId(receiveId);
-                    updateReceive.setInboundOrderId(inboundOrder.getOrderId());
-                    pmsReceiveMapper.updateReceive(updateReceive);
+                    createConsumptionFromReceive(receive, details);
+                }
+                else
+                {
+                    WmsInboundOrder inboundOrder = createReceiveInboundOrder(receive, details);
+                    if (inboundOrder != null)
+                    {
+                        inboundOrderNo = inboundOrder.getOrderNo();
+                        // 将入库单ID写入收货单（只更新入库单相关字段，不更新状态）
+                        PmsReceive updateReceive = new PmsReceive();
+                        updateReceive.setReceiveId(receiveId);
+                        updateReceive.setInboundOrderId(inboundOrder.getOrderId());
+                        pmsReceiveMapper.updateReceive(updateReceive);
+                    }
                 }
             }
             catch (ServiceException e)
             {
                 // 捕获异常，记录错误信息但不影响审核流程
                 inboundOrderError = e.getMessage();
-                System.err.println("收货单 " + receive.getReceiveNo() + " 审核通过后生成入库单失败：" + e.getMessage());
+                System.err.println("收货单 " + receive.getReceiveNo() + " 审核通过后生成后续单据失败：" + e.getMessage());
             }
         }
         result.put("inboundOrderNo", inboundOrderNo);
@@ -772,6 +792,73 @@ public class PmsReceiveServiceImpl implements IPmsReceiveService
     public List<Long> selectInProgressReceiveOrderIds()
     {
         return pmsReceiveMapper.selectInProgressReceiveOrderIds();
+    }
+
+    /**
+     * 判断采购订单是否为零散采购
+     */
+    private boolean isScatteredOrder(Long orderId)
+    {
+        if (orderId == null)
+        {
+            return false;
+        }
+        try
+        {
+            PmsPurchaseOrder order = pmsPurchaseOrderService.selectPurchaseOrderById(orderId);
+            return order != null && "2".equals(order.getPurchaseType());
+        }
+        catch (Exception e)
+        {
+            System.err.println("查询采购订单类型失败：" + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 零散采购收货验收通过后，自动生成耗用登记（不入库）
+     */
+    private void createConsumptionFromReceive(PmsReceive receive, List<PmsReceiveDetail> details)
+    {
+        PmsConsumption consumption = new PmsConsumption();
+        consumption.setOrderId(receive.getOrderId());
+        consumption.setOrderNo(receive.getOrderNo());
+        consumption.setReceiveId(receive.getReceiveId());
+        consumption.setReceiveNo(receive.getReceiveNo());
+        consumption.setSupplierName(receive.getSupplierName());
+        java.util.List<PmsConsumptionDetail> consumptionDetails = new java.util.ArrayList<>();
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (PmsReceiveDetail d : details)
+        {
+            if (d.getQualifiedQty() == null || d.getQualifiedQty().compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            PmsConsumptionDetail cd = new PmsConsumptionDetail();
+            cd.setMaterialId(d.getMaterialId());
+            cd.setMaterialCode(d.getMaterialCode());
+            cd.setMaterialName(d.getMaterialName());
+            cd.setSpecModel(d.getSpecModel());
+            cd.setUnit(d.getUnit());
+            cd.setQty(d.getQualifiedQty());
+            cd.setUnitPrice(d.getUnitPrice());
+            cd.setAmount(d.getQualifiedQty().multiply(d.getUnitPrice() != null ? d.getUnitPrice() : BigDecimal.ZERO));
+            totalQty = totalQty.add(cd.getQty());
+            totalAmount = totalAmount.add(cd.getAmount());
+            consumptionDetails.add(cd);
+        }
+        if (consumptionDetails.isEmpty())
+        {
+            return;
+        }
+        consumption.setDetailList(consumptionDetails);
+        consumption.setTotalQty(totalQty);
+        consumption.setTotalAmount(totalAmount);
+        consumption.setStatus("0");
+        consumption.setRemark("零散采购收货单 " + receive.getReceiveNo() + " 验收通过自动生成，请及时补充使用信息");
+        consumption.setCreateBy(SecurityUtils.getUsername());
+        pmsConsumptionService.insertConsumption(consumption);
     }
 
 }
