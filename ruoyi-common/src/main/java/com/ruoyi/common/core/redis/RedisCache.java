@@ -51,6 +51,31 @@ public class RedisCache
     }
 
     /**
+     * 检查 Redis 是否真的不可用；如果可用则自动恢复降级标记。
+     * 解决「启动时 Redis 短暂不可用→被永久标记降级→即使 Redis 恢复后所有方法仍直接 return」的死锁问题。
+     */
+    private boolean ensureRedisAvailable()
+    {
+        if (redisAvailable)
+        {
+            return true;
+        }
+        try
+        {
+            redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Boolean>) connection -> connection.ping() != null);
+            redisAvailable = true;
+            log.info("Redis连接已恢复，退出降级模式");
+            return true;
+        }
+        catch (Exception e)
+        {
+            // 继续保持降级
+            return false;
+        }
+    }
+
+
+    /**
      * 缓存基本的对象，Integer、String、实体类等
      *
      * @param key 缓存的键值
@@ -58,7 +83,7 @@ public class RedisCache
      */
     public <T> void setCacheObject(final String key, final T value)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return;
         }
@@ -88,7 +113,7 @@ public class RedisCache
      */
     public <T> void setCacheObject(final String key, final T value, final Integer timeout, final TimeUnit timeUnit)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return;
         }
@@ -116,7 +141,7 @@ public class RedisCache
      */
     public boolean expire(final String key, final long timeout)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -147,7 +172,7 @@ public class RedisCache
      */
     public boolean expire(final String key, final long timeout, final TimeUnit unit)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -179,7 +204,7 @@ public class RedisCache
      */
     public <T> Boolean setIfAbsent(final String key, final T value, final Integer timeout, final TimeUnit timeUnit)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -208,7 +233,7 @@ public class RedisCache
      */
     public long getExpire(final String key)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return -1L;
         }
@@ -237,7 +262,7 @@ public class RedisCache
      */
     public Boolean hasKey(String key)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -295,7 +320,7 @@ public class RedisCache
      */
     public boolean deleteObject(final String key)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -324,7 +349,7 @@ public class RedisCache
      */
     public boolean deleteObject(final Collection collection)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return false;
         }
@@ -476,7 +501,7 @@ public class RedisCache
      */
     public <T> void setCacheMap(final String key, final Map<String, T> dataMap)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return;
         }
@@ -535,7 +560,7 @@ public class RedisCache
      */
     public <T> void setCacheMapValue(final String key, final String hKey, final T value)
     {
-        if (!redisAvailable)
+        if (!ensureRedisAvailable())
         {
             return;
         }

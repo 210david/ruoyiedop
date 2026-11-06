@@ -3,6 +3,7 @@
     <logo v-if="showLogo" :collapse="isCollapse" />
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
+        ref="menuRef"
         :default-active="activeMenu"
         :collapse="isCollapse"
         :background-color="getMenuBackground"
@@ -66,6 +67,30 @@ const activeMenu = computed(() => {
   }
   return path
 })
+
+// 侧边栏菜单实例：进入某模块时自动展开其一级目录（二级菜单）
+const menuRef = ref(null)
+const openedTopPath = ref('')
+
+function getTopLevelPath(path) {
+  const segments = (path || '').split('/').filter(Boolean)
+  return segments.length ? '/' + segments[0] : ''
+}
+
+function syncOpenedMenu(path) {
+  const top = getTopLevelPath(path)
+  if (!menuRef.value || !top) {
+    return
+  }
+  if (openedTopPath.value && openedTopPath.value !== top) {
+    menuRef.value.close(openedTopPath.value)
+  }
+  menuRef.value.open(top)
+  openedTopPath.value = top
+}
+
+onMounted(() => syncOpenedMenu(route.path))
+watch(() => route.path, (path) => syncOpenedMenu(path))
 </script>
 
 <style lang="scss" scoped>
