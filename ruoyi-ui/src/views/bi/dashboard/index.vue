@@ -911,10 +911,12 @@ onBeforeUnmount(() => {
 
 <style>
 /* 大屏模式：隐藏 RuoYi 布局侧边栏/标签栏/顶部导航，主区占满（body class 由 enterScreen/exitScreen 切换） */
+body.bi-screen-on { background: #010409; }
+html:has(body.bi-screen-on) { background: #010409; }
 body.bi-screen-on .sidebar-container { display: none !important; }
 body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
 body.bi-screen-on .fixed-header { display: none !important; }
-body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; }
+body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; background: #010409; min-height: 100vh; }
 
 /* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
 .screen-kpi-row { margin-bottom: 2px; }
