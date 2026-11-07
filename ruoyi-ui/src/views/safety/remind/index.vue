@@ -112,7 +112,7 @@
           <el-table-column label="处理时间" prop="handleTime" key="handleTime" :width="colWidth('handleTime', 160)" resizable align="center" v-if="columns.handleTime.visible" />
           <el-table-column label="处理结果" prop="handleResult" key="handleResult" :width="colWidth('handleResult', 150)" resizable show-overflow-tooltip v-if="columns.handleResult.visible" />
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" :sort-orders="['descending', 'ascending']" v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:remind:query']">查看</el-button>
