@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.integration.mapper.IntegrationSyncLogMapper">
+
+    <resultMap type="com.ruoyi.integration.domain.IntegrationSyncLog" id="IntegrationSyncLogResult">
+        <result property="logId" column="log_id"/>
+        <result property="connectorType" column="connector_type"/>
+        <result property="bizType" column="biz_type"/>
+        <result property="bizKey" column="biz_key"/>
+        <result property="status" column="status"/>
+        <result property="resultMsg" column="result_msg"/>
+        <result property="costMs" column="cost_ms"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectIntegrationSyncLogList" parameterType="com.ruoyi.integration.domain.IntegrationSyncLog" resultMap="IntegrationSyncLogResult">
+        SELECT log_id, connector_type, biz_type, biz_key, status, result_msg, cost_ms, create_time
+        FROM integration_sync_log
+        <where>
+            <if test="connectorType != null and connectorType != ''"> AND connector_type = #{connectorType}</if>
+            <if test="bizType != null and bizType != ''"> AND biz_type = #{bizType}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+        </where>
+        ORDER BY log_id DESC
+    </select>
+
+    <insert id="insertIntegrationSyncLog" parameterType="com.ruoyi.integration.domain.IntegrationSyncLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO integration_sync_log (
+            connector_type, biz_type, biz_key, status, result_msg, cost_ms, create_time
+        ) VALUES (
+            #{connectorType}, #{bizType}, #{bizKey}, #{status}, #{resultMsg}, #{costMs}, sysdate()
+        )
+    </insert>
+
+</mapper>
