@@ -35,13 +35,11 @@
       </div>
     </div>
 
-    <!-- ② 异常预警横幅区（仅红/黄真预警 + 脉冲圆点；info"暂无数据"不占横幅） -->
-    <template v-if="!screenMode">
+    <!-- ② 异常预警横幅区（仅红/黄真预警 + 脉冲圆点；大屏模式同样显示，样式深色适配） -->
     <div v-for="(alert, idx) in visibleAlerts" :key="idx" class="alert-banner" :class="'alert-banner--' + alert.level">
       <span class="alert-banner__dot" :class="'alert-banner__dot--' + alert.level"></span>
       <span class="alert-banner__text">{{ alert.message }}</span>
     </div>
-    </template>
 
     <!-- ②.5 主题看板域导航（仅 KPI 视图且非大屏显示） -->
     <div v-show="activeView === 'kpi' && !screenMode" class="domain-nav">
@@ -639,16 +637,139 @@ onBeforeUnmount(() => {
 .chart-panel__desc { font-size: 12px; color: #909399; margin-left: 8px; }
 .chart-panel__body { padding: 16px 20px; }
 
-/* ⑤ F9 大屏模式：字号放大 + 疏朗留白，只读轮播 */
-.screen-mode { padding: 24px 32px; }
-.screen-mode .kpi-tile { padding: 20px 24px; margin-bottom: 20px; }
-.screen-mode .kpi-tile__name { font-size: 16px; margin-bottom: 10px; }
-.screen-mode .kpi-tile__value { font-size: 38px; }
-.screen-mode .kpi-tile__unit { font-size: 16px; }
-.screen-mode .kpi-tile__delta { font-size: 14px; margin-top: 8px; }
-.screen-mode .domain-section__name { font-size: 22px; }
-.screen-mode .domain-section__desc { font-size: 15px; }
-.screen-mode .domain-section__bar { height: 22px; width: 5px; }
+/* ⑤ F9 大屏模式：深色科技风（深空蓝渐变 + 网格纹理 + 霓虹数值 + 域色发光卡），全域并排只读 */
+.screen-mode {
+  min-height: 100vh;
+  padding: 18px 26px 30px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(0, 86, 210, .30) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 100%, rgba(0, 190, 255, .12) 0%, transparent 50%),
+    linear-gradient(180deg, #061029 0%, #030818 58%, #010409 100%);
+  position: relative;
+}
+.screen-mode::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(0, 168, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 168, 255, .05) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.screen-mode > * { position: relative; z-index: 1; }
+
+/* 大屏条：科技感渐变 + 发光标题 + 底部流光线 */
+.screen-mode .screen-bar {
+  background: linear-gradient(90deg, rgba(0, 60, 140, 0) 0%, rgba(0, 120, 255, .16) 18%, rgba(0, 210, 255, .22) 50%, rgba(0, 120, 255, .16) 82%, rgba(0, 60, 140, 0) 100%);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 24px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.screen-mode .screen-bar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff 30%, #7ce8ff 50%, #00d4ff 70%, transparent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, .85);
+}
+.screen-mode .screen-bar__title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #eaf6ff;
+  text-shadow: 0 0 18px rgba(0, 200, 255, .9), 0 0 6px rgba(140, 225, 255, .6);
+}
+.screen-mode .screen-bar__domain { color: #6fc6ff; font-size: 15px; letter-spacing: 2px; }
+.screen-mode .screen-bar .el-button {
+  background: rgba(0, 130, 255, .16);
+  border-color: rgba(0, 180, 255, .45);
+  color: #bfe6ff;
+}
+.screen-mode .screen-bar .el-button:hover {
+  background: rgba(0, 160, 255, .32);
+  border-color: rgba(0, 210, 255, .7);
+  color: #e6f7ff;
+}
+
+/* 域分组：发光青色标题 + 域色发光条 + 虚线分隔 + 入场动画 */
+.screen-mode .domain-section { animation: bi-fade-up .5s ease both; }
+.screen-mode .domain-section__head {
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(0, 168, 255, .22);
+}
+.screen-mode .domain-section__name {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: #a8dcff;
+  text-shadow: 0 0 10px rgba(0, 180, 255, .45);
+}
+.screen-mode .domain-section__bar {
+  height: 20px;
+  width: 6px;
+  border-radius: 2px;
+  box-shadow: 0 0 10px currentColor;
+}
+.screen-mode .domain-section__desc { font-size: 14px; color: #4d7fb3; }
+@keyframes bi-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* KPI 卡：半透明深蓝卡 + 发光描边 + 霓虹数值 */
+.screen-mode .kpi-tile {
+  background: linear-gradient(150deg, rgba(9, 32, 78, .92) 0%, rgba(4, 14, 38, .94) 100%);
+  border: 1px solid rgba(0, 150, 255, .22);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 0 14px rgba(0, 100, 230, .14), inset 0 0 22px rgba(0, 110, 255, .06);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.screen-mode .kpi-tile:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 200, 255, .55);
+  box-shadow: 0 0 26px rgba(0, 180, 255, .4), inset 0 0 26px rgba(0, 140, 255, .12);
+}
+.screen-mode .kpi-tile__name { color: #86b9e8; font-size: 15px; margin-bottom: 10px; letter-spacing: 1px; }
+.screen-mode .kpi-tile__flag {
+  background: rgba(230, 162, 60, .16);
+  color: #ffce7a;
+  border: 1px solid rgba(255, 190, 90, .4);
+}
+.screen-mode .kpi-tile__value {
+  font-size: 40px;
+  font-weight: 700;
+  font-family: 'Consolas', 'DIN Alternate', 'Segoe UI', sans-serif;
+  color: #f4fbff;
+  text-shadow: 0 0 18px rgba(0, 220, 255, .6), 0 0 4px rgba(160, 230, 255, .5);
+}
+.screen-mode .kpi-tile__unit { color: #6db7e8; font-size: 15px; }
+.screen-mode .kpi-tile__delta { font-size: 13px; margin-top: 8px; }
+.screen-mode .kpi-tile__delta--up { color: #5ef2c0; text-shadow: 0 0 8px rgba(94, 242, 192, .4); }
+.screen-mode .kpi-tile__delta--down { color: #ff7d95; text-shadow: 0 0 8px rgba(255, 125, 149, .4); }
+
+/* 预警横幅深色适配（红/黄真预警，大屏同显） */
+.screen-mode .alert-banner { border-radius: 6px; }
+.screen-mode .alert-banner--danger {
+  background: linear-gradient(90deg, rgba(150, 25, 45, .32), rgba(90, 15, 30, .5));
+  border: 1px solid rgba(255, 90, 110, .45);
+  color: #ffb3c0;
+}
+.screen-mode .alert-banner--warning {
+  background: linear-gradient(90deg, rgba(160, 105, 15, .3), rgba(95, 60, 10, .48));
+  border: 1px solid rgba(255, 180, 80, .4);
+  color: #ffd9a0;
+}
+
+/* 大屏条基础布局（浅色普通模式不显示该条，仅大屏渲染） */
 .screen-bar {
   display: flex;
   align-items: center;
