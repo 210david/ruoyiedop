@@ -81,9 +81,9 @@
       </el-row>
     </div>
 
-    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形（大屏下隐藏，只读轮播 KPI） -->
-    <el-row v-show="!screenMode" :gutter="16" style="margin-top: 16px;">
-      <el-col :xs="24" :md="14">
+    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形 + 域指标分布（大屏下同样显示，深色科技风主题） -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :xs="24" :md="12">
         <div class="chart-panel">
           <div class="chart-panel__head">
             <span class="chart-panel__title">{{ activeDomain === 'all' ? '核心指标趋势' : (domainNames[activeDomain] || activeDomain) + '指标趋势' }}</span>
@@ -94,14 +94,25 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :md="10">
+      <el-col :xs="24" :md="6">
         <div class="chart-panel">
           <div class="chart-panel__head">
-            <span class="chart-panel__title">指标数据完整度</span>
-            <span class="chart-panel__desc">最新快照 有值 / 估算 / 无数据</span>
+            <span class="chart-panel__title">数据完整度</span>
+            <span class="chart-panel__desc">有值/估算/无数据</span>
           </div>
           <div class="chart-panel__body">
             <div ref="healthChartRef" style="width: 100%; height: 340px;"></div>
+          </div>
+        </div>
+      </el-col>
+      <el-col :xs="24" :md="6">
+        <div class="chart-panel">
+          <div class="chart-panel__head">
+            <span class="chart-panel__title">域指标分布</span>
+            <span class="chart-panel__desc">各域指标数</span>
+          </div>
+          <div class="chart-panel__body">
+            <div ref="domainBarChartRef" style="width: 100%; height: 340px;"></div>
           </div>
         </div>
       </el-col>
@@ -172,8 +183,10 @@ const chainColors = { sales_to_cash: '#409EFF', supply_assurance: '#2563eb' }
 // 图表引用与实例
 const trendChartRef = ref(null)
 const healthChartRef = ref(null)
+const domainBarChartRef = ref(null)
 let trendChart = null
 let healthChart = null
+let domainBarChart = null
 
 // 域配色与中文名
 const domainColors = {
@@ -337,6 +350,7 @@ function loadData() {
     nextTick(() => {
       renderTrendChart()
       renderHealthChart()
+      renderDomainBarChart()
     })
     loading.value = false
   }).catch(() => { loading.value = false })
@@ -399,16 +413,71 @@ function renderTrendChart() {
 
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, type: 'scroll' },
+    legend: { bottom: 0, type: 'scroll', textStyle: screenMode.value ? { color: '#8fc7f0' } : {} },
     grid: { left: '3%', right: '4%', bottom: '14%', top: '8%', containLabel: true },
-    xAxis: { type: 'category', boundaryGap: false, data: dates },
-    yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+    xAxis: { type: 'category', boundaryGap: false, data: dates, axisLabel: darkAxisStyle().textStyle, axisLine: darkAxisStyle().axisLine },
+    yAxis: { type: 'value', axisLabel: { formatter: '{value}%', ...(darkAxisStyle().textStyle || {}) }, splitLine: darkAxisStyle().splitLine },
     color: ['#409EFF', '#67C23A', '#E6A23C', '#722ed1', '#0891b2', '#e9423a'],
-    series
+    series: screenMode.value
+      ? series.map(s => ({ ...s, areaStyle: { opacity: 0.22 }, lineStyle: { width: 2, shadowColor: 'rgba(0,200,255,.5)', shadowBlur: 8 } }))
+      : series
   }, { notMerge: true })
 }
 
-/** 数据完整度环形（中心完整率） */
+/** 大屏深色主题 ECharts 公共配色（文字/轴线淡蓝，与深空蓝背景融合） */
+function darkAxisStyle() {
+  return screenMode.value
+    ? { textStyle: { color: '#8fc7f0' }, axisLine: { lineStyle: { color: 'rgba(0,168,255,.35)' } }, splitLine: { lineStyle: { color: 'rgba(0,168,255,.12)' } } }
+    : {}
+}
+
+/** 域指标分布：横向渐变条形图（各域指标数，按域色渐变；大屏深色发光主题） */
+function renderDomainBarChart() {
+  if (!domainBarChartRef.value) return
+  if (!domainBarChart) domainBarChart = echarts.init(domainBarChartRef.value)
+
+  const domains = Object.keys(metricGroups.value)
+  const names = domains.map(d => domainNames[d] || d)
+  const counts = domains.map(d => metricGroups.value[d].length)
+  const colors = domains.map(d => domainColors[d] || '#909399')
+  const dark = screenMode.value
+
+  domainBarChart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '10%', bottom: '4%', top: '4%', containLabel: true },
+    xAxis: {
+      type: 'value', minInterval: 1,
+      axisLabel: { color: dark ? '#8fc7f0' : '#909399' },
+      splitLine: { lineStyle: { color: dark ? 'rgba(0,168,255,.12)' : '#eef1f6' } }
+    },
+    yAxis: {
+      type: 'category', data: names, inverse: true,
+      axisLabel: { color: dark ? '#a8dcff' : '#606266' },
+      axisLine: { lineStyle: { color: dark ? 'rgba(0,168,255,.35)' : '#dcdfe6' } }
+    },
+    series: [{
+      type: 'bar',
+      barWidth: 12,
+      data: counts.map((v, i) => ({
+        value: v,
+        itemStyle: {
+          borderRadius: 6,
+          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: dark ? 'rgba(0,120,255,.35)' : colors[i] },
+            { offset: 1, color: colors[i] }
+          ]),
+          shadowColor: dark ? colors[i] : 'transparent',
+          shadowBlur: dark ? 10 : 0
+        }
+      })),
+      label: {
+        show: true, position: 'right',
+        color: dark ? '#eaf6ff' : '#606266',
+        fontWeight: 600
+      }
+    }]
+  }, { notMerge: true })
+}
 function renderHealthChart() {
   if (!healthChartRef.value) return
   if (!healthChart) healthChart = echarts.init(healthChartRef.value)
@@ -421,25 +490,26 @@ function renderHealthChart() {
 
   healthChart.setOption({
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
-    legend: { bottom: 0, left: 'center' },
+    legend: { bottom: 0, left: 'center', textStyle: screenMode.value ? { color: '#8fc7f0' } : {} },
     title: {
       text: rate + '%',
       subtext: '完整率',
       left: 'center',
       top: '38%',
-      textStyle: { fontSize: 26, fontWeight: 700, color: '#303133' },
-      subtextStyle: { fontSize: 12, color: '#909399' }
+      textStyle: { fontSize: 26, fontWeight: 700, color: screenMode.value ? '#eaf6ff' : '#303133' },
+      subtextStyle: { fontSize: 12, color: screenMode.value ? '#6db7e8' : '#909399' }
     },
     series: [{
       name: '数据完整度',
       type: 'pie',
       radius: ['50%', '70%'],
       center: ['50%', '45%'],
-      label: { show: true, formatter: '{b}: {c}' },
+      label: { show: true, formatter: '{b}: {c}', color: screenMode.value ? '#a8dcff' : undefined },
+      itemStyle: screenMode.value ? { borderColor: 'rgba(3,10,28,.9)', borderWidth: 2, shadowBlur: 12, shadowColor: 'rgba(0,160,255,.35)' } : {},
       data: [
         { name: '正常', value: hasValue - estimate, itemStyle: { color: '#67C23A' } },
         { name: '估算', value: estimate, itemStyle: { color: '#E6A23C' } },
-        { name: '无数据', value: noData, itemStyle: { color: '#c0c4cc' } }
+        { name: '无数据', value: noData, itemStyle: { color: screenMode.value ? '#2a3d5c' : '#c0c4cc' } }
       ]
     }]
   }, { notMerge: true })
@@ -460,6 +530,7 @@ watch(activeDomain, () => {
 function handleResize() {
   trendChart && trendChart.resize()
   healthChart && healthChart.resize()
+  domainBarChart && domainBarChart.resize()
 }
 
 onMounted(() => {
@@ -477,6 +548,7 @@ onBeforeUnmount(() => {
   if (screenTimer) clearInterval(screenTimer)
   trendChart && trendChart.dispose()
   healthChart && healthChart.dispose()
+  domainBarChart && domainBarChart.dispose()
 })
 </script>
 
@@ -782,6 +854,19 @@ onBeforeUnmount(() => {
 }
 .screen-bar__title { font-size: 18px; font-weight: 700; color: #303133; }
 .screen-bar__domain { font-size: 14px; color: #909399; }
+
+/* 大屏图表面板：深色科技风（半透明深蓝卡 + 发光描边 + 标题发光） */
+.screen-mode .chart-panel {
+  background: linear-gradient(150deg, rgba(9, 32, 78, .88) 0%, rgba(4, 14, 38, .92) 100%);
+  border: 1px solid rgba(0, 150, 255, .22);
+  box-shadow: 0 0 16px rgba(0, 100, 230, .18), inset 0 0 24px rgba(0, 110, 255, .05);
+}
+.screen-mode .chart-panel__title {
+  color: #a8dcff;
+  text-shadow: 0 0 10px rgba(0, 180, 255, .4);
+  letter-spacing: 2px;
+}
+.screen-mode .chart-panel__desc { color: #4d7fb3; }
 </style>
 
 <style>
