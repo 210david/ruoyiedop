@@ -43,9 +43,39 @@ SELECT '质量看板', @biId, 7, 'board-quality', 'bi/board/index', 'BiBoardQual
 FROM DUAL WHERE @biId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'bi:board:quality:view');
 
--- 给 admin 角色分配五域看板权限（幂等）
+-- P1 增补（使用反馈）：安全/设备/人力/投标 四域独立看板（共用组件，权限动态校验 bi:board:{domain}:view）
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '安全看板', @biId, 8, 'board-safety', 'bi/board/index', 'BiBoardSafety',
+    1, 0, 'C', '0', '0', 'bi:board:safety:view', 'warning', 'admin', sysdate()
+FROM DUAL WHERE @biId IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'bi:board:safety:view');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '设备看板', @biId, 9, 'board-equipment', 'bi/board/index', 'BiBoardEquipment',
+    1, 0, 'C', '0', '0', 'bi:board:equipment:view', 'server', 'admin', sysdate()
+FROM DUAL WHERE @biId IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'bi:board:equipment:view');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '人力看板', @biId, 10, 'board-hr', 'bi/board/index', 'BiBoardHr',
+    1, 0, 'C', '0', '0', 'bi:board:hr:view', 'education', 'admin', sysdate()
+FROM DUAL WHERE @biId IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'bi:board:hr:view');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '投标看板', @biId, 11, 'board-bid', 'bi/board/index', 'BiBoardBid',
+    1, 0, 'C', '0', '0', 'bi:board:bid:view', 'documentation', 'admin', sysdate()
+FROM DUAL WHERE @biId IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'bi:board:bid:view');
+
+-- 给 admin 角色分配九域看板权限（幂等）
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT 1, menu_id FROM sys_menu
 WHERE perms IN ('bi:board:sales:view', 'bi:board:purchase:view', 'bi:board:production:view',
-                'bi:board:inventory:view', 'bi:board:quality:view')
+                'bi:board:inventory:view', 'bi:board:quality:view',
+                'bi:board:safety:view', 'bi:board:equipment:view', 'bi:board:hr:view', 'bi:board:bid:view')
   AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id = 1);
