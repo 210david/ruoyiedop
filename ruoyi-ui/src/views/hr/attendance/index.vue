@@ -94,6 +94,7 @@
                 <el-tag v-else-if="scope.row.clockInSource === '3'" type="success" size="small" effect="plain" style="margin-left: 4px">外出</el-tag>
                 <el-tag v-else-if="scope.row.clockInSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 4px">出差</el-tag>
                 <el-tag v-else-if="scope.row.clockInSource === '2'" type="info" size="small" effect="plain" style="margin-left: 4px">手动</el-tag>
+                <el-tag v-else-if="scope.row.clockInSource === '5'" type="primary" size="small" effect="plain" style="margin-left: 4px">钉钉同步</el-tag>
               </div>
             </template>
           </el-table-column>
@@ -105,6 +106,7 @@
                 <el-tag v-else-if="scope.row.clockOutSource === '3'" type="success" size="small" effect="plain" style="margin-left: 4px">外出</el-tag>
                 <el-tag v-else-if="scope.row.clockOutSource === '4'" type="primary" size="small" effect="plain" style="margin-left: 4px">出差</el-tag>
                 <el-tag v-else-if="scope.row.clockOutSource === '2'" type="info" size="small" effect="plain" style="margin-left: 4px">手动</el-tag>
+                <el-tag v-else-if="scope.row.clockOutSource === '5'" type="primary" size="small" effect="plain" style="margin-left: 4px">钉钉同步</el-tag>
               </div>
             </template>
           </el-table-column>

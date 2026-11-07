@@ -138,6 +138,12 @@
             <artifactId>ruoyi-bi</artifactId>
         </dependency>
 
+        <!-- 第三方集成模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-integration</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -166,7 +172,7 @@
                 </configuration>   
            </plugin>   
         </plugins>
-        <finalName>edop-admin-v10</finalName>
+        <finalName>edop-admin-v13</finalName>
     </build>
 
 </project>

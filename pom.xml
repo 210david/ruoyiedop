@@ -276,6 +276,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- 第三方集成模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-integration</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- HTML解析-->
             <dependency>
                 <groupId>org.jsoup</groupId>
@@ -307,6 +314,7 @@
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
         <module>ruoyi-bi</module>
+        <module>ruoyi-integration</module>
     </modules>
     <packaging>pom</packaging>
 
