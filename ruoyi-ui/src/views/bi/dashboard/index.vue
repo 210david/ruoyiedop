@@ -914,7 +914,7 @@ onBeforeUnmount(() => {
 body.bi-screen-on .sidebar-container { display: none !important; }
 body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
 body.bi-screen-on .fixed-header { display: none !important; }
-body.bi-screen-on .app-main { padding: 0 !important; }
+body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; }
 
 /* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
 .screen-kpi-row { margin-bottom: 2px; }
