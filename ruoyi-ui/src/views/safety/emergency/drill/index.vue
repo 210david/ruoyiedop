@@ -92,7 +92,7 @@
           <el-table-column label="参与人员" prop="participants" key="participants" :width="colWidth('participants', 150)" resizable show-overflow-tooltip v-if="columns.participants.visible" />
           <el-table-column label="演练评估" prop="evalResult" key="evalResult" :width="colWidth('evalResult', 150)" resizable show-overflow-tooltip v-if="columns.evalResult.visible" />
           <el-table-column label="发现问题" prop="problems" key="problems" :min-width="colWidth('problems', 120)" resizable show-overflow-tooltip v-if="columns.problems.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:emergency:drill:query']">查看</el-button>
