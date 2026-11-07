@@ -3,7 +3,7 @@
     <!-- F9 大屏模式悬浮条（退出 + 轮播指示） -->
     <div v-if="screenMode" class="screen-bar">
       <span class="screen-bar__title">决策驾驶舱 · 大屏模式</span>
-      <span class="screen-bar__domain">{{ domainNames[activeDomain] || '全部域' }}（自动轮播 15s）</span>
+      <span class="screen-bar__domain">全部域 · 数据自动刷新</span>
       <el-button type="primary" size="small" icon="Close" @click="exitScreen">退出大屏（Esc）</el-button>
     </div>
     <!-- ① 顶部操作栏：时间范围 + 快照基准日 + 刷新 + 自动刷新开关 -->
@@ -273,27 +273,22 @@ let screenTimer = null
 /** 进入大屏：全屏 + 强制开启 5 分钟数据自动刷新 + 15s 域轮播 */
 function enterScreen() {
   screenMode.value = true
+  document.body.classList.add('bi-screen-on')
   if (document.documentElement.requestFullscreen) {
     document.documentElement.requestFullscreen().catch(() => {})
   }
   // 大屏数据只读自动刷新（间隔可调 PRD F9，v1 固定 5 分钟）
   if (!autoRefresh.value) { autoRefresh.value = true; toggleAutoRefresh(true) }
-  // 域轮播：all 或单域 → 依次切换到每个域
-  const domains = Object.keys(metricGroups.value)
-  if (domains.length > 0) {
-    let idx = Math.max(0, domains.indexOf(activeDomain.value === 'all' ? domains[0] : activeDomain.value))
-    activeDomain.value = domains[idx % domains.length]
-    if (screenTimer) clearInterval(screenTimer)
-    screenTimer = setInterval(() => {
-      idx = (idx + 1) % domains.length
-      activeDomain.value = domains[idx]
-    }, 15 * 1000)
-  }
+  // 大屏固定显示全部域（KPI 卡一眼看全，避免单域轮播空旷——综合价值链域仅 1 指标且常为空值；
+  // PRD F9 的"轮播各主题看板"设计调整为全域并排展示）
+  activeDomain.value = 'all'
+  if (screenTimer) { clearInterval(screenTimer); screenTimer = null }
 }
 
 /** 退出大屏 */
 function exitScreen() {
   screenMode.value = false
+  document.body.classList.remove('bi-screen-on')
   if (screenTimer) { clearInterval(screenTimer); screenTimer = null }
   if (document.fullscreenElement && document.exitFullscreen) {
     document.exitFullscreen().catch(() => {})
@@ -304,6 +299,7 @@ function exitScreen() {
 function onFullscreenChange() {
   if (!document.fullscreenElement && screenMode.value) {
     screenMode.value = false
+    document.body.classList.remove('bi-screen-on')
     if (screenTimer) { clearInterval(screenTimer); screenTimer = null }
   }
 }
@@ -477,6 +473,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  document.body.classList.remove('bi-screen-on')
   Object.values(animHandles).forEach(h => cancelAnimationFrame(h))
   if (refreshTimer) clearInterval(refreshTimer)
   if (screenTimer) clearInterval(screenTimer)
@@ -664,4 +661,12 @@ onBeforeUnmount(() => {
 }
 .screen-bar__title { font-size: 18px; font-weight: 700; color: #303133; }
 .screen-bar__domain { font-size: 14px; color: #909399; }
+</style>
+
+<style>
+/* 大屏模式：隐藏 RuoYi 布局侧边栏/标签栏/顶部导航，主区占满（body class 由 enterScreen/exitScreen 切换） */
+body.bi-screen-on .sidebar-container { display: none !important; }
+body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
+body.bi-screen-on .fixed-header { display: none !important; }
+body.bi-screen-on .app-main { padding: 0 !important; }
 </style>
