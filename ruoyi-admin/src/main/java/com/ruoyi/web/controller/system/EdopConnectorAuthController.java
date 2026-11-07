@@ -2,6 +2,7 @@ package com.ruoyi.web.controller.system;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,9 +42,17 @@ import com.ruoyi.system.service.ISysUserService;
 @RequestMapping("/edop/connector/auth")
 public class EdopConnectorAuthController extends BaseController
 {
-    /** MCP 网关地址，来自 application.yml edop.connector.gateway-url */
-    @Value("${edop.connector.gateway-url:http://127.0.0.1:3000}")
+    /**
+     * MCP 网关地址，来自 application.yml edop.connector.gateway-url。
+     * 留空/未配置时按当前请求地址自动推导（见 deriveGatewayUrl）：
+     * 用户经什么地址访问 EDOP，网关即在同主机同地址的网关端口上可达，生产环境零配置改动。
+     */
+    @Value("${edop.connector.gateway-url:}")
     private String gatewayUrl;
+
+    /** MCP 网关端口（gateway-url 留空时自动推导用） */
+    @Value("${edop.connector.gateway-port:3000}")
+    private int gatewayPort;
 
     @Autowired
     private IEdopConnectorGrantService grantService;
@@ -53,11 +62,43 @@ public class EdopConnectorAuthController extends BaseController
      */
     @Anonymous
     @GetMapping("/config")
-    public AjaxResult config()
+    public AjaxResult config(HttpServletRequest request)
     {
+        String url = (gatewayUrl == null || gatewayUrl.trim().isEmpty())
+                ? deriveGatewayUrl(request) : gatewayUrl.trim();
         AjaxResult ok = AjaxResult.success();
-        ok.put("gatewayUrl", gatewayUrl);
+        ok.put("gatewayUrl", url);
         return ok;
+    }
+
+    /**
+     * 网关地址自动推导（gateway-url 留空时）：用户经什么地址访问 EDOP，
+     * 网关即在同主机同地址的网关端口上可达。scheme 取 X-Forwarded-Proto（反代场景，
+     * 未转发时即直连协议），host 取 Host 头（仅保留主机名部分，兼容 IPv6 字面量）。
+     */
+    private String deriveGatewayUrl(HttpServletRequest request)
+    {
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null || scheme.trim().isEmpty())
+        {
+            scheme = request.getScheme();
+        }
+        String host = request.getHeader("Host");
+        if (host == null || host.trim().isEmpty())
+        {
+            host = request.getServerName();
+        }
+        else
+        {
+            host = host.trim();
+            int colon = host.lastIndexOf(':');
+            // 仅当末冒号在 ']' 之后（即 IPv6 字面量之后的端口段）且其内容为纯数字时才截断
+            if (colon > host.lastIndexOf(']') && host.substring(colon + 1).matches("\\d+"))
+            {
+                host = host.substring(0, colon);
+            }
+        }
+        return scheme + "://" + host + ":" + gatewayPort;
     }
 
     /**
