@@ -54,7 +54,7 @@
     <!-- ③-A 大屏专用布局：核心指标精选一排 + 三图表（一屏无滚动、无右侧空白） -->
     <template v-if="screenMode">
       <el-row :gutter="10" class="screen-kpi-row">
-        <el-col v-for="m in screenCoreMetrics" :key="m.metricCode" :xs="12" :sm="8" :md="6" :lg="3">
+        <el-col v-for="m in screenCoreMetrics" :key="m.metricCode" :xs="12" :sm="12" :md="8" :lg="6">
           <div class="kpi-tile kpi-tile--screen" :style="{ borderLeftColor: domainColors[m.domain] || '#909399' }">
             <div class="kpi-tile__name">
               <span class="kpi-tile__chip" :style="{ color: domainColors[m.domain] || '#909399' }">{{ domainNames[m.domain] || m.domain }}</span>
@@ -919,9 +919,9 @@ body.bi-screen-on .app-main { padding: 0 !important; }
 /* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
 .screen-kpi-row { margin-bottom: 2px; }
 .screen-kpi-row .kpi-tile { padding: 14px 16px; margin-bottom: 10px; }
-.screen-kpi-row .kpi-tile__name { font-size: 13px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.screen-kpi-row .kpi-tile__chip { font-size: 11px; margin-right: 6px; font-weight: 600; opacity: .85; }
-.screen-kpi-row .kpi-tile__value { font-size: 30px; }
+.screen-kpi-row .kpi-tile__name { font-size: 13px; margin-bottom: 8px; white-space: normal; line-height: 1.5; }
+.screen-kpi-row .kpi-tile__chip { display: inline-block; font-size: 11px; margin-right: 6px; padding: 1px 8px; border-radius: 3px; font-weight: 600; background: rgba(0, 150, 255, .14); border: 1px solid rgba(0, 150, 255, .25); }
+.screen-kpi-row .kpi-tile__value { font-size: 36px; }
 .screen-kpi-row .kpi-tile__unit { font-size: 12px; }
 .screen-kpi-row .kpi-tile__delta { font-size: 11px; margin-top: 4px; }
 </style>
