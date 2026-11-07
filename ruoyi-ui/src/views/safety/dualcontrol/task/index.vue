@@ -123,7 +123,7 @@
           </el-table-column>
           <el-table-column label="隐患数" prop="hazardCount" key="hazardCount" :width="colWidth('hazardCount', 80)" resizable align="center" v-if="columns.hazardCount.visible" />
           <el-table-column label="检查时间" prop="inspectTime" key="inspectTime" :width="colWidth('inspectTime', 160)" resizable align="center" v-if="columns.inspectTime.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:task:query']">查看</el-button>

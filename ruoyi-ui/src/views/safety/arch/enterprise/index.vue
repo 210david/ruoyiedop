@@ -107,7 +107,7 @@
           <el-table-column label="安全负责人" prop="safetyManager" key="safetyManager" :width="colWidth('safetyManager', 120)" resizable show-overflow-tooltip v-if="columns.safetyManager.visible" />
           <el-table-column label="安全管理机构" prop="safetyOrg" key="safetyOrg" :width="colWidth('safetyOrg', 150)" resizable show-overflow-tooltip v-if="columns.safetyOrg.visible" />
           <el-table-column label="属地监管单位" prop="superviseDept" key="superviseDept" :width="colWidth('superviseDept', 150)" resizable show-overflow-tooltip v-if="columns.superviseDept.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:enterprise:query']">查看</el-button>

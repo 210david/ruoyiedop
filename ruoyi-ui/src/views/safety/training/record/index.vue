@@ -93,7 +93,7 @@
               <span>{{ scope.row.attendeeCount || 0 }} 人</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:record:query']">查看</el-button>
@@ -107,6 +107,17 @@
       </div>
 
       <AiResultPanel :visible="aiPanelVisible" :content="aiPanelText" :latency-ms="aiLatency" @close="aiPanelVisible = false" />
+
+      <!-- FR-10：AI 考题收编入库（增量外挂，不影响原 AI 生成流程） -->
+      <div v-if="aiQuizQuestions.length > 0" class="ai-quiz-collect-bar">
+        <span class="ai-quiz-collect-info">AI 生成 {{ aiQuizQuestions.length }} 题，校对无误后可一键收编入考试题库</span>
+        <el-select v-model="aiQuizCategoryId" placeholder="选择入库分类" size="small" style="width: 200px" filterable>
+          <el-option v-for="c in aiQuizCategoryOptions" :key="c.categoryId" :label="c.categoryName" :value="c.categoryId" />
+        </el-select>
+        <el-button type="primary" size="small" icon="Collection" :loading="aiQuizImporting" :disabled="!aiQuizCategoryId"
+          @click="handleAiQuizImport" v-hasPermi="['safety:exam:question:import']">收编入库</el-button>
+      </div>
+
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </div>
 
@@ -261,6 +272,8 @@
 <script setup name="SafetyTrainingRecord">
 import { listTrainingRecord, getTrainingRecord, addTrainingRecord, updateTrainingRecord, delTrainingRecord } from '@/api/safety/trainingRecord'
 import { aiTrainingQuiz } from '@/api/ai/manage'
+import { aiImportQuestions } from '@/api/safety/examQuestion'
+import { examCategoryOptions } from '@/api/safety/examCategory'
 import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { listTrainingCourse } from '@/api/safety/trainingCourse'
@@ -595,11 +608,62 @@ function onTrainingQuiz(d) {
       lines.push('')
     })
     aiPanelText.value = lines.join('\n')
+    aiQuizQuestions.value = qs
+    if (!aiQuizCategoryOptions.value.length) {
+      examCategoryOptions().then(res => { aiQuizCategoryOptions.value = res.data || [] })
+    }
   } else {
     aiPanelText.value = d.content || d.error || 'AI未生成考题'
+    aiQuizQuestions.value = []
   }
   aiLatency.value = d.latencyMs || 0
   aiPanelVisible.value = true
+}
+
+// ===== FR-10：AI 考题收编入库（增量外挂） =====
+const aiQuizQuestions = ref([])
+const aiQuizCategoryOptions = ref([])
+const aiQuizCategoryId = ref(null)
+const aiQuizImporting = ref(false)
+
+/** AI 题目结构 → 题库结构转换（type中文→字典值、选项字符串→label/text、判断题答案归一化） */
+function toBankQuestion(q) {
+  const typeMap = { '单选': '1', '单选题': '1', '多选': '2', '多选题': '2', '判断': '3', '判断题': '3' }
+  const questionType = typeMap[q.type] || '1'
+  let options = []
+  if (Array.isArray(q.options)) {
+    options = q.options.map(o => {
+      const s = String(o)
+      const m = s.match(/^([A-H])\s*[\.、．:：]\s*(.+)$/)
+      return m ? { label: m[1], text: m[2] } : { label: '', text: s }
+    }).filter(o => o.text)
+    // 无字母前缀时按序补 A/B/C...
+    options.forEach((o, i) => { if (!o.label) o.label = String.fromCharCode(65 + i) })
+  }
+  let answer = q.answer ? String(q.answer).trim() : ''
+  if (questionType === '3') {
+    answer = /对|正确|√|T\b|true/i.test(answer) ? '对' : (/错|×|F\b|false/i.test(answer) ? '错' : answer)
+  } else {
+    answer = answer.toUpperCase().replace(/[^A-H]/g, '')
+  }
+  return {
+    content: q.question || '',
+    questionType,
+    options: JSON.stringify(options),
+    answer,
+    analysis: q.explanation || '',
+    difficulty: '2'
+  }
+}
+
+function handleAiQuizImport() {
+  const payload = aiQuizQuestions.value.map(toBankQuestion)
+  aiQuizImporting.value = true
+  aiImportQuestions({ categoryId: aiQuizCategoryId.value, questions: payload }).then(res => {
+    const r = res.data || {}
+    proxy.$modal.msgSuccess(`收编完成：入库 ${r.inserted || 0} 题，跳过重复 ${r.skipped || 0} 题`)
+    aiQuizQuestions.value = []
+  }).finally(() => { aiQuizImporting.value = false })
 }
 </script>
 
@@ -668,4 +732,8 @@ function onTrainingQuiz(d) {
 .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+
+/* FR-10：AI 考题收编入库工具条 */
+.ai-quiz-collect-bar { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 10px 14px; background: var(--el-color-primary-light-9, #eef2ff); border: 1px dashed var(--el-color-primary-light-5, #c7d2fe); border-radius: 8px; }
+.ai-quiz-collect-info { font-size: 13px; color: var(--el-text-color-regular); }
 </style>
