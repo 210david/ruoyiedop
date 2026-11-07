@@ -51,8 +51,33 @@
       </el-radio-group>
     </div>
 
-    <!-- ③ KPI 指标卡网格（按域分组、左侧色条、数字滚动、悬停上浮、环比箭头；大屏模式也显示） -->
-    <template v-if="activeView === 'kpi' || screenMode">
+    <!-- ③-A 大屏专用布局：核心指标精选一排 + 三图表（一屏无滚动、无右侧空白） -->
+    <template v-if="screenMode">
+      <el-row :gutter="10" class="screen-kpi-row">
+        <el-col v-for="m in screenCoreMetrics" :key="m.metricCode" :xs="12" :sm="8" :md="6" :lg="3">
+          <div class="kpi-tile kpi-tile--screen" :style="{ borderLeftColor: domainColors[m.domain] || '#909399' }">
+            <div class="kpi-tile__name">
+              <span class="kpi-tile__chip" :style="{ color: domainColors[m.domain] || '#909399' }">{{ domainNames[m.domain] || m.domain }}</span>
+              {{ m.metricName }}
+              <el-tooltip v-if="m.dataFlag === 'estimate'" content="估算口径，仅供参考" placement="top">
+                <span class="kpi-tile__flag">估</span>
+              </el-tooltip>
+            </div>
+            <div class="kpi-tile__value">
+              <template v-if="m.value !== null && m.value !== undefined">{{ animated(m.metricCode) }}</template>
+              <template v-else>—</template>
+              <span v-if="m.value !== null && m.value !== undefined && m.unit" class="kpi-tile__unit">{{ m.unit }}</span>
+            </div>
+            <div v-if="deltaOf(m)" class="kpi-tile__delta" :class="deltaOf(m).up ? 'kpi-tile__delta--up' : 'kpi-tile__delta--down'">
+              {{ deltaOf(m).up ? '↑' : '↓' }} {{ deltaOf(m).text }} 较上期
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </template>
+
+    <!-- ③-B 普通模式：KPI 指标卡按域分组（左侧色条、数字滚动、环比箭头） -->
+    <template v-if="activeView === 'kpi' && !screenMode">
     <div v-for="(group, domain) in visibleGroups" :key="domain" class="domain-section">
       <div class="domain-section__head">
         <span class="domain-section__bar" :style="{ background: domainColors[domain] || '#909399' }"></span>
@@ -80,9 +105,10 @@
         </el-col>
       </el-row>
     </div>
+    </template>
 
-    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形 + 域指标分布（大屏下同样显示，深色科技风主题） -->
-    <el-row :gutter="16" style="margin-top: 16px;">
+    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形 + 域指标分布（普通/大屏两种模式共用，深色科技风主题） -->
+    <el-row v-show="activeView === 'kpi' || screenMode" :gutter="16" style="margin-top: 16px;">
       <el-col :xs="24" :md="12">
         <div class="chart-panel">
           <div class="chart-panel__head">
@@ -117,7 +143,6 @@
         </div>
       </el-col>
     </el-row>
-    </template>
 
     <!-- ③.6 F6 价值链路视图（销售到现金链 / 供应保障链） -->
     <template v-if="activeView === 'chain'">
@@ -280,6 +305,21 @@ function onViewChange() {
 // ==================== F9 大屏模式（只读轮播，车间/展厅部署） ====================
 const screenMode = ref(false)
 let screenTimer = null
+
+/** 大屏核心指标精选（%类+核心运营，一排 8 个恰好填满一行，无右侧空白） */
+const SCREEN_CORE_CODES = ['MMS_WO_RATE', 'QMS_PASS_RATE', 'PMS_ONTIME_RATE', 'MK_WIN_RATE', 'SAFETY_RECT_RATE', 'WMS_ALERT_CNT', 'DMS_OEE', 'OTC_CYCLE']
+const screenCoreMetrics = computed(() => {
+  const byCode = {}
+  for (const m of metrics.value) byCode[m.metricCode] = m
+  const picked = SCREEN_CORE_CODES.map(c => byCode[c]).filter(Boolean)
+  if (picked.length < 8) {
+    for (const m of metrics.value) {
+      if (picked.length >= 8) break
+      if (!picked.includes(m)) picked.push(m)
+    }
+  }
+  return picked.slice(0, 8)
+})
 
 /** 进入大屏：全屏 + 强制开启 5 分钟数据自动刷新 + 15s 域轮播 */
 function enterScreen() {
@@ -875,4 +915,13 @@ body.bi-screen-on .sidebar-container { display: none !important; }
 body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
 body.bi-screen-on .fixed-header { display: none !important; }
 body.bi-screen-on .app-main { padding: 0 !important; }
+
+/* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
+.screen-kpi-row { margin-bottom: 2px; }
+.screen-kpi-row .kpi-tile { padding: 14px 16px; margin-bottom: 10px; }
+.screen-kpi-row .kpi-tile__name { font-size: 13px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.screen-kpi-row .kpi-tile__chip { font-size: 11px; margin-right: 6px; font-weight: 600; opacity: .85; }
+.screen-kpi-row .kpi-tile__value { font-size: 30px; }
+.screen-kpi-row .kpi-tile__unit { font-size: 12px; }
+.screen-kpi-row .kpi-tile__delta { font-size: 11px; margin-top: 4px; }
 </style>
