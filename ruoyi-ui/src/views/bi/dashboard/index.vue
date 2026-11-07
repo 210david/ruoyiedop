@@ -755,7 +755,7 @@ onBeforeUnmount(() => {
 
 /* ⑤ F9 大屏模式：深色科技风（深空蓝渐变 + 网格纹理 + 霓虹数值 + 域色发光卡），全域并排只读 */
 .screen-mode {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 18px 26px 30px;
   background:
     radial-gradient(ellipse at 18% 0%, rgba(0, 86, 210, .30) 0%, transparent 55%),
@@ -915,12 +915,12 @@ onBeforeUnmount(() => {
 
 <style>
 /* 大屏模式：隐藏 RuoYi 布局侧边栏/标签栏/顶部导航，主区占满（body class 由 enterScreen/exitScreen 切换） */
-body.bi-screen-on { background: #010409; }
-html:has(body.bi-screen-on) { background: #010409; }
+body.bi-screen-on { background: #010409; overflow: hidden !important; }
+html:has(body.bi-screen-on) { background: #010409; overflow: hidden !important; }
 body.bi-screen-on .sidebar-container { display: none !important; }
 body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
 body.bi-screen-on .fixed-header { display: none !important; }
-body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; background: #010409; min-height: 100vh; }
+body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; min-height: 0 !important; background: #010409; }
 
 /* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
 .screen-kpi-row { margin-bottom: 2px; }
