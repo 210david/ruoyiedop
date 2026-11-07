@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamUserMapper">
+
+    <resultMap type="SafetyExamUser" id="SafetyExamUserResult">
+        <result property="examUserId"   column="exam_user_id"/>
+        <result property="examId"       column="exam_id"/>
+        <result property="userId"       column="user_id"/>
+        <result property="userName"     column="user_name"/>
+        <result property="deptId"       column="dept_id"/>
+        <result property="deptName"     column="dept_name"/>
+        <result property="postName"     column="post_name"/>
+        <result property="enterpriseId" column="enterprise_id"/>
+        <result property="delFlag"      column="del_flag"/>
+        <result property="createBy"     column="create_by"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <delete id="deleteByExamId" parameterType="Long">
+        delete from biz_safety_exam_user where exam_id = #{examId}
+    </delete>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into biz_safety_exam_user (exam_id, user_id, user_name, dept_id, enterprise_id, del_flag, create_by, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.examId}, #{item.userId}, #{item.userName}, #{item.deptId}, #{item.enterpriseId}, '0', #{item.createBy}, NOW())
+        </foreach>
+    </insert>
+
+    <select id="selectByExamId" parameterType="Long" resultMap="SafetyExamUserResult">
+        select t.exam_user_id, t.exam_id, t.user_id, t.user_name, t.dept_id, t.enterprise_id, t.del_flag, t.create_by, t.create_time,
+               d.dept_name,
+               (select group_concat(p.post_name separator '、')
+                  from sys_user_post up
+                  join sys_post p on p.post_id = up.post_id
+                 where up.user_id = t.user_id) as post_name
+        from biz_safety_exam_user t
+        left join sys_dept d on d.dept_id = t.dept_id
+        where t.exam_id = #{examId} and t.del_flag = '0'
+        order by t.exam_user_id
+    </select>
+
+    <!-- 可选用户：直接读 sys_user，避免考试模块依赖 system 服务；昵称优先 -->
+    <select id="selectUserOptions" resultType="SafetyExamUser">
+        select u.user_id        as userId,
+               ifnull(nullif(u.nick_name, ''), u.user_name) as userName,
+               u.dept_id         as deptId
+        from sys_user u
+        where u.del_flag = '0' and u.status = '0'
+        <if test="keyword != null and keyword != ''">
+            and (u.user_name like concat('%', #{keyword}, '%') or u.nick_name like concat('%', #{keyword}, '%'))
+        </if>
+        order by u.user_id
+        limit 500
+    </select>
+
+    <!-- 按 ID 批量查有效用户（保存名单时校验+回填） -->
+    <select id="selectUsersByIds" resultType="SafetyExamUser">
+        select u.user_id        as userId,
+               ifnull(nullif(u.nick_name, ''), u.user_name) as userName,
+               u.dept_id         as deptId
+        from sys_user u
+        where u.del_flag = '0' and u.status = '0'
+        and u.user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+</mapper>

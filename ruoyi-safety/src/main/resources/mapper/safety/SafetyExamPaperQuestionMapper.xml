@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamPaperQuestionMapper">
+
+    <resultMap type="SafetyExamPaperQuestion" id="SafetyExamPaperQuestionResult">
+        <result property="id"            column="id"/>
+        <result property="paperId"       column="paper_id"/>
+        <result property="questionId"    column="question_id"/>
+        <result property="questionType"  column="question_type"/>
+        <result property="content"       column="content"/>
+        <result property="options"       column="options"/>
+        <result property="answer"        column="answer"/>
+        <result property="analysis"      column="analysis"/>
+        <result property="score"         column="score"/>
+        <result property="sortNo"        column="sort_no"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamPaperQuestionVo">
+        select id, paper_id, question_id, question_type, content, options, answer, analysis,
+               score, sort_no, del_flag, create_by, create_time, update_by, update_time, remark
+        from biz_safety_exam_paper_question
+    </sql>
+
+    <select id="selectSafetyExamPaperQuestionList" parameterType="SafetyExamPaperQuestion" resultMap="SafetyExamPaperQuestionResult">
+        <include refid="selectSafetyExamPaperQuestionVo"/>
+        <where>
+            del_flag = '0'
+            <if test="paperId != null"> AND paper_id = #{paperId}</if>
+            <if test="questionId != null"> AND question_id = #{questionId}</if>
+            <if test="questionType != null and questionType != ''"> AND question_type = #{questionType}</if>
+        </where>
+        order by sort_no, id
+    </select>
+
+    <select id="selectByPaperId" parameterType="Long" resultMap="SafetyExamPaperQuestionResult">
+        <include refid="selectSafetyExamPaperQuestionVo"/>
+        where paper_id = #{paperId} and del_flag = '0'
+        order by sort_no, id
+    </select>
+
+    <select id="selectSafetyExamPaperQuestionById" parameterType="Long" resultMap="SafetyExamPaperQuestionResult">
+        <include refid="selectSafetyExamPaperQuestionVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <insert id="insertSafetyExamPaperQuestion" parameterType="SafetyExamPaperQuestion" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_safety_exam_paper_question
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="paperId != null">paper_id,</if>
+            <if test="questionId != null">question_id,</if>
+            <if test="questionType != null and questionType != ''">question_type,</if>
+            <if test="content != null and content != ''">content,</if>
+            <if test="options != null and options != ''">options,</if>
+            <if test="answer != null and answer != ''">answer,</if>
+            <if test="analysis != null">analysis,</if>
+            <if test="score != null">score,</if>
+            <if test="sortNo != null">sort_no,</if>
+            create_time,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="paperId != null">#{paperId},</if>
+            <if test="questionId != null">#{questionId},</if>
+            <if test="questionType != null and questionType != ''">#{questionType},</if>
+            <if test="content != null and content != ''">#{content},</if>
+            <if test="options != null and options != ''">#{options},</if>
+            <if test="answer != null and answer != ''">#{answer},</if>
+            <if test="analysis != null">#{analysis},</if>
+            <if test="score != null">#{score},</if>
+            <if test="sortNo != null">#{sortNo},</if>
+            sysdate(),
+        </trim>
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into biz_safety_exam_paper_question
+        (paper_id, question_id, question_type, content, options, answer, analysis, score, sort_no, create_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.paperId}, #{item.questionId}, #{item.questionType}, #{item.content}, #{item.options},
+             #{item.answer}, #{item.analysis}, #{item.score}, #{item.sortNo}, sysdate())
+        </foreach>
+    </insert>
+
+    <update id="updateSafetyExamPaperQuestion" parameterType="SafetyExamPaperQuestion">
+        update biz_safety_exam_paper_question
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="questionType != null and questionType != ''">question_type = #{questionType},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="options != null and options != ''">options = #{options},</if>
+            <if test="answer != null and answer != ''">answer = #{answer},</if>
+            <if test="analysis != null">analysis = #{analysis},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="sortNo != null">sort_no = #{sortNo},</if>
+            update_time = sysdate(),
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteSafetyExamPaperQuestionById" parameterType="Long">
+        update biz_safety_exam_paper_question set del_flag = '2' where id = #{id}
+    </update>
+
+    <update id="deleteByPaperId" parameterType="Long">
+        update biz_safety_exam_paper_question set del_flag = '2' where paper_id = #{paperId}
+    </update>
+
+</mapper>

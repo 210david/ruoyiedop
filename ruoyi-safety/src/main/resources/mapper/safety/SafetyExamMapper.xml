@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamMapper">
+
+    <resultMap type="SafetyExam" id="SafetyExamResult">
+        <result property="examId"          column="exam_id"/>
+        <result property="examName"        column="exam_name"/>
+        <result property="paperId"         column="paper_id"/>
+        <result property="paperName"       column="paper_name"/>
+        <result property="recordId"        column="record_id"/>
+        <result property="attendeeSource"  column="attendee_source"/>
+        <result property="retakeFromId"    column="retake_from_id"/>
+        <result property="retakeCount"     column="retake_count"/>
+        <result property="scoreStrategy"   column="score_strategy"/>
+        <result property="startTime"       column="start_time"/>
+        <result property="endTime"         column="end_time"/>
+        <result property="examStatus"      column="exam_status"/>
+        <result property="publishBy"       column="publish_by"/>
+        <result property="publishTime"     column="publish_time"/>
+        <result property="deptId"          column="dept_id"/>
+        <result property="enterpriseId"    column="enterprise_id"/>
+        <result property="delFlag"         column="del_flag"/>
+        <result property="createBy"        column="create_by"/>
+        <result property="createTime"      column="create_time"/>
+        <result property="updateBy"        column="update_by"/>
+        <result property="updateTime"      column="update_time"/>
+        <result property="remark"          column="remark"/>
+        <result property="totalCount"      column="total_cnt"/>
+        <result property="submittedCount"  column="submitted_cnt"/>
+        <result property="absentCount"     column="absent_cnt"/>
+        <result property="passRate"        column="pass_rate"/>
+        <result property="avgScore"        column="avg_score"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamVo">
+        select exam_id, exam_name, paper_id, paper_name, record_id, attendee_source, retake_from_id, retake_count, score_strategy,
+               start_time, end_time, exam_status,
+               publish_by, publish_time, dept_id, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from biz_safety_exam
+    </sql>
+
+    <!-- 列表：关联试卷表兜底修复历史空试卷名，并聚合考生记录外显考试情况 -->
+    <select id="selectSafetyExamList" parameterType="SafetyExam" resultMap="SafetyExamResult">
+        select e.exam_id, e.exam_name, e.paper_id, ifnull(nullif(e.paper_name, ''), p.paper_name) as paper_name,
+               e.record_id, e.attendee_source, e.retake_from_id, e.retake_count, e.score_strategy,
+               e.start_time, e.end_time, e.exam_status,
+               e.publish_by, e.publish_time, e.dept_id, e.enterprise_id, e.del_flag,
+               e.create_by, e.create_time, e.update_by, e.update_time, e.remark,
+               s.total_cnt, s.submitted_cnt, s.absent_cnt, s.pass_rate, s.avg_score
+        from biz_safety_exam e
+        left join biz_safety_exam_paper p on p.paper_id = e.paper_id and p.del_flag = '0'
+        left join (
+            select exam_id,
+                   count(*) as total_cnt,
+                   sum(case when exam_result in ('2', '4') then 1 else 0 end) as submitted_cnt,
+                   sum(case when exam_result = '3' then 1 else 0 end) as absent_cnt,
+                   round(sum(case when exam_result in ('2', '4') and is_pass = '1' then 1 else 0 end) * 100.0
+                         / nullif(sum(case when exam_result in ('2', '4') then 1 else 0 end), 0), 1) as pass_rate,
+                   round(avg(case when exam_result in ('2', '4') then total_score end), 1) as avg_score
+            from biz_safety_exam_record
+            where del_flag = '0'
+            group by exam_id
+        ) s on s.exam_id = e.exam_id
+        <where>
+            e.del_flag = '0'
+            <if test="examName != null and examName != ''"> AND e.exam_name like concat('%', #{examName}, '%')</if>
+            <if test="paperId != null"> AND e.paper_id = #{paperId}</if>
+            <if test="recordId != null"> AND e.record_id = #{recordId}</if>
+            <if test="examStatus != null and examStatus != ''"> AND e.exam_status = #{examStatus}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND e.start_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND e.end_time &lt;= #{params.endTime}</if>
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
+        </where>
+        order by e.exam_id desc
+    </select>
+
+    <select id="selectSafetyExamById" parameterType="Long" resultMap="SafetyExamResult">
+        <include refid="selectSafetyExamVo"/>
+        where exam_id = #{examId} and del_flag = '0'
+    </select>
+
+    <insert id="insertSafetyExam" parameterType="SafetyExam" useGeneratedKeys="true" keyProperty="examId">
+        insert into biz_safety_exam
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="examName != null and examName != ''">exam_name,</if>
+            <if test="paperId != null">paper_id,</if>
+            <if test="paperName != null and paperName != ''">paper_name,</if>
+            <if test="recordId != null">record_id,</if>
+            <if test="attendeeSource != null and attendeeSource != ''">attendee_source,</if>
+            <if test="retakeFromId != null">retake_from_id,</if>
+            <if test="retakeCount != null">retake_count,</if>
+            <if test="scoreStrategy != null and scoreStrategy != ''">score_strategy,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="examStatus != null and examStatus != ''">exam_status,</if>
+            <if test="publishBy != null and publishBy != ''">publish_by,</if>
+            <if test="publishTime != null">publish_time,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="enterpriseId != null">enterprise_id,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="examName != null and examName != ''">#{examName},</if>
+            <if test="paperId != null">#{paperId},</if>
+            <if test="paperName != null and paperName != ''">#{paperName},</if>
+            <if test="recordId != null">#{recordId},</if>
+            <if test="attendeeSource != null and attendeeSource != ''">#{attendeeSource},</if>
+            <if test="retakeFromId != null">#{retakeFromId},</if>
+            <if test="retakeCount != null">#{retakeCount},</if>
+            <if test="scoreStrategy != null and scoreStrategy != ''">#{scoreStrategy},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="examStatus != null and examStatus != ''">#{examStatus},</if>
+            <if test="publishBy != null and publishBy != ''">#{publishBy},</if>
+            <if test="publishTime != null">#{publishTime},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="enterpriseId != null">#{enterpriseId},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate(),
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSafetyExam" parameterType="SafetyExam">
+        update biz_safety_exam
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="examName != null and examName != ''">exam_name = #{examName},</if>
+            <if test="paperId != null">paper_id = #{paperId},</if>
+            <if test="paperName != null and paperName != ''">paper_name = #{paperName},</if>
+            <if test="recordId != null">record_id = #{recordId},</if>
+            <if test="attendeeSource != null and attendeeSource != ''">attendee_source = #{attendeeSource},</if>
+            <if test="retakeFromId != null">retake_from_id = #{retakeFromId},</if>
+            <if test="retakeCount != null">retake_count = #{retakeCount},</if>
+            <if test="scoreStrategy != null and scoreStrategy != ''">score_strategy = #{scoreStrategy},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="examStatus != null and examStatus != ''">exam_status = #{examStatus},</if>
+            <if test="publishBy != null and publishBy != ''">publish_by = #{publishBy},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where exam_id = #{examId}
+    </update>
+
+    <update id="deleteSafetyExamById" parameterType="Long">
+        update biz_safety_exam set del_flag = '2' where exam_id = #{examId}
+    </update>
+
+    <update id="deleteSafetyExamByIds" parameterType="String">
+        update biz_safety_exam set del_flag = '2' where exam_id in
+        <foreach item="examId" collection="array" open="(" separator="," close=")">
+            #{examId}
+        </foreach>
+    </update>
+
+    <insert id="batchInsertExamRecords" parameterType="java.util.List">
+        insert into biz_safety_exam_record
+        (exam_id, paper_id, user_id, user_name, attendee_id, dept_id, enterprise_id, exam_result, create_by, create_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.examId}, #{item.paperId}, #{item.userId}, #{item.userName}, #{item.attendeeId},
+             #{item.deptId}, #{item.enterpriseId}, '0', #{item.createBy}, sysdate())
+        </foreach>
+    </insert>
+
+    <select id="countSubmittedByExamId" parameterType="Long" resultType="int">
+        select count(*) from biz_safety_exam_record
+        where exam_id = #{examId} and del_flag = '0' and exam_result in ('2', '4')
+    </select>
+
+    <select id="countTotalByExamId" parameterType="Long" resultType="int">
+        select count(*) from biz_safety_exam_record
+        where exam_id = #{examId} and del_flag = '0'
+    </select>
+
+    <!-- 按试卷统计引用的考试场次数（未删除且未撤回） -->
+    <select id="countByPaperId" parameterType="Long" resultType="int">
+        select count(*) from biz_safety_exam
+        where paper_id = #{paperId} and del_flag = '0' and exam_status != '4'
+    </select>
+
+    <!-- 已结束待缺考标记的场次ID（定时任务扫描） -->
+    <select id="selectEndedExamIds" resultType="java.lang.Long">
+        select exam_id from biz_safety_exam
+        where del_flag = '0' and exam_status = '3' and end_time &lt; now()
+    </select>
+
+    <!-- 惰性状态流转兜底：到点批量纠正（1已发布→2考试中；2考试中→3已结束） -->
+    <update id="updateExamStatusByTime">
+        update biz_safety_exam
+        set exam_status = case
+            when exam_status = '1' and start_time &lt;= now() then '2'
+            when exam_status = '2' and end_time &lt; now() then '3'
+            else exam_status end
+        where del_flag = '0' and exam_status in ('1', '2')
+          and (start_time &lt;= now() or end_time &lt; now())
+    </update>
+
+    <!-- FR-8：查询场次中不合格或缺考且有系统账号的考生记录（补考名单来源） -->
+    <select id="selectRetakeTargets" parameterType="Long" resultMap="com.ruoyi.safety.mapper.SafetyExamRecordMapper.SafetyExamRecordResult">
+        select r.record_id, r.exam_id, r.paper_id, r.user_id, r.user_name, r.attendee_id,
+               r.worker_id, r.dept_id, r.exam_result, r.is_pass, r.total_score,
+               r.enterprise_id
+        from biz_safety_exam_record r
+        where r.exam_id = #{examId} and r.del_flag = '0'
+          and r.user_id is not null
+          and (r.exam_result = '3' or (r.exam_result = '2' and r.is_pass = '0'))
+    </select>
+
+</mapper>
