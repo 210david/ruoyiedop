@@ -167,3 +167,105 @@ function handleRevoke(row) {
 
 getList()
 </script>
+
+<style scoped>
+/* ===== Design Tokens ===== */
+.sys-connector-grant-page {
+  padding-top: 10px;
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca;
+  --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-400:#94a3b8; --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --ink-50:#f8fafc;
+  --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-700:#b45309;
+  --blue-50:#eff6ff; --blue-500:#3b82f6; --blue-700:#1d4ed8;
+  --green-50:#ecfdf5; --green-500:#10b981; --green-700:#047857;
+  --red-50:#fef2f2; --red-500:#ef4444; --red-700:#b91c1c;
+  --violet-50:#f5f3ff;
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --shadow-card:0 1px 0 rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.04);
+  --ease-out:cubic-bezier(.16,.84,.44,1);
+  font-feature-settings:"tnum" 1;
+  color: var(--ink-900);
+}
+
+/* ===== Surface Card ===== */
+.sys-connector-grant-page .surface { background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); box-shadow:var(--shadow-card); overflow:hidden; margin-bottom:8px; }
+
+/* ===== Filter Card ===== */
+.sys-connector-grant-page .filter-card { padding:14px 20px 16px; }
+.sys-connector-grant-page .filter-card .filter-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.sys-connector-grant-page .filter-card .filter-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--ink-700); }
+.sys-connector-grant-page .filter-card .filter-title .glyph { width:4px; height:14px; background:var(--brand-600); border-radius:2px; }
+.sys-connector-grant-page .filter-card .adv-link { font-size:14px; color:var(--ink-500); text-decoration:none; display:flex; align-items:center; gap:4px; transition:color .15s; cursor:pointer; }
+.sys-connector-grant-page .filter-card .adv-link:hover { color:var(--brand-600); }
+.sys-connector-grant-page .filter-card .adv-link .chev { transition:transform .2s var(--ease-out); }
+.sys-connector-grant-page .filter-card .adv-link.is-open .chev { transform:rotate(180deg); }
+.sys-connector-grant-page .filter-card .filter-bar { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 16px; }
+.sys-connector-grant-page .filter-card .filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px dashed var(--ink-200); }
+.sys-connector-grant-page .filter-card .filter-info { font-size:13px; color:var(--ink-500); display:flex; align-items:center; gap:6px; }
+.sys-connector-grant-page .filter-card .filter-buttons { display:flex; gap:8px; }
+
+/* ===== Form Field ===== */
+.sys-connector-grant-page .field { display:flex; flex-direction:column; gap:6px; }
+.sys-connector-grant-page .field label { font-size:14px; font-weight:500; color:var(--ink-700); display:flex; align-items:center; gap:6px; }
+.sys-connector-grant-page .field .control { display:flex; align-items:center; height:36px; padding:0 12px; background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-sm); transition:border-color .15s var(--ease-out), box-shadow .15s var(--ease-out); }
+.sys-connector-grant-page .field .control:focus-within { border-color:var(--brand-500); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+
+/* el-input transparent inside .control */
+.sys-connector-grant-page .field .control :deep(.el-input__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; height:34px; }
+.sys-connector-grant-page .field .control :deep(.el-input__inner) { border:0; background:transparent; font-size:14px; color:var(--ink-900); height:34px; line-height:34px; }
+.sys-connector-grant-page .field .control :deep(.el-input__inner::placeholder) { color:var(--ink-400); }
+.sys-connector-grant-page .field .control :deep(.el-input__prefix) { color:var(--ink-400); margin-right:4px; }
+.sys-connector-grant-page .field .control :deep(.el-input__prefix .el-icon) { font-size:14px; }
+
+/* el-select transparent inside .control */
+.sys-connector-grant-page .field .control :deep(.el-select) { width:100%; }
+.sys-connector-grant-page .field .control :deep(.el-select .el-select__wrapper) { box-shadow:none !important; background:transparent !important; padding:0; min-height:34px; height:34px; }
+.sys-connector-grant-page .field .control :deep(.el-select .el-select__wrapper .el-select__placeholder) { font-size:14px; color:var(--ink-900); }
+.sys-connector-grant-page .field .control :deep(.el-select .el-select__wrapper.is-focused) { box-shadow:none !important; }
+
+/* ===== Toolbar ===== */
+.sys-connector-grant-page .toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--ink-200); background:var(--ink-50); }
+.sys-connector-grant-page .toolbar .left { display:flex; gap:8px; align-items:center; }
+.sys-connector-grant-page .toolbar .right { display:flex; gap:8px; align-items:center; }
+.sys-connector-grant-page .toolbar-divider { width:1px; height:18px; background:var(--ink-200); margin:0 4px; }
+
+/* ===== Table ===== */
+.sys-connector-grant-page .table-wrap { overflow-x:auto; }
+.sys-connector-grant-page .app-table { --el-table-bg-color:#fff; --el-table-header-bg-color:var(--ink-50); --el-table-row-hover-bg-color:#fafbff; --el-table-border-color:transparent; --el-table-text-color:var(--ink-700); --el-table-header-text-color:var(--ink-500); }
+.sys-connector-grant-page .app-table :deep(.el-table__body td) { border-right-color:transparent !important; }
+.sys-connector-grant-page .app-table :deep(.el-table__header th) { border-right-color:transparent !important; }
+.sys-connector-grant-page .app-table :deep(.el-table__header th:hover) { border-right-color:var(--ink-200) !important; }
+.sys-connector-grant-page .app-table :deep(.el-table__header th) { background:var(--ink-50) !important; color:var(--ink-500); font-weight:600; font-size:14px; letter-spacing:.02em; padding:12px 16px; border-bottom:1px solid var(--ink-200); }
+.sys-connector-grant-page .app-table :deep(.el-table__header th .cell) { text-transform:uppercase; }
+.sys-connector-grant-page .app-table :deep(.el-table__body td) { padding:14px 16px; border-bottom:1px solid var(--ink-100); color:var(--ink-700); }
+.sys-connector-grant-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
+.sys-connector-grant-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
+.sys-connector-grant-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+
+/* ===== Dict Tag Badge Style ===== */
+.sys-connector-grant-page .app-table :deep(.el-tag) { display:inline-flex; align-items:center; padding:3px 9px; border-radius:999px; font-size:13px; font-weight:600; line-height:1; border:1px solid transparent; height:auto; }
+.sys-connector-grant-page .app-table :deep(.el-tag.el-tag--primary) { background:var(--brand-50); color:var(--brand-700); border-color:var(--brand-200); }
+.sys-connector-grant-page .app-table :deep(.el-tag.el-tag--success) { background:var(--green-50); color:var(--green-700); border-color:#a7f3d0; }
+.sys-connector-grant-page .app-table :deep(.el-tag.el-tag--warning) { background:var(--amber-50); color:var(--amber-700); border-color:#fde68a; }
+.sys-connector-grant-page .app-table :deep(.el-tag.el-tag--danger) { background:var(--red-50); color:var(--red-700); border-color:#fecaca; }
+.sys-connector-grant-page .app-table :deep(.el-tag.el-tag--info) { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
+
+/* ===== Pagination ===== */
+.sys-connector-grant-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination .el-pager li.is-active) { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; box-shadow:0 4px 10px -2px rgba(79,70,229,.4); }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination .btn-prev), .sys-connector-grant-page .pagination-container :deep(.el-pagination .btn-next) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination .btn-prev:hover), .sys-connector-grant-page .pagination-container :deep(.el-pagination .btn-next:hover) { border-color:var(--brand-200); color:var(--brand-700); }
+.sys-connector-grant-page .pagination-container :deep(.el-pagination .el-pagination__sizes .el-select__wrapper) { border-radius:6px; box-shadow:0 0 0 1px var(--ink-200) inset; }
+
+/* ===== Responsive ===== */
+@media (max-width:1100px) { .sys-connector-grant-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:720px) { .sys-connector-grant-page .filter-card .filter-bar { grid-template-columns:1fr; } .sys-connector-grant-page .toolbar { flex-wrap:wrap; gap:10px; } }
+
+/* 操作列按钮对齐：每行2个按钮，flex-wrap 自动换行，按钮自适应内容宽度 */
+:deep(.col-action) { padding: 6px 4px !important; }
+:deep(.col-action .cell) { display: flex; justify-content: center; padding: 0; }
+.action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+:deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+:deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+</style>
