@@ -132,6 +132,12 @@
             <artifactId>ruoyi-pdm</artifactId>
         </dependency>
 
+        <!-- BI决策支持模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-bi</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
