@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamPaperMapper">
+
+    <resultMap type="SafetyExamPaper" id="SafetyExamPaperResult">
+        <result property="paperId"          column="paper_id"/>
+        <result property="paperName"        column="paper_name"/>
+        <result property="courseId"         column="course_id"/>
+        <result property="courseName"       column="course_name"/>
+        <result property="totalScore"       column="total_score"/>
+        <result property="passScore"        column="pass_score"/>
+        <result property="duration"         column="duration"/>
+        <result property="shuffleQuestion"  column="shuffle_question"/>
+        <result property="shuffleOption"    column="shuffle_option"/>
+        <result property="switchLimit"      column="switch_limit"/>
+        <result property="showAnalysis"     column="show_analysis"/>
+        <result property="status"           column="status"/>
+        <result property="publishBy"        column="publish_by"/>
+        <result property="publishTime"      column="publish_time"/>
+        <result property="enterpriseId"     column="enterprise_id"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamPaperVo">
+        select paper_id, paper_name, course_id, course_name, total_score, pass_score, duration,
+               shuffle_question, shuffle_option, switch_limit, show_analysis, status,
+               publish_by, publish_time, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from biz_safety_exam_paper
+    </sql>
+
+    <select id="selectSafetyExamPaperList" parameterType="SafetyExamPaper" resultMap="SafetyExamPaperResult">
+        <include refid="selectSafetyExamPaperVo"/>
+        <where>
+            del_flag = '0'
+            <if test="paperName != null and paperName != ''"> AND paper_name like concat('%', #{paperName}, '%')</if>
+            <if test="courseId != null"> AND course_id = #{courseId}</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="enterpriseId != null"> AND enterprise_id = #{enterpriseId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"> AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')</if>
+            <if test="params.endTime != null and params.endTime != ''"> AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')</if>
+        </where>
+        order by paper_id desc
+    </select>
+
+    <select id="selectSafetyExamPaperById" parameterType="Long" resultMap="SafetyExamPaperResult">
+        <include refid="selectSafetyExamPaperVo"/>
+        where paper_id = #{paperId} and del_flag = '0'
+    </select>
+
+    <insert id="insertSafetyExamPaper" parameterType="SafetyExamPaper" useGeneratedKeys="true" keyProperty="paperId">
+        insert into biz_safety_exam_paper
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="paperName != null and paperName != ''">paper_name,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="courseName != null and courseName != ''">course_name,</if>
+            <if test="totalScore != null">total_score,</if>
+            <if test="passScore != null">pass_score,</if>
+            <if test="duration != null">duration,</if>
+            <if test="shuffleQuestion != null and shuffleQuestion != ''">shuffle_question,</if>
+            <if test="shuffleOption != null and shuffleOption != ''">shuffle_option,</if>
+            <if test="switchLimit != null">switch_limit,</if>
+            <if test="showAnalysis != null and showAnalysis != ''">show_analysis,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="publishBy != null and publishBy != ''">publish_by,</if>
+            <if test="publishTime != null">publish_time,</if>
+            <if test="enterpriseId != null">enterprise_id,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="paperName != null and paperName != ''">#{paperName},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="courseName != null and courseName != ''">#{courseName},</if>
+            <if test="totalScore != null">#{totalScore},</if>
+            <if test="passScore != null">#{passScore},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="shuffleQuestion != null and shuffleQuestion != ''">#{shuffleQuestion},</if>
+            <if test="shuffleOption != null and shuffleOption != ''">#{shuffleOption},</if>
+            <if test="switchLimit != null">#{switchLimit},</if>
+            <if test="showAnalysis != null and showAnalysis != ''">#{showAnalysis},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="publishBy != null and publishBy != ''">#{publishBy},</if>
+            <if test="publishTime != null">#{publishTime},</if>
+            <if test="enterpriseId != null">#{enterpriseId},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate(),
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSafetyExamPaper" parameterType="SafetyExamPaper">
+        update biz_safety_exam_paper
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="paperName != null and paperName != ''">paper_name = #{paperName},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="courseName != null and courseName != ''">course_name = #{courseName},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if>
+            <if test="passScore != null">pass_score = #{passScore},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="shuffleQuestion != null and shuffleQuestion != ''">shuffle_question = #{shuffleQuestion},</if>
+            <if test="shuffleOption != null and shuffleOption != ''">shuffle_option = #{shuffleOption},</if>
+            <if test="switchLimit != null">switch_limit = #{switchLimit},</if>
+            <if test="showAnalysis != null and showAnalysis != ''">show_analysis = #{showAnalysis},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="publishBy != null and publishBy != ''">publish_by = #{publishBy},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where paper_id = #{paperId}
+    </update>
+
+    <update id="deleteSafetyExamPaperById" parameterType="Long">
+        update biz_safety_exam_paper set del_flag = '2' where paper_id = #{paperId}
+    </update>
+
+    <update id="deleteSafetyExamPaperByIds" parameterType="String">
+        update biz_safety_exam_paper set del_flag = '2' where paper_id in
+        <foreach item="paperId" collection="array" open="(" separator="," close=")">
+            #{paperId}
+        </foreach>
+    </update>
+
+</mapper>
