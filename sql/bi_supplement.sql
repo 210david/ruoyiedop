@@ -79,3 +79,21 @@ WHERE perms IN ('bi:board:sales:view', 'bi:board:purchase:view', 'bi:board:produ
                 'bi:board:inventory:view', 'bi:board:quality:view',
                 'bi:board:safety:view', 'bi:board:equipment:view', 'bi:board:hr:view', 'bi:board:bid:view')
   AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id = 1);
+
+-- =============================================
+-- 2026-11-07 增量：bi_metric_dict 补列（F4 下钻URL + F7 通知角色）
+-- 背景：Mapper XML 引用 drill_url/notify_roles，旧建表 DDL 缺列导致指标字典/看板/驾驶舱全部查询报错
+-- 幂等：information_schema 检查列存在性，已存在时跳过（MySQL 8.0 无 ADD COLUMN IF NOT EXISTS）
+-- =============================================
+SET @has_drill = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'bi_metric_dict' AND column_name = 'drill_url');
+SET @ddl = IF(@has_drill = 0,
+    'ALTER TABLE bi_metric_dict ADD COLUMN drill_url VARCHAR(500) DEFAULT NULL COMMENT ''下钻跳转URL（F4：指标卡点击跳转，支持{value}占位符）'' AFTER owner',
+    'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @has_notify = (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'bi_metric_dict' AND column_name = 'notify_roles');
+SET @ddl = IF(@has_notify = 0,
+    'ALTER TABLE bi_metric_dict ADD COLUMN notify_roles VARCHAR(200) DEFAULT NULL COMMENT ''预警通知角色（F7：逗号分隔role_key，空=默认admin）'' AFTER drill_url',
+    'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
