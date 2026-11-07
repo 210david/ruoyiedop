@@ -83,10 +83,11 @@ const domainColors = {
   hr: '#eb2f96', safety: '#e9423a', bid: '#67C23A', synthesis: '#909399'
 }
 
-/** 当前域编码：菜单路由 /bi/board/{domain}，同组件复用，从 path 解析 */
+/** 当前域编码：菜单路由 /bi/board-{domain}，同组件复用，从 path 尾段剥离 board- 前缀 */
 const domain = computed(() => {
   const seg = String(route.path || '').split('/').filter(Boolean)
-  return seg[seg.length - 1] || ''
+  const last = seg[seg.length - 1] || ''
+  return last.startsWith('board-') ? last.slice(6) : last
 })
 const domainName = computed(() => domainNames[domain.value] || domain.value)
 
