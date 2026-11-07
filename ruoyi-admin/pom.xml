@@ -138,6 +138,12 @@
             <artifactId>ruoyi-pjm</artifactId>
         </dependency>
 
+        <!-- 第三方集成模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-integration</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
