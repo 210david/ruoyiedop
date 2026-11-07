@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamAnswerMapper">
+
+    <resultMap type="SafetyExamAnswer" id="SafetyExamAnswerResult">
+        <result property="answerId"         column="answer_id"/>
+        <result property="recordId"         column="record_id"/>
+        <result property="paperQuestionId"  column="paper_question_id"/>
+        <result property="userAnswer"       column="user_answer"/>
+        <result property="isCorrect"        column="is_correct"/>
+        <result property="score"            column="score"/>
+        <result property="delFlag"          column="del_flag"/>
+        <result property="createBy"         column="create_by"/>
+        <result property="createTime"       column="create_time"/>
+        <result property="updateBy"         column="update_by"/>
+        <result property="updateTime"       column="update_time"/>
+        <result property="remark"           column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamAnswerVo">
+        select answer_id, record_id, paper_question_id, user_answer, is_correct, score,
+               del_flag, create_by, create_time, update_by, update_time, remark
+        from biz_safety_exam_answer
+    </sql>
+
+    <select id="selectSafetyExamAnswerList" parameterType="SafetyExamAnswer" resultMap="SafetyExamAnswerResult">
+        <include refid="selectSafetyExamAnswerVo"/>
+        <where>
+            del_flag = '0'
+            <if test="recordId != null"> AND record_id = #{recordId}</if>
+            <if test="paperQuestionId != null"> AND paper_question_id = #{paperQuestionId}</if>
+            <if test="isCorrect != null and isCorrect != ''"> AND is_correct = #{isCorrect}</if>
+        </where>
+        order by answer_id
+    </select>
+
+    <select id="selectByRecordId" parameterType="Long" resultMap="SafetyExamAnswerResult">
+        <include refid="selectSafetyExamAnswerVo"/>
+        where record_id = #{recordId} and del_flag = '0'
+        order by answer_id
+    </select>
+
+    <select id="selectSafetyExamAnswerById" parameterType="Long" resultMap="SafetyExamAnswerResult">
+        <include refid="selectSafetyExamAnswerVo"/>
+        where answer_id = #{answerId} and del_flag = '0'
+    </select>
+
+    <insert id="insertSafetyExamAnswer" parameterType="SafetyExamAnswer" useGeneratedKeys="true" keyProperty="answerId">
+        insert into biz_safety_exam_answer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">record_id,</if>
+            <if test="paperQuestionId != null">paper_question_id,</if>
+            <if test="userAnswer != null">user_answer,</if>
+            <if test="isCorrect != null and isCorrect != ''">is_correct,</if>
+            <if test="score != null">score,</if>
+            create_time,
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">#{recordId},</if>
+            <if test="paperQuestionId != null">#{paperQuestionId},</if>
+            <if test="userAnswer != null">#{userAnswer},</if>
+            <if test="isCorrect != null and isCorrect != ''">#{isCorrect},</if>
+            <if test="score != null">#{score},</if>
+            sysdate(),
+        </trim>
+    </insert>
+
+    <!-- 草稿实时保存：按 (record_id, paper_question_id) 幂等 upsert -->
+    <insert id="upsertSafetyExamAnswer" parameterType="SafetyExamAnswer">
+        insert into biz_safety_exam_answer
+        (record_id, paper_question_id, user_answer, create_time)
+        values
+        (#{recordId}, #{paperQuestionId}, #{userAnswer}, sysdate())
+        on duplicate key update
+        user_answer = #{userAnswer},
+        update_time = sysdate()
+    </insert>
+
+    <insert id="batchUpsert" parameterType="java.util.List">
+        insert into biz_safety_exam_answer
+        (record_id, paper_question_id, user_answer, create_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.recordId}, #{item.paperQuestionId}, #{item.userAnswer}, sysdate())
+        </foreach>
+        on duplicate key update
+        user_answer = values(user_answer),
+        update_time = sysdate()
+    </insert>
+
+    <!-- 判分结果回填（Java层按题循环调用，避免依赖 allowMultiQueries 多语句执行） -->
+    <update id="updateJudgeResult" parameterType="SafetyExamAnswer">
+        update biz_safety_exam_answer
+        set is_correct = #{isCorrect},
+            score = #{score},
+            update_time = sysdate()
+        where record_id = #{recordId} and paper_question_id = #{paperQuestionId}
+    </update>
+
+    <update id="updateSafetyExamAnswer" parameterType="SafetyExamAnswer">
+        update biz_safety_exam_answer
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userAnswer != null">user_answer = #{userAnswer},</if>
+            <if test="isCorrect != null and isCorrect != ''">is_correct = #{isCorrect},</if>
+            <if test="score != null">score = #{score},</if>
+            update_time = sysdate(),
+        </trim>
+        where answer_id = #{answerId}
+    </update>
+
+    <update id="deleteSafetyExamAnswerById" parameterType="Long">
+        update biz_safety_exam_answer set del_flag = '2' where answer_id = #{answerId}
+    </update>
+
+    <!-- FR-7：按场次聚合每题错误率（已交卷记录） -->
+    <select id="selectQuestionStats" parameterType="Long" resultType="com.ruoyi.safety.domain.vo.SafetyExamQuestionStat">
+        select pq.id                                            as paperQuestionId,
+               pq.content                                       as content,
+               pq.question_type                                 as questionType,
+               pq.score                                         as score,
+               count(a.answer_id)                               as answerCount,
+               coalesce(sum(case when a.is_correct = '1' then 1 else 0 end), 0) as correctCount,
+               round((count(a.answer_id) - coalesce(sum(case when a.is_correct = '1' then 1 else 0 end), 0)) / count(a.answer_id), 4) as errorRate,
+               q.category_id                                    as categoryId,
+               c.category_name                                  as categoryName
+        from biz_safety_exam_paper_question pq
+        left join biz_safety_exam_answer a
+               on a.paper_question_id = pq.id and a.del_flag = '0'
+              and a.record_id in (select record_id from biz_safety_exam_record
+                                  where exam_id = #{examId} and del_flag = '0' and exam_result = '2')
+        left join biz_safety_exam_question q on q.question_id = pq.question_id
+        left join biz_safety_exam_category c on c.category_id = q.category_id
+        where pq.paper_id = (select paper_id from biz_safety_exam where exam_id = #{examId} and del_flag = '0')
+          and pq.del_flag = '0'
+        group by pq.id, pq.content, pq.question_type, pq.score, q.category_id, c.category_name
+        order by errorRate desc, pq.sort_no asc
+    </select>
+
+    <!-- FR-12：完整答卷存档（每题考生原始作答明细） -->
+    <select id="selectArchiveByExamId" parameterType="Long" resultType="com.ruoyi.safety.domain.vo.SafetyExamAnswerArchive">
+        select r.user_name      as userName,
+               d.dept_name      as deptName,
+               pq.sort_no       as sortNo,
+               pq.question_type as questionType,
+               pq.content       as content,
+               a.user_answer    as answer,
+               pq.answer        as correctAnswer,
+               a.is_correct     as isCorrect,
+               a.score          as score,
+               r.submit_time    as submitTime
+        from biz_safety_exam_answer a
+        join biz_safety_exam_record r on r.record_id = a.record_id and r.del_flag = '0'
+        join biz_safety_exam_paper_question pq on pq.id = a.paper_question_id
+        left join sys_dept d on d.dept_id = r.dept_id
+        where r.exam_id = #{examId}
+          and a.del_flag = '0' and r.exam_result = '2'
+        order by r.record_id asc, pq.sort_no asc
+    </select>
+
+</mapper>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamRecordMapper">
+
+    <resultMap type="SafetyExamRecord" id="SafetyExamRecordResult">
+        <result property="recordId"      column="record_id"/>
+        <result property="examId"        column="exam_id"/>
+        <result property="paperId"       column="paper_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="userName"      column="user_name"/>
+        <result property="workerId"      column="worker_id"/>
+        <result property="attendeeId"    column="attendee_id"/>
+        <result property="startTime"     column="start_time"/>
+        <result property="submitTime"    column="submit_time"/>
+        <result property="usedSeconds"   column="used_seconds"/>
+        <result property="submitType"    column="submit_type"/>
+        <result property="totalScore"    column="total_score"/>
+        <result property="isPass"        column="is_pass"/>
+        <result property="judgeStatus"   column="judge_status"/>
+        <result property="switchCount"   column="switch_count"/>
+        <result property="examResult"    column="exam_result"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamRecordVo">
+        select r.record_id, r.exam_id, r.paper_id, r.user_id, r.user_name, r.worker_id, r.attendee_id,
+               r.start_time, r.submit_time, r.used_seconds, r.submit_type, r.total_score, r.is_pass,
+               r.judge_status, r.switch_count, r.exam_result, r.dept_id, d.dept_name, r.enterprise_id, r.del_flag,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        from biz_safety_exam_record r
+        left join sys_dept d on d.dept_id = r.dept_id
+    </sql>
+
+    <select id="selectSafetyExamRecordList" parameterType="SafetyExamRecord" resultMap="SafetyExamRecordResult">
+        <include refid="selectSafetyExamRecordVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="examId != null"> AND r.exam_id = #{examId}</if>
+            <if test="paperId != null"> AND r.paper_id = #{paperId}</if>
+            <if test="userId != null"> AND r.user_id = #{userId}</if>
+            <if test="userName != null and userName != ''"> AND r.user_name like concat('%', #{userName}, '%')</if>
+            <if test="examResult != null and examResult != ''"> AND r.exam_result = #{examResult}</if>
+            <if test="isPass != null and isPass != ''"> AND r.is_pass = #{isPass}</if>
+            <if test="params.dataScope != null and params.dataScope != ''"> AND ${params.dataScope}</if>
+        </where>
+        order by r.record_id desc
+    </select>
+
+    <select id="selectSafetyExamRecordById" parameterType="Long" resultMap="SafetyExamRecordResult">
+        <include refid="selectSafetyExamRecordVo"/>
+        where r.record_id = #{recordId} and r.del_flag = '0'
+    </select>
+
+    <select id="selectByExamAndUser" resultMap="SafetyExamRecordResult">
+        <include refid="selectSafetyExamRecordVo"/>
+        where r.exam_id = #{examId} and r.user_id = #{userId} and r.del_flag = '0'
+    </select>
+
+    <!-- 考生端「我的考试」聚合视图：record + exam 窗口 + paper 规则 -->
+    <select id="selectMyExamList" parameterType="Long" resultType="java.util.HashMap">
+        select r.record_id      as recordId,
+               e.exam_id        as examId,
+               e.exam_name      as examName,
+               e.exam_status    as examStatus,
+               e.start_time     as startTime,
+               e.end_time       as endTime,
+               r.paper_id       as paperId,
+               p.paper_name     as paperName,
+               p.duration       as duration,
+               p.pass_score     as passScore,
+               p.switch_limit   as switchLimit,
+               p.show_analysis  as showAnalysis,
+               r.exam_result    as examResult,
+               r.total_score    as totalScore,
+               r.is_pass        as isPass,
+               r.submit_time    as submitTime,
+               (select count(*) from biz_safety_exam_paper_question q
+                 where q.paper_id = r.paper_id and q.del_flag = '0') as questionCount
+        from biz_safety_exam_record r
+        join biz_safety_exam e on e.exam_id = r.exam_id and e.del_flag = '0'
+        join biz_safety_exam_paper p on p.paper_id = r.paper_id and p.del_flag = '0'
+        where r.user_id = #{userId} and r.del_flag = '0'
+        order by e.start_time desc, r.record_id desc
+    </select>
+
+    <select id="selectMyExamRecords" parameterType="Long" resultMap="SafetyExamRecordResult">
+        <include refid="selectSafetyExamRecordVo"/>
+        where r.user_id = #{userId} and r.del_flag = '0'
+        order by r.record_id desc
+    </select>
+
+    <insert id="insertSafetyExamRecord" parameterType="SafetyExamRecord" useGeneratedKeys="true" keyProperty="recordId">
+        insert into biz_safety_exam_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="examId != null">exam_id,</if>
+            <if test="paperId != null">paper_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="userName != null and userName != ''">user_name,</if>
+            <if test="workerId != null">worker_id,</if>
+            <if test="attendeeId != null">attendee_id,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="submitTime != null">submit_time,</if>
+            <if test="usedSeconds != null">used_seconds,</if>
+            <if test="submitType != null and submitType != ''">submit_type,</if>
+            <if test="totalScore != null">total_score,</if>
+            <if test="isPass != null and isPass != ''">is_pass,</if>
+            <if test="judgeStatus != null and judgeStatus != ''">judge_status,</if>
+            <if test="switchCount != null">switch_count,</if>
+            <if test="examResult != null and examResult != ''">exam_result,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="enterpriseId != null">enterprise_id,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="examId != null">#{examId},</if>
+            <if test="paperId != null">#{paperId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="userName != null and userName != ''">#{userName},</if>
+            <if test="workerId != null">#{workerId},</if>
+            <if test="attendeeId != null">#{attendeeId},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="submitTime != null">#{submitTime},</if>
+            <if test="usedSeconds != null">#{usedSeconds},</if>
+            <if test="submitType != null and submitType != ''">#{submitType},</if>
+            <if test="totalScore != null">#{totalScore},</if>
+            <if test="isPass != null and isPass != ''">#{isPass},</if>
+            <if test="judgeStatus != null and judgeStatus != ''">#{judgeStatus},</if>
+            <if test="switchCount != null">#{switchCount},</if>
+            <if test="examResult != null and examResult != ''">#{examResult},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="enterpriseId != null">#{enterpriseId},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate(),
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSafetyExamRecord" parameterType="SafetyExamRecord">
+        update biz_safety_exam_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="examId != null">exam_id = #{examId},</if>
+            <if test="paperId != null">paper_id = #{paperId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null and userName != ''">user_name = #{userName},</if>
+            <if test="workerId != null">worker_id = #{workerId},</if>
+            <if test="attendeeId != null">attendee_id = #{attendeeId},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="usedSeconds != null">used_seconds = #{usedSeconds},</if>
+            <if test="submitType != null and submitType != ''">submit_type = #{submitType},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if>
+            <if test="isPass != null and isPass != ''">is_pass = #{isPass},</if>
+            <if test="judgeStatus != null and judgeStatus != ''">judge_status = #{judgeStatus},</if>
+            <if test="switchCount != null">switch_count = #{switchCount},</if>
+            <if test="examResult != null and examResult != ''">exam_result = #{examResult},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where record_id = #{recordId}
+    </update>
+
+    <update id="deleteSafetyExamRecordById" parameterType="Long">
+        update biz_safety_exam_record set del_flag = '2' where record_id = #{recordId}
+    </update>
+
+    <update id="deleteSafetyExamRecordByIds" parameterType="String">
+        update biz_safety_exam_record set del_flag = '2' where record_id in
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">
+            #{recordId}
+        </foreach>
+    </update>
+
+    <!-- 按场次清空考生名单（发布重建 / 撤回作废） -->
+    <update id="deleteByExamId" parameterType="Long">
+        update biz_safety_exam_record set del_flag = '2' where exam_id = #{examId}
+    </update>
+
+    <!-- 窗口结束未交卷批量标记缺考 -->
+    <update id="markAbsentByExamId" parameterType="Long">
+        update biz_safety_exam_record
+        set exam_result = '3', update_time = sysdate()
+        where exam_id = #{examId} and del_flag = '0' and exam_result = '0'
+    </update>
+
+</mapper>
