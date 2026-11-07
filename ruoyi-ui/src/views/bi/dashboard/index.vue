@@ -334,6 +334,8 @@ function enterScreen() {
   // PRD F9 的"轮播各主题看板"设计调整为全域并排展示）
   activeDomain.value = 'all'
   if (screenTimer) { clearInterval(screenTimer); screenTimer = null }
+  // 全屏切换后视口尺寸变化，ECharts canvas 需重新适配容器（否则图例区溢出面板被裁）
+  setTimeout(handleResize, 350)
 }
 
 /** 退出大屏 */
@@ -353,6 +355,8 @@ function onFullscreenChange() {
     document.body.classList.remove('bi-screen-on')
     if (screenTimer) { clearInterval(screenTimer); screenTimer = null }
   }
+  // 全屏/退出全屏都会改变视口尺寸，ECharts 需要 resize 适配
+  setTimeout(handleResize, 300)
 }
 
 /** F6 链路环比：当前月值 vs 上月值（中性展示，方向语义各异不着色语义） */
@@ -453,8 +457,8 @@ function renderTrendChart() {
 
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, type: 'scroll', textStyle: screenMode.value ? { color: '#8fc7f0' } : {} },
-    grid: { left: '3%', right: '4%', bottom: '14%', top: '8%', containLabel: true },
+    legend: { bottom: 4, type: 'scroll', textStyle: { color: '#8fc7f0', fontSize: 11 } },
+    grid: { left: '3%', right: '4%', bottom: '18%', top: '8%', containLabel: true },
     xAxis: { type: 'category', boundaryGap: false, data: dates, axisLabel: darkAxisStyle().textStyle, axisLine: darkAxisStyle().axisLine },
     yAxis: { type: 'value', axisLabel: { formatter: '{value}%', ...(darkAxisStyle().textStyle || {}) }, splitLine: darkAxisStyle().splitLine },
     color: ['#409EFF', '#67C23A', '#E6A23C', '#722ed1', '#0891b2', '#e9423a'],
@@ -530,7 +534,7 @@ function renderHealthChart() {
 
   healthChart.setOption({
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
-    legend: { bottom: 0, left: 'center', textStyle: screenMode.value ? { color: '#8fc7f0' } : {} },
+    legend: { bottom: 4, left: 'center', textStyle: { color: '#8fc7f0', fontSize: 11 } },
     title: {
       text: rate + '%',
       subtext: '完整率',
