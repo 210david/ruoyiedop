@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>ruoyi</artifactId>
+        <groupId>com.ruoyi</groupId>
+        <version>3.9.2</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-bi</artifactId>
+
+    <description>
+        bi决策支持模块（统一指标层：指标字典/日快照/对账/阈值预警，
+        不含 mk/wms/pms 等业务模块 Maven 依赖，PRD v1.2 F1.2）
+    </description>
+
+    <dependencies>
+
+        <!-- 通用工具（含 IModuleStatsProvider 统计接口定义） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-common</artifactId>
+        </dependency>
+
+        <!-- 平台基础模块（非业务模块，不违反零业务依赖约束）：
+             F7 阈值预警经 MessageHelper 复用 sys_message 站内消息机制（规范 5.14） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-system</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>
