@@ -7,6 +7,7 @@
         <result property="projectId"      column="project_id"/>
         <result property="materialId"     column="material_id"/>
         <result property="detailType"     column="detail_type"/>
+        <result property="materialType"   column="material_type"/>
         <result property="itemNo"        column="item_no"/>
         <result property="itemCode"      column="item_code"/>
         <result property="itemName"      column="item_name"/>
@@ -24,7 +25,7 @@
     </resultMap>
 
     <sql id="selectProcurementVo">
-        SELECT procurement_id, project_id, material_id, detail_type, item_no, item_code, item_name, spec_model, unit,
+        SELECT procurement_id, project_id, material_id, detail_type, material_type, item_no, item_code, item_name, spec_model, unit,
                qty, unit_price, amount, remark, del_flag, create_by, create_time, update_by, update_time
         FROM pjm_project_procurement
     </sql>
@@ -52,10 +53,10 @@
 
     <insert id="insertPjmProjectProcurement" parameterType="PjmProjectProcurement" useGeneratedKeys="true" keyProperty="procurementId">
         INSERT INTO pjm_project_procurement (
-            project_id, material_id, detail_type, item_no, item_code, item_name, spec_model, unit,
+            project_id, material_id, detail_type, material_type, item_no, item_code, item_name, spec_model, unit,
             qty, unit_price, amount, remark, del_flag, create_by, create_time
         ) VALUES (
-            #{projectId}, #{materialId}, IFNULL(#{detailType}, '1'), #{itemNo}, #{itemCode}, #{itemName}, #{specModel}, #{unit},
+            #{projectId}, #{materialId}, IFNULL(#{detailType}, '1'), #{materialType}, #{itemNo}, #{itemCode}, #{itemName}, #{specModel}, #{unit},
             #{qty}, #{unitPrice}, #{amount}, #{remark}, #{delFlag}, #{createBy}, sysdate()
         )
     </insert>
@@ -64,6 +65,7 @@
         UPDATE pjm_project_procurement
         <set>
             <if test="detailType != null and detailType != ''">detail_type = #{detailType},</if>
+            <if test="materialType != null and materialType != ''">material_type = #{materialType},</if>
             <if test="itemNo != null">item_no = #{itemNo},</if>
             <if test="itemCode != null">item_code = #{itemCode},</if>
             <if test="itemName != null">item_name = #{itemName},</if>
