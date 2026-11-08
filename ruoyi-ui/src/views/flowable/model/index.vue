@@ -316,7 +316,7 @@
         <el-tab-pane label="流转设置" name="flow">
           <div class="flow-tabbar">
             <div class="designer-body">
-              <div class="designer-canvas" ref="canvasRef"></div>
+              <div class="designer-canvas" ref="canvasRef" :class="{ 'canvas-hidden': flowEmpty }"></div>
               <!-- 空状态：模型尚无流程图时，画布中央给出引导与主操作，替代一片空网格 -->
               <div v-if="flowEmpty" class="flow-empty">
                 <div class="fe-art">
@@ -374,49 +374,39 @@
             <span class="mode-badge">{{ graphicModeLabel }}</span>
             <span class="badge blue"><span class="dot"></span>Key: {{ designModel.modelKey }}</span>
           </div>
-          <div class="designer-actions">
-            <!-- 画布类操作仅图形模式提供：节点/出口模式下没有画布，撤销/缩放/删除对用户无意义 -->
-            <template v-if="graphicMode === 'graph'">
-            <!-- 第一组：编辑（撤销/重做/删除） -->
-            <el-tooltip content="撤销（Ctrl+Z）" placement="bottom"><el-button icon="RefreshLeft" @click="graphicCmd('undo')" /></el-tooltip>
-            <el-tooltip content="重做（Ctrl+Y）" placement="bottom"><el-button icon="RefreshRight" @click="graphicCmd('redo')" /></el-tooltip>
-            <el-tooltip content="删除选中（Del）" placement="bottom"><el-button icon="Delete" :disabled="!graphicHasSelection" @click="graphicDelete" /></el-tooltip>
-            <span class="da-divider"></span>
-            <!-- 第二组：视图缩放 -->
-            <el-dropdown trigger="click" @command="onGraphicZoomCmd">
-              <el-button class="da-zoom">
-                <el-icon><ZoomIn /></el-icon><span class="da-zoom-label">缩放 {{ graphicZoomPct }}%</span><el-icon class="da-caret"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="in">放大</el-dropdown-item>
-                  <el-dropdown-item command="out">缩小</el-dropdown-item>
-                  <el-dropdown-item command="reset" divided>适应画布</el-dropdown-item>
-                  <el-dropdown-item command="100">实际大小（100%）</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <span class="da-divider"></span>
-            <!-- 第三组：低频操作收纳 -->
-            <el-dropdown trigger="click" @command="onGraphicMoreCmd">
-              <el-button icon="MoreFilled" class="da-more">更多</el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="import" icon="Upload">导入 XML</el-dropdown-item>
-                  <el-dropdown-item command="export" icon="Download">导出 XML</el-dropdown-item>
-                  <el-dropdown-item command="help" icon="QuestionFilled" divided>快捷键与使用说明</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <span class="da-divider"></span>
-            </template>
-            <!-- 主操作：两种模式共用，保存当前编辑内容 -->
+          <!-- 图形模式的工具栏已移到画布上方的浅色工具条（参考泛微流程设计器）；节点/出口模式仍用头部按钮 -->
+          <div class="designer-actions" v-if="graphicMode !== 'graph'">
             <el-button type="primary" icon="Check" @click="graphicSave" v-hasPermi="['flowable:model:edit']">保存</el-button>
             <el-button @click="graphicClose">关 闭</el-button>
           </div>
         </div>
       </template>
       <div class="designer-body graphic-body">
+        <!-- 图形编辑工具栏：浅色扁平按钮条，参考泛微流程设计器（简洁、按组分区） -->
+        <div v-if="graphicMode === 'graph'" class="graphic-toolbar">
+          <div class="gt-group">
+            <el-button link icon="RefreshLeft" @click="graphicCmd('undo')">撤销</el-button>
+            <el-button link icon="RefreshRight" @click="graphicCmd('redo')">重做</el-button>
+            <el-button link icon="Delete" :disabled="!graphicHasSelection" @click="graphicDelete">删除</el-button>
+          </div>
+          <span class="gt-divider"></span>
+          <div class="gt-group">
+            <el-button link icon="ZoomIn" @click="onGraphicZoomCmd('in')">放大</el-button>
+            <el-button link icon="ZoomOut" @click="onGraphicZoomCmd('out')">缩小</el-button>
+            <el-button link icon="FullScreen" @click="onGraphicZoomCmd('100')">还原</el-button>
+          </div>
+          <span class="gt-divider"></span>
+          <div class="gt-group">
+            <el-button link icon="Upload" @click="onGraphicMoreCmd('import')">导入</el-button>
+            <el-button link icon="Download" @click="onGraphicMoreCmd('export')">导出</el-button>
+            <el-button link icon="QuestionFilled" @click="onGraphicMoreCmd('help')">说明</el-button>
+          </div>
+          <div class="gt-right">
+            <span class="gt-zoom">{{ graphicZoomPct }}%</span>
+            <el-button type="primary" size="small" icon="Check" @click="graphicSave" v-hasPermi="['flowable:model:edit']">保存</el-button>
+            <el-button size="small" @click="graphicClose">关闭</el-button>
+          </div>
+        </div>
         <!-- 单一模式编辑：一次只编辑一类（图形 / 节点 / 出口）。
              画布容器仅在图形模式渲染；节点/出口模式不建实例、不做视口适配，
              从根本上避免零尺寸容器上 fit-viewport 算出非有限值（SVGMatrix scale 报错）。 -->
@@ -441,21 +431,34 @@
 
               <!-- 用户任务属性 -->
               <template v-if="selectedElement.isUserTask">
-                <el-form-item label="办理人">
-                  <el-select v-model="selectedElement.assignee" placeholder="选择用户或留空" filterable clearable allow-create style="width:100%" @change="updateAssignee">
-                    <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="String(u.userId)" />
-                  </el-select>
-                  <div class="props-tip">也可直接输入用户ID；审批任务将出现在其待办</div>
+                <el-form-item label="处理方式">
+                  <el-radio-group v-model="selectedElement.handleMode" size="small" @change="onHandleModeChange">
+                    <el-radio-button value="assign">指定</el-radio-button>
+                    <el-radio-button value="candidate">候选</el-radio-button>
+                  </el-radio-group>
+                  <div class="props-tip">指定：直接落到具体人员；候选：进入候选池，可由候选人认领办理</div>
                 </el-form-item>
-                <el-form-item label="候选组">
-                  <el-select v-model="selectedElement.candidateGroups" placeholder="选择角色或留空" filterable clearable allow-create style="width:100%" @change="updateCandidateGroups">
-                    <el-option v-for="r in roleOptions" :key="r.roleId" :label="r.roleName + '（' + r.roleKey + '）'" :value="String(r.roleId)" />
-                  </el-select>
-                  <div class="props-tip">角色下所有用户均可认领办理</div>
+                <el-form-item label="办理方式">
+                  <el-radio-group v-model="selectedElement.performMode" size="small" @change="persistParticipantConfig">
+                    <el-radio-button value="and">会签</el-radio-button>
+                    <el-radio-button value="seq">串签</el-radio-button>
+                    <el-radio-button value="claim">抢占</el-radio-button>
+                  </el-radio-group>
+                  <div class="props-tip">会签：多人并行办理；串签：按顺序依次办理；抢占：任一人办理即通过</div>
                 </el-form-item>
-                <el-form-item label="多实例">
-                  <el-switch v-model="selectedElement.multiInstance" @change="toggleMultiInstance" />
-                  <div class="props-tip">开启即会签（所有人办理完才通过）</div>
+                <el-form-item label="参与者模式">
+                  <el-radio-group v-model="selectedElement.participantMode" size="small" @change="persistParticipantConfig">
+                    <el-radio-button value="single">单选</el-radio-button>
+                    <el-radio-button value="multi">多选</el-radio-button>
+                  </el-radio-group>
+                </el-form-item>
+                <el-form-item label="参与者">
+                  <div class="pc-tags">
+                    <el-tag v-for="(p, i) in participantTags" :key="i" size="small" closable @close="removeParticipant(i)">{{ p.name }}</el-tag>
+                    <span v-if="!participantTags.length" class="pc-empty">未设置</span>
+                    <el-button class="pc-add" size="small" type="primary" plain @click="openParticipantPicker">…</el-button>
+                  </div>
+                  <div class="props-tip">支持流程发起人、上一活动办理人、组织/用户/岗位等灵活关系</div>
                 </el-form-item>
                 <el-form-item label="表单Key">
                   <el-input v-model="selectedElement.formKey" placeholder="关联业务表单Key（可选）" @change="updateFormKey" />
@@ -495,16 +498,77 @@
           <div class="props-help">
             <div class="props-help-title">使用提示</div>
             <ul>
-              <li>本页只编辑图形：从上方节点条拖拽节点、连线，选中后右侧配置属性</li>
+              <li>本页只编辑图形：从左侧节点面板拖拽节点、连线，选中后右侧配置属性</li>
               <li>节点清单、出口信息请回流转设置，各自点"编 辑"单独进入</li>
-              <li>点"保存"同步回设计器画布并保存到系统；"关 闭"不保存未提交的改动</li>
+              <li>点顶部"保存"同步回设计器画布并保存到系统；"关闭"不保存未提交的改动</li>
             </ul>
           </div>
         </div>
         </div>
         </div>
+        <!-- 设置参与人：活动用户 / 组织用户 / 表单字段三种关系对象 -->
+        <el-dialog v-model="participantOpen" title="设置参与人" width="620px" append-to-body destroy-on-close>
+          <el-form label-width="96px" size="small">
+            <el-form-item label="关系对象">
+              <el-radio-group v-model="participantDraft.relMode" @change="onParticipantRelModeChange">
+                <el-radio value="activity">活动用户</el-radio>
+                <el-radio value="org">组织用户</el-radio>
+                <el-radio value="formField">表单字段中的组织或用户</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+            <el-form-item v-if="participantDraft.relMode !== 'formField'" label="参与人">
+              <el-radio-group v-model="participantDraft.relation" class="pc-relation" @change="onParticipantRelationChange">
+                <el-radio v-for="r in participantRelationOptions" :key="r.value" :value="r.value">{{ r.label }}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+            <el-form-item v-if="participantDraft.relMode === 'org'" label="选择对象">
+              <div class="pc-pick-row">
+                <el-radio-group v-model="participantDraft.pickKind" size="small" @change="onPickKindChange">
+                  <el-radio-button value="dept">组织</el-radio-button>
+                  <el-radio-button value="user">用户</el-radio-button>
+                  <el-radio-button value="role">岗位/角色</el-radio-button>
+                </el-radio-group>
+                <el-tree-select v-if="participantDraft.pickKind === 'dept'" v-model="participantDraft.pickId"
+                  :data="pcDeptTreeOptions" check-strictly :render-after-expand="false" filterable clearable
+                  placeholder="选择组织" style="flex:1" />
+                <el-select v-else-if="participantDraft.pickKind === 'user'" v-model="participantDraft.pickId"
+                  filterable clearable placeholder="选择用户" style="flex:1">
+                  <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="String(u.userId)" />
+                </el-select>
+                <el-select v-else v-model="participantDraft.pickId" filterable clearable placeholder="选择岗位/角色" style="flex:1">
+                  <el-option v-for="r in roleOptions" :key="r.roleId" :label="r.roleName" :value="String(r.roleId)" />
+                </el-select>
+              </div>
+            </el-form-item>
+
+            <el-form-item v-if="participantDraft.relMode === 'formField'" label="表单字段">
+              <el-select v-model="participantDraft.fieldKey" filterable clearable placeholder="选择表单字段" style="width:100%">
+                <el-option v-for="f in formFieldOptions" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" />
+              </el-select>
+              <div class="props-tip">运行时取该字段中的组织或用户作为办理人</div>
+            </el-form-item>
+
+            <el-form-item label=" ">
+              <el-button size="small" type="primary" plain @click="addParticipantFromDraft">添加到已选</el-button>
+            </el-form-item>
+
+            <el-form-item label="已选参与人">
+              <div class="pc-tags">
+                <el-tag v-for="(p, i) in participantDraft.items" :key="i" size="small" closable @close="participantDraft.items.splice(i, 1)">{{ p.name }}</el-tag>
+                <span v-if="!participantDraft.items.length" class="pc-empty">尚未添加</span>
+              </div>
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <el-button size="small" @click="participantOpen = false">取消</el-button>
+            <el-button size="small" type="primary" :loading="participantSaving" @click="saveParticipantConfig">保存</el-button>
+          </template>
+        </el-dialog>
+
         <!-- 节点信息：节点清单维护（独立模式下只出现本区块） -->
-        <div v-else-if="graphicMode === 'nodes'" class="graphic-single-pane">
+        <div v-if="graphicMode === 'nodes'" class="graphic-single-pane">
             <div class="batch-toolbar">
               <el-button-group>
                 <el-button size="small" icon="Plus" @click="openAddNode" title="新增节点" />
@@ -551,7 +615,7 @@
             </el-table>
         </div>
         <!-- 出口信息：连线与出口条件维护（独立模式下只出现本区块） -->
-        <div v-else-if="graphicMode === 'exits'" class="graphic-single-pane">
+        <div v-if="graphicMode === 'exits'" class="graphic-single-pane">
             <div class="batch-toolbar">
               <el-button-group>
                 <el-button size="small" icon="Plus" @click="openAddLine" title="新增出口" />
@@ -1137,11 +1201,21 @@ function bpmnTranslate(template, replacements) {
 const bpmnChineseTranslate = { translate: ['value', bpmnTranslate] }
 
 /**
- * 精简版节点工具条：只保留业务需要的三类节点
- *   开始（bpmn:StartEvent）/ 审批（bpmn:UserTask）/ 结束（bpmn:EndEvent）
- * 覆盖 bpmn-js 默认 PaletteProvider，移除连线工具、中间事件、网关、数据对象、泳道等冗余入口；
+ * 精简版节点面板：只保留业务需要的节点类型（参考泛微节点面板）
+ *   事件：开始 / 结束
+ *   节点：互斥网关 / 并行网关 / 相容网关 / 用户任务
+ * 覆盖 bpmn-js 默认 PaletteProvider，移除连线工具、中间事件、数据对象、泳道等冗余入口；
  * 底层仍生成标准 BPMN 元素，不影响引擎解析与部署。
  */
+/** 节点图标（内联 SVG，配色与画布节点一致：开始绿、结束红、网关橙、用户任务蓝） */
+const PALETTE_ICONS = {
+  start: '<svg viewBox="0 0 24 24" width="16" height="16"><polygon points="8,5 19,12 8,19" fill="#fff"/></svg>',
+  end: '<svg viewBox="0 0 24 24" width="16" height="16"><rect x="9" y="9" width="12" height="12" rx="1.5" fill="#fff"/></svg>',
+  exclusive: '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M7.5 7.5L16.5 16.5M16.5 7.5L7.5 16.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  parallel: '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 7V17M7 12H17" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  inclusive: '<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="4" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  task: '<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="7.6" r="3.6" fill="#fff"/><path d="M5.2 19.2c0-3.5 3-5.6 6.8-5.6s6.8 2.1 6.8 5.6z" fill="#fff"/></svg>'
+}
 function WmPaletteProvider(palette, create, elementFactory, translate) {
   this._palette = palette
   this._create = create
@@ -1154,17 +1228,23 @@ WmPaletteProvider.prototype.getPaletteEntries = function () {
   const create = this._create
   const elementFactory = this._elementFactory
   const translate = this._translate
-  function action(type, group, className, title) {
+  function action(type, group, className, title, icon) {
     function createListener(event) {
       const shape = elementFactory.createShape({ type })
       create.start(event, shape)
     }
-    return { group, className, title, action: { dragstart: createListener, click: createListener } }
+    // 参考泛微节点面板：彩色图标在上、文字在下，便于一眼识别节点类型
+    const html = '<div class="entry" draggable="true"><i class="wm-node-icon wm-node-icon-' + icon + '">'
+      + PALETTE_ICONS[icon] + '</i><span class="wm-pal-label">' + title + '</span></div>'
+    return { group, className, title, html, action: { dragstart: createListener, click: createListener } }
   }
   return {
-    'create.start-event': action('bpmn:StartEvent', 'event', 'bpmn-icon-start-event-none', translate('开始')),
-    'create.user-task': action('bpmn:UserTask', 'task', 'bpmn-icon-user-task', translate('审批环节')),
-    'create.end-event': action('bpmn:EndEvent', 'event', 'bpmn-icon-end-event-none', translate('结束'))
+    'create.start-event': action('bpmn:StartEvent', 'event', 'wm-pal-start', translate('开始'), 'start'),
+    'create.end-event': action('bpmn:EndEvent', 'event', 'wm-pal-end', translate('结束'), 'end'),
+    'create.exclusive-gateway': action('bpmn:ExclusiveGateway', 'task', 'wm-pal-gw', translate('互斥网关'), 'exclusive'),
+    'create.parallel-gateway': action('bpmn:ParallelGateway', 'task', 'wm-pal-gw', translate('并行网关'), 'parallel'),
+    'create.inclusive-gateway': action('bpmn:InclusiveGateway', 'task', 'wm-pal-gw', translate('相容网关'), 'inclusive'),
+    'create.user-task': action('bpmn:UserTask', 'task', 'wm-pal-task', translate('用户任务'), 'task')
   }
 }
 /** 精简工具条模块（覆盖默认 palette） */
@@ -1217,14 +1297,13 @@ async function onDesignerOpened() {
 /** 泛微式退回线自动重布局：退回/驳回出口绕行（源上方 → 横向跨越 → 目标顶部），其余连线走默认布局 */
 let wmReturnExitChecker = null
 function applyWmReturnRoutes(modeler) {
-  if (!modeler || !wmReturnExitChecker) { console.log('[wm-debug] applyWmReturnRoutes skip: no modeler/checker', !!modeler, !!wmReturnExitChecker); return }
+  if (!modeler || !wmReturnExitChecker) return
   try {
     const layouter = modeler.get('layouter')
     const modeling = modeler.get('modeling')
-    if (!layouter || !modeling) { console.log('[wm-debug] no layouter/modeling'); return }
+    if (!layouter || !modeling) return
     const registry = modeler.get('elementRegistry')
     const flows = registry.filter(el => el.type === 'bpmn:SequenceFlow')
-    console.log('[wm-debug] flows:', flows.length, 'checker:', typeof wmReturnExitChecker)
     flows.forEach(el => {
       const hit = wmReturnExitChecker(el)
       if (!hit) return
@@ -1235,26 +1314,143 @@ function applyWmReturnRoutes(modeler) {
     })
     // updateWaypoints 触发连线重渲染会丢失 marker，重布局后重新应用视觉标记（红虚线）
     applyWmCanvasMarkers(modeler)
-  } catch (e) { console.log('[wm-debug] applyWmReturnRoutes error:', e && e.message) }
+  } catch (e) {}
 }
 
-/** 泛微式画布视觉标记：开始=绿色圆、审批节点=右下出口小箭头、归档=终止样式、退回出口=红色虚线 */
+/** 单体节点的泛微视觉标记：开始=绿圆、结束=红色终止、用户任务=蓝色卡片、网关=橙色菱形 */
+function markWmShape(el, modeler) {
+  if (!el || !modeler) return
+  // 先着色再打标记：即使 canvas.addMarker 这类接口异常，也不影响节点视觉
+  decorateWmShape(el, modeler)
+  try {
+    const canvas = modeler.get('canvas')
+    if (el.type === 'bpmn:StartEvent') canvas.addMarker(el.id, 'wm-start')
+    else if (el.type === 'bpmn:EndEvent') canvas.addMarker(el.id, 'wm-end')
+    else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') canvas.addMarker(el.id, 'wm-task')
+    else if (isGatewayType(el.type)) canvas.addMarker(el.id, 'wm-gateway')
+  } catch (e) {}
+}
+
+/** 用户任务名称由 bpmn-js 直接绘制在节点内部，这里改为白色粗体（避免再画一份重复文字） */
+function styleTaskName(visual) {
+  try {
+    visual.querySelectorAll('text').forEach(t => {
+      if (t.getAttribute('fill') !== '#fff') t.setAttribute('fill', '#fff')
+      if (t.style.fill !== '#fff') t.style.fill = '#fff'
+      if (t.getAttribute('font-weight') !== '700') t.setAttribute('font-weight', '700')
+      if (t.style.fontWeight !== '700') t.style.fontWeight = '700'
+    })
+  } catch (e) {}
+}
+
+/**
+ * 在节点 SVG 内补画装饰图元（CSS 伪元素对 SVG 元素无效，只能真实插入节点），
+ * 让画布节点与左侧节点面板图标保持同一套视觉：开始绿圆白三角、结束红圆白方块、用户任务蓝卡白人像。
+ */
+function decorateWmShape(el, modeler) {
+  try {
+    const graphics = modeler.get('elementRegistry').getGraphics(el)
+    const visual = graphics && graphics.querySelector('.djs-visual')
+    if (!visual) return
+    const NS = 'http://www.w3.org/2000/svg'
+    const w = el.width || 36
+    const h = el.height || 36
+    const add = (tag, attrs) => {
+      const node = document.createElementNS(NS, tag)
+      Object.keys(attrs).forEach(k => node.setAttribute(k, attrs[k]))
+      node.setAttribute('class', 'wm-deco')
+      node.setAttribute('pointer-events', 'none')
+      visual.appendChild(node)
+    }
+    // bpmn-js 用 SVG 属性绘制节点，样式表选择器命中率不稳定，这里直接改 SVG 属性，保证拖入即生效
+    const paint = (node, attrs) => {
+      if (!node) return
+      Object.keys(attrs).forEach(k => {
+        const v = String(attrs[k])
+        if (node.getAttribute(k) !== v) node.setAttribute(k, v)
+        // SVG 呈现属性优先级低于样式表，这里同步写内联样式，避免被 bpmn-js 默认样式覆盖
+        if (k === 'fill' || k === 'stroke' || k === 'stroke-width' || k === 'display') {
+          if (node.style[k] !== v) node.style[k] = v
+        }
+      })
+    }
+    if (el.type === 'bpmn:StartEvent') {
+      paint(visual.querySelector('circle') || visual.querySelector('ellipse'), { fill: '#4caf50', stroke: '#43a047', 'stroke-width': '2' })
+      if (!visual.querySelector('.wm-deco')) {
+        add('path', { d: 'M' + (w * 0.36) + ' ' + (h * 0.3) + ' L' + (w * 0.7) + ' ' + (h * 0.5) + ' L' + (w * 0.36) + ' ' + (h * 0.7) + ' Z', fill: '#fff', stroke: 'none' })
+      }
+    } else if (el.type === 'bpmn:EndEvent') {
+      paint(visual.querySelector('circle') || visual.querySelector('ellipse'), { fill: '#e74c3c', stroke: '#1f2937', 'stroke-width': '4' })
+      // 终止结束事件默认会多画一个黑色实心圆，隐去只保留白方块
+      visual.querySelectorAll('circle').forEach((c, i) => { if (i > 0) c.setAttribute('display', 'none') })
+      if (!visual.querySelector('.wm-deco')) {
+        add('rect', { x: w * 0.36, y: h * 0.36, width: w * 0.28, height: h * 0.28, fill: '#fff', stroke: 'none' })
+      }
+    } else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') {
+      paint(visual.querySelector('rect'), { fill: '#4a90e2', stroke: '#3a7fbf', 'stroke-width': '2' })
+      // 隐去 bpmn-js 默认的黑色人像标识，改用面板同款白色人像（保留自己插入的装饰图元）
+      visual.querySelectorAll('path:not(.wm-deco)').forEach(p => { p.setAttribute('display', 'none'); p.style.display = 'none' })
+      styleTaskName(visual)
+      if (!visual.querySelector('.wm-deco')) {
+        // 左上角白色人像
+        add('circle', { cx: 16, cy: 14, r: 4.6, fill: '#fff', stroke: 'none' })
+        add('path', { d: 'M8 27c0-4.2 3.6-6.6 8-6.6s8 2.4 8 6.6z', fill: '#fff', stroke: 'none' })
+      }
+    } else if (isGatewayType(el.type)) {
+      paint(visual.querySelector('polygon'), { fill: '#f0a63c', stroke: '#d98b1f', 'stroke-width': '2' })
+      visual.querySelectorAll('path').forEach(p => { p.setAttribute('fill', '#fff'); p.setAttribute('stroke', '#fff') })
+      visual.querySelectorAll('circle').forEach(c => { c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2.5') })
+    }
+  } catch (e) {}
+}
+
+/** 变更后延迟补一次全量视觉（bpmn-js 可能先渲染后重绘，直接属性着色需要兜底重刷） */
+let wmDecoSweepTimer = null
+function scheduleWmDecoSweep(modeler) {
+  if (wmDecoSweepTimer) clearTimeout(wmDecoSweepTimer)
+  wmDecoSweepTimer = setTimeout(() => {
+    try { applyWmCanvasMarkers(modeler) } catch (e) {}
+  }, 120)
+}
+
+/**
+ * 画布 DOM 兜底监听：不依赖 bpmn-js 事件时序，节点 SVG 一渲染出来就统一上色。
+ * 只监听结构/形状相关属性，自身写入的 fill/stroke 不会触发，避免循环。
+ */
+let wmCanvasObserver = null
+let wmObserverTimer = null
+function setupWmCanvasObserver() {
+  try {
+    if (wmCanvasObserver) { wmCanvasObserver.disconnect(); wmCanvasObserver = null }
+    const host = graphicCanvasRef.value
+    if (!host) return
+    wmCanvasObserver = new MutationObserver(() => {
+      if (wmObserverTimer) return
+      wmObserverTimer = setTimeout(() => {
+        wmObserverTimer = null
+        if (graphicModeler) applyWmCanvasMarkers(graphicModeler)
+      }, 60)
+    })
+    wmCanvasObserver.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ['transform', 'class', 'd'] })
+  } catch (e) {}
+}
+
+/** 泛微式画布视觉标记：节点样式 + 退回出口红色虚线 */
 function applyWmCanvasMarkers(modeler) {
   if (!modeler) return
   try {
     const canvas = modeler.get('canvas')
     const registry = modeler.get('elementRegistry')
     registry.forEach(el => {
-      if (el.type === 'bpmn:StartEvent') canvas.addMarker(el.id, 'wm-start')
-      else if (el.type === 'bpmn:EndEvent') canvas.addMarker(el.id, 'wm-end')
-      else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') canvas.addMarker(el.id, 'wm-task')
-      else if (el.type === 'bpmn:SequenceFlow') {
+      if (el.type === 'bpmn:SequenceFlow') {
         const bo = el.businessObject
         let meta = {}
         try { meta = JSON.parse((bo.get && bo.get('flowable:exitMeta')) || bo.$attrs && bo.$attrs['flowable:exitMeta'] || '{}') || {} } catch (e) {}
         const isReturn = !!meta.isReturn || /退回|驳回/.test(bo.name || '')
         if (isReturn) canvas.addMarker(el.id, 'wm-return')
         else canvas.removeMarker(el.id, 'wm-return')
+      } else {
+        markWmShape(el, modeler)
       }
     })
   } catch (e) {}
@@ -1300,6 +1496,7 @@ function loadSelectedElement(el) {
     formKey: (bo.get && bo.get('flowable:formKey')) || bo.formKey || '',
     fieldPerms: parseFieldPerms(bo),
     multiInstance: !!bo.loopCharacteristics,
+    ...(isUserTask ? parseParticipantConfig(bo) : {}),
     // 分支语义为界面派生值，不持久化到 XML
     branchRole: deriveBranchRole(el.type, bo.id)
   }
@@ -1307,18 +1504,6 @@ function loadSelectedElement(el) {
 
 function updateElementProp(key, value) {
   if (selectedEl) currentModeling().updateProperties(selectedEl, { [key]: value })
-}
-
-function updateAssignee() {
-  if (!selectedEl) return
-  const bo = selectedEl.businessObject
-  currentModeling().updateModdleProperties(selectedEl, bo, { 'flowable:assignee': selectedElement.value.assignee || undefined })
-}
-
-function updateCandidateGroups() {
-  if (!selectedEl) return
-  const bo = selectedEl.businessObject
-  currentModeling().updateModdleProperties(selectedEl, bo, { 'flowable:candidateGroups': selectedElement.value.candidateGroups || undefined })
 }
 
 function updateFormKey() {
@@ -1469,6 +1654,272 @@ function saveFieldPerms() {
   proxy.$modal.msgSuccess('字段权限已保存到节点，流程保存后生效')
 }
 
+// ===== 节点参与者配置（活动用户 / 组织用户 / 表单字段，泛微式灵活设置） =====
+const ACTIVITY_RELATIONS = [
+  { value: 'initiator', label: '流程发起人' },
+  { value: 'initiatorDeptAndBelow', label: '流程发起人所属组织及其下级组织' },
+  { value: 'activityUserLeader', label: '所选活动中用户的上级领导' },
+  { value: 'activityUserOrgLeader', label: '所选活动中用户的组织领导' },
+  { value: 'activityUserChargeLeader', label: '所选活动中用户的分管领导' },
+  { value: 'activityUser', label: '所选活动中的用户' },
+  { value: 'prevAssigneeDeptAndBelow', label: '上一活动办理人所属组织及其下级组织' },
+  { value: 'prevAssigneeLeader', label: '上一活动办理人的上级领导' },
+  { value: 'currentUserLeader', label: '当前办理用户上级领导' }
+]
+const ORG_RELATIONS = [
+  { value: 'pick', label: '选择组织、用户、岗位' },
+  { value: 'userLeader', label: '所选用户的上级领导' },
+  { value: 'userOrgLeader', label: '所选用户的组织领导' },
+  { value: 'userChargeLeader', label: '所选用户的分管领导' },
+  { value: 'deptParentLeader', label: '所选组织的上级领导' },
+  { value: 'deptOrgLeader', label: '所选组织的组织领导' },
+  { value: 'deptChargeLeader', label: '所选组织的分管领导' }
+]
+const participantOpen = ref(false)
+const participantSaving = ref(false)
+const pcDeptTreeOptions = ref([])
+const formFieldOptions = ref([])
+const participantDraft = reactive({ relMode: 'activity', relation: 'initiator', pickKind: 'dept', pickId: '', fieldKey: '', items: [] })
+const participantRelationOptions = computed(() => participantDraft.relMode === 'org' ? ORG_RELATIONS : ACTIVITY_RELATIONS)
+const participantTags = computed(() => (selectedElement.value && selectedElement.value.participants) || [])
+
+/** 读取节点参与者配置，兼容旧的 assignee / candidateGroups 写法 */
+function parseParticipantConfig(bo) {
+  let cfg = {}
+  const raw = (bo.get && bo.get('flowable:participantConfig')) || (bo.$attrs && bo.$attrs['flowable:participantConfig']) || ''
+  if (raw) { try { cfg = JSON.parse(raw) || {} } catch (e) {} }
+  let participants = Array.isArray(cfg.participants) ? cfg.participants : []
+  if (!participants.length) {
+    const a = (bo.get && bo.get('flowable:assignee')) || ''
+    const g = (bo.get && bo.get('flowable:candidateGroups')) || ''
+    if (a) {
+      const u = userOptions.value.find(x => String(x.userId) === String(a))
+      participants = [{ mode: 'org', type: 'user', kind: 'user', id: String(a), name: u ? u.nickName : (a.indexOf('${') > -1 ? ('指定办理人 ' + a) : ('用户 ' + a)) }]
+    } else if (g) {
+      participants = String(g).split(',').filter(Boolean).map(id => {
+        const r = roleOptions.value.find(x => String(x.roleId) === String(id))
+        return { mode: 'org', type: 'role', kind: 'role', id: String(id), name: r ? r.roleName : ('角色 ' + id) }
+      })
+    }
+  }
+  const handleMode = cfg.handleMode || ((bo.get && bo.get('flowable:candidateGroups')) ? 'candidate' : 'assign')
+  const loop = bo.loopCharacteristics
+  const performMode = cfg.performMode || (loop ? (loop.isSequential ? 'seq' : 'and') : 'claim')
+  const participantMode = cfg.participantMode || (participants.length > 1 ? 'multi' : 'single')
+  return { handleMode, performMode, participantMode, participants }
+}
+
+/** 当前编辑实例的 moddle（画布编辑用 graphicModeler，只读预览用 bpmnModeler） */
+function currentModdle() {
+  const m = (selectedElSource === 'graphic' && graphicModeler) ? graphicModeler : bpmnModeler
+  return m ? m.get('moddle') : null
+}
+
+function participantRelationLabel(relMode, type) {
+  const list = relMode === 'org' ? ORG_RELATIONS : ACTIVITY_RELATIONS
+  const hit = list.find(r => r.value === type)
+  return hit ? hit.label : ''
+}
+
+function openParticipantPicker() {
+  const se = selectedElement.value
+  if (!se || !se.isUserTask) return
+  participantDraft.relMode = 'activity'
+  participantDraft.relation = 'initiator'
+  participantDraft.pickKind = 'dept'
+  participantDraft.pickId = ''
+  participantDraft.fieldKey = ''
+  participantDraft.items = (se.participants || []).map(p => Object.assign({}, p))
+  participantOpen.value = true
+  loadDeptTreeOptions()
+  loadFormFieldOptions()
+}
+
+function onParticipantRelModeChange() {
+  participantDraft.relation = participantDraft.relMode === 'org' ? 'pick' : 'initiator'
+  if (participantDraft.relMode === 'org') loadDeptTreeOptions()
+}
+
+/** 切换关系后重置选择并把选择对象类型收敛到合理值（user* 只能选用户，dept* 只能选组织） */
+function onParticipantRelationChange() {
+  const d = participantDraft
+  d.pickId = ''
+  if (d.relMode !== 'org') return
+  if (d.relation.startsWith('user')) d.pickKind = 'user'
+  else if (d.relation.startsWith('dept')) d.pickKind = 'dept'
+}
+
+function onPickKindChange() {
+  participantDraft.pickId = ''
+}
+
+function loadDeptTreeOptions() {
+  if (pcDeptTreeOptions.value.length) return
+  // 本项目 DeptController 未提供 /treeselect（会被 /{deptId} 拦截报类型不匹配），统一用 /system/user/deptTree
+  request({ url: '/system/user/deptTree', method: 'get' })
+    .then(res => { pcDeptTreeOptions.value = mapDeptTree(res.data || []) })
+    .catch(() => { pcDeptTreeOptions.value = [] })
+}
+
+function mapDeptTree(list) {
+  return (list || []).map(d => ({ value: String(d.id), label: d.label, children: mapDeptTree(d.children || []) }))
+}
+
+function findDeptLabel(list, id) {
+  for (const d of list) {
+    if (String(d.value) === String(id)) return d.label
+    const sub = findDeptLabel(d.children || [], id)
+    if (sub) return sub
+  }
+  return ''
+}
+
+function loadFormFieldOptions() {
+  const formId = designModel.value.formId
+  formFieldOptions.value = []
+  if (!formId) return
+  request({ url: '/flowable/form/' + formId, method: 'get' })
+    .then(res => {
+      let fields = []
+      try { fields = JSON.parse((res.data || {}).fieldsJson || '[]') } catch (e) {}
+      formFieldOptions.value = fields.map(f => ({ label: f.label, field: f.field }))
+    })
+    .catch(() => { formFieldOptions.value = [] })
+}
+
+/** 同一关系/对象重复添加时给出提示，避免标签重复 */
+function isDuplicateParticipant(item) {
+  return participantDraft.items.some(p =>
+    p.mode === item.mode && p.type === item.type &&
+    String(p.id || '') === String(item.id || '') && String(p.field || '') === String(item.field || '')
+  )
+}
+
+function addParticipantFromDraft() {
+  const d = participantDraft
+  if (d.relMode === 'activity') {
+    const rel = ACTIVITY_RELATIONS.find(r => r.value === d.relation)
+    const item = { mode: 'activity', type: d.relation, name: rel ? rel.label : d.relation }
+    if (isDuplicateParticipant(item)) { proxy.$modal.msgWarning('该参与人已添加'); return }
+    d.items.push(item)
+  } else if (d.relMode === 'org') {
+    if (!d.pickId) { proxy.$modal.msgWarning('请先选择组织、用户或岗位'); return }
+    let label = ''
+    if (d.pickKind === 'dept') label = findDeptLabel(pcDeptTreeOptions.value, d.pickId) || ('组织 ' + d.pickId)
+    else if (d.pickKind === 'user') {
+      const u = userOptions.value.find(x => String(x.userId) === String(d.pickId))
+      label = u ? u.nickName : ('用户 ' + d.pickId)
+    } else {
+      const r = roleOptions.value.find(x => String(x.roleId) === String(d.pickId))
+      label = r ? r.roleName : ('岗位 ' + d.pickId)
+    }
+    const suffix = d.relation === 'pick' ? ''
+      : '·' + participantRelationLabel('org', d.relation).replace('所选用户', '').replace('所选组织', '').replace('的', '')
+    const item = { mode: 'org', type: d.relation === 'pick' ? d.pickKind : d.relation, kind: d.pickKind, id: String(d.pickId), name: label + suffix }
+    if (isDuplicateParticipant(item)) { proxy.$modal.msgWarning('该参与人已添加'); return }
+    d.items.push(item)
+    d.pickId = ''
+  } else {
+    if (!d.fieldKey) { proxy.$modal.msgWarning('请先选择表单字段'); return }
+    const f = formFieldOptions.value.find(x => x.field === d.fieldKey)
+    const item = { mode: 'formField', type: 'field', field: d.fieldKey, name: '表单字段·' + (f ? f.label : d.fieldKey) }
+    if (isDuplicateParticipant(item)) { proxy.$modal.msgWarning('该表单字段已添加'); return }
+    d.items.push(item)
+  }
+}
+
+function removeParticipant(index) {
+  const se = selectedElement.value
+  if (!se) return
+  se.participants = (se.participants || []).filter((p, i) => i !== index)
+  persistParticipantConfig()
+}
+
+/** 处理方式切换：改回「指定」时若已选多人，直接拦截并回退，避免 assignee/候选被清空 */
+function onHandleModeChange(mode) {
+  const se = selectedElement.value
+  if (!se) return
+  const ps = se.participants || []
+  if (mode === 'assign') {
+    const single = ps.length === 1 && (ps[0].mode === 'activity' ? ps[0].type === 'initiator' : ps[0].kind === 'user')
+    if (ps.length > 1 || (ps.length === 1 && !single)) {
+      se.handleMode = 'candidate'
+      proxy.$modal.msgWarning(ps.length > 1
+        ? '"指定"处理方式只能设置 1 个参与人；请先在参与者中删除多余人员'
+        : '"指定"处理方式只能设置 1 个具体用户或流程发起人；组织/岗位请改用"候选"')
+      return
+    }
+  }
+  persistParticipantConfig()
+}
+
+function saveParticipantConfig() {
+  if (!selectedEl) { participantOpen.value = false; return }
+  const items = participantDraft.items || []
+  if ((selectedElement.value.handleMode || 'assign') === 'assign' && items.length > 1) {
+    proxy.$modal.msgWarning('"指定"处理方式只能设置 1 个参与人；多个参与人请把处理方式改为"候选"')
+    return
+  }
+  participantSaving.value = true
+  try {
+    selectedElement.value.participants = participantDraft.items.map(p => Object.assign({}, p))
+    persistParticipantConfig()
+    participantOpen.value = false
+    proxy.$modal.msgSuccess('参与人已保存到节点，流程保存后生效')
+  } finally {
+    participantSaving.value = false
+  }
+}
+
+/** 把节点参与者配置写回 XML，并派生 assignee / candidateGroups / 多实例 */
+function persistParticipantConfig() {
+  const se = selectedElement.value
+  if (!se || !se.isUserTask || !selectedEl) return
+  const participants = se.participants || []
+  const cfg = { handleMode: se.handleMode || 'assign', performMode: se.performMode || 'claim', participantMode: se.participantMode || 'single', participants }
+  const json = JSON.stringify(cfg)
+  const m = currentModeling()
+  if (!m) return
+  const bo = selectedEl.businessObject
+  m.updateModdleProperties(selectedEl, bo, { 'flowable:participantConfig': json })
+  try { bo.$attrs['flowable:participantConfig'] = json } catch (e) {}
+
+  const userParts = participants.filter(p => p.mode === 'org' && p.kind === 'user' && p.type === 'user')
+  const groupParts = participants.filter(p => p.mode === 'org' && (p.kind === 'dept' || p.kind === 'role'))
+  let assignee, groups = '', users = ''
+  if (cfg.handleMode === 'assign') {
+    if (userParts.length === 1 && !groupParts.length) assignee = userParts[0].id
+    else if (participants.length === 1 && participants[0].type === 'initiator') assignee = '${initiator}'
+  } else {
+    groups = groupParts.map(p => p.id).join(',')
+    users = userParts.map(p => p.id).join(',')
+  }
+  m.updateModdleProperties(selectedEl, bo, {
+    'flowable:assignee': assignee || undefined,
+    'flowable:candidateGroups': groups || undefined
+  })
+  try {
+    if (users) bo.$attrs['flowable:candidateUsers'] = users
+    else delete bo.$attrs['flowable:candidateUsers']
+  } catch (e) {}
+
+  const moddle = currentModdle()
+  if (cfg.performMode === 'claim') {
+    m.updateModdleProperties(selectedEl, bo, { loopCharacteristics: undefined })
+  } else if (moddle) {
+    const loop = moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
+      isSequential: cfg.performMode === 'seq',
+      // completionCondition 必须是 bpmn:FormalExpression 元素，传字符串会导致 XML 序列化报 isGeneric
+      completionCondition: moddle.create('bpmn:FormalExpression', { body: '${nrOfCompletedInstances >= nrOfInstances}' })
+    })
+    m.updateModdleProperties(selectedEl, bo, { loopCharacteristics: loop })
+  }
+
+  se.assignee = assignee || ''
+  se.candidateGroups = groups
+  se.multiInstance = cfg.performMode !== 'claim'
+}
+
 function updateCondition() {
   if (!selectedEl) return
   const bo = selectedEl.businessObject
@@ -1510,29 +1961,16 @@ function validateDiagram() {
       const bo = c.businessObject
       const a = (bo.get && bo.get('flowable:assignee')) || ''
       const g = (bo.get && bo.get('flowable:candidateGroups')) || ''
-      if (!a && !g && !bo.loopCharacteristics) {
+      const pcfg = (bo.get && bo.get('flowable:participantConfig')) || (bo.$attrs && bo.$attrs['flowable:participantConfig']) || ''
+      let hasParticipants = false
+      if (pcfg) { try { hasParticipants = !!(JSON.parse(pcfg).participants || []).length } catch (e) {} }
+      if (!a && !g && !hasParticipants && !bo.loopCharacteristics) {
         issues.push('「' + (bo.name || bo.id) + '」未配置办理人或候选组')
       }
     }
   })
   if (!hasEnd) issues.push('流程缺少结束节点')
   return issues
-}
-
-function toggleMultiInstance(val) {
-  if (!selectedEl) return
-  const bo = selectedEl.businessObject
-  if (val) {
-    // 开启会签：并行多实例
-    const moddle = bpmnModeler.get('moddle')
-    const loop = moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
-      isSequential: false,
-      completionCondition: '${nrOfCompletedInstances >= nrOfInstances}'
-    })
-    modeling.updateModdleProperties(selectedEl, bo, { loopCharacteristics: loop })
-  } else {
-    modeling.updateModdleProperties(selectedEl, bo, { loopCharacteristics: undefined })
-  }
 }
 
 async function handleDesign(row) {
@@ -1622,7 +2060,7 @@ async function changeNodeType(row) {
 
   // 1) 采集扩展属性（原样迁移，避免配置丢失）
   const attrs = {}
-  ;['flowable:assignee', 'flowable:candidateGroups', 'flowable:formKey', 'flowable:fieldPerms', 'flowable:operatorGroups']
+  ;['flowable:assignee', 'flowable:candidateGroups', 'flowable:candidateUsers', 'flowable:formKey', 'flowable:fieldPerms', 'flowable:operatorGroups', 'flowable:participantConfig']
     .forEach(k => {
       const v = (oldBo.get && oldBo.get(k)) || (oldBo.$attrs && oldBo.$attrs[k])
       if (v !== undefined && v !== null && v !== '') attrs[k] = v
@@ -1659,7 +2097,7 @@ async function changeNodeType(row) {
       modeling.updateModdleProperties(newShape, newBo, {
         loopCharacteristics: moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
           isSequential: false,
-          completionCondition: '${nrOfCompletedInstances >= nrOfInstances}'
+          completionCondition: moddle.create('bpmn:FormalExpression', { body: '${nrOfCompletedInstances >= nrOfInstances}' })
         })
       })
     }
@@ -2177,7 +2615,9 @@ function saveOperatorGroups() {
     const moddle = graphicModeler.get('moddle')
     const loop = moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
       isSequential: counter === 'or',
-      completionCondition: counter === 'and' ? '${nrOfCompletedInstances >= nrOfInstances}' : undefined
+      completionCondition: counter === 'and'
+        ? moddle.create('bpmn:FormalExpression', { body: '${nrOfCompletedInstances >= nrOfInstances}' })
+        : undefined
     })
     m.updateModdleProperties(el, bo, { loopCharacteristics: loop })
   } else {
@@ -2380,11 +2820,15 @@ async function onGraphicOpened() {
     if (el) { loadSelectedElement(el); propsCollapsed.value = false }
     else { selectedEl = null; selectedElement.value = null }
   })
-  // palette 迁移优先执行：无论后续 XML 加载成败，图元面板都必须落在画布上方的横条里，
-  // 不能因为加载异常而残留在画布左侧
+  // 从左侧节点面板拖入/新增/修改节点后立即套用泛微视觉，保证画布样式与面板按钮一致
+  gEventBus.on('shape.added', e => { markWmShape(e.element, graphicModeler); scheduleWmDecoSweep(graphicModeler) })
+  gEventBus.on('element.changed', e => { markWmShape(e.element, graphicModeler); scheduleWmDecoSweep(graphicModeler) })
+  // palette 迁移优先执行：无论后续 XML 加载成败，图元面板都必须落在左侧独立节点面板里，
+  // 不能因为加载异常而残留在画布内
   await nextTick()
   mountPaletteToTop()
   setTimeout(mountPaletteToTop, 150)
+  setupWmCanvasObserver()
   try {
     const xml = await resolveGraphicXml()
     await graphicModeler.importXML(xml)
@@ -2400,7 +2844,7 @@ async function onGraphicOpened() {
   }
 }
 
-/** 把 bpmn-js 默认挂在画布左侧的 palette 移到画布上方横条（palette-host） */
+/** 把 bpmn-js 默认挂在画布左上角的 palette 移到独立节点面板（palette-host，画布左侧） */
 function mountPaletteToTop() {
   try {
     const host = paletteHostRef.value
@@ -2482,8 +2926,8 @@ function openGraphicHelp() {
     '<div style="line-height:2;font-size:13px">'
     + '<b>画布操作</b>：从左侧节点面板拖拽节点到画布；选中节点/连线后右侧显示属性。<br/>'
     + '<b>快捷键</b>：Ctrl+Z 撤销、Ctrl+Y 重做、Del 删除选中、Ctrl+滚轮 缩放画布。<br/>'
-    + '<b>保存</b>：点右上角「保存」同步回流程设计器并持久化；「关 闭」不保存未提交的改动。<br/>'
-    + '<b>导入/导出</b>：在「更多」菜单中，用于备份或迁移 BPMN XML。</div>',
+    + '<b>保存</b>：点顶部「保存」同步回流程设计器并持久化；「关闭」不保存未提交的改动。<br/>'
+    + '<b>导入/导出</b>：顶部工具条按钮，用于备份或迁移 BPMN XML。</div>',
     '流程图编辑 · 使用说明',
     { dangerouslyUseHTMLString: true, confirmButtonText: '知道了', customStyle: { width: '560px' } }
   )
@@ -2651,10 +3095,15 @@ function handleVersionSuspend(suspend) {
 // ===== 泛微式四页签：基本信息 / 表单管理 / 流转设置 / 高级设置 =====
 const designTab = ref('flow')
 /** 流转设置是否为空（模型尚无流程图）：为空时画布中央显示引导空状态，点按钮直接进入绘制；
-    已有流程图时恢复为右上角「编 辑」按钮，保持原有位置 */
+    已有流程图时恢复为右上角「编 辑」按钮，保持原有位置。
+    注意：仅有一张空的 BPMNDiagram（没有任何流程节点）也视为“还没有流程图”，
+    否则会出现一片空画布，既没有引导提示、又容易被误认为已设计。 */
 const flowEmpty = computed(() => {
   const xml = designModel.value && designModel.value.bpmnXml ? designModel.value.bpmnXml : ''
-  return !/<bpmndi:BPMNDiagram[\s>]/.test(xml)
+  if (!/<bpmndi:BPMNDiagram[\s>]/.test(xml)) return true
+  // 兼容带前缀（bpmn:/bpmn2:）与默认命名空间（不带前缀）两种 XML 写法
+  const nodeRe = /<(?:bpmn2?:)?(startEvent|endEvent|userTask|task|serviceTask|sendTask|receiveTask|manualTask|scriptTask|businessRuleTask|callActivity|subProcess|exclusiveGateway|parallelGateway|inclusiveGateway|eventBasedGateway|complexGateway|intermediateCatchEvent|intermediateThrowEvent|boundaryEvent)[\s>/]/i
+  return !nodeRe.test(xml)
 })
 /** 表单管理页签：当前关联表单详情（来自表单选项，兜底用模型详情字段） */
 const boundFormInfo = computed(() => {
@@ -2812,6 +3261,14 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .field-perms-table .fp-field { font-style: normal; color: #94a3b8; font-size: 11px; margin-left: 6px; }
 .field-perms-empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 20px 0; }
 
+/* ===== 节点参与者（泛微式：关系对象 + 多关系 + 组织用户选择 + 标签） ===== */
+.pc-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%; min-height: 24px; }
+.pc-empty { font-size: 12px; color: #94a3b8; }
+.pc-add { height: 24px; padding: 0 8px; }
+.pc-relation { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; }
+.pc-relation :deep(.el-radio) { margin-right: 0; height: 26px; }
+.pc-pick-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+
 /* 泛微式四页签：基本信息 / 表单管理 / 流转设置 / 高级设置 */
 .designer-tabs { padding: 0 16px 16px; }
 .designer-tabs :deep(.el-tab-pane) { padding-top: 14px; }
@@ -2899,6 +3356,8 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .flow-empty .fe-title { font-size: 16px; font-weight: 600; color: #1e293b; }
 .flow-empty .fe-desc { font-size: 13px; line-height: 1.7; color: #64748b; max-width: 420px; }
 .flow-empty .fe-steps { display: flex; gap: 18px; margin-top: 6px; font-size: 12px; color: #94a3b8; }
+/* 空状态时隐藏底下的画布（保留 DOM，保证预览实例仍可初始化/后续显示） */
+.flow-tabbar .designer-canvas.canvas-hidden { visibility: hidden; }
 .flow-empty .fe-steps b {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; margin-right: 4px; border-radius: 50%;
@@ -2911,18 +3370,34 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   height: 36px; display: flex; align-items: center;
 }
 /* 单一模式容器：直接撑满 graphic-body（不再有二级 el-tabs 包裹层） */
-.graphic-pane, .graphic-single-pane { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.graphic-pane, .graphic-single-pane { flex: 1 1 auto; display: flex; min-height: 0; overflow: hidden; }
+/* 图形模式：左侧节点面板 + 右侧画布；节点/出口模式为单列 */
+.graphic-pane { flex-direction: row; }
+.graphic-single-pane { flex-direction: column; }
 /* v-show 隐藏时必须彻底退出布局：否则 flex 容器里仍按原尺寸占位，画布会盖住节点/出口表格 */
 .graphic-pane[style*="display: none"], .graphic-single-pane[style*="display: none"] { display: none !important; flex: none; }
 .graphic-single-pane { padding: 10px 8px 8px; overflow-y: auto; }
 
-/* ===== 流程图节点工具条（重新设计：仅保留 开始 / 审批 / 结束 三类节点，扁平化卡片式图标） ===== */
+/* ===== 图形编辑工具栏（参考泛微：浅色扁平按钮条，按组分区，主操作右置） ===== */
+.graphic-toolbar {
+  flex: none; display: flex; align-items: center; gap: 4px;
+  padding: 4px 12px; background: #fff;
+  border-bottom: 1px solid #e8eef7;
+}
+.graphic-toolbar .gt-group { display: flex; align-items: center; gap: 2px; }
+.graphic-toolbar .gt-group .el-button + .el-button { margin-left: 0; }
+.graphic-toolbar :deep(.el-button.is-link) { color: #475569; font-size: 13px; height: 26px; padding: 4px 8px; }
+.graphic-toolbar :deep(.el-button.is-link:hover) { color: #2563eb; background: #f4f8ff; }
+.graphic-toolbar :deep(.el-button.is-link.is-disabled) { color: #c7d2e0; }
+.graphic-toolbar .gt-divider { width: 1px; height: 16px; background: #e2e8f0; margin: 0 8px; }
+.graphic-toolbar .gt-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.graphic-toolbar .gt-right .el-button + .el-button { margin-left: 0; }
+.graphic-toolbar .gt-zoom { font-size: 12px; color: #94a3b8; }
+
+/* ===== 节点面板（参考泛微：左侧竖向白色面板，事件/节点分组，彩色图标在上文字在下） ===== */
 .palette-host {
-  flex: none;
-  display: flex; align-items: center;
-  padding: 8px 12px;
-  background: linear-gradient(180deg, #fbfdff, #f4f7fb);
-  border-bottom: 1px solid #e3e9f2;
+  flex: none; width: 156px; overflow-y: auto; overflow-x: hidden;
+  background: #fff; border-right: 1px solid #e8eef7;
 }
 .palette-host:empty { display: none; }
 /* 隐藏 bpmn-js 默认的 palette 容器样式，只借用其拖拽能力 */
@@ -2934,38 +3409,52 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   padding: 0;
 }
 .palette-host :deep(.djs-palette .djs-palette-toggle) { display: none; }
-.palette-host :deep(.djs-palette .djs-palette-entries) { display: flex; flex-wrap: wrap; align-items: center; gap: 0; }
+.palette-host :deep(.djs-palette .djs-palette-entries) { display: block; }
 .palette-host :deep(.djs-palette .djs-palette-entries .group) {
-  display: flex; flex-wrap: wrap; align-items: center;
-  padding: 0 14px;
-  border-right: 1px solid #e3e9f2;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px;
+  padding: 8px 10px 10px;
 }
-.palette-host :deep(.djs-palette .djs-palette-entries .group:first-child) { padding-left: 0; }
-.palette-host :deep(.djs-palette .djs-palette-entries .group:last-child) { border-right: none; }
+/* 分组标题：事件（普通标题）/ 节点（灰底通栏分隔条） */
+.palette-host :deep(.djs-palette .group::before) {
+  grid-column: 1 / -1; padding: 2px 0 4px;
+  font-size: 13px; font-weight: 500; color: #334155;
+}
+.palette-host :deep(.djs-palette .group[data-group="event"]::before) { content: "事件"; }
+.palette-host :deep(.djs-palette .group[data-group="task"]::before) {
+  content: "节点";
+  margin: 6px -10px 4px; padding: 7px 10px;
+  background: #f4f5f7;
+  border-top: 1px solid #e8ebf0; border-bottom: 1px solid #e8ebf0;
+}
 
-/* 节点按钮：白底圆角卡片 + 图标 + 悬浮上浮高亮 */
+/* 节点按钮：无边框，彩色图标 + 文字（悬浮淡蓝底） */
 .palette-host :deep(.djs-palette .entry) {
-  width: 46px; height: 46px; margin: 0 4px;
+  width: auto; height: 58px; margin: 0; padding: 2px 0;
   box-sizing: border-box;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #dfe6f0;
-  box-shadow: 0 1px 2px rgba(16,38,74,.05);
-  color: #4a5b76;
-  line-height: 46px;
-  font-size: 20px;
-  transition: all .16s ease;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  background: transparent; border: none; border-radius: 8px;
+  color: #334155; font-size: 13px; line-height: 1;
+  transition: background .15s ease;
+  cursor: pointer;
 }
-.palette-host :deep(.djs-palette .entry:hover) {
-  background: #eef4ff;
-  border-color: #93b4f7;
-  color: #2563eb;
-  box-shadow: 0 3px 10px rgba(37,99,235,.16);
-  transform: translateY(-1px);
+.palette-host :deep(.djs-palette .entry:hover) { background: #f5f9ff; }
+.palette-host :deep(.djs-palette .entry .wm-pal-label) { font-size: 13px; color: #334155; line-height: 1; }
+.palette-host :deep(.djs-palette .entry:hover .wm-pal-label) { color: #2563eb; }
+
+/* 节点图标：圆形 / 菱形 / 圆角方形底 + 白色符号（与画布节点配色一致） */
+.palette-host :deep(.wm-node-icon) {
+  width: 32px; height: 32px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.palette-host :deep(.djs-palette .entry.active) {
-  background: #2563eb; border-color: #2563eb; color: #fff;
+.palette-host :deep(.wm-node-icon-start) { border-radius: 50%; background: #4caf50; }
+.palette-host :deep(.wm-node-icon-end) { border-radius: 50%; background: #e74c3c; }
+.palette-host :deep(.wm-node-icon-exclusive),
+.palette-host :deep(.wm-node-icon-parallel),
+.palette-host :deep(.wm-node-icon-inclusive) {
+  background: #f0a63c;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
+.palette-host :deep(.wm-node-icon-task) { border-radius: 8px; background: #4a90e2; }
 /* 画布网格背景（泛微式：浅灰网格线）+ 高度链补全（tab-pane/djs-container 撑满，避免下半纯白空白） */
 .palette-host :deep(.djs-canvas) { outline: none; }
 .designer-canvas :deep(.djs-container) { height: 100% !important; width: 100% !important; }
@@ -2974,35 +3463,26 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
   background-size: 24px 24px;
 }
-.graphic-pane .palette-host { flex: none; }
 .graphic-pane .graphic-main { flex: 1; min-height: 0; }
-/* ===== 泛微式画布节点视觉（P0 图形编辑画布） ===== */
-/* 开始节点：绿色圆形 */
-.designer-canvas :deep(.wm-start.djs-shape circle),
-.designer-canvas :deep(.wm-start.djs-shape ellipse) { fill: #22c55e; stroke: #16a34a; stroke-width: 2; }
-.designer-canvas :deep(.wm-start.djs-shape:hover circle) { fill: #16a34a; }
-/* 归档（结束）节点：深红终止样式 */
-.designer-canvas :deep(.wm-end.djs-shape circle),
-.designer-canvas :deep(.wm-end.djs-shape ellipse) { fill: #fef2f2; stroke: #dc2626; stroke-width: 2; }
-.designer-canvas :deep(.wm-end.djs-shape:hover circle) { fill: #fecaca; }
-/* 审批节点：绿色描边圆角矩形 + 右下角出口小箭头标识 */
-.designer-canvas :deep(.wm-task.djs-shape rect) { stroke: #22c55e; stroke-width: 2; fill: #f0fdf4; }
-.designer-canvas :deep(.wm-task.djs-shape:hover rect) { stroke: #16a34a; }
-.designer-canvas :deep(.wm-task.djs-shape)::after {
-  content: '▸';
-  position: absolute;
-  right: -2px;
-  bottom: -4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 7px;
-  background: #22c55e;
-  color: #fff;
-  font-size: 9px;
-  line-height: 14px;
-  text-align: center;
-  pointer-events: none;
-}
+/* ===== 泛微式画布节点视觉（与左侧节点面板图标保持同一套配色/造型） ===== */
+/* 开始节点：绿色圆形（白色三角由 decorateWmShape 插入 SVG） */
+.designer-canvas :deep(.wm-start.djs-shape .djs-visual circle),
+.designer-canvas :deep(.wm-start.djs-shape .djs-visual ellipse) { fill: #4caf50; stroke: #43a047; stroke-width: 2; }
+.designer-canvas :deep(.wm-start.djs-shape:hover .djs-visual circle) { fill: #43a047; }
+/* 结束节点：红色实心 + 深色粗环（终止样式，白色方块由 decorateWmShape 插入） */
+.designer-canvas :deep(.wm-end.djs-shape .djs-visual circle),
+.designer-canvas :deep(.wm-end.djs-shape .djs-visual ellipse) { fill: #e74c3c; stroke: #1f2937; stroke-width: 4; }
+.designer-canvas :deep(.wm-end.djs-shape:hover .djs-visual circle) { fill: #dc2626; }
+/* 用户任务：蓝色实心圆角卡片（白色人像由 decorateWmShape 插入） */
+.designer-canvas :deep(.wm-task.djs-shape .djs-visual rect) { fill: #4a90e2; stroke: #3b82f6; stroke-width: 1; }
+.designer-canvas :deep(.wm-task.djs-shape:hover .djs-visual rect) { fill: #3b82f6; }
+/* 网关：橙色菱形 + 白色网关符号（互斥 ✕ / 并行 ＋ / 相容 ○） */
+.designer-canvas :deep(.wm-gateway.djs-shape .djs-visual polygon) { fill: #f0a63c; stroke: #d98b1f; stroke-width: 2; }
+.designer-canvas :deep(.wm-gateway.djs-shape:hover .djs-visual polygon) { fill: #e89a2a; }
+.designer-canvas :deep(.wm-gateway.djs-shape .djs-visual path) { fill: #fff; stroke: #fff; }
+.designer-canvas :deep(.wm-gateway.djs-shape .djs-visual circle) { fill: none; stroke: #fff; stroke-width: 2.5; }
+/* 装饰图元不参与鼠标命中，避免影响节点拖拽/选中 */
+.designer-canvas :deep(.wm-deco) { pointer-events: none; }
 /* 出口拖动排序手柄（泛微式：十字箭头，cursor:move） */
 .drag-handle { display: inline-block; cursor: move; color: #94a3b8; font-size: 13px; letter-spacing: -2px; margin-right: 6px; user-select: none; }
 .drag-handle:hover { color: #2563eb; }
