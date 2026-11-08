@@ -57,7 +57,7 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyMmsDa
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '安全驾驶舱', 4638, 8, 'dashboard', 'safety/dashboard/index', 'LegacySafetyDashboard',
+SELECT '安全生产驾驶舱', 4638, 8, 'dashboard', 'safety/dashboard/index', 'LegacySafetyDashboard',
     1, 0, 'C', '0', '0', 'safety:dashboard:list', 'dashboard', 'admin', sysdate()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacySafetyDashboard' AND menu_type='C');
 
@@ -69,7 +69,7 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyQmsTr
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '投标看板', 905886, 8, 'dashboard', 'bid/dashboard/index', 'LegacyBidDashboard',
+SELECT '投标数据分析', 905886, 8, 'dashboard', 'bid/dashboard/index', 'LegacyBidDashboard',
     1, 0, 'C', '0', '0', 'bid:dashboard:view', 'chart', 'admin', sysdate()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyBidDashboard' AND menu_type='C');
 
@@ -97,3 +97,10 @@ JOIN sys_menu om ON rm.menu_id = om.menu_id
   AND om.menu_id IN (3090,3091,4070,4120,4461,4544,4583,4726,4844,5001,905894)
 JOIN sys_menu lm ON lm.route_name = CONCAT('Legacy', om.route_name) AND lm.menu_type='C'
 WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu x WHERE x.role_id=rm.role_id AND x.menu_id=lm.menu_id);
+
+-- =============================================
+-- 取消隐藏原模块目录（有 Legacy 子菜单的目录保持可见，保证执行顺序无关）
+-- =============================================
+UPDATE sys_menu p LEFT JOIN sys_menu c ON c.parent_id=p.menu_id AND c.visible='0' AND c.status='0'
+SET p.visible='0'
+WHERE p.menu_id IN (3006,4006,4460,4813,905998) AND c.menu_id IS NOT NULL;
