@@ -117,6 +117,7 @@ const totalJobCount = computed(() => moduleList.value.reduce((s, m) => s + (Numb
 /** 未在模块开关表登记的模块（业务模块已有菜单但缺失开关项时自动补录，避免模块开关漏项） */
 const knownModules = [
   { moduleKey: 'pdm', moduleName: '产品设计', rootMenuId: 11000, orderNum: 16, remark: '产品设计模块（PDM）' },
+  { moduleKey: 'bi', moduleName: '决策支持', rootMenuId: 9063031, orderNum: 27, remark: '决策支持模块（BI）' },
   { moduleKey: 'integration', moduleName: '系统集成', rootMenuId: 9063000, orderNum: 28, remark: '系统集成模块（钉钉/企业微信）' }
 ]
 

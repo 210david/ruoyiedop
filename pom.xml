@@ -254,6 +254,11 @@
                 <artifactId>ruoyi-bid</artifactId>
                 <version>${ruoyi.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-bi</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
 
             <!-- FIN财务管理模块-->
             <dependency>
@@ -306,6 +311,7 @@
         <module>ruoyi-bid</module>
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
+        <module>ruoyi-bi</module>
         <module>ruoyi-integration</module>
     </modules>
     <packaging>pom</packaging>
