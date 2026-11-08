@@ -934,13 +934,13 @@ const collapsedCards = reactive({ basic: false, owner: false, items: false, othe
 const showStatusHelp = ref(false)
 const showAdvanced = ref(false)
 const activeStatusTab = ref('all')
-const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 })
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0 })
 const statusTabList = computed(() => marketing_order_status.value)
 function loadStatusCounts() {
   // 基于当前筛选条件（剔除状态与分页）拉取全量数据统计，避免仅统计当前页
   const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, orderStatus: undefined, params: { ...queryParams.value.params } }
   listOrder(query).then(res => {
-    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 }
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0 }
     const rows = res.rows || []
     rows.forEach(row => {
       const s = row.orderStatus
@@ -951,9 +951,9 @@ function loadStatusCounts() {
   }).catch(() => { statusCounts.value = { all: 0 } })
 }
 function handleStatusTabClick(status) { activeStatusTab.value = status; queryParams.value.orderStatus = status === 'all' ? undefined : status; handleQuery() }
-function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'red', '6': 'gray' }; return map[status] || 'gray' }
+function badgeClass(status) { const map = { '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'red', '6': 'gray', '7': 'red' }; return map[status] || 'gray' }
 function statusLabel(status) { const item = marketing_order_status.value.find(d => d.value == status); return item ? item.label : '-' }
-function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-partial', '4': 'tab-done', '5': 'tab-reject', '6': 'tab-void' }; return map[value] || '' }
+function statusTabClass(value) { const map = { '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-partial', '4': 'tab-done', '5': 'tab-reject', '6': 'tab-void', '7': 'tab-returned' }; return map[value] || '' }
 function toggleCard(name) { collapsedCards[name] = !collapsedCards[name] }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 

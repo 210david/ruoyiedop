@@ -16,10 +16,11 @@
     <div class="order-picker">
       <!-- 搜索栏 -->
       <div class="order-picker-search">
-        <el-input v-model="queryParams.orderNo" placeholder="采购单号" clearable size="small" style="width: 180px" @keyup.enter="handleQuery">
+        <el-input v-model="queryParams.orderNo" :placeholder="isMk ? '订单编号' : '采购单号'" clearable size="small" style="width: 180px" @keyup.enter="handleQuery">
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-if="!isMk" v-model="queryParams.supplierName" placeholder="供应商" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
+        <el-input v-else v-model="queryParams.customerName" placeholder="客户" clearable size="small" style="width: 180px; margin-left: 8px" @keyup.enter="handleQuery" />
         <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
         <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
       </div>
@@ -43,16 +44,23 @@
               <el-radio :model-value="selectedId" :value="row.orderId" @click.stop="onRowClick(row)"><span /></el-radio>
             </template>
           </el-table-column>
-          <el-table-column label="采购单号" prop="orderNo" width="170" show-overflow-tooltip />
-          <el-table-column label="供应商" prop="supplierName" min-width="160" show-overflow-tooltip />
-          <el-table-column label="采购员" prop="buyerName" width="100" show-overflow-tooltip>
+          <el-table-column :label="isMk ? '订单编号' : '采购单号'" prop="orderNo" width="170" show-overflow-tooltip />
+          <el-table-column v-if="!isMk" label="供应商" prop="supplierName" min-width="160" show-overflow-tooltip />
+          <el-table-column v-else label="客户" prop="customerName" min-width="160" show-overflow-tooltip />
+          <el-table-column v-if="!isMk" label="采购员" prop="buyerName" width="100" show-overflow-tooltip>
             <template #default="scope">{{ scope.row.buyerName || '-' }}</template>
           </el-table-column>
-          <el-table-column label="总金额" prop="totalAmount" width="110" align="right">
-            <template #default="scope">{{ formatMoney(scope.row.totalAmount) }}</template>
+          <el-table-column v-else label="负责人" prop="userName" width="100" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.userName || '-' }}</template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="90" align="center">
-            <template #default="scope"><dict-tag :options="pms_order_status" :value="scope.row.status" /></template>
+          <el-table-column :label="isMk ? '订单金额' : '总金额'" :prop="isMk ? 'orderAmount' : 'totalAmount'" width="110" align="right">
+            <template #default="scope">{{ formatMoney(isMk ? scope.row.orderAmount : scope.row.totalAmount) }}</template>
+          </el-table-column>
+          <el-table-column label="状态" :prop="isMk ? 'orderStatus' : 'status'" width="90" align="center">
+            <template #default="scope">
+              <dict-tag v-if="isMk" :options="marketing_order_status" :value="scope.row.orderStatus" />
+              <dict-tag v-else :options="pms_order_status" :value="scope.row.status" />
+            </template>
           </el-table-column>
         </el-table>
       </div>
@@ -77,16 +85,22 @@
 </template>
 
 <script setup>
-import { listOrder } from '@/api/pms/order'
+import { listOrder as listPmsOrder } from '@/api/pms/order'
+import { listOrder as listMkOrder } from '@/api/mk/order'
 import { formatMoney } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
-const { pms_order_status } = proxy.useDict('pms_order_status')
+const { pms_order_status, marketing_order_status } = proxy.useDict('pms_order_status', 'marketing_order_status')
 
 const props = defineProps({
   title: {
     type: String,
     default: '选择采购订单'
+  },
+  // 业务类型：pms=采购订单（默认，保持原有语义）；mk=销售订单（发货/退货/开票使用）
+  bizType: {
+    type: String,
+    default: 'pms'
   },
   // 可选：限定订单状态列表（如收货页仅可选择已审批/已下单/部分到货的订单 ['2','3','4']）
   statuses: {
@@ -120,30 +134,45 @@ const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   orderNo: undefined,
-  supplierName: undefined
+  supplierName: undefined,
+  customerName: undefined
 })
+
+/** 是否销售订单数据源 */
+const isMk = computed(() => props.bizType === 'mk')
+/** 统一读取订单状态（pms 用 status，mk 用 orderStatus） */
+function rowStatus(row) {
+  return isMk.value ? row.orderStatus : row.status
+}
 
 /** 弹窗打开时初始化 */
 function onOpen() {
   queryParams.orderNo = undefined
   queryParams.supplierName = undefined
+  queryParams.customerName = undefined
   queryParams.pageNum = 1
   selectedId.value = null
   selectedRow.value = null
   getList()
 }
 
-/** 加载采购订单列表（状态/排除项客户端过滤，前端分页） */
+/** 加载订单列表（状态/排除项客户端过滤，前端分页） */
 function getList() {
   loading.value = true
-  listOrder({
+  const api = isMk.value ? listMkOrder : listPmsOrder
+  const params = {
     pageNum: 1,
     pageSize: 999,
-    orderNo: queryParams.orderNo,
-    supplierName: queryParams.supplierName
-  }).then(res => {
+    orderNo: queryParams.orderNo
+  }
+  if (isMk.value) {
+    params.customerName = queryParams.customerName
+  } else {
+    params.supplierName = queryParams.supplierName
+  }
+  api(params).then(res => {
     allList.value = (res.rows || []).filter(o =>
-      (props.statuses.length === 0 || props.statuses.includes(o.status)) &&
+      (props.statuses.length === 0 || props.statuses.includes(rowStatus(o))) &&
       !(props.excludeIds && props.excludeIds.includes(o.orderId))
     )
     total.value = allList.value.length
@@ -157,6 +186,11 @@ function getList() {
         }
       })
     }
+  }).catch(() => {
+    loading.value = false
+    allList.value = []
+    total.value = 0
+    paginate()
   })
 }
 
@@ -176,6 +210,7 @@ function handleQuery() {
 function resetQuery() {
   queryParams.orderNo = undefined
   queryParams.supplierName = undefined
+  queryParams.customerName = undefined
   handleQuery()
 }
 
@@ -194,15 +229,30 @@ function onRowDblClick(row) {
 
 /** 确认选择 */
 function handleConfirm() {
-  if (!selectedId.value) return
-  emit('confirm', {
-    orderId: selectedRow.value.orderId,
-    orderNo: selectedRow.value.orderNo,
-    supplierId: selectedRow.value.supplierId,
-    supplierName: selectedRow.value.supplierName,
-    buyerId: selectedRow.value.buyerId,
-    buyerName: selectedRow.value.buyerName
-  })
+  if (!selectedId.value || !selectedRow.value) return
+  const row = selectedRow.value
+  if (isMk.value) {
+    // 销售订单：回传客户、合同与金额，供发货/退货/开票联动带出
+    emit('confirm', {
+      orderId: row.orderId,
+      orderNo: row.orderNo,
+      customerId: row.customerId,
+      customerName: row.customerName,
+      contractId: row.contractId,
+      contractNo: row.contractNo,
+      orderAmount: row.orderAmount,
+      orderStatus: row.orderStatus
+    })
+  } else {
+    emit('confirm', {
+      orderId: row.orderId,
+      orderNo: row.orderNo,
+      supplierId: row.supplierId,
+      supplierName: row.supplierName,
+      buyerId: row.buyerId,
+      buyerName: row.buyerName
+    })
+  }
   visible.value = false
 }
 
