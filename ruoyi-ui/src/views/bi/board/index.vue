@@ -10,6 +10,9 @@
         </el-tag>
       </div>
       <div class="toolbar__right">
+        <button class="tip-pill" @click="showHelp = true">
+          <el-icon><QuestionFilled /></el-icon><span>指标说明</span>
+        </button>
         <el-switch v-model="autoRefresh" active-text="自动刷新" style="margin-right: 12px;" @change="toggleAutoRefresh" />
         <el-button type="primary" size="small" icon="Refresh" :loading="loading" @click="loadData">刷新</el-button>
       </div>
@@ -21,7 +24,7 @@
       <span class="alert-banner__text">{{ alert.message }}</span>
     </div>
 
-    <!-- ③ KPI 指标卡网格（本域指标，左侧色条 + 下钻点击 + 估算角标 + 空状态"—"） -->
+    <!-- ③ KPI 指标卡网格（公司维度：一指标一张卡，左侧色条 + 下钻点击 + 估算角标 + 空状态"—"） -->
     <el-row :gutter="12">
       <el-col v-for="m in metrics" :key="m.metricCode" :xs="12" :sm="8" :md="6">
         <div class="kpi-tile" :title="m.drillUrl ? '点击下钻：' + m.metricName : ''" :style="{ cursor: m.drillUrl ? 'pointer' : 'default' }" @click="drillTo(m)">
@@ -29,6 +32,9 @@
             {{ m.metricName }}
             <el-tooltip v-if="m.dataFlag === 'estimate'" content="估算口径，仅供参考" placement="top">
               <span class="kpi-tile__flag">估</span>
+            </el-tooltip>
+            <el-tooltip v-if="m.caliberDesc" :content="m.caliberDesc" placement="top" :show-after="200">
+              <el-icon class="kpi-tile__help"><QuestionFilled /></el-icon>
             </el-tooltip>
           </div>
           <div class="kpi-tile__value">
@@ -53,6 +59,39 @@
 
     <!-- ⑤ 空状态（规范 5.10：无数据提示来源，不显示误导性 0） -->
     <el-empty v-if="!loading && metrics.length === 0" description="该域暂无指标数据（等待快照任务产出，或在指标字典中配置本域指标）" />
+
+    <!-- ⑥ 指标说明弹窗（规范 3.3 业务操作说明范式：口径与统计周期集中说明） -->
+    <el-dialog v-model="showHelp" :title="domainName + '看板指标说明'" width="860px" append-to-body>
+      <div class="status-help-content">
+        <div class="help-tip">
+          本页指标口径统一取自「决策支持 → 指标字典」，可在此追溯每个指标的计算方式与统计周期。
+          请注意区分统计周期：<b>当月</b>为自然月累计、<b>全量累计</b>为建库至今全部业务数据、<b>时点存量</b>为快照当日状态值。
+        </div>
+        <el-table :data="metrics" border size="small" style="width: 100%;">
+          <el-table-column label="指标名称" prop="metricName" width="140" />
+          <el-table-column label="当前值" width="120">
+            <template #default="{ row }">
+              <span>{{ row.value !== null && row.value !== undefined ? row.value : '—' }}</span>
+              <span v-if="row.unit" class="help-unit">{{ row.unit }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="统计周期" width="110">
+            <template #default="{ row }">
+              <el-tag :type="periodTagType(row.caliberDesc)" size="small" effect="plain">
+                {{ periodLabel(row.caliberDesc) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="计算口径" prop="caliberDesc" min-width="360" show-overflow-tooltip />
+        </el-table>
+        <div class="help-foot">
+          数据基准日：{{ snapshotDate || '—' }}；指标由每日快照任务产出，口径变更在指标字典中留痕可查。
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showHelp = false">我知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -70,6 +109,7 @@ const metrics = ref([])
 const alerts = ref([])
 const trendRaw = ref([])
 const autoRefresh = ref(false)
+const showHelp = ref(false)
 
 /** 域中文名（与 dashboard/index.vue 的 domainNames 保持一致） */
 const domainNames = {
@@ -100,6 +140,22 @@ const noDataNames = computed(() =>
 // 趋势图实例
 const trendChartRef = ref(null)
 let trendChart = null
+
+/** 统计周期标签：从口径说明首段解析（字典口径统一以「统计周期：xxx｜口径：...」书写） */
+function periodLabel(desc) {
+  const t = String(desc || '')
+  if (t.includes('统计周期：当月')) return '当月'
+  if (t.includes('统计周期：全量累计')) return '全量累计'
+  if (t.includes('统计周期：时点存量')) return '时点存量'
+  return '未标注'
+}
+function periodTagType(desc) {
+  const t = String(desc || '')
+  if (t.includes('当月')) return 'primary'
+  if (t.includes('全量累计')) return 'warning'
+  if (t.includes('时点存量')) return 'info'
+  return 'danger'
+}
 
 /** F4 指标下钻：有 drillUrl 跳转模块列表页（{value} 占位符替换当前值），外链新开页，站内路由跳转 */
 function drillTo(m) {
@@ -258,6 +314,28 @@ onBeforeUnmount(() => {
 }
 .kpi-tile__value { font-size: 26px; font-weight: 700; color: #303133; }
 .kpi-tile__unit { font-size: 12px; font-weight: 400; color: #909399; margin-left: 4px; }
+.kpi-tile__help { margin-left: 4px; font-size: 13px; color: #c0c4cc; vertical-align: -2px; cursor: help; transition: color 0.15s; }
+.kpi-tile__help:hover { color: #409eff; }
+
+/* 指标说明按钮（与列表页 tip-pill 同范式） */
+.tip-pill {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+  margin-right: 12px; background: #fffaf0; border: 1px solid #fde68a; color: #92400e;
+  border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s ease; flex-shrink: 0; white-space: nowrap;
+}
+.tip-pill:hover { background: #fffbeb; border-color: #f59e0b; color: #7c2d12; }
+.tip-pill .el-icon { font-size: 14px; color: #b45309; }
+
+/* 指标说明弹窗内容 */
+.status-help-content { max-height: 520px; overflow-y: auto; padding-right: 6px; }
+.help-tip {
+  background: #f5f7fa; border-left: 4px solid #409eff; border-radius: 6px;
+  padding: 12px 14px; margin-bottom: 14px; font-size: 13px; color: #606266; line-height: 1.7;
+}
+.help-tip b { color: #303133; }
+.help-unit { font-size: 12px; color: #909399; margin-left: 3px; }
+.help-foot { margin-top: 12px; font-size: 12px; color: #909399; }
 
 /* ④ 图表面板 */
 .chart-panel {

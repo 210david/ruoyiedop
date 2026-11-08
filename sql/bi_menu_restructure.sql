@@ -1,37 +1,39 @@
 -- =============================================
 -- 决策支持菜单重组（看板 + 统计分析 二级菜单归集）
 -- 内容：
---   1) 决策支持下新建「看板」「统计分析」两个二级目录（M）
---   2) 九域看板（9 个）从决策支持平铺挪入「看板」；各模块看板挪入「看板」
+--   1) 决策支持下新建「指标看板分析」「统计分析」两个二级目录（M）
+--   2) 九域看板（9 个）从决策支持平铺挪入「指标看板分析」；各模块看板挪入对应模块目录
 --   3) 统计分析下按模块名称分一级目录（含采购管理），各模块统计报表归入对应模块目录
 --   4) 采购看板(4461) 归入 统计分析>采购管理 并更名「采购统计分析」；
---      商机看板(4070)、谱系完整度(4844) 不纳入决策支持（隐藏，原模块保留 Legacy 入口）
+--      商机看板(4070)、谱系完整度(4844) 不纳入决策支持（物理删除，原模块保留 Legacy 入口）
 --   5) 各模块原报表目录挪空后隐藏（visible='1'），不删除
 -- 原则：挪动只改 parent_id/order_num/path（防同父路由冲突），不改 menu_id/perms/component，
 --       sys_role_menu 角色权限关联不受影响
--- 幂等：先查后插/先查后更，可重复执行
+-- 幂等：先查后插/先查后更，可重复执行；二级目录按 path 判重而非 menu_name，
+--       避免用户在菜单管理里改名后重跑本脚本又新建一条同名空目录（2026-11-08 修复）
 -- =============================================
 
 -- =============================================
--- 一、新建「看板」「统计分析」二级目录
+-- 一、新建「指标看板分析」「统计分析」二级目录
 -- =============================================
 SET @biId = (SELECT menu_id FROM sys_menu WHERE menu_name = '决策支持' AND menu_type = 'M' AND parent_id = 0 LIMIT 1);
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+-- 注意：按 path 判重（menu_name 可被用户在菜单管理里改名，按名称判重会重复建空目录）
 SELECT '指标看板分析', @biId, 3, 'board', NULL, '',
     1, 0, 'M', '0', '0', '', 'dashboard', 'admin', sysdate()
 FROM DUAL WHERE @biId IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '指标看板分析' AND parent_id = @biId AND menu_type = 'M');
-SET @boardId = (SELECT menu_id FROM sys_menu WHERE menu_name = '指标看板分析' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = 'board' AND parent_id = @biId AND menu_type = 'M');
+SET @boardId = (SELECT menu_id FROM sys_menu WHERE path = 'board' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '统计分析', @biId, 4, 'statistics', NULL, '',
     1, 0, 'M', '0', '0', '', 'chart', 'admin', sysdate()
 FROM DUAL WHERE @biId IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '统计分析' AND parent_id = @biId AND menu_type = 'M');
-SET @statsId = (SELECT menu_id FROM sys_menu WHERE menu_name = '统计分析' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = 'statistics' AND parent_id = @biId AND menu_type = 'M');
+SET @statsId = (SELECT menu_id FROM sys_menu WHERE path = 'statistics' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
 
 -- =============================================
 -- 二、统计分析下按模块名称分一级目录（11 个，名称/图标与一级模块一致）
@@ -105,28 +107,33 @@ SET @stAi  = (SELECT menu_id FROM sys_menu WHERE menu_name='AI中心' AND parent
 SET @stFin = (SELECT menu_id FROM sys_menu WHERE menu_name='财务管理' AND parent_id=@statsId LIMIT 1);
 
 -- =============================================
--- 三、九域看板（9 个）从决策支持平铺挪入「看板」（order 保持 3-11）
+-- 三、九域看板（9 个）从决策支持平铺挪入「指标看板分析」（order 保持 3-11）
 -- =============================================
 UPDATE sys_menu SET parent_id = @boardId
 WHERE @boardId IS NOT NULL AND parent_id = @biId
   AND menu_id IN (9063013,9063014,9063015,9063016,9063017,9063021,9063022,9063023,9063024);
 
 -- =============================================
--- 四、各模块看板挪入「看板」（order 20-30；path 冲突的加模块前缀防同父路由重复）
+-- 四、各模块看板挪入「统计分析」下对应模块目录（order 20-30；path 冲突的加模块前缀防同父路由重复）
 -- =============================================
 UPDATE sys_menu SET parent_id=@stDms, order_num=20, menu_name='设备统计分析' WHERE menu_id=3090 AND @stDms IS NOT NULL AND parent_id=3006;   -- 设备统计分析(设备)
 UPDATE sys_menu SET parent_id=@stDms, order_num=21, menu_name='设备数据大屏' WHERE menu_id=3091 AND @stDms IS NOT NULL AND parent_id=3006;   -- 设备数据大屏(设备)
 UPDATE sys_menu SET parent_id=@stMk, order_num=22, menu_name='营销统计分析' WHERE menu_id=4120 AND @stMk IS NOT NULL AND parent_id=4006;   -- 营销统计分析(营销)
 UPDATE sys_menu SET parent_id=@stMk, order_num=23, menu_name='推广分析' WHERE menu_id=4583 AND @stMk IS NOT NULL AND parent_id=4006;   -- 推广分析(营销)
 UPDATE sys_menu SET parent_id=@stMk, order_num=24, menu_name='投标分析' WHERE menu_id=905894 AND @stMk IS NOT NULL AND parent_id=905886;   -- 投标分析(营销)
--- 4461 采购看板不进「看板」：归入 统计分析>采购管理（见第五节）
+-- 4461 采购看板不进「指标看板分析」：归入 统计分析>采购管理（见第五节）
 UPDATE sys_menu SET parent_id=@stQms, order_num=26, menu_name='质量统计分析' WHERE menu_id=4544 AND @stQms IS NOT NULL AND parent_id=4813;   -- 质量统计分析(质量)
 UPDATE sys_menu SET parent_id=@stMms, order_num=27, menu_name='生产统计分析' WHERE menu_id=5001 AND @stMms IS NOT NULL AND parent_id=5000;   -- 生产统计分析(生产)
 UPDATE sys_menu SET parent_id=@stSafety, order_num=28, menu_name='安全生产驾驶舱' WHERE menu_id=4726 AND @stSafety IS NOT NULL AND parent_id=4638;   -- 安全生产驾驶舱(安全)
-UPDATE sys_menu SET parent_id=@stMk, order_num=29 WHERE menu_id=4070 AND @stMk IS NOT NULL AND parent_id=4003;   -- 商机看板(营销)
-UPDATE sys_menu SET parent_id=@boardId, order_num=30 WHERE menu_id=4844 AND @boardId IS NOT NULL AND parent_id=4833;   -- 谱系完整度(指标看板分析)
-UPDATE sys_menu SET visible='1' WHERE menu_id IN (4070, 4844);   -- 按人工调整保持隐藏
--- 4070/4844 挪入决策支持对应位置（按人工调整），并保持隐藏；原模块入口由 bi_menu_restore_boards.sql 以 Legacy 路由恢复
+-- 4070 商机看板 / 4844 谱系完整度：不纳入决策支持，物理删除（2026-11-08 用户确认）
+-- 原模块入口由 bi_menu_restore_boards.sql 以 Legacy 路由恢复（9063062 / 9063069），功能不受影响
+DELETE FROM sys_role_menu WHERE menu_id IN (
+  SELECT menu_id FROM (
+    SELECT menu_id FROM sys_menu WHERE menu_id IN (4070, 4844) OR parent_id IN (4070, 4844)
+  ) t
+);
+DELETE FROM sys_menu WHERE parent_id IN (4070, 4844);
+DELETE FROM sys_menu WHERE menu_id IN (4070, 4844);
 
 -- =============================================
 -- 五、各模块统计报表挪入「统计分析」对应模块目录（子菜单 path 不冲突，保持原 path）

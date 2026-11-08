@@ -107,8 +107,8 @@
     </div>
     </template>
 
-    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形 + 域指标分布（普通/大屏两种模式共用，深色科技风主题） -->
-    <el-row v-show="activeView === 'kpi' || screenMode" :gutter="16" style="margin-top: 16px;">
+    <!-- ④ 图表区：核心指标趋势 + 数据完整度环形 + 域指标分布（普通模式固定 340px；大屏按视口剩余高度弹性铺满） -->
+    <el-row v-show="activeView === 'kpi' || screenMode" :gutter="16" class="bi-chart-row" :style="screenMode ? '' : 'margin-top: 16px;'">
       <el-col :xs="24" :md="12">
         <div class="chart-panel">
           <div class="chart-panel__head">
@@ -116,7 +116,7 @@
             <span class="chart-panel__desc">近{{ trendDays }}天快照（%）</span>
           </div>
           <div class="chart-panel__body">
-            <div ref="trendChartRef" style="width: 100%; height: 340px;"></div>
+            <div ref="trendChartRef" class="chart-canvas"></div>
           </div>
         </div>
       </el-col>
@@ -127,7 +127,7 @@
             <span class="chart-panel__desc">有值/估算/无数据</span>
           </div>
           <div class="chart-panel__body">
-            <div ref="healthChartRef" style="width: 100%; height: 340px;"></div>
+            <div ref="healthChartRef" class="chart-canvas"></div>
           </div>
         </div>
       </el-col>
@@ -138,7 +138,7 @@
             <span class="chart-panel__desc">各域指标数</span>
           </div>
           <div class="chart-panel__body">
-            <div ref="domainBarChartRef" style="width: 100%; height: 340px;"></div>
+            <div ref="domainBarChartRef" class="chart-canvas"></div>
           </div>
         </div>
       </el-col>
@@ -457,7 +457,7 @@ function renderTrendChart() {
 
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { bottom: 4, type: 'scroll', textStyle: { color: '#8fc7f0', fontSize: 11 } },
+    legend: { bottom: 4, type: 'scroll', textStyle: { color: '#8fc7f0', fontSize: sf(11) } },
     grid: { left: '3%', right: '4%', bottom: '18%', top: '8%', containLabel: true },
     xAxis: { type: 'category', boundaryGap: false, data: dates, axisLabel: darkAxisStyle().textStyle, axisLine: darkAxisStyle().axisLine },
     yAxis: { type: 'value', axisLabel: { formatter: '{value}%', ...(darkAxisStyle().textStyle || {}) }, splitLine: darkAxisStyle().splitLine },
@@ -468,10 +468,19 @@ function renderTrendChart() {
   }, { notMerge: true })
 }
 
+/** 大屏图表内容按容器实际高度等比缩放（基准 340px，限制 0.8~1.5 倍）；普通模式恒为 1 */
+function chartZoom() {
+  if (!screenMode.value) return 1
+  const h = trendChartRef.value?.clientHeight || 340
+  return Math.min(1.5, Math.max(0.8, h / 340))
+}
+/** 按缩放系数换算 ECharts 字号/柱宽等像素尺寸 */
+function sf(px) { return Math.round(px * chartZoom()) }
+
 /** 大屏深色主题 ECharts 公共配色（文字/轴线淡蓝，与深空蓝背景融合） */
 function darkAxisStyle() {
   return screenMode.value
-    ? { textStyle: { color: '#8fc7f0' }, axisLine: { lineStyle: { color: 'rgba(0,168,255,.35)' } }, splitLine: { lineStyle: { color: 'rgba(0,168,255,.12)' } } }
+    ? { textStyle: { color: '#8fc7f0', fontSize: sf(11) }, axisLine: { lineStyle: { color: 'rgba(0,168,255,.35)' } }, splitLine: { lineStyle: { color: 'rgba(0,168,255,.12)' } } }
     : {}
 }
 
@@ -491,17 +500,17 @@ function renderDomainBarChart() {
     grid: { left: '3%', right: '10%', bottom: '4%', top: '4%', containLabel: true },
     xAxis: {
       type: 'value', minInterval: 1,
-      axisLabel: { color: dark ? '#8fc7f0' : '#909399' },
+      axisLabel: { color: dark ? '#8fc7f0' : '#909399', fontSize: sf(12) },
       splitLine: { lineStyle: { color: dark ? 'rgba(0,168,255,.12)' : '#eef1f6' } }
     },
     yAxis: {
       type: 'category', data: names, inverse: true,
-      axisLabel: { color: dark ? '#a8dcff' : '#606266' },
+      axisLabel: { color: dark ? '#a8dcff' : '#606266', fontSize: sf(12) },
       axisLine: { lineStyle: { color: dark ? 'rgba(0,168,255,.35)' : '#dcdfe6' } }
     },
     series: [{
       type: 'bar',
-      barWidth: 12,
+      barWidth: sf(12),
       data: counts.map((v, i) => ({
         value: v,
         itemStyle: {
@@ -517,7 +526,7 @@ function renderDomainBarChart() {
       label: {
         show: true, position: 'right',
         color: dark ? '#eaf6ff' : '#606266',
-        fontWeight: 600
+        fontWeight: 600, fontSize: sf(12)
       }
     }]
   }, { notMerge: true })
@@ -534,21 +543,21 @@ function renderHealthChart() {
 
   healthChart.setOption({
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
-    legend: { bottom: 4, left: 'center', textStyle: { color: '#8fc7f0', fontSize: 11 } },
+    legend: { bottom: 4, left: 'center', textStyle: { color: '#8fc7f0', fontSize: sf(11) } },
     title: {
       text: rate + '%',
       subtext: '完整率',
       left: 'center',
       top: '38%',
-      textStyle: { fontSize: 26, fontWeight: 700, color: screenMode.value ? '#eaf6ff' : '#303133' },
-      subtextStyle: { fontSize: 12, color: screenMode.value ? '#6db7e8' : '#909399' }
+      textStyle: { fontSize: sf(26), fontWeight: 700, color: screenMode.value ? '#eaf6ff' : '#303133' },
+      subtextStyle: { fontSize: sf(12), color: screenMode.value ? '#6db7e8' : '#909399' }
     },
     series: [{
       name: '数据完整度',
       type: 'pie',
       radius: ['50%', '70%'],
       center: ['50%', '45%'],
-      label: { show: true, formatter: '{b}: {c}', color: screenMode.value ? '#a8dcff' : undefined },
+      label: { show: true, formatter: '{b}: {c}', color: screenMode.value ? '#a8dcff' : undefined, fontSize: sf(12) },
       itemStyle: screenMode.value ? { borderColor: 'rgba(3,10,28,.9)', borderWidth: 2, shadowBlur: 12, shadowColor: 'rgba(0,160,255,.35)' } : {},
       data: [
         { name: '正常', value: hasValue - estimate, itemStyle: { color: '#67C23A' } },
@@ -571,10 +580,23 @@ watch(activeDomain, () => {
   nextTick(renderTrendChart)
 })
 
+/** 进/出大屏后 DOM 结构变化，等下一帧重新适配图表容器 */
+watch(screenMode, () => {
+  nextTick(() => handleResize())
+})
+
+/** 视口尺寸变化：防抖后 resize 并重绘（大屏下 ECharts 字号/柱宽按容器高度同比缩放） */
+let resizeTimer = null
 function handleResize() {
-  trendChart && trendChart.resize()
-  healthChart && healthChart.resize()
-  domainBarChart && domainBarChart.resize()
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    trendChart && trendChart.resize()
+    healthChart && healthChart.resize()
+    domainBarChart && domainBarChart.resize()
+    renderTrendChart()
+    renderHealthChart()
+    renderDomainBarChart()
+  }, 80)
 }
 
 onMounted(() => {
@@ -586,6 +608,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  if (resizeTimer) clearTimeout(resizeTimer)
   document.body.classList.remove('bi-screen-on')
   Object.values(animHandles).forEach(h => cancelAnimationFrame(h))
   if (refreshTimer) clearInterval(refreshTimer)
@@ -752,11 +775,17 @@ onBeforeUnmount(() => {
 .chart-panel__title { font-size: 15px; font-weight: 600; color: #303133; }
 .chart-panel__desc { font-size: 12px; color: #909399; margin-left: 8px; }
 .chart-panel__body { padding: 16px 20px; }
+/* 图表容器：普通模式固定 340px；大屏模式由 .screen-mode 规则覆盖为弹性高度 */
+.chart-canvas { width: 100%; height: 340px; }
 
 /* ⑤ F9 大屏模式：深色科技风（深空蓝渐变 + 网格纹理 + 霓虹数值 + 域色发光卡），全域并排只读 */
 .screen-mode {
-  min-height: 100dvh;
-  padding: 18px 26px 30px;
+  /* 一屏铺满：纵向弹性分区，间距/字号随视口缩放，图表区吃掉剩余高度 */
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(10px, 1.7vh, 22px) clamp(14px, 1.6vw, 34px) clamp(12px, 2vh, 28px);
   background:
     radial-gradient(ellipse at 18% 0%, rgba(0, 86, 210, .30) 0%, transparent 55%),
     radial-gradient(ellipse at 82% 100%, rgba(0, 190, 255, .12) 0%, transparent 50%),
@@ -911,6 +940,62 @@ onBeforeUnmount(() => {
   letter-spacing: 2px;
 }
 .screen-mode .chart-panel__desc { color: #4d7fb3; }
+
+/* ===== 视口自适应：顶部条/KPI 按内容高度，图表区 flex 吃掉剩余视口高度 =====
+   放在大屏规则末尾，保证同特异性下覆盖上面的固定像素值；普通模式完全不受影响 */
+.screen-mode > .screen-bar,
+.screen-mode > .alert-banner,
+.screen-mode > .screen-kpi-row { flex: 0 0 auto; }
+.screen-mode > .bi-chart-row {
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  margin-top: clamp(8px, 1.4vh, 18px);
+}
+.screen-mode > .bi-chart-row > .el-col {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.screen-mode .chart-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.screen-mode .chart-panel__head {
+  flex: 0 0 auto;
+  padding: clamp(8px, 1.3vh, 16px) 20px;
+}
+.screen-mode .chart-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(8px, 1.3vh, 16px) 20px;
+}
+/* column 方向由 flex 分配高度，不依赖百分比高度，避免浏览器拉伸差异 */
+.screen-mode .chart-canvas { flex: 1 1 0; width: 100%; height: auto; min-height: 0; }
+
+/* 间距/字号随视口高度缩放：clamp 下限保证小屏可读，上限防止 4K 过大 */
+.screen-mode .screen-bar {
+  padding: clamp(6px, 1.2vh, 14px) clamp(14px, 1.4vw, 28px);
+  margin-bottom: clamp(8px, 1.4vh, 16px);
+}
+.screen-mode .screen-bar__title { font-size: clamp(17px, 2.4vh, 28px); }
+.screen-mode .screen-bar__domain { font-size: clamp(11px, 1.5vh, 16px); }
+.screen-mode .kpi-tile {
+  padding: clamp(9px, 1.5vh, 18px) clamp(12px, 1.4vw, 22px);
+  margin-bottom: clamp(6px, 1.2vh, 16px);
+}
+.screen-mode .kpi-tile__name { font-size: clamp(11px, 1.5vh, 16px); margin-bottom: clamp(4px, .9vh, 10px); }
+.screen-mode .kpi-tile__value { font-size: clamp(24px, 4vh, 44px); }
+.screen-mode .kpi-tile__unit { font-size: clamp(11px, 1.6vh, 16px); }
+.screen-mode .kpi-tile__delta { font-size: clamp(10px, 1.3vh, 14px); margin-top: clamp(2px, .7vh, 8px); }
+.screen-mode .chart-panel__title { font-size: clamp(13px, 1.8vh, 18px); }
+.screen-mode .chart-panel__desc { font-size: clamp(10px, 1.3vh, 14px); }
 </style>
 
 <style>
@@ -918,9 +1003,20 @@ onBeforeUnmount(() => {
 body.bi-screen-on { background: #010409; overflow: hidden !important; }
 html:has(body.bi-screen-on) { background: #010409; overflow: hidden !important; }
 body.bi-screen-on .sidebar-container { display: none !important; }
-body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; }
+body.bi-screen-on .main-container { margin-left: 0 !important; width: 100% !important; height: 100dvh !important; overflow: hidden !important; }
 body.bi-screen-on .fixed-header { display: none !important; }
-body.bi-screen-on .app-main { padding: 0 !important; margin-top: 0 !important; min-height: 0 !important; background: #010409; }
+/* fixedHeader 布局下 AppMain 默认 height: calc(100vh - 84px) + overflow-y: auto，
+   大屏必须一并重置，否则底部留出 84px 空白（露出 body 黑底）并产生内部滚动条 */
+body.bi-screen-on .app-main {
+  padding: 0 !important;
+  margin-top: 0 !important;
+  min-height: 0 !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  background: #010409;
+}
+/* 底部版权页脚（fixed 36px）在大屏下隐藏，避免底部占位 */
+body.bi-screen-on .copyright { display: none !important; }
 
 /* 大屏核心KPI一排：紧凑卡 + 域名chip（lg=3 一排 8 个恰好填满，无右侧空白） */
 .screen-kpi-row { margin-bottom: 2px; }

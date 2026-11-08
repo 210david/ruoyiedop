@@ -93,6 +93,7 @@ WHERE m.menu_type='C' AND m.parent_id IN (3006,4003,4006,4460,4813,4638,4833,500
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT DISTINCT rm.role_id, lm.menu_id
 FROM sys_role_menu rm
+-- 4070/4844 已于 2026-11-08 物理删除，保留 id 仅作历史兼容（JOIN 自然无匹配）
 JOIN sys_menu om ON rm.menu_id = om.menu_id
   AND om.menu_id IN (3090,3091,4070,4120,4461,4544,4583,4726,4844,5001,905894)
 JOIN sys_menu lm ON lm.route_name = CONCAT('Legacy', om.route_name) AND lm.menu_type='C'

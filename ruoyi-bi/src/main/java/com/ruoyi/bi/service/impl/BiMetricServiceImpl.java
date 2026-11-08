@@ -3,14 +3,11 @@ package com.ruoyi.bi.service.impl;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +26,6 @@ import com.ruoyi.bi.service.IBiMetricService;
 import com.ruoyi.common.stats.IModuleStatsProvider;
 import com.ruoyi.common.stats.MetricValue;
 import com.ruoyi.common.utils.DateUtils;
-import com.ruoyi.common.utils.SecurityUtils;
-import com.ruoyi.common.core.domain.entity.SysDept;
-import com.ruoyi.common.core.domain.entity.SysRole;
-import com.ruoyi.common.core.domain.entity.SysUser;
-import com.ruoyi.system.mapper.SysDeptMapper;
 import com.ruoyi.system.utils.MessageHelper;
 
 /**
@@ -63,10 +55,6 @@ public class BiMetricServiceImpl implements IBiMetricService
 
     @Autowired
     private BiMetricAlertMapper alertMapper;
-
-    /** 部门查询（ruoyi-system 平台基础模块；PRD F5 部门维度快照与可见范围计算） */
-    @Autowired
-    private SysDeptMapper deptMapper;
 
     /** 站内消息发送（ruoyi-system 平台基础模块，规范 5.14 消息通知机制） */
     @Autowired
@@ -141,48 +129,14 @@ public class BiMetricServiceImpl implements IBiMetricService
             }
         }
 
-        // ④ 部门维度快照（PRD F5）：逐部门调用 Provider，仅落有值的部门粒度行；
-        // Provider 未实现部门维度时 getMetric 返回 value=null，自然不落库（支持分批接入）
-        List<SysDept> deptList = deptMapper.selectDeptList(new SysDept());
-        for (SysDept dept : deptList)
-        {
-            if (dept.getDeptId() == null || !"0".equals(dept.getStatus()))
-            {
-                continue;
-            }
-            for (BiMetricDict dict : dictList)
-            {
-                IModuleStatsProvider provider = providerMap.get(dict.getMetricCode());
-                if (provider == null)
-                {
-                    continue;
-                }
-                try
-                {
-                    MetricValue mv = provider.getMetric(dict.getMetricCode(), day, dept.getDeptId());
-                    if (mv == null || mv.getValue() == null)
-                    {
-                        continue;
-                    }
-                    BiMetricSnapshot row = new BiMetricSnapshot();
-                    row.setMetricCode(dict.getMetricCode());
-                    row.setMetricDate(day);
-                    row.setDeptId(mv.getDeptId() == null ? dept.getDeptId() : mv.getDeptId());
-                    row.setMetricValue(mv.getValue());
-                    row.setUnit(mv.getUnit());
-                    row.setDataFlag(mv.getDataFlag() == null ? "real" : mv.getDataFlag());
-                    row.setSnapshotTime(new Date());
-                    rows.add(row);
-                }
-                catch (Exception e)
-                {
-                    log.error("[BI快照] 指标{}部门{}计算异常，本次跳过", dict.getMetricCode(), dept.getDeptId(), e);
-                }
-            }
-        }
+        // ④ 部门维度快照：按现行策略不落部门粒度行。
+        //    看板统一按公司维度（dept_id=0）展示，且看板权限本身即数据可见范围，
+        //    不再按部门细分统计；快照仅保留公司汇总行，避免同指标多行冗余。
+        //    （原逐部门 Provider 调用逻辑已移除以减少每日无谓计算与存储）
 
         // 幂等：同日重跑先删后插（删除必须用截断后的 day，与 insert 键一致；
         // 若用原始 metricDate（带时分秒）则永远删不中，insert 撞唯一键 uk_metric）
+        // 注：删除按日期整日清除，历史遗留的部门粒度行会在该日重跑时一并清掉
         snapshotMapper.deleteByMetricDate(day);
         if (!rows.isEmpty())
         {
@@ -825,17 +779,20 @@ public class BiMetricServiceImpl implements IBiMetricService
     /**
      * 驾驶舱/主题看板共用取数（F2/F3）。
      *
-     * 数据权限（PRD F5，@DataScope 等效语义的快照维度过滤）：
-     * - 全量权限（admin/全部数据角色）：可见全部指标行（含 dept_id=0 公司级汇总行）；
-     * - 受限权限：仅可见其部门范围内的部门粒度行，公司级 dept_id=0 汇总行隐藏（脱敏）。
+     * 数据权限（现行口径，2026-11-08 用户确认）：
+     * - 决策支持指标统一按公司级汇总，不按部门细分；快照仅落 dept_id=0 公司级行。
+     * - 有 bi:dashboard / bi:board 菜单权限即可查看全部指标，不做 @DataScope 部门过滤。
+     * - PRD F5「按 dept 维度过滤 / 车间主任仅见本部门」与「越权访问返回 403 页面」两条不采纳，
+     *   越权访问保持现有空图表行为；deptScopeAll 字段保留以兼容前端旧调用，恒为 true。
      *
      * @param domain 域过滤（null=全部域，驾驶舱；非 null=主题看板单域）
      */
     private Map<String, Object> buildOverviewData(String domain, int trendDays)
     {
         Map<String, Object> result = new HashMap<>();
-        Collection<Long> visibleDepts = visibleDeptIds();
-        result.put("deptScopeAll", visibleDepts == null);
+        // 看板权限即数据可见范围：有 bi:dashboard/bi:board 菜单权限即可查看公司维度数据，
+        // 不再按部门细分数据权限（业务上一套公司级指标）。保留该字段以兼容前端旧调用。
+        result.put("deptScopeAll", true);
 
         // 1. 最新快照日期（取快照表最大 metric_date；无快照时整体返回空结构）
         Date latestDate = snapshotMapper.selectLatestMetricDate();
@@ -855,9 +812,11 @@ public class BiMetricServiceImpl implements IBiMetricService
             dictMap.put(dict.getMetricCode(), dict);
         }
 
-        // 3. 最新快照指标行（可见部门过滤 + 域过滤，合并字典信息）
-        List<Map<String, Object>> metrics = new ArrayList<>();
-        List<Map<String, Object>> alerts = new ArrayList<>();
+        // 3. 最新快照指标行 —— 公司维度口径（策略已定：看板统一按公司级汇总展示，不按部门拆分）
+        //
+        // 快照任务现在只写 dept_id=0 公司汇总行；这里仍按指标编码归并并优先取汇总行，
+        // 以兼容历史上已落库的部门粒度行（旧数据无需清理即可正常展示，一指标一卡）。
+        Map<String, BiMetricSnapshot> companyLevelMap = new HashMap<>();
         for (BiMetricSnapshot snap : snapshotMapper.selectListByDate(latestDate))
         {
             BiMetricDict dict = dictMap.get(snap.getMetricCode());
@@ -869,10 +828,29 @@ public class BiMetricServiceImpl implements IBiMetricService
             {
                 continue; // F3 主题看板仅展示本域指标
             }
-            if (visibleDepts != null
-                    && (snap.getDeptId() == null || !visibleDepts.contains(snap.getDeptId())))
+            BiMetricSnapshot exist = companyLevelMap.get(snap.getMetricCode());
+            if (exist == null)
             {
-                continue; // 受限权限：公司级 dept_id=0 行与其他部门行不可见（脱敏）
+                companyLevelMap.put(snap.getMetricCode(), snap);
+                continue;
+            }
+            boolean existSummary = exist.getDeptId() == null || exist.getDeptId().longValue() == 0L;
+            boolean curSummary = snap.getDeptId() == null || snap.getDeptId().longValue() == 0L;
+            // 汇总行优先：已存在部门行而当前是汇总行时替换
+            if (!existSummary && curSummary)
+            {
+                companyLevelMap.put(snap.getMetricCode(), snap);
+            }
+        }
+
+        List<Map<String, Object>> metrics = new ArrayList<>();
+        List<Map<String, Object>> alerts = new ArrayList<>();
+        for (BiMetricSnapshot snap : companyLevelMap.values())
+        {
+            BiMetricDict dict = dictMap.get(snap.getMetricCode());
+            if (dict == null)
+            {
+                continue;
             }
             Map<String, Object> row = new HashMap<>();
             row.put("metricCode", snap.getMetricCode());
@@ -884,6 +862,8 @@ public class BiMetricServiceImpl implements IBiMetricService
             row.put("dataFlag", snap.getDataFlag());
             row.put("snapshotDate", snap.getMetricDate());
             row.put("drillUrl", dict.getDrillUrl());
+            // 指标说明：口径定义已含“统计周期 + 计算口径”，供卡片说明与底部说明面板展示
+            row.put("caliberDesc", dict.getCaliberDesc());
             metrics.add(row);
 
             // 预警横幅：红（越阈值）→ 橙（估算口径）→ 蓝（无数据），一指标至多一条
@@ -896,11 +876,11 @@ public class BiMetricServiceImpl implements IBiMetricService
         result.put("metrics", metrics);
         result.put("alerts", alerts);
 
-        // 4. 近 N 天趋势（按可见部门维度过滤）
+        // 4. 近 N 天趋势（公司维度：只取 dept_id=0 汇总行，与看板卡口径一致）
         Calendar cal = Calendar.getInstance();
         cal.setTime(latestDate);
         cal.add(Calendar.DAY_OF_MONTH, -(Math.max(trendDays, 1) - 1));
-        List<BiMetricSnapshot> trend = snapshotMapper.selectTrendList(dayStart(cal.getTime()), latestDate, visibleDepts);
+        List<BiMetricSnapshot> trend = snapshotMapper.selectTrendList(dayStart(cal.getTime()), latestDate, null);
         if (domain != null)
         {
             // 主题看板仅保留本域指标的趋势行
@@ -917,94 +897,6 @@ public class BiMetricServiceImpl implements IBiMetricService
         }
         result.put("trend", trend);
         return result;
-    }
-
-    /**
-     * 当前登录人可见部门范围（PRD F5：@DataScope 等效语义的快照维度过滤）。
-     *
-     * @return null=全部可见（admin 或角色含"全部数据"权限）；非 null=可见 deptId 集合
-     *         （空集合=受限且未配置部门，兜底本部门后仍空则不可见任何数据）
-     */
-    private Collection<Long> visibleDeptIds()
-    {
-        SysUser user;
-        try
-        {
-            user = SecurityUtils.getLoginUser().getUser();
-        }
-        catch (Exception e)
-        {
-            // 系统内部调用（无登录上下文，如任务触发的查询）不做过滤
-            return null;
-        }
-        if (user == null || user.isAdmin())
-        {
-            return null;
-        }
-        Set<Long> depts = new HashSet<>();
-        boolean allScope = false;
-        if (user.getRoles() != null)
-        {
-            for (SysRole role : user.getRoles())
-            {
-                if (role == null || role.getDataScope() == null)
-                {
-                    continue;
-                }
-                switch (role.getDataScope())
-                {
-                    case "1": // 全部数据
-                        allScope = true;
-                        break;
-                    case "3": // 本部门
-                    case "5": // 仅本人：指标无人员维度，按本部门处理
-                        if (user.getDeptId() != null)
-                        {
-                            depts.add(user.getDeptId());
-                        }
-                        break;
-                    case "4": // 本部门及以下
-                        if (user.getDeptId() != null)
-                        {
-                            depts.add(user.getDeptId());
-                            collectChildren(user.getDeptId(), depts);
-                        }
-                        break;
-                    case "2": // 自定义：按角色已授权部门
-                        List<Long> roleDepts = deptMapper.selectDeptListByRoleId(role.getRoleId(), true);
-                        if (roleDepts != null)
-                        {
-                            depts.addAll(roleDepts);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-        if (!allScope && depts.isEmpty() && user.getDeptId() != null)
-        {
-            // 角色未配置数据权限时兜底本部门，避免误放全量
-            depts.add(user.getDeptId());
-        }
-        return allScope ? null : depts;
-    }
-
-    /** 递归收集子部门 id（PRD F5 dataScope=4 本部门及以下） */
-    private void collectChildren(Long parentId, Set<Long> out)
-    {
-        List<SysDept> children = deptMapper.selectChildrenDeptById(parentId);
-        if (children == null)
-        {
-            return;
-        }
-        for (SysDept child : children)
-        {
-            if (child.getDeptId() != null && out.add(child.getDeptId()))
-            {
-                collectChildren(child.getDeptId(), out);
-            }
-        }
     }
 
     @Override

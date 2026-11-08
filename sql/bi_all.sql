@@ -212,10 +212,12 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type, visible,
 ('指标导出', @metricMenuId, 5, '', 'F', '0', '0', 'bi:metric:export', 'admin', sysdate()),
 ('对账查询', @metricMenuId, 6, '', 'F', '0', '0', 'bi:metric:check',  'admin', sysdate());
 
--- 给 admin 角色分配权限
+-- 给 admin 角色分配权限（含无 perms 的一级目录 M：RuoYi 菜单树按祖先过滤，
+-- 一级目录未授权时其下所有 C 菜单都不会出现在侧边栏）
 INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, menu_id FROM sys_menu WHERE perms LIKE 'bi:%'
-AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id=1);
+SELECT 1, menu_id FROM sys_menu
+WHERE (perms LIKE 'bi:%' OR menu_id = @biId)
+  AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id=1);
 
 -- =============================================
 -- 四、Quartz 定时任务（阶段一开发完成后在「系统监控-定时任务」界面配置）

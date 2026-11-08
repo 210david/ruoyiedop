@@ -39,8 +39,8 @@ public interface BiMetricSnapshotMapper
      *
      * @param startDate 起始日（含，须为当日零点）
      * @param endDate   结束日（含，须为当日零点）
-     * @param deptIds   部门维度过滤（PRD F5 数据权限）：null=仅公司汇总行 dept_id=0；
-     *                  非 null=仅该部门集合的部门粒度行（受限权限用户不展示公司级汇总）
+     * @param deptIds   部门维度过滤（保留兼容历史部门粒度行）：null=仅公司汇总行 dept_id=0；
+     *                  非 null=仅该部门集合的部门粒度行。现行看板一律传 null（公司级口径）
      */
     public List<BiMetricSnapshot> selectTrendList(@Param("startDate") Date startDate,
             @Param("endDate") Date endDate, @Param("deptIds") java.util.Collection<Long> deptIds);
