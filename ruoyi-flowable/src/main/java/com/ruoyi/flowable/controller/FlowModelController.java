@@ -89,6 +89,15 @@ public class FlowModelController extends BaseController
     }
 
     /**
+     * 部署前结构对比（结构未变则无需存为新版本）
+     */
+    @GetMapping("/deployCheck/{modelId}")
+    public AjaxResult deployCheck(@PathVariable("modelId") String modelId)
+    {
+        return success(flowModelService.checkDeployStructure(modelId));
+    }
+
+    /**
      * 部署模型（mode=new 新版本并存，默认；mode=replace 覆盖当前版本，部署后停用旧版本并设为活动版本；
      * remark 版本备注；setActive 是否设为活动版本）
      */

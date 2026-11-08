@@ -48,4 +48,11 @@ public interface IFlowModelService
 
     /** 挂起/激活流程定义 */
     public int changeDefinitionState(String processDefinitionId, boolean suspend);
+
+    /**
+     * 部署前结构对比：当前保存的流程模型 vs 已部署版本。
+     * 结构未变（仅表单字段/必填/只读/名称调整）→ 无需存为新版本；
+     * 增删节点、变更流转线、更换绑定数据表 → 需部署新版本。
+     */
+    public java.util.Map<String, Object> checkDeployStructure(String modelId);
 }

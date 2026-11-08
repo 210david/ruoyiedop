@@ -74,7 +74,7 @@
           </div>
         </div>
         <PropPanel v-show="!preview" :form-name="form.formName" :form-key="form.formKey" :fields="mainFields"
-          :placed="placedSet" :placed-labels="placedLabelSet" :active-cell="activeCell" :field-defs="fieldMap"
+          :placed="placedSet" :placed-labels="placedLabelSet" :active-cell="activeCell" :field-defs="fieldMap" :pos-label="posLabel"
           @bind="f => bindField(f.field || f)" @insert-label="insertLabel" @clear-bind="clearBind" @pick="openPicker"
           @patch="patchActive" @set="onSetStyle" @toggle="onToggleStyle" />
       </div>
@@ -633,6 +633,7 @@ function bindField(field) {
   if (!field) return
   pushUndo()
   placeField(t.r1, t.c1, field)
+  ElMessage.success(fieldLabel(field) + ' 已绑定到单元格 ' + colName(t.c1) + (t.r1 + 1))
 }
 /** 标签独立添加为文本格，可与字段控件分别排版。 */
 function insertLabel(f) {
@@ -798,8 +799,10 @@ function clearStyles() {
   })
 }
 function togglePainter() {
+  // 已激活时再次点击按钮 = 取消格式刷
+  if (painterStyle.value) { painterStyle.value = null; ElMessage.info('已取消格式刷'); return }
   if (!rect.value || !activeCell.value) { ElMessage.warning('请先选中要吸取样式的单元格'); return }
-  painterStyle.value = JSON.parse(JSON.stringify(activeCell.value.style))
+  painterStyle.value = JSON.parse(JSON.stringify(activeCell.value.style || {}))
   selRange.value = null // 吸取后清空选区，进入目标框选态（泛微同款：按钮保持高亮直到应用）
   ElMessage.success('格式刷已吸取样式，框选目标单元格后松开应用（Esc 取消）')
 }
@@ -808,16 +811,25 @@ function applyPainterTo(r, c) {
   const ranges = allRanges.value.length ? allRanges.value : [expandSelRange(r, c, r, c)]
   const src = painterStyle.value
   if (!src || !ranges.length) { painterStyle.value = null; return }
+  const g = grid.value
   pushUndo()
   const seen = new Set()
+  let applied = 0
   for (const t of ranges) for (let rr = t.r1; rr <= t.r2; rr++) for (let cc = t.c1; cc <= t.c2; cc++) {
-    const cell = findAnchorCell(grid.value, rr, cc)
-    if (!cell || seen.has(cell.id)) continue
+    let cell = findAnchorCell(g, rr, cc)
+    // 空白区域/未建格的合并区域没有宿主单元格：先创建承载格，否则格式刷点击后无任何反应
+    if (!cell) {
+      cell = makeCell(rr, cc)
+      g.cells.push(cell)
+    }
+    if (seen.has(cell.id)) continue
     seen.add(cell.id)
     cell.style = hydrateStyle(JSON.parse(JSON.stringify(src)))
     mirrorBorders(cell)
+    applied++
   }
   painterStyle.value = null
+  if (applied) ElMessage.success('已应用格式（' + applied + ' 个单元格）')
 }
 
 // ---- 复制/粘贴（Ctrl+C / Ctrl+V：按主选区整块复制，粘贴到当前选区锚点，覆盖目标区） ----

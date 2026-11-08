@@ -1,11 +1,19 @@
 package com.ruoyi.flowable.service.impl;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
+import javax.xml.stream.XMLStreamReader;
+import org.flowable.bpmn.converter.BpmnXMLConverter;
+import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.FlowElement;
+import org.flowable.bpmn.model.FlowNode;
+import org.flowable.bpmn.model.SequenceFlow;
 import org.apache.commons.io.IOUtils;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.repository.Deployment;
@@ -287,6 +295,8 @@ public class FlowModelServiceImpl implements IFlowModelService
         // Flowable 部署时 act_re_procdef.CATEGORY_ 取自 BPMN 的 targetNamespace，
         // 若不改写会写入 Flowable 默认命名空间 http://flowable.org/bpmn，导致前台分类显示为 URL
         byte[] deployBytes = normalizeBpmnNamespace(bpmnBytes, model.getCategory());
+        // 在 <process> 上记录本次部署绑定的数据表表单ID，供后续「结构对比」判断是否更换数据表
+        deployBytes = injectFormId(deployBytes, parseMetaInfo(model.getMetaInfo()).getLong("formId"));
         repositoryService.createDeployment()
                 .name(model.getName())
                 .key(model.getKey())
@@ -729,5 +739,261 @@ public class FlowModelServiceImpl implements IFlowModelService
         {
             return new JSONObject();
         }
+    }
+
+    /** 匹配 <process> 开始标签，用于注入 flowable:formId 部署标记 */
+    private static final java.util.regex.Pattern PROCESS_TAG_PATTERN =
+            java.util.regex.Pattern.compile("<process(?:\\s|>)");
+
+    /** 匹配 BPMN 中部署时写入的 flowable:formId 标记 */
+    private static final java.util.regex.Pattern FORM_ID_PATTERN =
+            java.util.regex.Pattern.compile("flowable:formId\\s*=\\s*\"(\\d+)\"");
+
+    /** 部署前在 <process> 上记录绑定的数据表表单ID（已有/无 flowable 命名空间时不处理） */
+    private byte[] injectFormId(byte[] bpmnBytes, Long formId)
+    {
+        if (bpmnBytes == null || bpmnBytes.length == 0 || formId == null)
+        {
+            return bpmnBytes;
+        }
+        try
+        {
+            String xml = new String(bpmnBytes, StandardCharsets.UTF_8);
+            if (xml.contains("flowable:formId=") || !xml.contains("xmlns:flowable="))
+            {
+                return bpmnBytes;
+            }
+            java.util.regex.Matcher matcher = PROCESS_TAG_PATTERN.matcher(xml);
+            if (!matcher.find())
+            {
+                return bpmnBytes;
+            }
+            String hit = matcher.group(0);
+            String injected = "<process flowable:formId=\"" + formId + "\"" + hit.substring("<process".length());
+            String replaced = xml.substring(0, matcher.start()) + injected + xml.substring(matcher.end());
+            return replaced.getBytes(StandardCharsets.UTF_8);
+        }
+        catch (Exception e)
+        {
+            return bpmnBytes;
+        }
+    }
+
+    @Override
+    public Map<String, Object> checkDeployStructure(String modelId)
+    {
+        Model model = repositoryService.getModel(modelId);
+        if (model == null)
+        {
+            throw new ServiceException("流程模型不存在");
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(model.getKey())
+                .orderByProcessDefinitionVersion().desc()
+                .list();
+        result.put("deployed", !defs.isEmpty());
+        result.put("activeVersion", null);
+        result.put("structureChanged", false);
+        result.put("formChanged", false);
+        result.put("changes", new ArrayList<String>());
+        if (defs.isEmpty())
+        {
+            return result;
+        }
+        // 对比目标：当前活动版本（无活动标志时取最高版本）
+        ProcessDefinition target = defs.get(0);
+        for (ProcessDefinition def : defs)
+        {
+            FlowProcdefExt ext = flowProcdefExtMapper.selectFlowProcdefExtByProcdefId(def.getId());
+            if (ext != null && "1".equals(ext.getActiveFlag()) && !def.isSuspended())
+            {
+                target = def;
+                break;
+            }
+        }
+        result.put("activeVersion", target.getVersion());
+        TreeSet<String> current = fingerprintOfModel(model);
+        TreeSet<String> deployed = fingerprintOfDefinition(target);
+        java.util.Set<String> added = new TreeSet<>(current);
+        added.removeAll(deployed);
+        java.util.Set<String> removed = new TreeSet<>(deployed);
+        removed.removeAll(current);
+        boolean structureChanged = !added.isEmpty() || !removed.isEmpty();
+        result.put("structureChanged", structureChanged);
+        // 绑定数据表对比（部署时写入 flowable:formId 标记；历史版本无标记时不做判断）
+        Long currentFormId = parseMetaInfo(model.getMetaInfo()).getLong("formId");
+        Long deployedFormId = readDeployedFormId(target);
+        boolean formChanged = deployedFormId != null && !deployedFormId.equals(currentFormId);
+        result.put("formChanged", formChanged);
+        // 变更明细（节点名优先取当前模型，删除节点取已部署模型）
+        Map<String, String> currentNames = nodeNamesOfModel(model);
+        Map<String, String> deployedNames = nodeNamesOfDefinition(target);
+        List<String> changes = new ArrayList<>();
+        for (String fp : added)
+        {
+            changes.add(describeFingerprint(fp, "新增", currentNames));
+        }
+        for (String fp : removed)
+        {
+            changes.add(describeFingerprint(fp, "删除", deployedNames));
+        }
+        if (formChanged)
+        {
+            changes.add("更换绑定数据表（表单ID " + (deployedFormId == null ? "无" : deployedFormId) + " → "
+                    + (currentFormId == null ? "无" : currentFormId) + "）");
+        }
+        result.put("changes", changes);
+        return result;
+    }
+
+    private String describeFingerprint(String fp, String action, Map<String, String> names)
+    {
+        String[] parts = fp.split("\\|");
+        if (parts.length < 2)
+        {
+            return action + "：" + fp;
+        }
+        if ("N".equals(parts[0]))
+        {
+            String name = names.get(parts[1]);
+            return action + "节点：" + (name == null ? parts[1] : name);
+        }
+        return action + "流转线：" + parts[1];
+    }
+
+    private TreeSet<String> fingerprintOfModel(Model model)
+    {
+        byte[] xml = repositoryService.getModelEditorSource(model.getId());
+        if (xml == null || xml.length == 0)
+        {
+            return new TreeSet<>();
+        }
+        try
+        {
+            BpmnXMLConverter converter = new BpmnXMLConverter();
+            XMLStreamReader reader = javax.xml.stream.XMLInputFactory.newInstance()
+                    .createXMLStreamReader(new ByteArrayInputStream(xml));
+            return fingerprint(converter.convertToBpmnModel(reader));
+        }
+        catch (Exception e)
+        {
+            return new TreeSet<>();
+        }
+    }
+
+    private TreeSet<String> fingerprintOfDefinition(ProcessDefinition definition)
+    {
+        try
+        {
+            return fingerprint(repositoryService.getBpmnModel(definition.getId()));
+        }
+        catch (Exception e)
+        {
+            return new TreeSet<>();
+        }
+    }
+
+    private TreeSet<String> fingerprint(BpmnModel bpmnModel)
+    {
+        TreeSet<String> set = new TreeSet<>();
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            return set;
+        }
+        collectFingerprint(bpmnModel.getMainProcess().getFlowElements(), set);
+        return set;
+    }
+
+    private void collectFingerprint(java.util.Collection<FlowElement> elements, TreeSet<String> set)
+    {
+        if (elements == null)
+        {
+            return;
+        }
+        for (FlowElement el : elements)
+        {
+            if (el instanceof SequenceFlow)
+            {
+                SequenceFlow sf = (SequenceFlow) el;
+                set.add("F|" + sf.getSourceRef() + "->" + sf.getTargetRef());
+            }
+            else if (el instanceof FlowNode)
+            {
+                set.add("N|" + el.getId() + "|" + el.getClass().getSimpleName());
+                if (el instanceof org.flowable.bpmn.model.SubProcess)
+                {
+                    collectFingerprint(((org.flowable.bpmn.model.SubProcess) el).getFlowElements(), set);
+                }
+            }
+        }
+    }
+
+    private Map<String, String> nodeNamesOfModel(Model model)
+    {
+        byte[] xml = repositoryService.getModelEditorSource(model.getId());
+        if (xml == null || xml.length == 0)
+        {
+            return new java.util.HashMap<>();
+        }
+        try
+        {
+            BpmnXMLConverter converter = new BpmnXMLConverter();
+            XMLStreamReader reader = javax.xml.stream.XMLInputFactory.newInstance()
+                    .createXMLStreamReader(new ByteArrayInputStream(xml));
+            return nodeNames(converter.convertToBpmnModel(reader));
+        }
+        catch (Exception e)
+        {
+            return new java.util.HashMap<>();
+        }
+    }
+
+    private Map<String, String> nodeNamesOfDefinition(ProcessDefinition definition)
+    {
+        try
+        {
+            return nodeNames(repositoryService.getBpmnModel(definition.getId()));
+        }
+        catch (Exception e)
+        {
+            return new java.util.HashMap<>();
+        }
+    }
+
+    private Map<String, String> nodeNames(BpmnModel bpmnModel)
+    {
+        Map<String, String> names = new java.util.HashMap<>();
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            return names;
+        }
+        for (FlowElement el : bpmnModel.getMainProcess().getFlowElements())
+        {
+            if (el instanceof FlowNode)
+            {
+                names.put(el.getId(), StringUtils.isEmpty(el.getName()) ? el.getId() : el.getName());
+            }
+        }
+        return names;
+    }
+
+    private Long readDeployedFormId(ProcessDefinition definition)
+    {
+        try (java.io.InputStream in = repositoryService.getResourceAsStream(
+                definition.getDeploymentId(), definition.getResourceName()))
+        {
+            String xml = IOUtils.toString(in, StandardCharsets.UTF_8);
+            java.util.regex.Matcher matcher = FORM_ID_PATTERN.matcher(xml);
+            if (matcher.find())
+            {
+                return Long.valueOf(matcher.group(1));
+            }
+        }
+        catch (Exception ignored)
+        {
+            // 历史部署无标记或资源读取失败：不做数据表变更判断
+        }
+        return null;
     }
 }

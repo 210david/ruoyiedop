@@ -70,6 +70,9 @@
       <el-table-column label="小数位数" width="95" align="center">
         <template #default="scope"><el-input-number v-if="scope.row.dtype === 'float'" v-model="scope.row.scale" :min="1" :max="6" :controls="false" size="small" style="width:100%" /><span v-else style="color:#cbd5e1">—</span></template>
       </el-table-column>
+      <el-table-column label="必填" width="76" align="center">
+        <template #default="scope"><el-switch v-model="scope.row.required" size="small" :disabled="scope.row.sysField" /></template>
+      </el-table-column>
       <el-table-column label="填写提示" min-width="120" align="center"><template #default="scope"><el-input v-model="scope.row.placeholder" placeholder="如：请输入合同名称" size="small" /></template></el-table-column>
       <el-table-column label="显示顺序" width="100" align="center"><template #default="scope"><el-input-number v-model="scope.row.order" :min="1" :max="999" :controls="false" size="small" style="width:100%" /></template></el-table-column>
     </el-table>
@@ -253,7 +256,10 @@ import Sortable from 'sortablejs'
 
 const props = defineProps({
   /** 关联表单ID（切换后自动重新加载字段） */
-  formId: { type: [Number, String], default: null }
+  formId: { type: [Number, String], default: null },
+  /** 节点表单模式：使用传入的字段快照，保存时仅回传前端，不写表单管理 */
+  localMode: { type: Boolean, default: false },
+  localFields: { type: Array, default: null }
 })
 const emit = defineEmits(['saved'])
 
@@ -384,6 +390,14 @@ watch(() => activeFields.value.length, len => {
 
 /** 加载关联表单详情并解析字段 */
 async function loadFormFields() {
+  if (props.localMode) {
+    await loadUrgencyOptions()
+    formDetail.value = {}
+    fields.value = ensureSystemFields(normalizeFields(props.localFields || []))
+    rebuildDetailTables()
+    activeTableTab.value = 'main'
+    return
+  }
   if (!props.formId) {
     formDetail.value = {}
     fields.value = []
@@ -677,10 +691,10 @@ function removeDetailTable(name) {
 
 // ===== 保存字段设计（仅更新 fieldsJson，其余表单字段沿用原值） =====
 function saveFields() {
-  if (!props.formId) return
+  if (!props.localMode && !props.formId) return
   for (const f of fields.value) {
     if (!f.label || !f.field) { proxy.$modal.msgWarning('存在未填写完整（显示名/字段名）的字段'); return }
-    if (!/^[a-z][a-z0-9_]{0,39}$/.test(f.field)) { proxy.$modal.msgWarning('字段名[' + f.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
+    if (!f.sysField && !/^[a-z][a-z0-9_]{0,39}$/.test(f.field)) { proxy.$modal.msgWarning('字段名[' + f.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
     if (f.dtype === 'text' && (!f.length || f.length < 1)) { proxy.$modal.msgWarning('字段[' + f.label + ']请填写文本长度'); return }
   }
   const seen = {}
@@ -688,6 +702,12 @@ function saveFields() {
     const key = (f.table || 'main') + '.' + f.field
     if (seen[key]) { proxy.$modal.msgWarning('字段名[' + f.field + ']在' + (f.table === 'main' || !f.table ? '主表' : '明细表 ' + f.table + ' ') + '中重复出现，请修改后再保存'); return }
     seen[key] = f.label
+  }
+  const out = fields.value.map(({ rowKey, ...rest }) => rest)
+  if (props.localMode) {
+    emit('saved', out)
+    proxy.$modal.msgSuccess('字段设计已保存到当前节点，点「保存」写入流程')
+    return
   }
   saving.value = true
   updateForm({

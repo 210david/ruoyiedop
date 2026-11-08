@@ -18,9 +18,12 @@ import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.FlowForm;
+import com.ruoyi.flowable.domain.FlowNodeForm;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
 import com.ruoyi.flowable.service.IFlowProcessService;
 import com.ruoyi.flowable.service.IFlowFormService;
+import com.ruoyi.flowable.service.IFlowNodeFormService;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
@@ -44,6 +47,9 @@ public class FlowTaskController extends BaseController
 
     @Autowired
     private IFlowFormService flowFormService;
+
+    @Autowired
+    private IFlowNodeFormService flowNodeFormService;
 
     @Autowired
     private TaskService taskService;
@@ -143,12 +149,25 @@ public class FlowTaskController extends BaseController
         // 绑定表单 + 流程变量当前值
         ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
                 .processDefinitionId(task.getProcessDefinitionId()).singleResult();
+        // 优先：当前节点模板（节点表单设计落库，必填/只读修改实时生效，无需重新部署）
+        FlowNodeForm nodeForm = pd == null ? null
+                : flowNodeFormService.selectByModelKeyAndNodeId(pd.getKey(), task.getTaskDefinitionKey());
         FlowForm form = pd == null ? null : flowFormService.selectFlowFormByProcessKey(pd.getKey());
         java.util.Map<String, Object> variables = taskService.getVariables(taskId);
         com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
         data.put("fieldPerms", permJson);
-        data.put("fieldsJson", form == null ? "" : (form.getFieldsJson() == null ? "" : form.getFieldsJson()));
-        data.put("layoutJson", form == null ? "" : (form.getLayoutJson() == null ? "" : form.getLayoutJson()));
+        if (nodeForm != null && StringUtils.isNotEmpty(nodeForm.getFieldsJson()))
+        {
+            data.put("fieldsJson", nodeForm.getFieldsJson());
+            data.put("layoutJson", nodeForm.getLayoutJson() == null ? "" : nodeForm.getLayoutJson());
+            data.put("nodeForm", true);
+            data.put("nodeFormName", nodeForm.getFormName());
+        }
+        else
+        {
+            data.put("fieldsJson", form == null ? "" : (form.getFieldsJson() == null ? "" : form.getFieldsJson()));
+            data.put("layoutJson", form == null ? "" : (form.getLayoutJson() == null ? "" : form.getLayoutJson()));
+        }
         data.put("variables", variables == null ? new java.util.HashMap<>() : variables);
         return AjaxResult.success(data);
     }

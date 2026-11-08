@@ -18,7 +18,10 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.flowable.domain.FlowForm;
+import com.ruoyi.flowable.domain.FlowNodeForm;
 import com.ruoyi.flowable.service.IFlowFormService;
+import com.ruoyi.flowable.service.IFlowNodeFormService;
+import com.ruoyi.common.utils.StringUtils;
 
 /**
  * 流程表单 Controller（建模引擎：表单设计/数据表生成/表单发起）
@@ -31,6 +34,9 @@ public class FlowFormController extends BaseController
 {
     @Autowired
     private IFlowFormService flowFormService;
+
+    @Autowired
+    private IFlowNodeFormService flowNodeFormService;
 
     /**
      * 查询表单列表
@@ -59,6 +65,21 @@ public class FlowFormController extends BaseController
     @GetMapping("/byProcess/{processKey}")
     public AjaxResult byProcess(@PathVariable("processKey") String processKey)
     {
+        // 优先：发起节点模板（节点表单设计落库，字段/必填/只读修改无需重新部署流程）
+        FlowNodeForm nodeForm = flowNodeFormService.selectStartByModelKey(processKey);
+        if (nodeForm != null && StringUtils.isNotEmpty(nodeForm.getFieldsJson()))
+        {
+            FlowForm bound = flowFormService.selectFlowFormByProcessKey(processKey);
+            com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
+            data.put("formId", bound == null ? null : bound.getFormId());
+            data.put("formKey", nodeForm.getFormKey() != null ? nodeForm.getFormKey() : (bound == null ? null : bound.getFormKey()));
+            data.put("formName", StringUtils.isNotEmpty(nodeForm.getFormName()) ? nodeForm.getFormName() : (bound == null ? null : bound.getFormName()));
+            data.put("tableName", bound == null ? null : bound.getTableName());
+            data.put("fieldsJson", nodeForm.getFieldsJson());
+            data.put("layoutJson", nodeForm.getLayoutJson());
+            data.put("nodeForm", true);
+            return success(data);
+        }
         return success(flowFormService.selectFlowFormByProcessKey(processKey));
     }
 

@@ -1536,7 +1536,7 @@ function submitForm(keepOpen) {
   if (!/^[a-z0-9][a-z0-9_]{0,39}$/.test(form.value.formKey)) { proxy.$modal.msgWarning('表单Key仅允许小写字母/数字开头的字母、数字、下划线'); return }
   for (const f of fields.value) {
     if (!f.label || !f.field) { proxy.$modal.msgWarning('存在未填写完整（显示名/字段名）的字段'); return }
-    if (!/^[a-z][a-z0-9_]{0,39}$/.test(f.field)) { proxy.$modal.msgWarning('字段名[' + f.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
+    if (!f.sysField && !/^[a-z][a-z0-9_]{0,39}$/.test(f.field)) { proxy.$modal.msgWarning('字段名[' + f.field + ']不合法：小写字母开头的字母/数字/下划线'); return }
     if (f.dtype === 'text' && (!f.length || f.length < 1)) { proxy.$modal.msgWarning('字段[' + f.label + ']请填写文本长度'); return }
   }
   // 同一张表内数据库字段名不得重复（主表与明细表为独立物理表，跨表允许同名）

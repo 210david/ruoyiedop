@@ -4,14 +4,25 @@
       <div class="wm-pp-row"><span class="k">模板名称</span><span class="v">{{ formName || '未命名表单' }}</span></div>
       <div class="wm-pp-row"><span class="k">表　　单</span><span class="v">{{ formName || '—' }}（{{ formKey || '—' }}）</span></div>
     </div>
+    <!-- 当前选中单元格提示：始终可见，明确“点击字段即绑定到该格” -->
+    <div class="wm-pp-cur" :class="{ on: !!activeCell }">
+      <span class="dot"></span>
+      <template v-if="activeCell">
+        <span class="cur-pos">{{ posLabel || '已选中单元格' }}</span>
+        <span class="cur-tip">点击下方“字段”即绑定到此格</span>
+      </template>
+      <template v-else>
+        <span class="cur-tip">未选中单元格：点击“字段”自动放置到空白区域</span>
+      </template>
+    </div>
     <el-tabs v-model="tab" class="wm-pp-tabs">
-      <el-tab-pane label="主表字段" name="fields">
+      <el-tab-pane label="字段列表" name="fields">
         <div class="wm-pp-search">
           <el-input v-model="kw" size="small" placeholder="搜索字段" clearable @input="kw = $event">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
         </div>
-        <div class="wm-pp-hint">标签和字段完全独立：拖入“字段”只放字段控件，需要标签时再拖“标签”。已添加项不能重复添加，删除后恢复。</div>
+        <div class="wm-pp-hint">点击“字段”绑定到当前选中单元格（也可拖到画布）；标签用于插入字段名文本，两者独立，已添加项不可重复添加。</div>
         <div class="wm-pp-table">
           <div class="wm-pp-tr wm-pp-th"><span>标签</span><span>字段</span></div>
           <div class="wm-pp-scroll">
@@ -35,9 +46,13 @@
         <div class="wm-pp-empty">流转意见按流程节点展示，属于 P2 阶段能力</div>
       </el-tab-pane>
     </el-tabs>
-    <div class="wm-pp-sec">
-      <div class="wm-pp-title">单元格属性</div>
-      <template v-if="activeCell">
+    <el-collapse v-model="openAttr" class="wm-pp-attr">
+      <el-collapse-item name="attr">
+        <template #title>
+          <span class="wm-pp-title">单元格属性</span>
+          <span class="wm-pp-title-sub">{{ activeCell ? (posLabel || '已选中') : '未选中单元格' }}</span>
+        </template>
+        <template v-if="activeCell">
         <div class="wm-pp-prop">
           <label>内容类型</label>
           <el-select v-model="typeModel" size="small" @change="v => $emit('patch', { type: v, ...(v === 'text' ? { field: undefined } : { text: '' }) })">
@@ -89,9 +104,10 @@
             </el-select>
           </div>
         </div>
-      </template>
-      <div v-else class="wm-pp-empty">点击画布单元格后在此设置属性</div>
-    </div>
+        </template>
+        <div v-else class="wm-pp-empty">点击画布单元格后在此设置属性</div>
+      </el-collapse-item>
+    </el-collapse>
     <div class="wm-pp-sec" v-if="fieldDef">
       <div class="wm-pp-title">字段信息</div>
       <div class="wm-pp-row"><span class="k">显示名</span><span class="v">{{ fieldDef.label }}</span></div>
@@ -114,6 +130,7 @@ const props = defineProps({
   placed: { type: Object, default: () => new Set() },
   placedLabels: { type: Object, default: () => new Set() },
   activeCell: { type: Object, default: null },
+  posLabel: { type: String, default: '' },
   fieldDefs: { type: Object, default: () => ({}) }
 })
 const emit = defineEmits(['bind', 'insert-label', 'clear-bind', 'pick', 'patch', 'set', 'toggle'])
@@ -129,6 +146,8 @@ function onPickLabel(f) { if (!props.placedLabels.has(f.field)) emit('insert-lab
 function onPickField(f) { if (!props.placed.has(f.field)) emit('bind', f.field) }
 
 const tab = ref('fields')
+/** 单元格属性默认收起：右侧以字段列表为主，避免选中单元格后属性区把字段列表顶出可视区 */
+const openAttr = ref([])
 const kw = ref('')
 /** 字段搜索过滤（标签/字段名匹配） */
 const filteredFields = computed(() => {
@@ -172,6 +191,18 @@ function formLabel(k) { return FORM_LABELS[k] || k || '—' }
 .wm-pp-row .k { width: 62px; flex: none; color: #94a3b8; }
 .wm-pp-row .v { flex: 1; color: #0f172a; word-break: break-all; }
 .wm-pp-tabs { padding: 0 6px; }
+/* 选中单元格状态条：保证“字段列表→点击字段绑定到单元格”的入口始终可见 */
+.wm-pp-cur { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 8px 10px 0; padding: 5px 8px; border-radius: 4px; background: #f8fafc; border: 1px solid #e8edf5; font-size: 11px; color: #94a3b8; }
+.wm-pp-cur .dot { width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; flex: none; }
+.wm-pp-cur.on { background: #eff4ff; border-color: #c7d6ff; color: #4b5aa5; }
+.wm-pp-cur.on .dot { background: #2F3C8E; }
+.wm-pp-cur .cur-pos { font-weight: 600; color: #2F3C8E; }
+/* 单元格属性折叠区：默认收起，不抢占字段列表空间 */
+.wm-pp-attr { margin: 6px 10px 0; border-top: 1px solid #f1f5f9; }
+.wm-pp-attr :deep(.el-collapse-item__header) { height: 30px; line-height: 30px; border-bottom: 0; font-size: 12px; }
+.wm-pp-attr :deep(.el-collapse-item__wrap) { border-bottom: 0; }
+.wm-pp-attr :deep(.el-collapse-item__content) { padding: 6px 0 2px; }
+.wm-pp-title-sub { font-size: 11px; font-weight: 400; color: #94a3b8; margin-left: 6px; }
 /* 泛微式两列字段清单：标签 | 字段，表头 + 搜索框 */
 .wm-pp-search { padding: 6px 2px 4px; }
 .wm-pp-hint { margin: 0 2px 6px; padding: 6px 8px; border-radius: 4px; background: #f0f4ff; color: #6470a8; font-size: 11px; line-height: 1.5; }

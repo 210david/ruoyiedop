@@ -29,6 +29,11 @@ export function deployModel(modelId, mode, remark, setActive) {
   })
 }
 
+// 部署前结构对比（结构未变无需存为新版本）
+export function deployCheckModel(modelId) {
+  return request({ url: '/flowable/model/deployCheck/' + modelId, method: 'get' })
+}
+
 // ===== 流程定义 =====
 export function listDefinition(query) {
   return request({ url: '/flowable/definition/list', method: 'get', params: query })

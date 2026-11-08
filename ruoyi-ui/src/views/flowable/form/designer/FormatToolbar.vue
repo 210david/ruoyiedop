@@ -20,7 +20,7 @@
         <span class="bg-glyph" :style="{ background: styleObj?.bg || '#fff' }"></span>
         <el-color-picker :model-value="styleObj?.bg || ''" size="small" :disabled="!hasSel" @update:model-value="v => emitSet('bg', v || '')" />
       </span>
-      <button class="wm-btn" :class="{ on: painter }" :disabled="!hasSel" @click="$emit('painter')" title="格式刷：吸取当前样式，点击目标格应用"><WmIcon name="painter" /></button>
+      <button class="wm-btn" :class="{ on: painter }" :disabled="!hasSel && !painter" @click="$emit('painter')" title="格式刷：吸取当前样式，点击目标格应用"><WmIcon name="painter" /></button>
     </div>
     <div class="wm-g" title="对齐">
       <button v-for="a in ['left', 'center', 'right']" :key="a" class="wm-btn" :class="{ on: styleObj?.align === a }" :disabled="!hasSel" @click="$emit('align', a)" :title="alignTitle[a]"><WmIcon :name="'align-' + a" /></button>

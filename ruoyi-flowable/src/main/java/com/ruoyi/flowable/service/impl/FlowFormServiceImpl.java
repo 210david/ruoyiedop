@@ -630,7 +630,9 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 throw new ServiceException("第" + (i + 1) + "个字段缺少字段名或显示名");
             }
-            if (!f.getString("field").matches("^[a-z][a-z0-9_]{0,39}$"))
+            // 系统内置字段（title/urgency/signOpinion/printCount/procStatus）由平台定义，不参与命名校验
+            if (!f.getBooleanValue(FlowSystemFields.SYS_FIELD_FLAG)
+                    && !f.getString("field").matches("^[a-z][a-z0-9_]{0,39}$"))
             {
                 throw new ServiceException("字段名[" + f.getString("field")
                         + "]不合法：仅允许小写字母开头的字母/数字/下划线");

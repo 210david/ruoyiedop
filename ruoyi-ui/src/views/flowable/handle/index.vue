@@ -52,7 +52,7 @@
           <div class="rd-card-body" style="display:block">
             <!-- 与「流程发起」页一致：按表单设计器布局（网格布局）渲染后台 HTML 表单；无布局时回退字段列表 -->
             <div class="hd-form-wrap">
-              <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="formData" />
+              <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="formData" :editable="nodeFormMode" />
               <el-form v-else :model="formData" label-width="130px" size="default" class="hd-form">
                 <el-row :gutter="0">
                   <el-col v-for="f in visibleFields" :key="f.field" :span="columnSpan(f)">
@@ -214,8 +214,10 @@ const comment = ref('')
 const formFields = ref([])
 const formData = ref({})
 
+/** 当前节点使用节点表单模板（字段编辑/只读由模板网格属性控制，实时生效） */
+const nodeFormMode = ref(false)
 const visibleFields = computed(() => formFields.value.filter(f => f._perm !== 'hidden'))
-const hasEditFields = computed(() => formFields.value.some(f => f._perm === 'edit'))
+const hasEditFields = computed(() => nodeFormMode.value || formFields.value.some(f => f._perm === 'edit'))
 function displayValue(v) { return handleDisplayValue(v) }
 
 /** 表单设计器布局（grid 模式 → 与「流程发起」页同一渲染口径，展示后台 HTML 表单） */
@@ -271,6 +273,7 @@ async function loadTaskForm() {
     let fields = []
     try { fields = JSON.parse(d.fieldsJson || '[]') || [] } catch (e) {}
     const variables = d.variables || {}
+    nodeFormMode.value = !!d.nodeForm
     formFields.value = fields.map(f => normalizeHandleField(f, perms[f.field] || 'readonly'))
     const data = {}
     for (const f of formFields.value) data[f.field] = variables[f.field]
@@ -282,6 +285,7 @@ async function loadTaskForm() {
     formFields.value = []
     formData.value = {}
     gridLayout.value = null
+    nodeFormMode.value = false
   } finally {
     loading.value = false
   }

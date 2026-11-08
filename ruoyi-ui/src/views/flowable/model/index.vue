@@ -166,10 +166,28 @@
     <form-picker ref="formPickerRef" title="选择流程表单" @confirm="onFormPickerConfirm" />
 
     <!-- ===== 部署方式弹窗（泛微式：存为新版 / 覆盖当前版本） ===== -->
-    <el-dialog v-model="deployOpen" width="520px" append-to-body draggable class="rd-dialog" title="部署流程模型" :close-on-click-modal="false">
+    <el-dialog v-model="deployOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><Document /></el-icon></div>
+          <span class="rd-detail-header-title">部署流程模型</span>
+        </div>
+      </template>
       <el-form label-width="100px">
         <el-form-item label="模型名称">
           <span class="badge blue"><span class="dot"></span>{{ deployRow?.modelName || '—' }}</span>
+        </el-form-item>
+        <el-form-item label="结构对比" v-if="deployCheck">
+          <div class="deploy-check">
+            <el-alert v-if="!deployCheck.deployed" type="info" :closable="false" show-icon
+              title="首次部署：将创建该流程的第 1 个版本" />
+            <el-alert v-else-if="!deployCheck.structureChanged && !deployCheck.formChanged" type="success" :closable="false" show-icon
+              title="流程结构未变更（仅表单字段/必填/只读/名称调整）" description="节点表单已实时生效，运行中流程无需重新部署；如需刷新流程名称等可继续部署" />
+            <el-alert v-else type="warning" :closable="false" show-icon
+              title="流程结构已变更，建议存为新版本（运行中流程继续按原版本走完）">
+              <div v-for="(c, i) in deployCheck.changes" :key="i" class="deploy-change-item">· {{ c }}</div>
+            </el-alert>
+          </div>
         </el-form-item>
         <el-form-item label="部署方式">
           <el-radio-group v-model="deployMode">
@@ -422,61 +440,32 @@
               <el-tag size="small" effect="plain" style="margin-left:8px">{{ selectedElement.type.replace('bpmn:', '') }}</el-tag>
             </div>
             <el-form label-width="86px" size="small" class="props-form">
-              <el-form-item label="节点ID">
-                <el-input v-model="selectedElement.id" disabled />
-              </el-form-item>
               <el-form-item :label="selectedElement.isSequenceFlow ? '连线名称' : '节点名称'">
                 <el-input v-model="selectedElement.name" :placeholder="selectedElement.isSequenceFlow ? '如：3天以上' : '如：部门经理审批'" @change="updateElementProp('name', selectedElement.name)" />
               </el-form-item>
 
-              <!-- 用户任务属性 -->
-              <template v-if="selectedElement.isUserTask">
-                <el-form-item label="处理方式">
-                  <el-radio-group v-model="selectedElement.handleMode" size="small" @change="onHandleModeChange">
-                    <el-radio-button value="assign">指定</el-radio-button>
-                    <el-radio-button value="candidate">候选</el-radio-button>
-                  </el-radio-group>
-                  <div class="props-tip">指定：直接落到具体人员；候选：进入候选池，可由候选人认领办理</div>
-                </el-form-item>
-                <el-form-item label="办理方式">
-                  <el-radio-group v-model="selectedElement.performMode" size="small" @change="persistParticipantConfig">
-                    <el-radio-button value="and">会签</el-radio-button>
-                    <el-radio-button value="seq">串签</el-radio-button>
-                    <el-radio-button value="claim">抢占</el-radio-button>
-                  </el-radio-group>
-                  <div class="props-tip">会签：多人并行办理；串签：按顺序依次办理；抢占：任一人办理即通过</div>
-                </el-form-item>
-                <el-form-item label="参与者模式">
-                  <el-radio-group v-model="selectedElement.participantMode" size="small" @change="persistParticipantConfig">
-                    <el-radio-button value="single">单选</el-radio-button>
-                    <el-radio-button value="multi">多选</el-radio-button>
-                  </el-radio-group>
-                </el-form-item>
-                <el-form-item label="参与者">
-                  <div class="pc-tags">
-                    <el-tag v-for="(p, i) in participantTags" :key="i" size="small" closable @close="removeParticipant(i)">{{ p.name }}</el-tag>
-                    <span v-if="!participantTags.length" class="pc-empty">未设置</span>
-                    <el-button class="pc-add" size="small" type="primary" plain @click="openParticipantPicker">…</el-button>
+              <!-- 可设置节点（申请节点 / 用户任务 / 结束节点）：泛微式节点信息行（操作人员 / 表单内容 / 操作菜单） -->
+              <template v-if="isConfigurableNode(selectedElement)">
+                <el-form-item label="操作人员">
+                  <div class="props-link-row">
+                    <el-button link type="primary" class="props-link" :title="participantSummaryText" @click="openParticipantPicker">{{ participantSummaryText }}</el-button>
+                    <el-button link type="primary" icon="Setting" class="props-link-gear" title="设置操作人员" @click="openParticipantPicker" />
                   </div>
-                  <div class="props-tip">支持流程发起人、上一活动办理人、组织/用户/岗位等灵活关系</div>
+                  <div class="props-tip">{{ selectedElement.isStart ? '申请节点默认由流程发起人办理，可在此改为指定人员/组织角色/表单字段' : '支持流程发起人、上一活动办理人、组织/用户/岗位、表单字段' }}</div>
                 </el-form-item>
-                <el-form-item label="表单Key">
-                  <el-input v-model="selectedElement.formKey" placeholder="关联业务表单Key（可选）" @change="updateFormKey" />
-                  <div class="props-tip">原型能力：任务办理页可按此 Key 加载业务表单</div>
+                <el-form-item label="表单内容">
+                  <div class="props-link-row">
+                    <el-button link type="primary" class="props-link" :title="nodeFormText(selectedElement)" @click="openNodeForm(selectedElement)">{{ nodeFormText(selectedElement) }}</el-button>
+                    <el-button link type="primary" icon="Setting" class="props-link-gear" title="配置节点表单" @click="openNodeForm(selectedElement)" />
+                  </div>
+                  <div class="props-tip">每个节点可设置独立表单、表单样式与字段必填</div>
                 </el-form-item>
-                <el-form-item label="字段权限">
-                  <el-button size="small" style="width:100%" @click="openFieldPerms">配置本节点字段权限</el-button>
-                  <div class="props-tip">{{ fieldPermsSummary }}</div>
-                </el-form-item>
-              </template>
-
-              <!-- 分支语义（业务语义层）：审批节点的出口/入口数即分支起点/合并点，不写回 XML -->
-              <template v-if="selectedElement.isUserTask || selectedElement.isBranchNode">
-                <el-form-item label="分支语义">
-                  <el-select v-model="selectedElement.branchRole" style="width:100%" @change="updateBranchRole">
-                    <el-option v-for="r in BRANCH_ROLES" :key="r.value" :label="r.label" :value="r.value" />
-                  </el-select>
-                  <div class="props-tip">{{ branchRoleTip }}</div>
+                <el-form-item v-if="!selectedElement.isEnd" label="操作菜单">
+                  <div class="props-link-row">
+                    <el-button link type="primary" class="props-link" :title="nodeOpMenuText(selectedElement)" @click="openNodeOpMenu(selectedElement)">{{ nodeOpMenuText(selectedElement) }}</el-button>
+                    <el-button link type="primary" icon="Setting" class="props-link-gear" title="配置操作菜单" @click="openNodeOpMenu(selectedElement)" />
+                  </div>
+                  <div class="props-tip">勾选该节点办理页显示的操作按钮</div>
                 </el-form-item>
               </template>
 
@@ -506,9 +495,40 @@
         </div>
         </div>
         </div>
-        <!-- 设置参与人：活动用户 / 组织用户 / 表单字段三种关系对象 -->
-        <el-dialog v-model="participantOpen" title="设置参与人" width="620px" append-to-body destroy-on-close>
-          <el-form label-width="96px" size="small">
+        <!-- 设置操作人员：处理方式 + 办理方式 + 参与者模式 + 关系对象 -->
+        <el-dialog v-model="participantOpen" width="860px" append-to-body draggable class="rd-dialog" destroy-on-close :close-on-click-modal="false">
+          <template #header>
+            <div class="rd-detail-header">
+              <div class="rd-detail-header-icon"><el-icon><User /></el-icon></div>
+              <span class="rd-detail-header-title">设置操作人员</span>
+              <div class="rd-detail-header-sub" v-if="selectedElement">
+                <div class="rd-detail-header-divider"></div>
+                <span class="rd-detail-header-no">{{ selectedElement.name || '当前节点' }}</span>
+              </div>
+            </div>
+          </template>
+          <el-form v-if="selectedElement" label-width="96px" size="small">
+            <el-form-item label="处理方式">
+              <el-radio-group v-model="selectedElement.handleMode" size="small" @change="onHandleModeChange">
+                <el-radio-button value="assign">指定</el-radio-button>
+                <el-radio-button value="candidate">候选</el-radio-button>
+              </el-radio-group>
+              <div class="props-tip">指定：直接落到具体人员；候选：进入候选池，可由候选人认领办理</div>
+            </el-form-item>
+            <el-form-item v-if="selectedElement.isUserTask" label="办理方式">
+              <el-radio-group v-model="selectedElement.performMode" size="small" @change="persistParticipantConfig">
+                <el-radio-button value="and">会签</el-radio-button>
+                <el-radio-button value="seq">串签</el-radio-button>
+                <el-radio-button value="claim">抢占</el-radio-button>
+              </el-radio-group>
+              <div class="props-tip">会签：多人并行办理；串签：按顺序依次办理；抢占：任一人办理即通过</div>
+            </el-form-item>
+            <el-form-item label="参与者模式">
+              <el-radio-group v-model="selectedElement.participantMode" size="small" @change="persistParticipantConfig">
+                <el-radio-button value="single">单选</el-radio-button>
+                <el-radio-button value="multi">多选</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
             <el-form-item label="关系对象">
               <el-radio-group v-model="participantDraft.relMode" @change="onParticipantRelModeChange">
                 <el-radio value="activity">活动用户</el-radio>
@@ -598,7 +618,7 @@
               </el-table-column>
               <el-table-column label="操作者（办理人）" min-width="180" align="center">
                 <template #default="scope">
-                  <el-select v-if="scope.row.isUserTask" v-model="scope.row.assignee" placeholder="未设置" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeAssignee(scope.row)">
+                  <el-select v-if="isConfigurableNode(scope.row)" v-model="scope.row.assignee" placeholder="未设置" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeAssignee(scope.row)">
                     <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="String(u.userId)" />
                   </el-select>
                   <span v-else style="color:#cbd5e1">—</span>
@@ -609,7 +629,8 @@
                   <el-select v-if="scope.row.isUserTask" v-model="scope.row.formKey" placeholder="Html模式" clearable filterable allow-create size="small" style="width:100%" @change="updateNodeFormKey(scope.row)">
                     <el-option v-for="f in formOptions" :key="f.formId" :label="f.formName" :value="String(f.formId)" />
                   </el-select>
-                  <span v-else style="color:#cbd5e1">Html模式</span>
+                  <span v-else-if="isConfigurableNode(scope.row)" style="color:#64748b">{{ nodeFormText(scope.row) }}</span>
+                  <span v-else style="color:#cbd5e1">—</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -669,7 +690,13 @@
     </el-dialog>
 
     <!-- 新增节点弹框（编辑页面：在选中节点后追加） -->
-    <el-dialog v-model="addNodeOpen" width="440px" append-to-body draggable class="rd-dialog" title="新增节点" :close-on-click-modal="false">
+    <el-dialog v-model="addNodeOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><Pointer /></el-icon></div>
+          <span class="rd-detail-header-title">新增节点</span>
+        </div>
+      </template>
       <el-form label-width="90px" size="small">
         <el-form-item label="节点类型">
           <el-select v-model="addNodeForm.type" style="width:100%">
@@ -692,7 +719,13 @@
     </el-dialog>
 
     <!-- 新增出口弹框（编辑页面：来源→目标连线） -->
-    <el-dialog v-model="addLineOpen" width="440px" append-to-body draggable class="rd-dialog" title="新增出口" :close-on-click-modal="false">
+    <el-dialog v-model="addLineOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><ArrowDown /></el-icon></div>
+          <span class="rd-detail-header-title">新增出口</span>
+        </div>
+      </template>
       <el-form label-width="90px" size="small">
         <el-form-item label="来源节点">
           <el-select v-model="addLineForm.sourceId" filterable placeholder="选择来源节点" style="width:100%">
@@ -709,6 +742,134 @@
       <template #footer>
         <el-button type="primary" @click="confirmAddLine">确 定</el-button>
         <el-button @click="addLineOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 节点表单配置弹窗（泛微式：每个节点可单独指定/设计表单） ===== -->
+    <el-dialog v-model="nodeFormOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><Document /></el-icon></div>
+          <span class="rd-detail-header-title">节点表单：{{ nodeFormDraft.nodeName }}</span>
+        </div>
+      </template>
+      <el-form label-width="96px" size="small">
+        <el-form-item label="节点表单">
+          <div class="node-form-row">
+            <el-input :model-value="nodeFormDraft.formId ? nodeFormName : ('流程表单：' + (flowFormName || '未关联'))" readonly
+              class="node-form-pick" placeholder="点击选择表单" title="点击选择表单" @click="openNodeFormPicker">
+              <template #suffix>
+                <el-icon v-if="nodeFormDraft.formId" class="node-form-rename" title="修改模板名称" @click.stop="renameNodeForm"><EditPen /></el-icon>
+              </template>
+            </el-input>
+            <el-button :icon="Plus" @click="createNodeForm">新增</el-button>
+          </div>
+          <div class="props-tip">
+            <template v-if="nodeFormDraft.isNodeForm">当前为节点独立表单，仅作用于本节点；可继续在「表单设计」调整样式与必填</template>
+            <template v-else>未设置时使用数据表默认表单；点击名称可引用默认表单或其他节点已设置的表单，或点「新增」创建本节点表单</template>
+          </div>
+          <el-button v-if="nodeFormDraft.formId" link type="primary" class="node-form-reset" @click="useFlowForm">恢复使用流程表单</el-button>
+        </el-form-item>
+        <el-form-item label="表单设计">
+          <el-button size="small" type="primary" plain :icon="EditPen" :disabled="!nodeDesignFormId && !nodeFormDraft.isNodeForm" @click="openNodeFormDesigner">打开表单设计</el-button>
+          <div class="props-tip">在「页面设计」调整表单样式，在「编辑字段」设置字段必填/非必填</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" @click="saveNodeForm">确 定</el-button>
+        <el-button @click="nodeFormOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 选择节点表单：本流程流程表单 + 其他节点已设置的表单 -->
+    <el-dialog v-model="nodeFormPickOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><Document /></el-icon></div>
+          <span class="rd-detail-header-title">选择节点表单</span>
+        </div>
+      </template>
+      <div class="node-form-pick">
+        <div class="node-form-pick-search">
+          <el-input v-model="nodeFormPickKeyword" placeholder="表单名称" clearable size="small" style="width: 220px">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+        </div>
+        <el-empty v-if="!filteredNodeFormOptions.length" :description="nodeFormPickKeyword ? '未找到匹配的表单' : '暂无可引用的表单'" :image-size="72" />
+        <el-table v-else :data="filteredNodeFormOptions" height="300" size="small" highlight-current-row
+          @row-click="row => (nodeFormPickId = row.key)"
+          @row-dblclick="row => { nodeFormPickId = row.key; confirmNodeFormPick() }">
+          <el-table-column width="45" align="center">
+            <template #default="{ row }">
+              <el-radio :model-value="nodeFormPickId" :value="row.key" @click.stop="nodeFormPickId = row.key"><span /></el-radio>
+            </template>
+          </el-table-column>
+          <el-table-column label="表单名称" prop="formName" min-width="220" show-overflow-tooltip />
+          <el-table-column label="来源" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.fromNodeNames.length ? '节点：' + row.fromNodeNames.join('、') : '数据表默认表单' }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <el-button @click="nodeFormPickOpen = false">取 消</el-button>
+        <el-button type="primary" :disabled="!nodeFormPickId" @click="confirmNodeFormPick">确 定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 节点表单设计：复用表单管理的设计工具（编辑字段 + 页面设计） -->
+    <el-dialog v-model="nodeFormDesignOpen" width="1080px" :fullscreen="nodeDesignFullscreen" append-to-body draggable class="rd-dialog node-design-dialog" :close-on-click-modal="false" destroy-on-close>
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><EditPen /></el-icon></div>
+          <span class="rd-detail-header-title">节点表单设计：{{ nodeDesignForm.formName || '未选择表单' }}</span>
+        </div>
+      </template>
+      <div v-loading="nodeDesignLoading" class="node-form-design-wrap" :class="{ 'is-fullscreen': nodeDesignFullscreen }">
+        <el-empty v-if="!nodeDesignFormId" description="请先选择节点表单" :image-size="72" />
+        <template v-else>
+          <div class="node-design-name">
+            <span class="node-design-name-label">节点模板名称</span>
+            <el-input v-model="nodeDesignForm.formName" size="small" maxlength="50" placeholder="请输入模板名称" style="width: 280px" />
+            <el-button size="small" type="primary" :loading="nodeDesignNameSaving" @click="saveNodeDesignAll">保存</el-button>
+            <el-button size="small" @click="nodeFormDesignOpen = false">关闭</el-button>
+          </div>
+          <el-tabs v-model="nodeDesignTab" class="node-design-tabs">
+            <el-tab-pane label="编辑字段" name="fields">
+              <FormFieldsEditor v-if="nodeDesignTab === 'fields' && (nodeDesignForm.formId || nodeDesignForm.isNodeForm)" :form-id="nodeDesignForm.formId"
+                :local-mode="nodeDesignForm.isNodeForm" :local-fields="nodeDesignForm.fields" @saved="onNodeFieldsSaved" />
+            </el-tab-pane>
+            <el-tab-pane label="页面设计" name="layout">
+              <div class="layout-mode-bar">
+                <span class="field-tip">当前模式：Excel 网格（泛微式），深蓝菜单栏 / 格式工具条 / 行列合并 / 单元格样式，操作见右上"帮助"</span>
+              </div>
+              <ExcelGridDesigner v-if="nodeDesignTab === 'layout' && nodeDesignForm.grid"
+                :model-value="nodeDesignForm.grid" :fields="nodeDesignForm.fields"
+                :form="{ formName: nodeDesignForm.formName, formKey: nodeDesignForm.formKey }"
+                :active="nodeFormDesignOpen && nodeDesignTab === 'layout'" :fullscreen="nodeDesignFullscreen"
+                @update:model-value="v => (nodeDesignForm.grid = v)" @save="saveNodeDesignGrid"
+                @toggle-fullscreen="nodeDesignFullscreen = !nodeDesignFullscreen" />
+            </el-tab-pane>
+          </el-tabs>
+        </template>
+      </div>
+    </el-dialog>
+
+    <!-- ===== 节点操作菜单配置弹窗（勾选节点办理页显示的操作按钮） ===== -->
+    <el-dialog v-model="opMenuOpen" width="560px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon><Setting /></el-icon></div>
+          <span class="rd-detail-header-title">操作菜单：{{ opMenuDraft.nodeName }}</span>
+        </div>
+      </template>
+      <div class="props-tip" style="margin-bottom:10px">勾选该节点办理页显示的操作菜单按钮</div>
+      <el-checkbox-group v-model="opMenuDraft.items" class="op-menu-group">
+        <el-checkbox v-for="m in OP_MENU_OPTIONS" :key="m.value" :value="m.value">{{ m.label }}</el-checkbox>
+      </el-checkbox-group>
+      <template #footer>
+        <el-button size="small" @click="resetOpMenuDefault">恢复默认</el-button>
+        <el-button size="small" @click="opMenuOpen = false">取 消</el-button>
+        <el-button size="small" type="primary" @click="saveNodeOpMenu">确 定</el-button>
       </template>
     </el-dialog>
 
@@ -884,16 +1045,20 @@
 
 <script setup name="FlowModel">
 import { listModel, getModel, addModel, updateModel, delModel, deployModel, listDefinition, updateDefinitionRemark, setActiveDefinition, changeDefinitionState } from '@/api/flowable/flow'
-import { allForms } from '@/api/flowable/form'
+import { allForms, getForm } from '@/api/flowable/form'
 import FormPicker from '@/components/FormPicker/index.vue'
 import request from '@/utils/request'
 import { ElMessageBox } from 'element-plus'
 import { h, nextTick, ref, computed, watch, reactive, toRefs, onMounted, onBeforeUnmount } from 'vue'
-import { Search, Filter, Document, Pointer, RefreshLeft, RefreshRight, ZoomIn, ZoomOut, FullScreen, Setting, Check, ArrowDown, MoreFilled, QuestionFilled, Clock } from '@element-plus/icons-vue'
+import { Search, Filter, Document, Pointer, RefreshLeft, RefreshRight, ZoomIn, ZoomOut, FullScreen, Setting, Check, ArrowDown, MoreFilled, QuestionFilled, Clock, User, EditPen, Plus } from '@element-plus/icons-vue'
 import Sortable from 'sortablejs'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useColumnDrag } from '@/composables/useColumnDrag'
 import FormFieldsEditor from '../form/components/FormFieldsEditor.vue'
+import ExcelGridDesigner from '../form/designer/ExcelGridDesigner.vue'
+import { parseLayout, fieldsToGrid, serializeLayout } from '../form/designer/converters.js'
+import { listNodeForms, saveNodeForm as saveNodeFormApi, delNodeForm } from '@/api/flowable/nodeForm'
+import { deployCheckModel } from '@/api/flowable/flow'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
@@ -1032,7 +1197,7 @@ function onModelNameBlur() {
 // ===== 关联表单设置（模型侧绑定表单，一个表单可关联多个模型；列表"表单"入口已移除，关联在设计弹窗"基本信息"完成） =====
 const formOptions = ref([])
 function loadFormOptions() {
-  allForms().then(res => { formOptions.value = res.data || [] })
+  return allForms().then(res => { formOptions.value = res.data || [] })
 }
 
 // ===== 关联表单弹框选择器（开发规范：业务实体选择须用弹框选择器，禁止 el-select） =====
@@ -1472,10 +1637,17 @@ async function newBlankDiagram(target) {
   // 纯白画布：不预置 开始/结束 节点，用户从上方 palette 自行拖拽绘制
 }
 
+/** 可配置节点：申请（开始）/用户任务/结束节点都可设置操作人员与表单 */
+function isConfigurableNode(node) {
+  return !!node && (node.isUserTask || node.isStart || node.isEnd)
+}
+
 function loadSelectedElement(el) {
   selectedEl = el
   const bo = el.businessObject
   const isUserTask = el.type === 'bpmn:UserTask'
+  const isStart = el.type === 'bpmn:StartEvent'
+  const isEnd = el.type === 'bpmn:EndEvent'
   const isSequenceFlow = el.type === 'bpmn:SequenceFlow'
   const isBranchNode = isGatewayType(el.type)
   let condition = ''
@@ -1487,16 +1659,26 @@ function loadSelectedElement(el) {
     name: bo.name || '',
     type: el.type,
     isUserTask,
+    isStart,
+    isEnd,
     isSequenceFlow,
     isBranchNode,
     sourceIsGateway: !!(el.source && el.source.type && el.source.type.includes('Gateway')),
     condition,
     assignee: (bo.get && bo.get('flowable:assignee')) || bo.assignee || '',
     candidateGroups: (bo.get && bo.get('flowable:candidateGroups')) || bo.candidateGroups || '',
-    formKey: (bo.get && bo.get('flowable:formKey')) || bo.formKey || '',
+    formKey: nodeFormMap.value[bo.id] && nodeFormMap.value[bo.id].formKey
+      ? nodeFormMap.value[bo.id].formKey : ((bo.get && bo.get('flowable:formKey')) || bo.formKey || ''),
+    nodeFormName: nodeFormMap.value[bo.id]
+      ? (nodeFormMap.value[bo.id].formName || '')
+      : ((bo.get && bo.get('flowable:nodeFormName')) || (bo.$attrs && bo.$attrs['flowable:nodeFormName']) || ''),
+    nodeFormSnapshot: nodeFormMap.value[bo.id]
+      ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null }
+      : readNodeFormSnapshot(bo),
+    opMenus: parseOpMenus(bo),
     fieldPerms: parseFieldPerms(bo),
     multiInstance: !!bo.loopCharacteristics,
-    ...(isUserTask ? parseParticipantConfig(bo) : {}),
+    ...((isUserTask || isStart || isEnd) ? parseParticipantConfig(bo) : {}),
     // 分支语义为界面派生值，不持久化到 XML
     branchRole: deriveBranchRole(el.type, bo.id)
   }
@@ -1723,7 +1905,7 @@ function participantRelationLabel(relMode, type) {
 
 function openParticipantPicker() {
   const se = selectedElement.value
-  if (!se || !se.isUserTask) return
+  if (!isConfigurableNode(se)) return
   participantDraft.relMode = 'activity'
   participantDraft.relation = 'initiator'
   participantDraft.pickKind = 'dept'
@@ -1874,7 +2056,7 @@ function saveParticipantConfig() {
 /** 把节点参与者配置写回 XML，并派生 assignee / candidateGroups / 多实例 */
 function persistParticipantConfig() {
   const se = selectedElement.value
-  if (!se || !se.isUserTask || !selectedEl) return
+  if (!isConfigurableNode(se) || !selectedEl) return
   const participants = se.participants || []
   const cfg = { handleMode: se.handleMode || 'assign', performMode: se.performMode || 'claim', participantMode: se.participantMode || 'single', participants }
   const json = JSON.stringify(cfg)
@@ -1904,7 +2086,8 @@ function persistParticipantConfig() {
   } catch (e) {}
 
   const moddle = currentModdle()
-  if (cfg.performMode === 'claim') {
+  // 多实例仅适用于用户任务；开始/结束事件不写 loopCharacteristics，避免生成非法 BPMN
+  if (!se.isUserTask || cfg.performMode === 'claim') {
     m.updateModdleProperties(selectedEl, bo, { loopCharacteristics: undefined })
   } else if (moddle) {
     const loop = moddle.create('bpmn:MultiInstanceLoopCharacteristics', {
@@ -1986,6 +2169,7 @@ async function handleDesign(row) {
   }
   loadFormOptions()
   loadDesignVersions()
+  loadNodeFormTemplates()
   selectedElement.value = null
   designTab.value = 'flow'
   designOpen.value = true
@@ -2177,6 +2361,565 @@ function updateNodeFormKey(row) {
   refreshGraphicData()
 }
 
+// ===== 节点右侧设置：操作人员 / 表单内容 / 操作菜单（参照泛微节点信息面板） =====
+const nodeFormOpen = ref(false)
+const nodeFormDesignOpen = ref(false)
+const nodeFormPickOpen = ref(false)
+const nodeFormPickId = ref('')
+const nodeFormPickKeyword = ref('')
+const nodeFormDraft = reactive({ nodeId: '', nodeName: '', formId: '', isNodeForm: false, nodeFormName: '', fromNodeId: '', fields: null, grid: null })
+const opMenuOpen = ref(false)
+const opMenuDraft = reactive({ nodeId: '', nodeName: '', items: [] })
+const OP_MENU_OPTIONS = [
+  { value: 'submit', label: '提交' },
+  { value: 'reject', label: '退回' },
+  { value: 'transfer', label: '转办' },
+  { value: 'addSign', label: '加签' },
+  { value: 'terminate', label: '终止' },
+  { value: 'comment', label: '签字意见' },
+  { value: 'attach', label: '附件上传' },
+  { value: 'print', label: '打印' },
+  { value: 'cc', label: '抄送' }
+]
+
+/** 右侧「操作人员」行摘要 */
+const participantSummaryText = computed(() => {
+  const se = selectedElement.value
+  const ps = (se && se.participants) || []
+  if (!ps.length) return (se && se.isStart) ? '申请人（流程发起人）' : '未设置'
+  return ps.length > 2
+    ? ps.slice(0, 2).map(p => p.name).join('、') + ' 等' + ps.length + '人'
+    : ps.map(p => p.name).join('、')
+})
+
+const flowFormName = computed(() => {
+  const hit = formOptions.value.find(f => String(f.formId) === String(designModel.value.formId || ''))
+  return hit ? hit.formName : ''
+})
+const nodeFormName = computed(() => {
+  if (nodeFormDraft.isNodeForm) return nodeFormDraft.nodeFormName || ((nodeFormDraft.nodeName || '节点') + '表单')
+  const hit = formOptions.value.find(f => String(f.formId) === String(nodeFormDraft.formId || ''))
+  return hit ? hit.formName : (nodeFormDraft.formId ? '表单 #' + nodeFormDraft.formId : '')
+})
+
+/** 可选节点表单：数据表默认表单 + 本流程其他节点已设置好的节点表单 */
+const flowNodeFormOptions = computed(() => {
+  const arr = []
+  const flowFid = designModel.value.formId ? String(designModel.value.formId) : ''
+  const flowHit = formOptions.value.find(f => String(f.formId) === flowFid)
+  if (flowFid) {
+    arr.push({
+      key: 'default',
+      formId: flowFid,
+      formName: (flowHit?.formName || flowFormName.value || '默认表单') + '（数据表默认表单）',
+      fromNodeNames: [],
+      snapshot: null
+    })
+  }
+  graphicNodes.value.forEach(n => {
+    if (!isConfigurableNode(n) || !n.nodeFormSnapshot || n.id === nodeFormDraft.nodeId) return
+    arr.push({
+      key: 'node:' + n.id,
+      formId: String(n.formKey || flowFid),
+      formName: n.nodeFormName || ((n.name || n.id) + '表单'),
+      fromNodeNames: [n.name || n.id],
+      snapshot: n.nodeFormSnapshot
+    })
+  })
+  return arr
+})
+
+const filteredNodeFormOptions = computed(() => {
+  const kw = nodeFormPickKeyword.value.trim()
+  if (!kw) return flowNodeFormOptions.value
+  return flowNodeFormOptions.value.filter(f =>
+    f.formName.includes(kw) || f.fromNodeNames.join('、').includes(kw))
+})
+
+/** 解析节点扩展属性 flowable:operationMenus（JSON 数组） */
+function parseOpMenus(bo) {
+  const raw = (bo && bo.get && bo.get('flowable:operationMenus')) || (bo && bo.$attrs && bo.$attrs['flowable:operationMenus']) || ''
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch (e) {
+    return []
+  }
+}
+
+/** 解析节点表单快照（flowable:nodeFormJson） */
+function readNodeFormSnapshot(bo) {
+  const raw = (bo && bo.get && bo.get('flowable:nodeFormJson')) || (bo && bo.$attrs && bo.$attrs['flowable:nodeFormJson']) || ''
+  if (!raw) return null
+  try {
+    const obj = JSON.parse(raw)
+    return obj && Array.isArray(obj.fields) ? obj : null
+  } catch (e) {
+    return null
+  }
+}
+
+function cloneJson(v) {
+  return v ? JSON.parse(JSON.stringify(v)) : v
+}
+
+// ===== 节点表单模板（以数据库 flow_node_form 为准：字段/必填/只读修改无需重新部署流程） =====
+/** nodeId -> { formName, formKey, nodeType, fields, grid } */
+const nodeFormMap = ref({})
+
+/** 加载当前模型的节点模板到内存映射，并刷新图形节点数据 */
+async function loadNodeFormTemplates() {
+  const modelId = designModel.value && designModel.value.modelId
+  if (!modelId) { nodeFormMap.value = {}; return }
+  try {
+    const res = await listNodeForms(modelId)
+    const map = {}
+    ;(res.data || []).forEach(t => {
+      let fields = []
+      try { fields = JSON.parse(t.fieldsJson || '[]') || [] } catch (e) { fields = [] }
+      const layout = parseLayout(t.layoutJson)
+      map[t.nodeId] = {
+        formName: t.formName || '',
+        formKey: t.formKey ? String(t.formKey) : '',
+        nodeType: t.nodeType || '',
+        fields,
+        grid: layout.grid || null
+      }
+    })
+    nodeFormMap.value = map
+  } catch (e) {
+    nodeFormMap.value = {}
+  }
+  refreshGraphicData()
+  if (selectedElement.value && graphicModeler) {
+    const el = graphicModeler.get('elementRegistry').get(selectedElement.value.id)
+    if (el) loadSelectedElement(el)
+  }
+}
+
+/** 节点类型（start / userTask / end） */
+function nodeTypeOfNode(nodeId) {
+  const hit = graphicNodes.value.find(n => n.id === nodeId)
+  if (!hit) return 'userTask'
+  return hit.isStart ? 'start' : hit.isEnd ? 'end' : 'userTask'
+}
+
+/** 节点布局 → layoutJson 字符串 */
+function serializeNodeGrid(grid) {
+  if (!grid) return ''
+  try { return serializeLayout({ mode: 'grid', grid }) } catch (e) { return '' }
+}
+
+/** 字段增删后同步网格：移除已删除字段的格子，把新增字段追加到末尾 */
+function syncGridWithFields(grid, fields) {
+  if (!grid) return grid
+  const mainFields = (fields || []).filter(f => f && f.field && (f.table || 'main') === 'main')
+  const fieldSet = new Set(mainFields.map(f => f.field))
+  grid.cells = (grid.cells || []).filter(c => !(c.type === 'field' && c.field && !fieldSet.has(c.field)))
+  const used = new Set(grid.cells.filter(c => c.type === 'field' && c.field).map(c => c.field))
+  const missing = mainFields.filter(f => !used.has(f.field))
+  if (!missing.length) return grid
+  let row = grid.cells.filter(c => c.type === 'field').reduce((m, c) => Math.max(m, c.r + (c.rs || 1)), 1)
+  let col = 0
+  const span = 2
+  for (const f of missing) {
+    if (col + span > grid.cols) { row++; col = 0 }
+    while (row >= grid.rows) { grid.rows++; grid.rowHeights.push(30) }
+    grid.cells.push({ r: row, c: col, rs: 1, cs: span, type: 'field', field: f.field })
+    col += span
+  }
+  return grid
+}
+
+/** 节点模板保存到数据库（发起页/办理页实时读取，无需重新部署） */
+async function saveNodeFormToDb() {
+  const modelId = designModel.value && designModel.value.modelId
+  if (!modelId || !nodeFormDraft.nodeId) return
+  // 恢复默认表单：删除该节点模板
+  if (!nodeFormDraft.isNodeForm) {
+    await delNodeForm(modelId, nodeFormDraft.nodeId)
+    delete nodeFormMap.value[nodeFormDraft.nodeId]
+    return
+  }
+  const nodeType = nodeTypeOfNode(nodeFormDraft.nodeId)
+  const payload = {
+    modelId: String(modelId),
+    modelKey: designModel.value.modelKey || '',
+    nodeId: nodeFormDraft.nodeId,
+    nodeType,
+    nodeName: nodeFormDraft.nodeName || '',
+    formName: nodeFormDraft.nodeFormName || '',
+    formKey: nodeFormDraft.formId || '',
+    fieldsJson: JSON.stringify(nodeFormDraft.fields || []),
+    layoutJson: serializeNodeGrid(nodeFormDraft.grid)
+  }
+  await saveNodeFormApi(payload)
+  nodeFormMap.value[nodeFormDraft.nodeId] = {
+    formName: payload.formName,
+    formKey: payload.formKey,
+    nodeType,
+    fields: cloneJson(nodeFormDraft.fields || []),
+    grid: cloneJson(nodeFormDraft.grid)
+  }
+}
+
+/** 兼容迁移：把历史 BPMN 里的 flowable:nodeFormJson 模板一次性落库 */
+async function migrateLegacyNodeForms() {
+  const modelId = designModel.value && designModel.value.modelId
+  if (!modelId) return
+  const candidates = graphicNodes.value.filter(n =>
+    isConfigurableNode(n) && !nodeFormMap.value[n.id] && n.nodeFormSnapshot && n.nodeFormSnapshot.fields && n.nodeFormSnapshot.fields.length)
+  if (!candidates.length) return
+  for (const n of candidates) {
+    const payload = {
+      modelId: String(modelId),
+      modelKey: designModel.value.modelKey || '',
+      nodeId: n.id,
+      nodeType: n.isStart ? 'start' : n.isEnd ? 'end' : 'userTask',
+      nodeName: n.name || '',
+      formName: n.nodeFormName || '',
+      formKey: n.formKey || '',
+      fieldsJson: JSON.stringify(n.nodeFormSnapshot.fields || []),
+      layoutJson: serializeNodeGrid(n.nodeFormSnapshot.grid)
+    }
+    try { await saveNodeFormApi(payload) } catch (e) {}
+  }
+  await loadNodeFormTemplates()
+}
+
+function nodeFormText(node) {
+  if (!isConfigurableNode(node)) return '未绑定'
+  if (node.nodeFormSnapshot) return (node.nodeFormName || '节点表单') + '（节点表单）'
+  if (!node.formKey) {
+    return flowFormName.value ? '流程表单：' + flowFormName.value : '流程表单（未关联）'
+  }
+  const hit = formOptions.value.find(f => String(f.formId) === String(node.formKey))
+  return hit ? hit.formName : '表单 #' + node.formKey
+}
+
+function nodeOpMenuText(node) {
+  const items = (node && node.opMenus) || []
+  if (!items.length) return '默认菜单'
+  return items.map(v => {
+    const hit = OP_MENU_OPTIONS.find(m => m.value === v)
+    return hit ? hit.label : v
+  }).join('、')
+}
+
+/** 打开节点表单配置（右侧属性面板入口，申请节点、用户任务与结束节点均可设置） */
+function openNodeForm(node) {
+  if (!isConfigurableNode(node)) return
+  nodeFormDraft.nodeId = node.id
+  nodeFormDraft.nodeName = node.name || node.id
+  nodeFormDraft.formId = String(node.formKey || '') === 'html' ? '' : String(node.formKey || '')
+  nodeFormDraft.isNodeForm = !!node.nodeFormSnapshot
+  nodeFormDraft.nodeFormName = node.nodeFormSnapshot ? (node.nodeFormName || '') : ''
+  nodeFormDraft.fromNodeId = node.nodeFormSnapshot ? (node.nodeFormSnapshot.fromNodeId || '') : ''
+  nodeFormDraft.fields = node.nodeFormSnapshot ? cloneJson(node.nodeFormSnapshot.fields) : null
+  nodeFormDraft.grid = node.nodeFormSnapshot ? cloneJson(node.nodeFormSnapshot.grid) : null
+  nodeFormOpen.value = true
+}
+
+/** 恢复使用数据表默认表单 */
+function useFlowForm() {
+  nodeFormDraft.formId = ''
+  nodeFormDraft.isNodeForm = false
+  nodeFormDraft.nodeFormName = ''
+  nodeFormDraft.fromNodeId = ''
+  nodeFormDraft.fields = null
+  nodeFormDraft.grid = null
+}
+
+function openNodeFormPicker() {
+  nodeFormPickKeyword.value = ''
+  nodeFormPickId.value = nodeFormDraft.isNodeForm
+    ? (nodeFormDraft.fromNodeId ? 'node:' + nodeFormDraft.fromNodeId : '')
+    : 'default'
+  nodeFormPickOpen.value = true
+}
+
+function confirmNodeFormPick() {
+  const opt = flowNodeFormOptions.value.find(o => o.key === nodeFormPickId.value)
+  if (!opt) return
+  if (opt.key === 'default') {
+    nodeFormDraft.isNodeForm = false
+    nodeFormDraft.formId = opt.formId
+    nodeFormDraft.nodeFormName = ''
+    nodeFormDraft.fromNodeId = ''
+    nodeFormDraft.fields = null
+    nodeFormDraft.grid = null
+  } else {
+    nodeFormDraft.isNodeForm = true
+    nodeFormDraft.formId = opt.formId
+    nodeFormDraft.nodeFormName = opt.formName
+    nodeFormDraft.fromNodeId = opt.key.slice(5)
+    nodeFormDraft.fields = cloneJson(opt.snapshot.fields)
+    nodeFormDraft.grid = cloneJson(opt.snapshot.grid)
+  }
+  nodeFormPickOpen.value = false
+}
+
+/** 节点表单设计已落库；BPMN 仅保留 formKey 引用，旧快照属性清空（避免与数据库双份来源） */
+function persistNodeFormAttrs(el) {
+  if (!graphicModeler || !el) return
+  const bo = el.businessObject
+  const formKey = nodeFormDraft.formId || (designModel.value.formId ? String(designModel.value.formId) : undefined)
+  graphicModeler.get('modeling').updateModdleProperties(el, bo, {
+    'flowable:formKey': formKey,
+    'flowable:nodeFormName': undefined,
+    'flowable:nodeFormJson': undefined
+  })
+  try {
+    const set = (k, v) => { if (v) bo.$attrs[k] = v; else delete bo.$attrs[k] }
+    set('flowable:formKey', formKey)
+    delete bo.$attrs['flowable:nodeFormName']
+    delete bo.$attrs['flowable:nodeFormJson']
+  } catch (e) {}
+}
+
+/** 新增节点表单：复制数据表默认表单的字段与布局，形成该节点自己的表单 */
+async function createNodeForm() {
+  const fid = designModel.value.formId ? String(designModel.value.formId) : nodeFormDraft.formId
+  if (!fid) {
+    proxy.$modal.msgWarning('流程未绑定数据表表单，请先在「基本信息」关联表单')
+    return
+  }
+  try {
+    const d = (await getForm(fid)).data || {}
+    let fields = []
+    try { fields = JSON.parse(d.fieldsJson || '[]') } catch (e) { fields = [] }
+    const layout = parseLayout(d.layoutJson)
+    nodeFormDraft.isNodeForm = true
+    nodeFormDraft.formId = String(d.formId || fid)
+    nodeFormDraft.fromNodeId = ''
+    nodeFormDraft.nodeFormName = (nodeFormDraft.nodeName || '节点') + '表单'
+    nodeFormDraft.fields = cloneJson(fields)
+    nodeFormDraft.grid = cloneJson(layout.grid || fieldsToGrid(fields.filter(f => (f.table || 'main') === 'main')))
+    proxy.$modal.msgSuccess('已创建节点表单，请继续设计')
+    openNodeFormDesigner()
+  } catch (e) {
+    proxy.$modal.msgError('创建节点表单失败：' + (e.message || e))
+  }
+}
+
+/** 修改节点模板名称（仅节点模板，独立于表单管理） */
+async function renameNodeForm() {
+  if (!nodeFormDraft.isNodeForm && !nodeFormDraft.formId) {
+    proxy.$modal.msgWarning('请先选择或新增节点表单')
+    return
+  }
+  let name = ''
+  try {
+    const { value } = await ElMessageBox.prompt('请输入节点模板名称', '修改节点模板名称', {
+      inputValue: nodeFormName.value,
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputValidator: v => (v && v.trim() ? true : '节点模板名称不能为空')
+    })
+    name = (value || '').trim()
+  } catch (e) {
+    return
+  }
+  nodeFormDraft.nodeFormName = name
+  if (nodeFormDraft.isNodeForm) {
+    try {
+      await saveNodeFormToDb()
+    } catch (e) {
+      proxy.$modal.msgError('节点模板名称保存失败：' + (e.message || e))
+      return
+    }
+    const el = graphicModeler && graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+    if (el) persistNodeFormAttrs(el)
+    refreshGraphicData()
+  }
+  if (nodeDesignForm.formId === nodeFormDraft.formId) nodeDesignForm.formName = name
+  proxy.$modal.msgSuccess('节点模板名称已更新')
+}
+
+/** 保存节点表单（节点模板落库 + BPMN 仅保留 formKey；实时生效，无需重新部署） */
+async function saveNodeForm() {
+  if (!graphicModeler) return
+  const el = graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+  if (!el) {
+    proxy.$modal.msgWarning('节点已不存在，请重新打开')
+    return
+  }
+  try {
+    await saveNodeFormToDb()
+  } catch (e) {
+    proxy.$modal.msgError('节点表单保存失败：' + (e.message || e))
+    return
+  }
+  persistNodeFormAttrs(el)
+  refreshGraphicData()
+  if (selectedElement.value && selectedElement.value.id === nodeFormDraft.nodeId) {
+    const el2 = graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+    if (el2) loadSelectedElement(el2)
+  }
+  nodeFormOpen.value = false
+  proxy.$modal.msgSuccess('节点表单已保存，实时生效（无需重新部署）')
+}
+
+// ===== 节点表单设计：复用「表单管理」的表单设计工具（编辑字段 + 页面设计） =====
+const nodeDesignTab = ref('fields')
+const nodeDesignLoading = ref(false)
+const nodeDesignNameSaving = ref(false)
+const nodeDesignFullscreen = ref(false)
+const nodeDesignForm = reactive({ formId: '', formName: '', formKey: '', isNodeForm: false, fields: [], grid: null })
+/** 设计目标：节点表单优先，未指定则设计数据表默认表单 */
+const nodeDesignFormId = computed(() => nodeFormDraft.formId || designModel.value.formId || '')
+
+function openNodeFormDesigner() {
+  if (!nodeDesignFormId.value && !nodeFormDraft.isNodeForm) {
+    proxy.$modal.msgWarning('流程未关联表单，请先在基本信息中关联')
+    return
+  }
+  nodeDesignTab.value = 'fields'
+  nodeDesignFullscreen.value = true
+  nodeFormDesignOpen.value = true
+  loadNodeDesignData()
+}
+
+/** 保存节点模板名称与设计：只作用于当前节点，不修改表单管理中的数据表表单 */
+async function saveNodeDesignAll() {
+  if (!nodeDesignForm.formId && !nodeFormDraft.isNodeForm) return
+  const name = (nodeDesignForm.formName || '').trim()
+  if (!name) {
+    proxy.$modal.msgWarning('请输入节点模板名称')
+    return
+  }
+  nodeDesignNameSaving.value = true
+  try {
+    nodeFormDraft.isNodeForm = true
+    nodeFormDraft.formId = nodeFormDraft.formId || String(nodeDesignForm.formId || designModel.value.formId || '')
+    nodeFormDraft.nodeFormName = name
+    nodeFormDraft.fromNodeId = ''
+    nodeFormDraft.fields = cloneJson(nodeDesignForm.fields)
+    nodeFormDraft.grid = cloneJson(nodeDesignForm.grid)
+    syncGridWithFields(nodeFormDraft.grid, nodeFormDraft.fields)
+    await saveNodeFormToDb()
+    const el = graphicModeler && graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+    if (el) persistNodeFormAttrs(el)
+    refreshGraphicData()
+    proxy.$modal.msgSuccess('已保存到当前节点，实时生效（不影响表单管理）')
+  } catch (e) {
+    proxy.$modal.msgError('保存失败：' + (e.message || e))
+  } finally {
+    nodeDesignNameSaving.value = false
+  }
+}
+
+async function loadNodeDesignData() {
+  // 节点模板永远使用本节点快照，与表单管理的数据表表单互相独立
+  nodeDesignForm.isNodeForm = true
+  if (nodeFormDraft.isNodeForm) {
+    const fields = cloneJson(nodeFormDraft.fields || [])
+    nodeDesignForm.formId = nodeFormDraft.formId || String(designModel.value.formId || '')
+    nodeDesignForm.formName = nodeFormName.value
+    nodeDesignForm.formKey = ''
+    nodeDesignForm.fields = fields
+    nodeDesignForm.grid = cloneJson(nodeFormDraft.grid || fieldsToGrid(fields.filter(f => (f.table || 'main') === 'main')))
+    return
+  }
+  // 未创建节点模板时，以数据表默认表单为初始内容
+  const fid = nodeDesignFormId.value
+  if (!fid) return
+  nodeDesignLoading.value = true
+  try {
+    const res = await getForm(fid)
+    const d = res.data || {}
+    let fields = []
+    try { fields = JSON.parse(d.fieldsJson || '[]') } catch (e) { fields = [] }
+    const layout = parseLayout(d.layoutJson)
+    nodeDesignForm.formId = d.formId
+    nodeDesignForm.formName = (nodeFormDraft.nodeName || '节点') + '表单'
+    nodeDesignForm.formKey = d.formKey || ''
+    nodeDesignForm.fields = fields
+    nodeDesignForm.grid = layout.grid || fieldsToGrid(fields.filter(f => (f.table || 'main') === 'main'))
+  } catch (e) {
+    proxy.$modal.msgError('加载表单设计失败：' + (e.message || e))
+  } finally {
+    nodeDesignLoading.value = false
+  }
+}
+
+/** 字段设计保存回调：节点表单保存到节点快照，默认表单重新加载 */
+async function onNodeFieldsSaved(fields) {
+  if (nodeDesignForm.isNodeForm) {
+    nodeDesignForm.fields = cloneJson(fields || [])
+    nodeFormDraft.fields = cloneJson(nodeDesignForm.fields)
+    syncGridWithFields(nodeDesignForm.grid, nodeFormDraft.fields)
+    nodeFormDraft.grid = cloneJson(nodeDesignForm.grid)
+    nodeFormDraft.isNodeForm = true
+    try {
+      await saveNodeFormToDb()
+    } catch (e) {
+      proxy.$modal.msgError('节点表单保存失败：' + (e.message || e))
+      return
+    }
+    const el = graphicModeler && graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+    if (el) persistNodeFormAttrs(el)
+    refreshGraphicData()
+    return
+  }
+  loadNodeDesignData()
+}
+
+async function saveNodeDesignGrid() {
+  if (!nodeDesignForm.grid) return
+  nodeFormDraft.isNodeForm = true
+  nodeFormDraft.formId = nodeFormDraft.formId || String(nodeDesignForm.formId || designModel.value.formId || '')
+  nodeFormDraft.nodeFormName = nodeFormDraft.nodeFormName || nodeDesignForm.formName || ((nodeFormDraft.nodeName || '节点') + '表单')
+  nodeFormDraft.grid = cloneJson(nodeDesignForm.grid)
+  nodeFormDraft.fields = cloneJson(nodeDesignForm.fields)
+  syncGridWithFields(nodeFormDraft.grid, nodeFormDraft.fields)
+  try {
+    await saveNodeFormToDb()
+  } catch (e) {
+    proxy.$modal.msgError('页面设计保存失败：' + (e.message || e))
+    return
+  }
+  const el = graphicModeler && graphicModeler.get('elementRegistry').get(nodeFormDraft.nodeId)
+  if (el) persistNodeFormAttrs(el)
+  refreshGraphicData()
+  proxy.$modal.msgSuccess('页面设计已保存到当前节点，实时生效（不影响表单管理）')
+}
+
+/** 打开节点操作菜单配置 */
+function openNodeOpMenu(node) {
+  if (!node || (!node.isUserTask && !node.isStart)) return
+  opMenuDraft.nodeId = node.id
+  opMenuDraft.nodeName = node.name || node.id
+  opMenuDraft.items = (node.opMenus || []).slice()
+  opMenuOpen.value = true
+}
+
+function resetOpMenuDefault() {
+  opMenuDraft.items = ['submit', 'reject', 'transfer', 'print']
+}
+
+function saveNodeOpMenu() {
+  if (!graphicModeler) return
+  const el = graphicModeler.get('elementRegistry').get(opMenuDraft.nodeId)
+  if (!el) {
+    proxy.$modal.msgWarning('节点已不存在，请重新打开')
+    return
+  }
+  const json = opMenuDraft.items.length ? JSON.stringify(opMenuDraft.items) : undefined
+  graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:operationMenus': json })
+  try {
+    if (json) el.businessObject.$attrs['flowable:operationMenus'] = json
+    else delete el.businessObject.$attrs['flowable:operationMenus']
+  } catch (e) {}
+  if (selectedElement.value && selectedElement.value.id === opMenuDraft.nodeId) {
+    selectedElement.value.opMenus = opMenuDraft.items.slice()
+  }
+  refreshGraphicData()
+  opMenuOpen.value = false
+  proxy.$modal.msgSuccess('操作菜单已保存，点右上"保存"生效')
+}
+
 /** 表格编辑：连线分支条件（编辑弹窗的独立实例，与画布右侧属性面板同一写法） */
 function updateExitCondition(row) {
   if (!graphicModeler) return
@@ -2195,6 +2938,26 @@ function updateExitCondition(row) {
 }
 
 /** 编辑弹窗节点/出口清单（从独立实例解析） */
+/** 开始/结束事件统一为 80x80（与 100x80 的处理节点同高），避免比处理节点明显偏小 */
+const WM_EVENT_SIZE = 80
+function normalizeEventSize(el) {
+  if (!graphicModeler || !el || (el.type !== 'bpmn:StartEvent' && el.type !== 'bpmn:EndEvent')) return
+  if (el.width >= WM_EVENT_SIZE) return
+  try {
+    graphicModeler.get('modeling').resizeShape(el, {
+      x: el.x + (el.width - WM_EVENT_SIZE) / 2,
+      y: el.y + (el.height - WM_EVENT_SIZE) / 2,
+      width: WM_EVENT_SIZE,
+      height: WM_EVENT_SIZE
+    })
+  } catch (e) { /* 规则不允许时忽略 */ }
+}
+function normalizeAllEventSizes() {
+  if (!graphicModeler) return
+  const registry = graphicModeler.get('elementRegistry')
+  registry.filter(el => el.type === 'bpmn:StartEvent' || el.type === 'bpmn:EndEvent').forEach(normalizeEventSize)
+}
+
 function refreshGraphicData() {
   if (!graphicModeler) { graphicNodes.value = []; graphicExits.value = []; return }
   try {
@@ -2209,9 +2972,20 @@ function refreshGraphicData() {
           type: el.type,
           typeLabel: semanticNodeLabel(el.type),
           isUserTask: el.type === 'bpmn:UserTask',
+          isStart: el.type === 'bpmn:StartEvent',
+          isEnd: el.type === 'bpmn:EndEvent',
           assignee: (bo.get && bo.get('flowable:assignee')) || bo.assignee || '',
           candidateGroups: (bo.get && bo.get('flowable:candidateGroups')) || bo.candidateGroups || '',
-          formKey: (bo.get && bo.get('flowable:formKey')) || bo.formKey || '',
+          formKey: nodeFormMap.value[bo.id] && nodeFormMap.value[bo.id].formKey
+            ? nodeFormMap.value[bo.id].formKey : ((bo.get && bo.get('flowable:formKey')) || bo.formKey || ''),
+          nodeFormName: nodeFormMap.value[bo.id]
+            ? (nodeFormMap.value[bo.id].formName || '')
+            : ((bo.get && bo.get('flowable:nodeFormName')) || (bo.$attrs && bo.$attrs['flowable:nodeFormName']) || ''),
+          nodeFormSnapshot: nodeFormMap.value[bo.id]
+            ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null }
+            : readNodeFormSnapshot(bo),
+          opMenus: parseOpMenus(bo),
+          participants: (parseParticipantConfig(bo).participants) || [],
           operatorGroups: parseOperatorGroups(bo),
           multiInstance: !!bo.loopCharacteristics
         }
@@ -2821,7 +3595,11 @@ async function onGraphicOpened() {
     else { selectedEl = null; selectedElement.value = null }
   })
   // 从左侧节点面板拖入/新增/修改节点后立即套用泛微视觉，保证画布样式与面板按钮一致
-  gEventBus.on('shape.added', e => { markWmShape(e.element, graphicModeler); scheduleWmDecoSweep(graphicModeler) })
+  gEventBus.on('shape.added', e => {
+    markWmShape(e.element, graphicModeler)
+    scheduleWmDecoSweep(graphicModeler)
+    setTimeout(() => normalizeEventSize(e.element), 0)
+  })
   gEventBus.on('element.changed', e => { markWmShape(e.element, graphicModeler); scheduleWmDecoSweep(graphicModeler) })
   // palette 迁移优先执行：无论后续 XML 加载成败，图元面板都必须落在左侧独立节点面板里，
   // 不能因为加载异常而残留在画布内
@@ -2832,6 +3610,9 @@ async function onGraphicOpened() {
   try {
     const xml = await resolveGraphicXml()
     await graphicModeler.importXML(xml)
+    // 开始/结束事件放大到与处理节点协调的比例，并清空导入产生的缩放历史
+    normalizeAllEventSizes()
+    try { graphicModeler.get('commandStack').clear() } catch (e) {}
     safeFitViewport(graphicModeler)
     // 布局稳定后二次适配：避免弹窗打开瞬间容器尺寸未定导致内容贴顶、下方大片空白
     setTimeout(() => safeFitViewport(graphicModeler), 150)
@@ -2839,6 +3620,7 @@ async function onGraphicOpened() {
     applyWmReturnRoutes(graphicModeler)
     mountPaletteToTop()
     refreshGraphicData()
+    loadNodeFormTemplates().then(() => migrateLegacyNodeForms())
   } catch (e) {
     proxy.$modal.msgError('加载流程图失败：' + (e.message || e))
   }
@@ -3002,6 +3784,7 @@ async function onGraphicFileChange(e) {
   try {
     const text = await file.text()
     await graphicModeler.importXML(text)
+    normalizeAllEventSizes()
     graphicModeler.get('canvas').zoom('fit-viewport', 'auto')
     proxy.$modal.msgSuccess('XML 已导入，点"保存"生效')
   } catch (e) {
@@ -3144,7 +3927,7 @@ async function saveDesigner() {
     if (issues.length) {
       try {
         await ElMessageBox.confirm(
-          h => h('div', null, [
+          () => h('div', null, [
             h('p', { style: 'margin-bottom:8px;font-weight:600' }, '存在 ' + issues.length + ' 个问题：'),
             h('ul', { style: 'padding-left:18px;margin:0;color:#e6a23c' }, issues.map(t => h('li', null, t))),
             h('p', { style: 'margin-top:10px;color:#909399;font-size:13px' }, '仍可保存，但该流程部署后可能无法正常发起。')
@@ -3213,14 +3996,30 @@ const deployRow = ref(null)
 const deployMode = ref('new')
 const deployRemark = ref('')
 const deploySetActive = ref(true)
+/** 部署前结构对比结果（结构未变则无需存为新版本） */
+const deployCheck = ref(null)
 
-function handleDeploy(row) {
+async function handleDeploy(row) {
   deployRow.value = row
   // 预选高级设置中的默认部署方式
   deployMode.value = row.deployMode === 'replace' ? 'replace' : 'new'
   deployRemark.value = ''
   deploySetActive.value = true
+  deployCheck.value = null
   deployOpen.value = true
+  try {
+    const res = await deployCheckModel(row.modelId)
+    deployCheck.value = res.data || null
+    const changed = deployCheck.value && (deployCheck.value.structureChanged || deployCheck.value.formChanged)
+    if (deployCheck.value && deployCheck.value.deployed) {
+      // 结构未变：表单类修改已实时生效，默认覆盖当前版本；结构变更：存为新版本
+      deployMode.value = changed ? 'new' : 'replace'
+    } else {
+      deployMode.value = 'new'
+    }
+  } catch (e) {
+    deployCheck.value = null
+  }
 }
 
 function submitDeploy() {
@@ -3255,6 +4054,8 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 @use './flow-model.scss';
 
 .field-perms-tip { font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+.deploy-check { width: 100%; }
+.deploy-change-item { font-size: 12px; line-height: 1.7; color: #92400e; }
 .field-perms-copybar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .field-perms-copybar .fpc-label { font-size: 12px; color: #475569; flex: none; }
 .field-perms-table { width: 100%; }
@@ -3268,6 +4069,38 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .pc-relation { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; }
 .pc-relation :deep(.el-radio) { margin-right: 0; height: 26px; }
 .pc-pick-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+
+/* ===== 右侧节点信息行（泛微式：蓝色链接值 + 设置齿轮） ===== */
+.props-link-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; min-height: 24px; }
+.props-static { color: #334155; font-size: 13px; }
+.props-link-row .props-link { padding: 0; max-width: calc(100% - 26px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.props-link-row .props-link-gear { flex: none; padding: 0 2px; color: #64748b; }
+.props-link-row .props-link-gear:hover { color: #2563eb; }
+/* 节点表单弹窗 */
+.node-form-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.node-form-pick :deep(.el-input__inner) { cursor: pointer; }
+.node-form-rename { cursor: pointer; color: var(--el-color-primary); font-size: 15px; }
+.node-form-reset { margin-top: 4px; padding: 0; }
+.node-form-pick { display: flex; flex-direction: column; }
+.node-form-pick-search { margin-bottom: 10px; }
+.node-form-design-wrap { max-height: 62vh; overflow-y: auto; }
+/* 全屏：设计器铺满弹窗，避免底部大片留白 */
+.node-form-design-wrap.is-fullscreen { max-height: none; height: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+/* 只作用于外层「编辑字段/页面设计」页签：内部右侧面板也有 el-tabs，不能一并压缩，否则字段列表会被压成 0 高 */
+.node-form-design-wrap.is-fullscreen :deep(.node-design-tabs) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.node-form-design-wrap.is-fullscreen :deep(.node-design-tabs > .el-tabs__content) { flex: 1; min-height: 0; overflow: hidden; }
+.node-form-design-wrap.is-fullscreen :deep(.node-design-tabs > .el-tabs__content > .el-tab-pane) { height: 100%; display: flex; flex-direction: column; }
+.node-form-design-wrap.is-fullscreen :deep(.wm-designer.wm-full) { min-height: 0 !important; height: auto; flex: 1; }
+.node-form-design-wrap.is-fullscreen :deep(.wm-designer.wm-full .wm-canvas-wrap) { max-height: none; }
+.node-form-design-wrap.is-fullscreen :deep(.wm-designer.wm-full .wm-pp) { max-height: none !important; }
+.node-design-name { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.node-design-name-label { color: #475569; font-size: 13px; white-space: nowrap; }
+/* 与表单管理「页面设计」一致的当前模式说明行 */
+.layout-mode-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+.layout-mode-bar .field-tip { color: #64748b; font-size: 12px; line-height: 1.4; }
+/* 操作菜单弹窗 */
+.op-menu-group { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.op-menu-group :deep(.el-checkbox) { margin-right: 0; width: 30%; }
 
 /* 泛微式四页签：基本信息 / 表单管理 / 流转设置 / 高级设置 */
 .designer-tabs { padding: 0 16px 16px; }
@@ -3510,6 +4343,9 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
  .graphic-body → .el-tabs__content → .el-tab-pane → .graphic-main → .designer-canvas
  打通为可计算的弹性高度，使 djs-container 的网格底图铺满整个剩余区域。 -->
 <style lang="scss">
+/* ===== 节点表单设计弹窗：全屏时用弹性布局铺满，删除底部留白 ===== */
+.node-design-dialog.is-fullscreen { display: flex; flex-direction: column; }
+.node-design-dialog.is-fullscreen .el-dialog__body { flex: 1; min-height: 0; padding: 8px 12px 10px; display: flex; flex-direction: column; overflow: hidden; }
 /* ===== 设计器头部（必须放全局块） =====
    1) 弹窗由 el-dialog 通过 teleport 挂到 body 下，DOM 不带本组件作用域属性；
       写进 scoped 块（含 @use 的 flow-model.scss）会被编译成 [data-v-xxx]，永远匹配不上。
