@@ -118,7 +118,7 @@
               <span class="badge" :class="scope.row.isMajorHazard === '1' ? 'red' : 'gray'"><span class="dot"></span>{{ scope.row.isMajorHazard === '1' ? '是' : '否' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:risk:query']">查看</el-button>

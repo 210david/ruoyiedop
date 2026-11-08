@@ -95,7 +95,7 @@
           <el-table-column label="出入库时间" prop="recordTime" key="recordTime" :width="colWidth('recordTime', 160)" align="center" resizable sortable="custom" v-if="columns.recordTime.visible">
             <template #default="scope">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:materialRecord:query']">查看</el-button>

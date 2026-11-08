@@ -18,7 +18,7 @@ public class SafetyTrainingRecordServiceImpl implements ISafetyTrainingRecordSer
     public SafetyTrainingRecord selectSafetyTrainingRecordById(Long recordId) { return safetyTrainingRecordMapper.selectSafetyTrainingRecordById(recordId); }
 
     @Override
-    @DataScope(deptAlias = "biz_safety_training_record")
+    @DataScope(deptAlias = "r")
     public List<SafetyTrainingRecord> selectSafetyTrainingRecordList(SafetyTrainingRecord safetyTrainingRecord) { return safetyTrainingRecordMapper.selectSafetyTrainingRecordList(safetyTrainingRecord); }
 
     @Override

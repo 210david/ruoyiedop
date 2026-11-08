@@ -127,7 +127,7 @@
           <el-table-column label="整改日期" prop="rectifyTime" key="rectifyTime" :width="colWidth('rectifyTime', 160)" resizable align="center" v-if="columns.rectifyTime.visible" />
           <el-table-column label="发现人" prop="discoverPerson" key="discoverPerson" :width="colWidth('discoverPerson', 100)" resizable align="center" v-if="columns.discoverPerson.visible" />
           <el-table-column label="发现时间" prop="discoverTime" key="discoverTime" :width="colWidth('discoverTime', 160)" resizable align="center" v-if="columns.discoverTime.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:hazard:query']">查看</el-button>
