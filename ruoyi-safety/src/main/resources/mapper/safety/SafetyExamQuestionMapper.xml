@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.safety.mapper.SafetyExamQuestionMapper">
+
+    <resultMap type="SafetyExamQuestion" id="SafetyExamQuestionResult">
+        <result property="questionId"    column="question_id"/>
+        <result property="questionType"  column="question_type"/>
+        <result property="content"       column="content"/>
+        <result property="options"       column="options"/>
+        <result property="answer"        column="answer"/>
+        <result property="analysis"      column="analysis"/>
+        <result property="categoryId"    column="category_id"/>
+        <result property="categoryName"  column="category_name"/>
+        <result property="difficulty"    column="difficulty"/>
+        <result property="jobTypes"      column="job_types"/>
+        <result property="status"        column="status"/>
+        <result property="enterpriseId"  column="enterprise_id"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectSafetyExamQuestionVo">
+        select question_id, question_type, content, options, answer, analysis, category_id, category_name,
+               difficulty, job_types, status, enterprise_id, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from biz_safety_exam_question
+    </sql>
+
+    <select id="selectSafetyExamQuestionList" parameterType="SafetyExamQuestion" resultMap="SafetyExamQuestionResult">
+        <include refid="selectSafetyExamQuestionVo"/>
+        <where>
+            del_flag = '0'
+            <if test="questionType != null and questionType != ''"> AND question_type = #{questionType}</if>
+            <if test="content != null and content != ''"> AND content like concat('%', #{content}, '%')</if>
+            <if test="categoryId != null"> AND category_id = #{categoryId}</if>
+            <if test="difficulty != null and difficulty != ''"> AND difficulty = #{difficulty}</if>
+            <if test="jobTypes != null and jobTypes != ''"> AND find_in_set(#{jobTypes}, job_types)</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="enterpriseId != null"> AND enterprise_id = #{enterpriseId}</if>
+        </where>
+        order by question_id desc
+    </select>
+
+    <select id="selectSafetyExamQuestionById" parameterType="Long" resultMap="SafetyExamQuestionResult">
+        <include refid="selectSafetyExamQuestionVo"/>
+        where question_id = #{questionId} and del_flag = '0'
+    </select>
+
+    <select id="selectRandomQuestions" resultMap="SafetyExamQuestionResult">
+        <include refid="selectSafetyExamQuestionVo"/>
+        <where>
+            del_flag = '0' and status = '0'
+            <if test="questionType != null and questionType != ''"> AND question_type = #{questionType}</if>
+            <if test="difficulty != null and difficulty != ''"> AND difficulty = #{difficulty}</if>
+            <if test="categoryId != null"> AND category_id = #{categoryId}</if>
+        </where>
+        order by rand()
+        limit #{count}
+    </select>
+
+    <insert id="insertSafetyExamQuestion" parameterType="SafetyExamQuestion" useGeneratedKeys="true" keyProperty="questionId">
+        insert into biz_safety_exam_question
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="questionType != null and questionType != ''">question_type,</if>
+            <if test="content != null and content != ''">content,</if>
+            <if test="options != null and options != ''">options,</if>
+            <if test="answer != null and answer != ''">answer,</if>
+            <if test="analysis != null">analysis,</if>
+            <if test="categoryId != null">category_id,</if>
+            <if test="categoryName != null and categoryName != ''">category_name,</if>
+            <if test="difficulty != null and difficulty != ''">difficulty,</if>
+            <if test="jobTypes != null">job_types,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="enterpriseId != null">enterprise_id,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time,
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="questionType != null and questionType != ''">#{questionType},</if>
+            <if test="content != null and content != ''">#{content},</if>
+            <if test="options != null and options != ''">#{options},</if>
+            <if test="answer != null and answer != ''">#{answer},</if>
+            <if test="analysis != null">#{analysis},</if>
+            <if test="categoryId != null">#{categoryId},</if>
+            <if test="categoryName != null and categoryName != ''">#{categoryName},</if>
+            <if test="difficulty != null and difficulty != ''">#{difficulty},</if>
+            <if test="jobTypes != null">#{jobTypes},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="enterpriseId != null">#{enterpriseId},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            sysdate(),
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <insert id="batchInsertSafetyExamQuestion" parameterType="java.util.List">
+        insert into biz_safety_exam_question
+        (question_type, content, options, answer, analysis, category_id, category_name, difficulty, job_types, status, enterprise_id, create_by, create_time)
+        values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.questionType}, #{item.content}, #{item.options}, #{item.answer}, #{item.analysis},
+             #{item.categoryId}, #{item.categoryName}, #{item.difficulty}, #{item.jobTypes},
+             #{item.status}, #{item.enterpriseId}, #{item.createBy}, sysdate())
+        </foreach>
+    </insert>
+
+    <update id="updateSafetyExamQuestion" parameterType="SafetyExamQuestion">
+        update biz_safety_exam_question
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="questionType != null and questionType != ''">question_type = #{questionType},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="options != null and options != ''">options = #{options},</if>
+            <if test="answer != null and answer != ''">answer = #{answer},</if>
+            <if test="analysis != null">analysis = #{analysis},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+            <if test="difficulty != null and difficulty != ''">difficulty = #{difficulty},</if>
+            <if test="jobTypes != null">job_types = #{jobTypes},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where question_id = #{questionId}
+    </update>
+
+    <update id="deleteSafetyExamQuestionById" parameterType="Long">
+        update biz_safety_exam_question set del_flag = '2' where question_id = #{questionId}
+    </update>
+
+    <update id="deleteSafetyExamQuestionByIds" parameterType="String">
+        update biz_safety_exam_question set del_flag = '2' where question_id in
+        <foreach item="questionId" collection="array" open="(" separator="," close=")">
+            #{questionId}
+        </foreach>
+    </update>
+
+</mapper>
