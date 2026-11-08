@@ -23,6 +23,10 @@ public class PjmProjectProcurement extends BaseEntity
     /** 明细类型：1物料明细 2劳务外包 3机械设备 4其他 */
     private String detailType;
 
+    /** 物料类型（wms_material_type 字典值：0原材料 1半成品 2成品 3辅料 4服务 5工程） */
+    @Excel(name = "物料类型")
+    private String materialType;
+
     /** 序号 */
     private Integer itemNo;
 
@@ -64,6 +68,9 @@ public class PjmProjectProcurement extends BaseEntity
 
     public String getDetailType() { return detailType; }
     public void setDetailType(String detailType) { this.detailType = detailType; }
+
+    public String getMaterialType() { return materialType; }
+    public void setMaterialType(String materialType) { this.materialType = materialType; }
 
     public Integer getItemNo() { return itemNo; }
     public void setItemNo(Integer itemNo) { this.itemNo = itemNo; }
