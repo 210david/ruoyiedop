@@ -121,7 +121,7 @@ UPDATE sys_menu SET parent_id=@boardId, order_num=30, path='qms-trace-dashboard'
 -- =============================================
 -- 五、各模块统计报表挪入「统计分析」对应模块目录（子菜单 path 不冲突，保持原 path）
 -- =============================================
-UPDATE sys_menu SET parent_id=@stWms, order_num=1 WHERE menu_id=2110    AND @stWms IS NOT NULL AND parent_id=2000;     -- 统计报表(仓储)
+UPDATE sys_menu SET parent_id=@stWms, order_num=1 WHERE menu_id=2110    AND @stWms IS NOT NULL AND parent_id=2000;     -- 仓储统计分析(仓储)
 UPDATE sys_menu SET parent_id=@stDms, order_num=1 WHERE menu_id=3108    AND @stDms IS NOT NULL AND parent_id=3006;     -- 库存流水报表(设备)
 UPDATE sys_menu SET parent_id=@stMk,  order_num=1 WHERE menu_id=4156    AND @stMk  IS NOT NULL AND parent_id=4006;     -- 销售人员分析(营销)
 UPDATE sys_menu SET parent_id=@stMk,  order_num=2 WHERE menu_id=4215    AND @stMk  IS NOT NULL AND parent_id=4006;     -- 经销商专项报表(营销)

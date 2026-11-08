@@ -9,69 +9,69 @@
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '数据看板', 3006, 1, 'overview', 'dms/dashboard/index', 'LegacyDmsDashboard',
+SELECT '设备统计分析', 3006, 1, 'overview', 'dms/dashboard/index', 'LegacyDmsDashboard',
     1, 0, 'C', '0', '0', 'dms:dashboard:list', 'chart', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='数据看板' AND parent_id=3006 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyDmsDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '设备大屏', 3006, 2, 'screen', 'dms/equipment/screen', 'LegacyDmsEquipmentScreen',
     1, 0, 'C', '0', '0', 'dms:equipment:query', 'monitor', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='设备大屏' AND parent_id=3006 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyDmsEquipmentScreen' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '商机看板', 4003, 2, 'kanban', 'mk/opportunity/kanban', 'LegacyMkOpportunityKanban',
     1, 0, 'C', '0', '0', 'marketing:opportunity:list', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='商机看板' AND parent_id=4003 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyMkOpportunityKanban' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '营销看板', 4006, 1, 'dashboard', 'mk/dashboard/index', 'LegacyMkDashboard',
+SELECT '营销统计分析', 4006, 1, 'dashboard', 'mk/dashboard/index', 'LegacyMkDashboard',
     1, 0, 'C', '0', '0', 'marketing:report:view', 'chart', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='营销看板' AND parent_id=4006 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyMkDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '推广看板', 4006, 2, 'promotion', 'mk/promotionReport/index', 'LegacyMkPromotionReport',
+SELECT '推广统计分析', 4006, 2, 'promotion', 'mk/promotionReport/index', 'LegacyMkPromotionReport',
     1, 0, 'C', '0', '0', 'marketing:promotionReport:view', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='推广看板' AND parent_id=4006 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyMkPromotionReport' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '采购看板', 4460, 1, 'dashboard', 'pms/dashboard/index', 'LegacyPmsDashboard',
+SELECT '采购统计分析', 4460, 1, 'dashboard', 'pms/dashboard/index', 'LegacyPmsDashboard',
     1, 0, 'C', '0', '0', 'pms:dashboard:view', 'chart', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='采购看板' AND parent_id=4460 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyPmsDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '质量看板', 4813, 2, 'dashboard', 'qms/dashboard/index', 'LegacyQmsDashboard',
+SELECT '质量管理驾驶舱', 4813, 2, 'dashboard', 'qms/dashboard/index', 'LegacyQmsDashboard',
     1, 0, 'C', '0', '0', 'qms:dashboard:view', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='质量看板' AND parent_id=4813 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyQmsDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '生产看板', 5000, 10, 'dashboard', 'mms/dashboard/index', 'LegacyMmsDashboard',
+SELECT '生产驾驶舱', 5000, 10, 'dashboard', 'mms/dashboard/index', 'LegacyMmsDashboard',
     1, 0, 'C', '0', '0', 'mms:dashboard:list', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='生产看板' AND parent_id=5000 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyMmsDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '安全驾驶舱', 4638, 8, 'dashboard', 'safety/dashboard/index', 'LegacySafetyDashboard',
     1, 0, 'C', '0', '0', 'safety:dashboard:list', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='安全驾驶舱' AND parent_id=4638 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacySafetyDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '谱系完整度', 4833, 3, 'dashboard', 'qms/trace/dashboard', 'LegacyQmsTraceDashboard',
     1, 0, 'C', '0', '0', 'qms:trace:dashboard', 'dashboard', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='谱系完整度' AND parent_id=4833 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyQmsTraceDashboard' AND menu_type='C');
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
 SELECT '投标看板', 905886, 8, 'dashboard', 'bid/dashboard/index', 'LegacyBidDashboard',
     1, 0, 'C', '0', '0', 'bid:dashboard:view', 'chart', 'admin', sysdate()
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name='投标看板' AND parent_id=905886 AND menu_type='C');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE route_name='LegacyBidDashboard' AND menu_type='C');
 
 -- =============================================
 -- 取消隐藏采购>统计分析目录（visible='1' -> '0'，幂等）
