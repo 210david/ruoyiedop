@@ -2,9 +2,11 @@
 -- 决策支持菜单重组（看板 + 统计分析 二级菜单归集）
 -- 内容：
 --   1) 决策支持下新建「看板」「统计分析」两个二级目录（M）
---   2) 九域看板（9 个）从决策支持平铺挪入「看板」；各模块看板（11 个）挪入「看板」
---   3) 统计分析下按模块名称分一级目录，各模块统计报表归入对应模块目录
---   4) 各模块原报表目录挪空后隐藏（visible='1'），不删除
+--   2) 九域看板（9 个）从决策支持平铺挪入「看板」；各模块看板挪入「看板」
+--   3) 统计分析下按模块名称分一级目录（含采购管理），各模块统计报表归入对应模块目录
+--   4) 采购看板(4461) 归入 统计分析>采购管理 并更名「采购统计分析」；
+--      商机看板(4070)、谱系完整度(4844) 不纳入决策支持（隐藏，原模块保留 Legacy 入口）
+--   5) 各模块原报表目录挪空后隐藏（visible='1'），不删除
 -- 原则：挪动只改 parent_id/order_num/path（防同父路由冲突），不改 menu_id/perms/component，
 --       sys_role_menu 角色权限关联不受影响
 -- 幂等：先查后插/先查后更，可重复执行
@@ -17,11 +19,11 @@ SET @biId = (SELECT menu_id FROM sys_menu WHERE menu_name = '决策支持' AND m
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '看板', @biId, 3, 'board', NULL, '',
+SELECT '指标看板分析', @biId, 3, 'board', NULL, '',
     1, 0, 'M', '0', '0', '', 'dashboard', 'admin', sysdate()
 FROM DUAL WHERE @biId IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '看板' AND parent_id = @biId AND menu_type = 'M');
-SET @boardId = (SELECT menu_id FROM sys_menu WHERE menu_name = '看板' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '指标看板分析' AND parent_id = @biId AND menu_type = 'M');
+SET @boardId = (SELECT menu_id FROM sys_menu WHERE menu_name = '指标看板分析' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
@@ -32,7 +34,7 @@ FROM DUAL WHERE @biId IS NOT NULL
 SET @statsId = (SELECT menu_id FROM sys_menu WHERE menu_name = '统计分析' AND parent_id = @biId AND menu_type = 'M' LIMIT 1);
 
 -- =============================================
--- 二、统计分析下按模块名称分一级目录（10 个，名称/图标与一级模块一致）
+-- 二、统计分析下按模块名称分一级目录（11 个，名称/图标与一级模块一致）
 -- =============================================
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
@@ -51,43 +53,49 @@ FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '营销管理' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '安全生产管理', @statsId, 4, 'safety', NULL, '', 1, 0, 'M', '0', '0', '', 'shield', 'admin', sysdate()
+SELECT '采购管理', @statsId, 4, 'pms', NULL, '', 1, 0, 'M', '0', '0', '', 'shopping', 'admin', sysdate()
+FROM DUAL WHERE @statsId IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '采购管理' AND parent_id = @statsId AND menu_type = 'M');
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
+    is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
+SELECT '安全生产管理', @statsId, 5, 'safety', NULL, '', 1, 0, 'M', '0', '0', '', 'shield', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '安全生产管理' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '质量管理', @statsId, 5, 'qms', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 'admin', sysdate()
+SELECT '质量管理', @statsId, 6, 'qms', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '质量管理' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '生产管控', @statsId, 6, 'mms', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 'admin', sysdate()
+SELECT '生产管控', @statsId, 7, 'mms', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '生产管控' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '产品设计', @statsId, 7, 'pdm', NULL, '', 1, 0, 'M', '0', '0', '', 'component', 'admin', sysdate()
+SELECT '产品设计', @statsId, 8, 'pdm', NULL, '', 1, 0, 'M', '0', '0', '', 'component', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '产品设计' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '人力资源管理', @statsId, 8, 'hr', NULL, '', 1, 0, 'M', '0', '0', '', 'people', 'admin', sysdate()
+SELECT '人力资源管理', @statsId, 9, 'hr', NULL, '', 1, 0, 'M', '0', '0', '', 'people', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '人力资源管理' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT 'AI中心', @statsId, 9, 'ai', NULL, '', 1, 0, 'M', '0', '0', '', 'skill', 'admin', sysdate()
+SELECT 'AI中心', @statsId, 10, 'ai', NULL, '', 1, 0, 'M', '0', '0', '', 'skill', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = 'AI中心' AND parent_id = @statsId AND menu_type = 'M');
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, route_name,
     is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time)
-SELECT '财务管理', @statsId, 10, 'fin', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 'admin', sysdate()
+SELECT '财务管理', @statsId, 11, 'fin', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 'admin', sysdate()
 FROM DUAL WHERE @statsId IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '财务管理' AND parent_id = @statsId AND menu_type = 'M');
 
 SET @stWms = (SELECT menu_id FROM sys_menu WHERE menu_name='仓储管理' AND parent_id=@statsId LIMIT 1);
 SET @stDms = (SELECT menu_id FROM sys_menu WHERE menu_name='设备管理' AND parent_id=@statsId LIMIT 1);
 SET @stMk  = (SELECT menu_id FROM sys_menu WHERE menu_name='营销管理' AND parent_id=@statsId LIMIT 1);
+SET @stPms = (SELECT menu_id FROM sys_menu WHERE menu_name='采购管理' AND parent_id=@statsId LIMIT 1);
 SET @stSafety = (SELECT menu_id FROM sys_menu WHERE menu_name='安全生产管理' AND parent_id=@statsId LIMIT 1);
 SET @stQms = (SELECT menu_id FROM sys_menu WHERE menu_name='质量管理' AND parent_id=@statsId LIMIT 1);
 SET @stMms = (SELECT menu_id FROM sys_menu WHERE menu_name='生产管控' AND parent_id=@statsId LIMIT 1);
@@ -106,22 +114,28 @@ WHERE @boardId IS NOT NULL AND parent_id = @biId
 -- =============================================
 -- 四、各模块看板挪入「看板」（order 20-30；path 冲突的加模块前缀防同父路由重复）
 -- =============================================
-UPDATE sys_menu SET parent_id=@boardId, order_num=20 WHERE menu_id=3090  AND @boardId IS NOT NULL AND parent_id=3006;   -- 数据看板(设备)   path=overview 唯一
-UPDATE sys_menu SET parent_id=@boardId, order_num=21 WHERE menu_id=3091  AND @boardId IS NOT NULL AND parent_id=3006;   -- 设备大屏         path=screen 唯一
-UPDATE sys_menu SET parent_id=@boardId, order_num=22, path='mk-dashboard'     WHERE menu_id=4120   AND @boardId IS NOT NULL AND parent_id=4006;   -- 营销看板
-UPDATE sys_menu SET parent_id=@boardId, order_num=23 WHERE menu_id=4583  AND @boardId IS NOT NULL AND parent_id=4006;   -- 推广看板         path=promotion 唯一
-UPDATE sys_menu SET parent_id=@boardId, order_num=24, path='bid-dashboard'    WHERE menu_id=905894 AND @boardId IS NOT NULL AND parent_id=905886; -- 投标看板
-UPDATE sys_menu SET parent_id=@boardId, order_num=25, path='pms-dashboard'    WHERE menu_id=4461   AND @boardId IS NOT NULL AND parent_id=4460;   -- 采购看板
-UPDATE sys_menu SET parent_id=@boardId, order_num=26, path='qms-dashboard'    WHERE menu_id=4544   AND @boardId IS NOT NULL AND parent_id=4813;   -- 质量看板
-UPDATE sys_menu SET parent_id=@boardId, order_num=27, path='mms-dashboard'    WHERE menu_id=5001   AND @boardId IS NOT NULL AND parent_id=5000;   -- 生产看板
-UPDATE sys_menu SET parent_id=@boardId, order_num=28, path='safety-dashboard' WHERE menu_id=4726   AND @boardId IS NOT NULL AND parent_id=4638;   -- 安全驾驶舱
-UPDATE sys_menu SET parent_id=@boardId, order_num=29 WHERE menu_id=4070  AND @boardId IS NOT NULL AND parent_id=4003;   -- 商机看板         path=kanban 唯一
-UPDATE sys_menu SET parent_id=@boardId, order_num=30, path='qms-trace-dashboard' WHERE menu_id=4844 AND @boardId IS NOT NULL AND parent_id=4833; -- 谱系完整度
+UPDATE sys_menu SET parent_id=@stDms, order_num=20, menu_name='设备统计分析' WHERE menu_id=3090 AND @stDms IS NOT NULL AND parent_id=3006;   -- 设备统计分析(设备)
+UPDATE sys_menu SET parent_id=@stDms, order_num=21, menu_name='设备数据大屏' WHERE menu_id=3091 AND @stDms IS NOT NULL AND parent_id=3006;   -- 设备数据大屏(设备)
+UPDATE sys_menu SET parent_id=@stMk, order_num=22, menu_name='营销统计分析' WHERE menu_id=4120 AND @stMk IS NOT NULL AND parent_id=4006;   -- 营销统计分析(营销)
+UPDATE sys_menu SET parent_id=@stMk, order_num=23, menu_name='推广分析' WHERE menu_id=4583 AND @stMk IS NOT NULL AND parent_id=4006;   -- 推广分析(营销)
+UPDATE sys_menu SET parent_id=@stMk, order_num=24, menu_name='投标分析' WHERE menu_id=905894 AND @stMk IS NOT NULL AND parent_id=905886;   -- 投标分析(营销)
+-- 4461 采购看板不进「看板」：归入 统计分析>采购管理（见第五节）
+UPDATE sys_menu SET parent_id=@stQms, order_num=26, menu_name='质量统计分析' WHERE menu_id=4544 AND @stQms IS NOT NULL AND parent_id=4813;   -- 质量统计分析(质量)
+UPDATE sys_menu SET parent_id=@stMms, order_num=27, menu_name='生产统计分析' WHERE menu_id=5001 AND @stMms IS NOT NULL AND parent_id=5000;   -- 生产统计分析(生产)
+UPDATE sys_menu SET parent_id=@stSafety, order_num=28, menu_name='安全生产驾驶舱' WHERE menu_id=4726 AND @stSafety IS NOT NULL AND parent_id=4638;   -- 安全生产驾驶舱(安全)
+UPDATE sys_menu SET parent_id=@stMk, order_num=29 WHERE menu_id=4070 AND @stMk IS NOT NULL AND parent_id=4003;   -- 商机看板(营销)
+UPDATE sys_menu SET parent_id=@boardId, order_num=30 WHERE menu_id=4844 AND @boardId IS NOT NULL AND parent_id=4833;   -- 谱系完整度(指标看板分析)
+UPDATE sys_menu SET visible='1' WHERE menu_id IN (4070, 4844);   -- 按人工调整保持隐藏
+-- 4070/4844 挪入决策支持对应位置（按人工调整），并保持隐藏；原模块入口由 bi_menu_restore_boards.sql 以 Legacy 路由恢复
 
 -- =============================================
 -- 五、各模块统计报表挪入「统计分析」对应模块目录（子菜单 path 不冲突，保持原 path）
 -- =============================================
-UPDATE sys_menu SET parent_id=@stWms, order_num=1 WHERE menu_id=2110    AND @stWms IS NOT NULL AND parent_id=2000;     -- 仓储统计分析(仓储)
+-- 采购看板(4461) -> 统计分析>采购管理，更名「采购统计分析」（path 保持 pms-dashboard，新目录下唯一）
+UPDATE sys_menu SET parent_id=@stPms, order_num=1, menu_name='采购统计分析', path='pms-dashboard'
+WHERE menu_id=4461 AND @stPms IS NOT NULL AND (parent_id <> @stPms OR menu_name <> '采购统计分析');
+
+UPDATE sys_menu SET parent_id=@stWms, order_num=1, menu_name='仓储统计分析' WHERE menu_id=2110 AND @stWms IS NOT NULL AND parent_id=2000;   -- 仓储统计分析(仓储)
 UPDATE sys_menu SET parent_id=@stDms, order_num=1 WHERE menu_id=3108    AND @stDms IS NOT NULL AND parent_id=3006;     -- 库存流水报表(设备)
 UPDATE sys_menu SET parent_id=@stMk,  order_num=1 WHERE menu_id=4156    AND @stMk  IS NOT NULL AND parent_id=4006;     -- 销售人员分析(营销)
 UPDATE sys_menu SET parent_id=@stMk,  order_num=2 WHERE menu_id=4215    AND @stMk  IS NOT NULL AND parent_id=4006;     -- 经销商专项报表(营销)
@@ -150,10 +164,11 @@ UPDATE sys_menu SET visible='1' WHERE menu_id=4460 AND NOT EXISTS
   (SELECT 1 FROM (SELECT 1 FROM sys_menu WHERE parent_id=4460 AND visible='0' AND status='0') t);
 UPDATE sys_menu SET visible='1' WHERE menu_id=4813 AND NOT EXISTS
   (SELECT 1 FROM (SELECT 1 FROM sys_menu WHERE parent_id=4813 AND visible='0' AND status='0') t);
+UPDATE sys_menu SET menu_name='统计分析' WHERE menu_id=3006;   -- 报表看板改名统计分析
 UPDATE sys_menu SET visible='1' WHERE menu_id=3006 AND NOT EXISTS
   (SELECT 1 FROM (SELECT 1 FROM sys_menu WHERE parent_id=3006 AND visible='0' AND status='0') t);
 -- 财务报表(905998)目录下剩余为 F 按钮权限（不构成菜单显示），直接隐藏
-UPDATE sys_menu SET visible='1' WHERE menu_id=905998;
+UPDATE sys_menu SET visible='0' WHERE menu_id=905998;   -- 财务报表目录保持可见（Legacy财务报表入口）
 
 -- =============================================
 -- 七、admin 角色授权（幂等；普通角色请在 系统管理-角色管理 自行勾选）
