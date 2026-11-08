@@ -119,6 +119,10 @@
             <groupId>com.ruoyi</groupId>
             <artifactId>ruoyi-bid</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-bi</artifactId>
+        </dependency>
 
         <!-- FIN财务管理模块（2026-10-09 恢复：原 XML 语法错误已修复，真机回归验证通过） -->
         <dependency>
