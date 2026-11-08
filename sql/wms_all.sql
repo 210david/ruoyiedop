@@ -48,6 +48,7 @@ CREATE TABLE wms_supplier (
     unified_credit_code  VARCHAR(64)                           COMMENT '统一社会信用代码',
     contact_person       VARCHAR(64)                           COMMENT '联系人',
     contact_phone        VARCHAR(20)                           COMMENT '联系电话',
+    fixed_phone          VARCHAR(20)                           COMMENT '固定电话',
     email                VARCHAR(128)                          COMMENT '邮箱',
     fax                  VARCHAR(20)                           COMMENT '传真',
     website              VARCHAR(255)                          COMMENT '网址',
@@ -630,9 +631,9 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2100, '移库管理', 2000, 6, 'move', 'wms/move/index', '', 'WmsMove', 1, 0, 'C', '0', '0', 'wms:move:list', 'swap', 'admin', sysdate(), '');
 
--- 统计报表
+-- 仓储统计分析
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
-(2110, '统计报表', 2000, 7, 'statistics', 'wms/statistics/index', '', 'WmsStatistics', 1, 0, 'C', '0', '0', 'wms:statistics:list', 'chart', 'admin', sysdate(), '仓库管理统计报表');
+(2110, '仓储统计分析', 2000, 7, 'statistics', 'wms/statistics/index', '', 'WmsStatistics', 1, 0, 'C', '0', '0', 'wms:statistics:list', 'chart', 'admin', sysdate(), '仓库管理统计报表');
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark) VALUES
 (2111, '统计查询', 2110, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'wms:statistics:query', '#', 'admin', sysdate(), '');

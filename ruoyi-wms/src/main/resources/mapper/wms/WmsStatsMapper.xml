@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.wms.mapper.WmsStatsMapper">
+
+    <!-- 物料入库均价（取价口径：putaway_qty × unit_price 加权平均，已确认 v1） -->
+    <sql id="materialAvgPrice">
+        SELECT d.material_id,
+               SUM(d.putaway_qty * d.unit_price) / NULLIF(SUM(d.putaway_qty), 0) AS avg_price
+        FROM wms_inbound_order_detail d
+        WHERE d.del_flag = '0' AND d.putaway_qty > 0 AND d.unit_price > 0
+        GROUP BY d.material_id
+    </sql>
+
+    <!-- 区间出库成本：出库实发数量 × 物料入库均价（仅统计已完成出库单 status='3'） -->
+    <select id="selectOutboundCost" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(od.actual_qty * p.avg_price), 0)
+        FROM wms_outbound_order_detail od
+        INNER JOIN wms_outbound_order o ON od.order_id = o.order_id AND o.del_flag = '0' AND o.status = '3'
+        INNER JOIN (<include refid="materialAvgPrice"/>) p ON od.material_id = p.material_id
+        WHERE od.del_flag = '0' AND od.actual_qty > 0
+          AND o.outbound_date >= #{beginDate} AND o.outbound_date <![CDATA[ < ]]> DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+    </select>
+
+    <!-- 当前库存金额（时点值；月频"平均库存金额"的 v1 近似，快照按日留存后可升级为月均） -->
+    <select id="selectInventoryAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(i.qty * p.avg_price), 0)
+        FROM wms_inventory i
+        INNER JOIN (<include refid="materialAvgPrice"/>) p ON i.material_id = p.material_id
+        WHERE i.del_flag = '0' AND i.qty > 0
+    </select>
+
+    <!-- 呆滞库存金额：超 90 天无出库记录的库存金额（不含委外/在制，已确认 v1） -->
+    <select id="selectSlowStockAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(i.qty * p.avg_price), 0)
+        FROM wms_inventory i
+        INNER JOIN (<include refid="materialAvgPrice"/>) p ON i.material_id = p.material_id
+        WHERE i.del_flag = '0' AND i.qty > 0
+          AND NOT EXISTS (
+              SELECT 1 FROM wms_outbound_order_detail od
+              INNER JOIN wms_outbound_order o ON od.order_id = o.order_id AND o.del_flag = '0' AND o.status = '3'
+              WHERE od.material_id = i.material_id AND od.del_flag = '0'
+                AND o.outbound_date >= DATE_SUB(#{metricDate}, INTERVAL 90 DAY)
+          )
+    </select>
+
+</mapper>

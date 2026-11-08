@@ -12,6 +12,7 @@
         <result property="unifiedCreditCode"   column="unified_credit_code"/>
         <result property="contactPerson"       column="contact_person"/>
         <result property="contactPhone"        column="contact_phone"/>
+        <result property="fixedPhone"          column="fixed_phone"/>
         <result property="email"               column="email"/>
         <result property="fax"                 column="fax"/>
         <result property="website"             column="website"/>
@@ -48,7 +49,7 @@
 
     <sql id="selectSupplierVo">
         SELECT supplier_id, supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level,
-               unified_credit_code, contact_person, contact_phone, email, fax, website, postcode, address,
+               unified_credit_code, contact_person, contact_phone, fixed_phone, email, fax, website, postcode, address,
                legal_person, registered_capital, enterprise_nature, business_scope, established_date,
                bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
                payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
@@ -85,14 +86,14 @@
     <insert id="insertSupplier" parameterType="WmsSupplier" useGeneratedKeys="true" keyProperty="supplierId">
         INSERT INTO wms_supplier (
             supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level, unified_credit_code,
-            contact_person, contact_phone, email, fax, website, postcode, address,
+            contact_person, contact_phone, fixed_phone, email, fax, website, postcode, address,
             legal_person, registered_capital, enterprise_nature, business_scope, established_date,
             bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
             payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
             cooperation_date, qualification_status, status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{supplierCode}, #{supplierName}, #{supplierShortName}, #{supplierType}, #{supplierLevel}, #{unifiedCreditCode},
-            #{contactPerson}, #{contactPhone}, #{email}, #{fax}, #{website}, #{postcode}, #{address},
+            #{contactPerson}, #{contactPhone}, #{fixedPhone}, #{email}, #{fax}, #{website}, #{postcode}, #{address},
             #{legalPerson}, #{registeredCapital}, #{enterpriseNature}, #{businessScope}, #{establishedDate},
             #{bankName}, #{bankBranch}, #{bankAccount}, #{taxNumber}, #{invoiceTitle}, #{invoiceAddress}, #{invoicePhone},
             #{paymentMethod}, #{paymentDays}, #{settlementType}, #{currency}, #{deliveryCycle}, #{minOrderAmount},
@@ -111,6 +112,7 @@
             <if test="unifiedCreditCode != null">unified_credit_code = #{unifiedCreditCode},</if>
             <if test="contactPerson != null">contact_person = #{contactPerson},</if>
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="fixedPhone != null">fixed_phone = #{fixedPhone},</if>
             <if test="email != null">email = #{email},</if>
             <if test="fax != null">fax = #{fax},</if>
             <if test="website != null">website = #{website},</if>
