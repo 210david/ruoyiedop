@@ -23,6 +23,8 @@ public class PjmTaskWorklog extends BaseEntity
     private Date workDate;
     private BigDecimal workHours;
     private String workContent;
+    /** 工时附件（多个url逗号分隔） */
+    private String attachment;
     private String delFlag;
 
     private String projectName;
@@ -46,6 +48,8 @@ public class PjmTaskWorklog extends BaseEntity
     public void setWorkHours(BigDecimal workHours) { this.workHours = workHours; }
     public String getWorkContent() { return workContent; }
     public void setWorkContent(String workContent) { this.workContent = workContent; }
+    public String getAttachment() { return attachment; }
+    public void setAttachment(String attachment) { this.attachment = attachment; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getProjectName() { return projectName; }

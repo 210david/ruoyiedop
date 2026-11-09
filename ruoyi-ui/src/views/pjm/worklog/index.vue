@@ -4,10 +4,6 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head">
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
-        <a class="adv-link" :class="{ 'is-open': showAdvanced }" @click.prevent="showAdvanced = !showAdvanced">
-          <span>{{ showAdvanced ? '收起' : '高级筛选' }}</span>
-          <el-icon class="chev"><ArrowDown /></el-icon>
-        </a>
       </div>
       <div class="filter-bar">
         <div class="field">
@@ -21,15 +17,15 @@
         <div class="field">
           <label>WBS任务</label>
           <div class="control is-select">
-            <el-select v-model="queryParams.taskId" placeholder="全部任务" clearable filterable @change="getList">
-              <el-option v-for="t in taskOptions" :key="t.taskId" :label="t.taskCode + ' ' + t.taskName" :value="t.taskId" />
+            <el-select v-model="queryParams.taskId" placeholder="全部任务" clearable filterable @change="handleQuery">
+              <el-option v-for="t in taskOptions" :key="t.taskId" :label="buildTaskLabel(t)" :value="t.taskId" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>填报人</label>
           <div class="control is-select">
-            <el-select v-model="queryParams.userId" placeholder="全部" clearable filterable @change="getList">
+            <el-select v-model="queryParams.userId" placeholder="全部" clearable filterable @change="handleQuery">
               <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
             </el-select>
           </div>
@@ -131,9 +127,12 @@
               <el-row :gutter="20">
                 <el-col :span="24">
                   <el-form-item label="WBS任务" prop="taskId">
-                    <el-select v-model="form.taskId" filterable placeholder="选择WBS任务" style="width:100%" @change="onTaskChange">
-                      <el-option v-for="t in taskOptions" :key="t.taskId" :label="t.taskCode + ' ' + t.taskName" :value="t.taskId" />
-                    </el-select>
+                    <el-input v-model="form.taskLabel" readonly placeholder="请选择WBS任务" style="width:100%" @click="openTaskPicker">
+                      <template #append><el-button icon="Search" @click.stop="openTaskPicker" /></template>
+                      <template #suffix>
+                        <el-icon v-if="form.taskLabel" class="clear-icon" @click.stop="clearWorklogTask"><CircleClose /></el-icon>
+                      </template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -176,6 +175,15 @@
                     <el-input v-model="form.workContent" type="textarea" :rows="3" placeholder="描述当日工作内容" />
                   </el-form-item>
                 </el-col>
+                <el-col :span="24">
+                  <el-form-item label="附件" prop="attachment">
+                    <UploadFile
+                      :model-value="form.attachment"
+                      @update:model-value="v => form.attachment = v"
+                      :limit="5" :fileSize="50"
+                      :fileType="['doc', 'docx', 'xls', 'xlsx', 'pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar']" />
+                  </el-form-item>
+                </el-col>
               </el-row>
             </div>
           </section>
@@ -189,21 +197,28 @@
     <!-- 填报人选择（组织机构） -->
     <UserPicker ref="userPickerRef" title="从组织架构选择填报人" @confirm="onUserConfirm" />
     <ProjectPicker ref="projectPickerRef" @confirm="onProjectPickerConfirm" />
+    <WbsTaskPicker ref="taskPickerRef" title="选择WBS任务" @confirm="onTaskConfirm" />
   </div>
 </template>
 
 <script setup name="PjmWorklog">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, getCurrentInstance, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CircleClose } from '@element-plus/icons-vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import ProjectPicker from '@/components/ProjectPicker/index.vue'
+import WbsTaskPicker from '@/components/WbsTaskPicker/index.vue'
+import UploadFile from '@/components/FileUpload/index.vue'
 import { listWorklog, getWorklog, addWorklog, updateWorklog, delWorklog } from '@/api/pjm/worklog'
 import { listProject } from '@/api/pjm/project'
 import { listTask } from '@/api/pjm/task'
 import { listAllUsers } from '@/api/pjm/member'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
+import useUserStore from '@/store/modules/user'
+
+const userStore = useUserStore()
+const { proxy } = getCurrentInstance()
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2'])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pjm_worklog_index')
@@ -214,7 +229,6 @@ const projectOptions = ref([]); const taskOptions = ref([]); const userOptions =
 const open = ref(false); const title = ref(''); const worklogRef = ref()
 
 const showSearch = ref(true)
-const showAdvanced = ref(false)
 
 // 列显隐配置
 const columns = ref({
@@ -297,7 +311,33 @@ function resetQuery() {
 }
 
 function reset() {
-  form.value = { worklogId: null, taskId: null, projectId: queryParams.projectId, userId: null, userName: null, workDate: new Date().toISOString().slice(0,10), workHours: 8, workContent: null }
+  form.value = {
+    worklogId: null,
+    taskId: null,
+    taskLabel: '',
+    projectId: queryParams.projectId,
+    userId: null,
+    userName: null,
+    workDate: new Date().toISOString().slice(0, 10),
+    workHours: 8,
+    workContent: null,
+    attachment: ''
+  }
+  // 填报人默认取当前登录用户
+  fillCurrentUser()
+  proxy.resetForm('worklogRef')
+}
+
+/** 填报人默认取当前登录用户（store 中已含 id/nickName，缺失时回退到组织架构列表匹配） */
+function fillCurrentUser() {
+  const currentId = userStore.id
+  const currentName = userStore.nickName || userStore.name
+  if (currentId) {
+    form.value.userId = Number(currentId)
+    form.value.userName = currentName
+  }
+  const matched = userOptions.value.find(u => String(u.userId) === String(currentId))
+  if (matched) form.value.userName = matched.nickName
 }
 
 function handleAdd() {
@@ -305,10 +345,35 @@ function handleAdd() {
   reset(); title.value = '录入工时'; open.value = true
 }
 
-function handleEdit(row) { getWorklog(row.worklogId).then(res => { form.value = res.data; title.value = '修改工时'; open.value = true }) }
+function handleEdit(row) {
+  getWorklog(row.worklogId).then(res => {
+    const data = res.data || {}
+    form.value = { ...data, taskLabel: buildTaskLabel(data) || '', attachment: data.attachment || '' }
+    title.value = '修改工时'
+    open.value = true
+  })
+}
 
-function onTaskChange(taskId) {
-  const t = taskOptions.value.find(x => x.taskId === taskId); if (t) form.value.projectId = t.projectId
+/** WBS任务弹框选择 */
+const taskPickerRef = ref()
+function buildTaskLabel(t) {
+  if (!t) return ''
+  return [t.taskCode, t.taskName].filter(Boolean).join(' ')
+}
+function openTaskPicker() {
+  if (!form.value.projectId) { ElMessage.warning('请先在列表页选择项目后再录入工时'); return }
+  taskPickerRef.value?.open({ projectId: form.value.projectId, taskId: form.value.taskId, projectLabel: selectedProjectLabel.value })
+}
+function onTaskConfirm(t) {
+  if (!t || !t.taskId) return
+  form.value.taskId = t.taskId
+  form.value.taskLabel = buildTaskLabel(t)
+  if (t.projectId) form.value.projectId = t.projectId
+  worklogRef.value?.clearValidate('taskId')
+}
+function clearWorklogTask() {
+  form.value.taskId = null
+  form.value.taskLabel = ''
 }
 function onUserChange(userId) {
   const u = userOptions.value.find(x => x.userId === userId); if (u) form.value.userName = u.nickName
@@ -329,9 +394,16 @@ function clearWorklogUser() {
 function submitForm() {
   worklogRef.value.validate(valid => {
     if (!valid) return
-    const action = form.value.worklogId ? updateWorklog(form.value) : addWorklog(form.value)
-    action.then(() => { ElMessage.success(form.value.worklogId ? '修改成功' : '录入成功'); open.value = false; getList() })
+    const payload = buildPayload()
+    const action = payload.worklogId ? updateWorklog(payload) : addWorklog(payload)
+    action.then(() => { ElMessage.success(payload.worklogId ? '修改成功' : '录入成功'); open.value = false; getList() })
   })
+}
+
+/** 组装提交数据：剔除仅用于回显的字段，保障清空操作能生效 */
+function buildPayload() {
+  const { taskLabel, ...payload } = form.value
+  return payload
 }
 
 function handleDelete(row) {

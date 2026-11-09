@@ -12,6 +12,7 @@
         <result property="workDate"     column="work_date"/>
         <result property="workHours"    column="work_hours"/>
         <result property="workContent"  column="work_content"/>
+        <result property="attachment"   column="attachment"/>
         <result property="delFlag"      column="del_flag"/>
         <result property="createBy"     column="create_by"/>
         <result property="createTime"   column="create_time"/>
@@ -24,7 +25,7 @@
 
     <sql id="selectWorklogVo">
         select w.worklog_id, w.worklog_no, w.task_id, w.project_id, w.user_id, w.user_name,
-               w.work_date, w.work_hours, w.work_content, w.del_flag,
+               w.work_date, w.work_hours, w.work_content, w.attachment, w.del_flag,
                w.create_by, w.create_time, w.update_by, w.update_time, w.remark,
                p.project_name, t.task_name
         from pjm_task_worklog w
@@ -60,6 +61,7 @@
             <if test="workDate != null">work_date,</if>
             <if test="workHours != null">work_hours,</if>
             <if test="workContent != null">work_content,</if>
+            <if test="attachment != null">attachment,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -74,6 +76,7 @@
             <if test="workDate != null">#{workDate},</if>
             <if test="workHours != null">#{workHours},</if>
             <if test="workContent != null">#{workContent},</if>
+            <if test="attachment != null">#{attachment},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -87,6 +90,7 @@
             <if test="workDate != null">work_date = #{workDate},</if>
             <if test="workHours != null">work_hours = #{workHours},</if>
             <if test="workContent != null">work_content = #{workContent},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>

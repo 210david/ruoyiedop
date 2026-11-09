@@ -158,24 +158,11 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-form-item label="选择文件" required>
-                <el-upload
-                  ref="uploaderRef"
-                  multiple
-                  style="width:100%"
-                  :action="uploadAction"
-                  :headers="uploadHeaders"
-                  :before-upload="beforeUpload"
-                  :on-success="onUploadSuccess"
-                  :on-error="onUploadError"
-                  :file-list="uploadFileList"
-                  :limit="50"
-                  :file-size="100"
-                >
-                  <el-button type="primary" icon="Upload">选取文件</el-button>
-                  <template #tip>
-                    <div class="el-upload__tip">单文件 ≤ 100MB，支持 doc/docx/xls/xlsx/pdf/ppt/pptx/zip/rar/jpg/png 等，单次最多 50 个</div>
-                  </template>
-                </el-upload>
+                <UploadFile
+                  :model-value="uploadUrlList"
+                  @update:model-value="onUploadUrlChange"
+                  :limit="50" :fileSize="50"
+                  :fileType="['doc', 'docx', 'xls', 'xlsx', 'pdf', 'ppt', 'pptx', 'zip', 'rar', 'jpg', 'png']" />
               </el-form-item>
             </div>
           </section>
@@ -219,6 +206,7 @@ import { listAttachment, addAttachment, updateAttachment, delAttachment } from '
 import { listProject } from '@/api/pjm/project'
 import { getToken } from '@/utils/auth'
 import FilePreview from '@/components/FilePreview/index.vue'
+import UploadFile from '@/components/FileUpload/index.vue'
 import ProjectPicker from '@/components/ProjectPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
@@ -229,8 +217,7 @@ const { pjm_project_attachment_type } = proxy.useDict('pjm_project_attachment_ty
 const attachmentTypeOptions = computed(() => (pjm_project_attachment_type.value || []).map(d => ({ ...d, value: String(d.value) })))
 
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-const uploadAction = baseUrl + '/common/upload'
-const uploadHeaders = computed(() => ({ Authorization: 'Bearer ' + getToken() }))
+// 上传走统一 FileUpload 组件（内部取后台配置 50M 较小值），无需页面自带 action/headers
 
 // ========== 查询条件 ==========
 const showSearch = ref(true)
@@ -320,15 +307,14 @@ function handleDelete(row) {
 // ========== 上传 ==========
 const uploadOpen = ref(false)
 const uploadRef = ref()
-const uploaderRef = ref()
 const uploading = ref(false)
 const uploadForm = reactive({ projectId: null, attachmentType: null, remark: '' })
-const uploadFileList = ref([])
+const uploadUrlList = ref('') // UploadFile 组件 v-model（url 逗号串）
 const pendingFiles = ref([]) // 上传成功后待保存的文件元数据列表
 
 function handleUpload() {
   pendingFiles.value = []
-  uploadFileList.value = []
+  uploadUrlList.value = ''
   Object.assign(uploadForm, { projectId: queryParams.projectId || null, attachmentType: null, remark: '' })
   collapsedCards.c0 = false; collapsedCards.c1 = false
   uploadOpen.value = true
@@ -345,27 +331,15 @@ function onUploadProjectPickerConfirm(p) {
   if (!projectOptions.value.some(x => String(x.projectId) === String(p.projectId))) projectOptions.value.push(p)
   uploadForm.projectId = p.projectId
 }
-function beforeUpload(file) {
-  if (uploadFileList.value.length >= 50) { proxy.$modal.msgError('单次最多 50 个文件'); return false }
-  const isLt = file.size / 1024 / 1024 < 100
-  if (!isLt) { proxy.$modal.msgError('单文件大小不能超过 100MB'); return false }
-  return true
-}
-function onUploadSuccess(res, file) {
-  if (res.code === 200) {
-    const ext = (file.name.split('.').pop() || '').toLowerCase()
-    pendingFiles.value.push({
-      file_name: file.name,
-      file_url: res.fileName,
-      file_size: file.size,
-      file_ext: ext
-    })
-  } else {
-    proxy.$modal.msgError(res.msg || '上传失败')
-  }
-}
-function onUploadError() {
-  proxy.$modal.msgError('文件上传失败，请检查网络')
+/** UploadFile 组件 emit 回 url 串后，重建待保存文件元数据（url 末段取文件名，与项目立项页同款逻辑） */
+function onUploadUrlChange(v) {
+  const urls = Array.isArray(v) ? v : String(v || '').split(',').map(u => u.trim()).filter(Boolean)
+  pendingFiles.value = urls.map(url => ({
+    file_name: url.split('/').pop() || url,
+    file_url: url,
+    file_size: null,
+    file_ext: ((url.split('/').pop() || '').split('.').pop() || '').toLowerCase()
+  }))
 }
 function doUpload() {
   if (!uploadForm.projectId) { proxy.$modal.msgError('请选择所属项目'); return }
