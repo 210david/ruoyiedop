@@ -182,6 +182,16 @@
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
+                        <el-form-item label="部门简称" prop="deptShortName">
+                           <el-input v-model="form.deptShortName" placeholder="请输入部门简称" maxlength="50" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="部门编码" prop="deptCode">
+                           <el-input v-model="form.deptCode" placeholder="请输入部门编码" maxlength="50" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
                         <el-form-item label="显示排序" prop="orderNum">
                            <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
                         </el-form-item>
@@ -198,7 +208,7 @@
                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                         </svg>
                      </span>
-                     联系信息
+                     归属信息
                   </div>
                </div>
                <div class="rd-card-body">
@@ -214,13 +224,18 @@
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
-                        <el-form-item label="联系电话" prop="phone">
-                           <el-input v-model="form.phone" placeholder="请输入联系电话" maxlength="11" />
+                        <el-form-item label="分管领导" prop="chargeLeaderId">
+                           <el-input v-model="form.chargeLeaderName" readonly placeholder="请选择分管领导" style="width: 100%" @click="onChargeLeaderFieldClick">
+                              <template #append>
+                                 <el-button v-if="form.chargeLeaderName" icon="CircleClose" @click="onChargeLeaderFieldClick" />
+                                 <el-button v-else icon="Search" @click="onChargeLeaderFieldClick" />
+                              </template>
+                           </el-input>
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
-                        <el-form-item label="邮箱" prop="email">
-                           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+                        <el-form-item label="在职人数" prop="staffCount">
+                           <el-input-number v-model="form.staffCount" controls-position="right" :min="0" disabled placeholder="保存后自动统计" style="width: 100%" />
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
@@ -245,6 +260,8 @@
 
       <!-- 负责人选择弹窗 -->
       <user-picker ref="userPickerRef" title="选择部门负责人" @confirm="onUserPickerConfirm" />
+      <!-- 分管领导选择弹窗 -->
+      <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
    </div>
 </template>
 
@@ -290,9 +307,7 @@ const data = reactive({
   rules: {
     parentId: [{ required: true, message: "上级部门不能为空", trigger: "blur" }],
     deptName: [{ required: true, message: "部门名称不能为空", trigger: "blur" }],
-    orderNum: [{ required: true, message: "显示排序不能为空", trigger: "blur" }],
-    email: [{ type: "email", message: "请输入正确的邮箱地址", trigger: ["blur", "change"] }],
-    phone: [{ pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }]
+    orderNum: [{ required: true, message: "显示排序不能为空", trigger: "blur" }]
   },
 })
 
@@ -361,11 +376,14 @@ function reset() {
     deptId: undefined,
     parentId: undefined,
     deptName: undefined,
+    deptShortName: undefined,
+    deptCode: undefined,
     orderNum: 0,
     leader: undefined,
     leaderId: undefined,
-    phone: undefined,
-    email: undefined,
+    chargeLeaderId: undefined,
+    chargeLeaderName: undefined,
+    staffCount: undefined,
     status: "0"
   }
   proxy.resetForm("deptRef")
@@ -378,9 +396,6 @@ function openUserPicker() {
 function onUserPickerConfirm(user) {
   form.value.leaderId = user.userId
   form.value.leader = user.nickName
-  if (user.phonenumber) {
-    form.value.phone = user.phonenumber
-  }
 }
 function clearLeader() {
   form.value.leaderId = undefined
@@ -392,6 +407,26 @@ function onLeaderFieldClick(e) {
     return
   }
   openUserPicker()
+}
+
+/** ===== 分管领导弹框选择 ===== */
+function openChargeLeaderPicker() {
+  proxy.$refs.chargeLeaderPickerRef.open(form.value.chargeLeaderId)
+}
+function onChargeLeaderPickerConfirm(user) {
+  form.value.chargeLeaderId = user.userId
+  form.value.chargeLeaderName = user.nickName
+}
+function clearChargeLeader() {
+  form.value.chargeLeaderId = undefined
+  form.value.chargeLeaderName = undefined
+}
+function onChargeLeaderFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.chargeLeaderName) { clearChargeLeader(); } else { openChargeLeaderPicker(); }
+    return
+  }
+  openChargeLeaderPicker()
 }
 
 /** 搜索按钮操作 */
