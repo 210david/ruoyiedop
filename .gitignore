@@ -59,3 +59,7 @@ image-*.png
 image-*.webp
 managed-browser-*.png
 *.artifact.json
+
+# ===== Local temp check / runtime upload artifacts =====
+_tmp_chk/
+uploadPath/
