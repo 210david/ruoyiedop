@@ -18,10 +18,28 @@
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
+        <div class="field">
           <label>收款单号</label>
           <div class="control">
             <el-input v-model="queryParams.paymentNo" placeholder="模糊搜索单号" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>期次</label>
+          <div class="control">
+            <el-input v-model="queryParams.periodNo" placeholder="如：1" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>付款方</label>
+          <div class="control">
+            <el-input v-model="queryParams.payer" placeholder="模糊搜索付款方" clearable @keyup.enter="handleQuery" />
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
+          <label>收款日期</label>
+          <div class="control">
+            <el-date-picker v-model="paymentDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:100%" @change="onPaymentDateRangeChange" />
           </div>
         </div>
       </div>
@@ -58,6 +76,9 @@
           <el-table-column label="已回款(元)" width="150" align="right" class-name="col-num">
             <template #default="scope"><span class="col-amt">{{ money(scope.row.receivedAmount) }}</span></template>
           </el-table-column>
+          <el-table-column label="已开票(元)" width="150" align="right" class-name="col-num">
+            <template #default="scope"><span class="col-amt">{{ money(scope.row.invoicedAmount) }}</span></template>
+          </el-table-column>
           <el-table-column label="回款比例" width="170">
             <template #default="scope">
               <div class="pbar-wrap">
@@ -93,6 +114,10 @@
           <div class="stat-value">¥{{ money(currentSummary.receivedAmount) }}</div>
         </div>
         <div class="stat-card">
+          <div class="stat-label">已开票</div>
+          <div class="stat-value">¥{{ money(currentSummary.invoicedAmount) }}</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-label">待回款</div>
           <div class="stat-value">¥{{ money(pendingAmount(currentSummary)) }}</div>
         </div>
@@ -112,7 +137,7 @@
 
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pjm:payment:add']">登记收款</el-button>
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pjm:payment:add']">登记回款</el-button>
           <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleEdit()" v-hasPermi="['pjm:payment:edit']">
             <el-icon><Edit /></el-icon> 修改
           </button>
@@ -151,6 +176,7 @@
           <el-table-column label="操作" width="160" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['pjm:payment:query']">详情</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['pjm:payment:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pjm:payment:remove']">删除</el-button>
               </div>
@@ -182,11 +208,9 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
-                <el-col :span="12">
+                <el-col :span="24">
                   <el-form-item label="所属项目" prop="projectId">
-                    <el-input :model-value="formProjectLabel" placeholder="点击选择项目" readonly style="width:100%;cursor:pointer" @click="openFormProjectPicker">
-                      <template #append><el-button icon="Search" @click.stop="openFormProjectPicker" /></template>
-                    </el-input>
+                    <el-input :model-value="formProjectLabel" readonly placeholder="从项目进入自动带入" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -204,17 +228,52 @@
                     <el-date-picker v-model="form.paymentDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="24">
+                <el-col :span="12">
                   <el-form-item label="付款方">
                     <el-input v-model="form.payer" placeholder="付款单位名称（默认为业主单位）" />
                   </el-form-item>
                 </el-col>
+              </el-row>
+            </div>
+          </section>
+
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c2')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><el-icon><Document /></el-icon></span>其他信息
+              </div>
+              <button type="button" class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }">
+                <el-icon><ArrowDown /></el-icon>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c2">
+              <el-row :gutter="20">
                 <el-col :span="24">
                   <el-form-item label="备注">
                     <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="凭证号、付款说明等" />
                   </el-form-item>
                 </el-col>
               </el-row>
+            </div>
+          </section>
+
+          <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('c3')">
+              <div class="rd-card-title">
+                <span class="rd-card-icon"><el-icon><Paperclip /></el-icon></span>回款凭证
+              </div>
+              <button type="button" class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }">
+                <el-icon><ArrowDown /></el-icon>
+              </button>
+            </div>
+            <div class="rd-card-body" v-show="!collapsedCards.c3">
+              <el-form-item label="回款凭证">
+                <UploadFile
+                  :model-value="form.voucherUrls"
+                  @update:model-value="v => form.voucherUrls = v"
+                  :limit="5" :fileSize="50"
+                  :fileType="['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar', 'doc', 'docx']" />
+              </el-form-item>
             </div>
           </section>
         </div>
@@ -224,8 +283,67 @@
         <el-button type="primary" @click="submitForm">确 定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 回款详情弹窗（规范第十节：只读布局） -->
+    <el-dialog v-model="detailOpen" width="880px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="18"><Money /></el-icon></div>
+          <span class="rd-detail-header-title">回款详情</span>
+          <div class="rd-detail-header-sub" v-if="detailData.paymentNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ detailData.paymentNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><el-icon><Tickets /></el-icon></span>收款信息</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">所属项目</span><div class="rd-value">{{ detailData.projectNo || '-' }} {{ detailData.projectName || '' }}</div></div>
+              <div class="rd-item"><span class="rd-label">收款单号</span><div class="rd-value">{{ detailData.paymentNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">期次</span><div class="rd-value">{{ detailData.periodNo ? '第' + detailData.periodNo + '期' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">收款金额</span><div class="rd-value rd-amount">{{ detailData.amount != null ? '¥' + money(detailData.amount) : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">收款日期</span><div class="rd-value">{{ detailData.paymentDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">付款方</span><div class="rd-value">{{ detailData.payer || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><el-icon><Document /></el-icon></span>其他信息</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ detailData.remark || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card" v-if="voucherList.length > 0">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><el-icon><Paperclip /></el-icon></span>回款凭证</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item" v-for="(url, i) in voucherList" :key="i">
+                <span class="rd-label">凭证{{ i + 1 }}</span>
+                <div class="rd-value"><el-link type="primary" underline="never" @click="previewVoucher(url)">点击预览</el-link></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="detailOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 附件预览（全站统一 FilePreview 组件） -->
+    <file-preview ref="detailFilePreviewRef" />
     <ProjectPicker ref="projectPickerRef" @confirm="onProjectPickerConfirm" />
-    <ProjectPicker ref="formProjectPickerRef" @confirm="onFormProjectPickerConfirm" />
   </div>
 </template>
 
@@ -237,8 +355,9 @@ import { listProject } from '@/api/pjm/project'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import ProjectPicker from '@/components/ProjectPicker/index.vue'
+import UploadFile from '@/components/FileUpload/index.vue'
 
-const { collapsedCards, toggleCard } = useDetailCard(['c1'])
+const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3'])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pjm_payment_index')
 
 const loading = ref(false)
@@ -267,7 +386,8 @@ const columns = ref({
   remark: { label: '备注', visible: true }
 })
 
-const queryParams = reactive({ pageNum: 1, pageSize: 10, projectId: null, paymentNo: null })
+const queryParams = reactive({ pageNum: 1, pageSize: 10, projectId: null, paymentNo: null, periodNo: null, payer: null, params: { beginPaymentDate: '', endPaymentDate: '' } })
+const paymentDateRange = ref([])
 const projectPickerRef = ref()
 const selectedProjectLabel = computed(() => {
   const p = projectOptions.value.find(x => String(x.projectId) === String(queryParams.projectId))
@@ -282,18 +402,10 @@ function onProjectPickerConfirm(p) {
 }
 const summaryQuery = reactive({ pageNum: 1, pageSize: 10 })
 const form = ref({})
-// 表单内项目浏览框
-const formProjectPickerRef = ref()
 const formProjectLabel = computed(() => {
   const p = projectOptions.value.find(x => String(x.projectId) === String(form.value.projectId))
   return p ? p.projectNo + ' ' + p.projectName : ''
 })
-function openFormProjectPicker() { formProjectPickerRef.value?.open(form.value.projectId) }
-function onFormProjectPickerConfirm(p) {
-  if (!p || !p.projectId) return
-  if (!projectOptions.value.some(x => String(x.projectId) === String(p.projectId))) projectOptions.value.push(p)
-  form.value.projectId = p.projectId
-}
 const rules = {
   projectId: [{ required: true, message: '请选择项目', trigger: 'change' }],
   amount: [{ required: true, message: '请输入收款金额', trigger: 'blur' }],
@@ -304,8 +416,16 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.projectId) count++
   if (queryParams.paymentNo) count++
+  if (queryParams.periodNo) count++
+  if (queryParams.payer) count++
+  if (paymentDateRange.value && paymentDateRange.value.length) count++
   return count
 })
+
+function onPaymentDateRangeChange(range) {
+  queryParams.params.beginPaymentDate = (range && range[0]) || ''
+  queryParams.params.endPaymentDate = (range && range[1]) || ''
+}
 
 function money(v) {
   if (v == null) return '0.00'
@@ -376,6 +496,11 @@ function handleQuery() {
 function resetQuery() {
   queryParams.projectId = null
   queryParams.paymentNo = null
+  queryParams.periodNo = null
+  queryParams.payer = null
+  paymentDateRange.value = []
+  queryParams.params.beginPaymentDate = ''
+  queryParams.params.endPaymentDate = ''
   currentSummary.value = null
   paymentList.value = []
   total.value = 0
@@ -393,13 +518,13 @@ function reset() {
   form.value = {
     paymentId: null, projectId: queryParams.projectId, periodNo: null,
     amount: null, paymentDate: new Date().toISOString().slice(0, 10),
-    payer: proj?.ownerUnit || proj?.customer || null, remark: null
+    payer: proj?.ownerUnit || proj?.customer || null, remark: null, voucherUrls: null
   }
 }
 
 function handleAdd() {
   reset()
-  title.value = '登记收款'
+  title.value = '登记回款'
   open.value = true
 }
 
@@ -434,6 +559,23 @@ function handleDelete(row) {
       loadSummary()
     })
   }).catch(() => {})
+}
+
+/** 回款详情弹窗（规范第十节：只读布局） */
+const detailOpen = ref(false)
+const detailData = ref({})
+const detailFilePreviewRef = ref(null)
+const voucherList = computed(() => String(detailData.value.voucherUrls || '').split(',').map(u => u.trim()).filter(Boolean))
+
+function handleDetail(row) {
+  getPayment(row.paymentId).then(res => {
+    detailData.value = res.data || {}
+    detailOpen.value = true
+  })
+}
+
+function previewVoucher(url) {
+  detailFilePreviewRef.value?.open(url, url.split('/').pop() || '回款凭证')
 }
 
 onMounted(() => {
