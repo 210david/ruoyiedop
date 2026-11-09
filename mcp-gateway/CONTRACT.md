@@ -62,3 +62,8 @@
 | 分支 | 变更接口 | 变更内容 | 生效网关版本 | 登记日期 | 登记人 |
 |------|---------|---------|-------------|---------|--------|
 | （示例）dwx | GET /mk/order/list | 路径改为 /dwx/order/list | v1.1-manifest | | |
+| lyjs | 新增 lyjs.tools.json | 分支工具清单（含标准 5 工具），PROFILE=lyjs 时加载 | v1.0 | 2026-11-09 | david |
+| lyjs | GET /pjm/project/list | 新增工具 query_projects（项目管理列表：projectNo/projectName/status 过滤+分页） | v1.0 | 2026-11-09 | david |
+| lyjs | GET /safety/hazard/list | 新增工具 query_safety_hazards（安全隐患列表：仅分页，无过滤参数） | v1.0 | 2026-11-09 | david |
+| lyjs | GET /qms/task/list | 新增工具 query_quality_tasks（质量检验任务列表：仅分页，无过滤参数） | v1.0 | 2026-11-09 | david |
+| lyjs | GET /bid/project/list | 新增工具 query_bid_projects（投标项目列表：projectNo/projectName/status 过滤+分页） | v1.0 | 2026-11-09 | david |
