@@ -11,6 +11,7 @@
         <result property="amount"      column="amount"/>
         <result property="paymentDate" column="payment_date"/>
         <result property="payer"       column="payer"/>
+        <result property="voucherUrls" column="voucher_urls"/>
         <result property="delFlag"     column="del_flag"/>
         <result property="createBy"    column="create_by"/>
         <result property="createTime"  column="create_time"/>
@@ -21,11 +22,12 @@
         <result property="projectNo"   column="project_no"/>
         <result property="contractAmount" column="contract_amount"/>
         <result property="receivedAmount" column="received_amount"/>
+        <result property="invoicedAmount" column="invoiced_amount"/>
     </resultMap>
 
     <sql id="selectPaymentVo">
         select pm.payment_id, pm.payment_no, pm.project_id, pm.period_no, pm.amount,
-               pm.payment_date, pm.payer, pm.del_flag,
+               pm.payment_date, pm.payer, pm.del_flag, pm.voucher_urls,
                pm.create_by, pm.create_time, pm.update_by, pm.update_time, pm.remark,
                p.project_name, p.project_no
         from pjm_payment pm
@@ -38,6 +40,10 @@
         <where>
             <if test="projectId != null">AND pm.project_id = #{projectId}</if>
             <if test="paymentNo != null and paymentNo != ''">AND pm.payment_no like concat('%', #{paymentNo}, '%')</if>
+            <if test="periodNo != null">AND pm.period_no = #{periodNo}</if>
+            <if test="payer != null and payer != ''">AND pm.payer like concat('%', #{payer}, '%')</if>
+            <if test="params.beginPaymentDate != null and params.beginPaymentDate != ''">AND pm.payment_date &gt;= #{params.beginPaymentDate}</if>
+            <if test="params.endPaymentDate != null and params.endPaymentDate != ''">AND pm.payment_date &lt;= #{params.endPaymentDate}</if>
             AND pm.del_flag = '0'
         </where>
         order by pm.payment_date desc, pm.payment_id desc
@@ -52,7 +58,10 @@
             resultMap="PjmPaymentResult">
         select p.project_id, p.project_no, p.project_name,
                p.contract_amount,
-               coalesce(sum(pm.amount), 0) as received_amount
+               coalesce(sum(pm.amount), 0) as received_amount,
+               coalesce((select sum(pi.invoice_amount) from pjm_invoice pi
+                         where pi.project_id = p.project_id and pi.del_flag = '0'
+                           and pi.invoice_status = '1'), 0) as invoiced_amount
         from pjm_project p
         left join pjm_payment pm on pm.project_id = p.project_id and pm.del_flag = '0'
         <where>
@@ -74,6 +83,7 @@
             <if test="amount != null">amount,</if>
             <if test="paymentDate != null">payment_date,</if>
             <if test="payer != null">payer,</if>
+            <if test="voucherUrls != null">voucher_urls,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
@@ -86,6 +96,7 @@
             <if test="amount != null">#{amount},</if>
             <if test="paymentDate != null">#{paymentDate},</if>
             <if test="payer != null">#{payer},</if>
+            <if test="voucherUrls != null">#{voucherUrls},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
@@ -101,6 +112,7 @@
             <if test="amount != null">amount = #{amount},</if>
             <if test="paymentDate != null">payment_date = #{paymentDate},</if>
             <if test="payer != null">payer = #{payer},</if>
+            <if test="voucherUrls != null">voucher_urls = #{voucherUrls},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
