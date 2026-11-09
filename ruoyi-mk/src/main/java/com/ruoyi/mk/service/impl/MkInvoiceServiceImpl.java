@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import com.ruoyi.common.exception.ServiceException;
@@ -141,7 +140,7 @@ public class MkInvoiceServiceImpl implements IMkInvoiceService
 
         // 使用 PDFBox 提取PDF文本
         String text;
-        try (PDDocument document = Loader.loadPDF(file.getBytes()))
+        try (PDDocument document = PDDocument.load(file.getBytes()))
         {
             PDFTextStripper stripper = new PDFTextStripper();
             // 按照PDF原始顺序提取文本
