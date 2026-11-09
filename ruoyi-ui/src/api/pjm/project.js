@@ -62,11 +62,13 @@ export function closeProject(projectId) {
 }
 
 // ★ AI 解析附件（multipart/form-data，支持文件或文本）
+// timeout 单独设 2 分钟：后端需解析 PDF 文本并调用 LLM，常超过全局默认 10s
 export function aiParseProject(formData) {
   return request({
     url: '/pjm/project/ai/parse',
     method: 'post',
     data: formData,
+    timeout: 120000,
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
