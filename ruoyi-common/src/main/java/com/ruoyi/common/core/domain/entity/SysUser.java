@@ -80,7 +80,7 @@ public class SysUser extends BaseEntity
     /** 部门对象 */
     @Excels({
         @Excel(name = "部门名称", targetAttr = "deptName", type = Type.EXPORT),
-        @Excel(name = "部门负责人", targetAttr = "leader", type = Type.EXPORT)
+        @Excel(name = "部门领导", targetAttr = "leader", type = Type.EXPORT)
     })
     private SysDept dept;
 
@@ -96,13 +96,13 @@ public class SysUser extends BaseEntity
     /** 岗位名称（查询时拼接） */
     private String postName;
 
-    /** 上级领导（人员ID） */
+    /** 部门领导（人员ID） */
     private Long superiorLeaderId;
 
     /** 分管领导（人员ID） */
     private Long chargeLeaderId;
 
-    /** 上级领导姓名（查询回显） */
+    /** 部门领导姓名（查询回显） */
     private String superiorLeaderName;
 
     /** 分管领导姓名（查询回显） */
