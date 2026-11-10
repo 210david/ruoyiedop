@@ -61,3 +61,10 @@ managed-browser-*.png
 *.artifact.json
 
 node_modules/
+
+# build intermediates & local temp files
+sql/_build/
+/0
+ct.hex
+dec_out.txt
+dec_pwd.py
