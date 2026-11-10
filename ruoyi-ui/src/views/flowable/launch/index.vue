@@ -599,7 +599,7 @@ const browseLoading = ref(false)
 /** 数据源定义：API + 列配置 + 选中取值字段（与显示字段分离） */
 const BROWSE_SOURCES = {
   user:     { label: '人员',     api: '/system/user/list',    columns: [{ prop: 'nickName', label: '姓名' }, { prop: 'userName', label: '账号' }, { prop: 'email', label: '邮箱' }], valueKey: 'userName', labelKey: 'nickName' },
-  dept:     { label: '部门',     api: '/system/dept/list',    columns: [{ prop: 'deptName', label: '部门名称' }, { prop: 'leader', label: '负责人' }], valueKey: 'deptId', labelKey: 'deptName' },
+  dept:     { label: '部门',     api: '/system/dept/list',    columns: [{ prop: 'deptName', label: '部门名称' }, { prop: 'leader', label: '部门领导' }], valueKey: 'deptId', labelKey: 'deptName' },
   post:     { label: '岗位',     api: '/system/post/list',    columns: [{ prop: 'postName', label: '岗位名称' }, { prop: 'postCode', label: '岗位编码' }], valueKey: 'postCode', labelKey: 'postName' },
   role:     { label: '角色',     api: '/system/role/list',    columns: [{ prop: 'roleName', label: '角色名称' }, { prop: 'roleKey', label: '权限字符' }], valueKey: 'roleId', labelKey: 'roleName' },
   material: { label: '物料',     api: '/wms/material/list',   columns: [{ prop: 'materialName', label: '物料名称' }, { prop: 'materialCode', label: '物料编码' }, { prop: 'specModel', label: '规格型号' }], valueKey: 'materialCode', labelKey: 'materialName' },
