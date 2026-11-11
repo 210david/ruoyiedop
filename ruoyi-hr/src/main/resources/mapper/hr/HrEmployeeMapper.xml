@@ -142,6 +142,10 @@
         <include refid="selectVo"/> WHERE e.id_card = #{idCard} AND (e.del_flag IS NULL OR e.del_flag = '0')
     </select>
 
+    <select id="selectHrEmployeeByPhone" parameterType="String" resultMap="HrEmployeeResult">
+        <include refid="selectVo"/> WHERE e.phone = #{phone} AND (e.del_flag IS NULL OR e.del_flag = '0') LIMIT 1
+    </select>
+
     <insert id="insertHrEmployee" parameterType="HrEmployee" useGeneratedKeys="true" keyProperty="employeeId">
         INSERT INTO biz_hr_employee (
             employee_no, employee_name, gender, id_card, birthday, nation, politics_status, marital_status, phone, email, emergency_contact, emergency_phone, native_place, address, edu_level, graduation_school, major, graduation_date, social_work_years, company_work_years, org_id, position_id, position_name, skill_level, work_type, employee_type, entry_date, regular_date, leave_date, employee_status, bank_name, bank_account, social_security_no, social_security_status, house_fund_no, leave_reason, blacklist_flag, blacklist_reason, user_id, photo, status, del_flag, create_by, create_time, remark

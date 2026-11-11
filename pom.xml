@@ -254,6 +254,11 @@
                 <artifactId>ruoyi-bid</artifactId>
                 <version>${ruoyi.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-bi</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
 
             <!-- FIN财务管理模块-->
             <dependency>
@@ -276,7 +281,14 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
-            <!-- SpringBoot的依赖配置 -->
+            <!-- 第三方集成模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-integration</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- HTML解析 -->
             <dependency>
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
@@ -307,6 +319,8 @@
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
         <module>ruoyi-kingdee</module>
+        <module>ruoyi-bi</module>
+        <module>ruoyi-integration</module>
     </modules>
     <packaging>pom</packaging>
 

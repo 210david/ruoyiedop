@@ -1,0 +1,54 @@
+{
+  "comment": "标准版工具映射（契约基准见 CONTRACT.md）。分支定制：新建 <分支>.tools.json 覆盖/新增，禁止改 gateway.mjs。params 键=网关入参，值=后端查询参数名。",
+  "tools": {
+    "get_bi_metrics": {
+      "endpoints": {
+        "overview": "/bi/dashboard/overview",
+        "dict": "/bi/metric/list"
+      }
+    },
+    "query_inventory": {
+      "type": "table",
+      "endpoint": "/wms/inventory/list",
+      "params": {
+        "materialCode": "materialCode",
+        "materialName": "materialName",
+        "warehouseName": "warehouseName",
+        "batchNo": "batchNo"
+      }
+    },
+    "query_sales_orders": {
+      "type": "table",
+      "endpoint": "/mk/order/list",
+      "dateRange": true,
+      "params": {
+        "orderNo": "orderNo",
+        "customerName": "customerName",
+        "orderStatus": "orderStatus",
+        "startDate": "params[beginTime]",
+        "endDate": "params[endTime]"
+      }
+    },
+    "query_purchase_orders": {
+      "type": "table",
+      "endpoint": "/pms/order/list",
+      "dateRange": true,
+      "params": {
+        "orderNo": "orderNo",
+        "supplierName": "supplierName",
+        "status": "status",
+        "startDate": "params[beginTime]",
+        "endDate": "params[endTime]"
+      }
+    },
+    "get_platform_overview": {
+      "type": "aggregate",
+      "endpoints": {
+        "bi": "/bi/dashboard/overview",
+        "wms": "/wms/statistics/overview",
+        "mk": "/mk/dashboard/overview",
+        "pms": "/pms/dashboard/summary"
+      }
+    }
+  }
+}

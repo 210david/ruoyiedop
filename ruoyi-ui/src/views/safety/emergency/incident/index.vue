@@ -96,7 +96,7 @@
             <template #default="scope"><span class="rd-amount">{{ formatMoney(scope.row.economicLoss) }}</span></template>
           </el-table-column>
           <el-table-column label="报告人" prop="reportPerson" key="reportPerson" :width="colWidth('reportPerson', 100)" resizable v-if="columns.reportPerson.visible" />
-          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:emergency:incident:query']">查看</el-button>

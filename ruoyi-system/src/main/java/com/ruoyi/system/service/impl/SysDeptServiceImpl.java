@@ -308,6 +308,28 @@ public class SysDeptServiceImpl implements ISysDeptService
     }
 
     /**
+     * 将部门的部门领导、分管领导同步到该部门人员
+     *
+     * @param deptId 部门ID
+     * @return 更新人数
+     */
+    @Override
+    @Transactional
+    public int syncLeaderToUsers(Long deptId)
+    {
+        SysDept dept = deptMapper.selectDeptById(deptId);
+        if (StringUtils.isNull(dept))
+        {
+            throw new ServiceException("部门不存在");
+        }
+        if (StringUtils.isNull(dept.getLeaderId()) && StringUtils.isNull(dept.getChargeLeaderId()))
+        {
+            throw new ServiceException("请先设置部门领导或分管领导");
+        }
+        return deptMapper.syncLeaderToUsers(deptId, dept.getLeaderId(), dept.getChargeLeaderId());
+    }
+
+    /**
      * 删除部门管理信息
      * 
      * @param deptId 部门ID
