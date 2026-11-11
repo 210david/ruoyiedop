@@ -89,6 +89,9 @@ maven/
 *.tar
 *.gz
 
+# 金蝶 SDK 原始包（以源码形式内嵌 ruoyi-kingdee/src/main/java/com/kingdee/apigw/）
+ruoyi-kingdee/lib/
+
 # 会话临时调试截图（uuid 命名，不入库）
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.png
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.jpg

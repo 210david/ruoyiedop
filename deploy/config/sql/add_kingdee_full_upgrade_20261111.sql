@@ -1,15 +1,17 @@
 -- ============================================================
 -- 金蝶云星辰对接 — 完整数据库升级脚本
--- 幂等：所有操作都带 NOT EXISTS 判断，可重复执行
--- 日期：2026-11-11
+-- 幂等：所有操作可重复执行无副作用
+-- 日期：2026-11-11（修复 MySQL 8.0 兼容性 + 删除冲突表）
+-- 兼容：MySQL 8.0.28 实测通过
 -- ============================================================
+
+USE edop_yhny;
 
 -- ============================================================
 -- 一、sys_config 金蝶配置项（密钥已用 AES 加密，加密密钥在 application.yml 的 ruoyi.fileEncryptionKey）
 --   注意：首次部署时也可以只插 enabled=true，其余在前端"金蝶配置"页填写
 -- ============================================================
 
--- 基础开关（明文，可直接 INSERT）
 INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
 SELECT '金蝶对接开关', 'kingdee.enabled', 'true', 'Y', 'admin', NOW(), '是否启用金蝶云星辰对接'
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.enabled');
@@ -42,78 +44,130 @@ WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.sync_cron
 
 -- ============================================================
 -- 二、sys_user 补字段（git pull 远端实体新增的列）
+--   幂等模式：information_schema 判断 + prepare/execute
 -- ============================================================
-ALTER TABLE sys_user
-  ADD COLUMN IF NOT EXISTS leader_id              BIGINT       DEFAULT NULL COMMENT '直接领导ID',
-  ADD COLUMN IF NOT EXISTS leader_name            VARCHAR(64)  DEFAULT NULL COMMENT '直接领导姓名',
-  ADD COLUMN IF NOT EXISTS superior_leader_id     BIGINT       DEFAULT NULL COMMENT '上级领导ID',
-  ADD COLUMN IF NOT EXISTS superior_leader_name   VARCHAR(64)  DEFAULT NULL COMMENT '上级领导姓名',
-  ADD COLUMN IF NOT EXISTS charge_leader_id       BIGINT       DEFAULT NULL COMMENT '分管领导ID',
-  ADD COLUMN IF NOT EXISTS charge_leader_name     VARCHAR(64)  DEFAULT NULL COMMENT '分管领导姓名';
+
+-- leader_id
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column leader_id bigint default null comment ''直接领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- leader_name
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column leader_name varchar(64) default null comment ''直接领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- superior_leader_id
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'superior_leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column superior_leader_id bigint default null comment ''上级领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- superior_leader_name
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'superior_leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column superior_leader_name varchar(64) default null comment ''上级领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- charge_leader_id
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'charge_leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column charge_leader_id bigint default null comment ''分管领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- charge_leader_name
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'charge_leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column charge_leader_name varchar(64) default null comment ''分管领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- 校验：6 列全部应为 1
+SELECT 'SYS_USER_LEADER_COLS' tag, COUNT(*) cnt FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'sys_user'
+  AND column_name IN ('leader_id','leader_name','superior_leader_id','superior_leader_name','charge_leader_id','charge_leader_name');
 
 -- ============================================================
 -- 三、sys_logininfor msg 列加长（KingdeeSyncController 同步结果可能较长）
+--   此句重复执行无副作用，无需 IF NOT EXISTS
 -- ============================================================
 ALTER TABLE sys_logininfor MODIFY COLUMN msg VARCHAR(500) DEFAULT '' COMMENT '提示消息';
 
 -- ============================================================
 -- 四、mk_customer 补字段（同步时新增）
--- ============================================================
-ALTER TABLE mk_customer
-  ADD COLUMN IF NOT EXISTS credit_days          INT          DEFAULT 0   COMMENT '信用天数',
-  ADD COLUMN IF NOT EXISTS credit_limit         DECIMAL(18,2) DEFAULT NULL COMMENT '信用额度',
-  ADD COLUMN IF NOT EXISTS customer_type        VARCHAR(32)  DEFAULT NULL COMMENT '客户类型',
-  ADD COLUMN IF NOT EXISTS parent_customer_id   VARCHAR(64)  DEFAULT NULL COMMENT '上级客户编码',
-  ADD COLUMN IF NOT EXISTS contact_phone        VARCHAR(32)  DEFAULT NULL COMMENT '联系电话';
-
--- ============================================================
--- 五、integration 模块新表（金蝶对接配套）
--- ============================================================
-CREATE TABLE IF NOT EXISTS integration_user_binding (
-  id              BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
-  user_id         BIGINT        NOT NULL COMMENT '若依 sys_user.user_id',
-  account_type    VARCHAR(32)   NOT NULL COMMENT '账号类型：KINGDEE / WECOM / ...',
-  external_id     VARCHAR(128)  DEFAULT NULL COMMENT '外部系统用户 ID',
-  external_name   VARCHAR(128)  DEFAULT NULL COMMENT '外部系统用户名',
-  ext_json        JSON          DEFAULT NULL COMMENT '扩展信息',
-  bind_time       DATETIME      DEFAULT NULL COMMENT '绑定时间',
-  unbind_time     DATETIME      DEFAULT NULL COMMENT '解绑时间',
-  status          TINYINT       DEFAULT 1 COMMENT '1=有效 0=无效',
-  create_by       VARCHAR(64)   DEFAULT '',
-  create_time     DATETIME      DEFAULT CURRENT_TIMESTAMP,
-  update_by       VARCHAR(64)   DEFAULT '',
-  update_time     DATETIME      DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_user_type (user_id, account_type, status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='外部账号绑定表';
-
-CREATE TABLE IF NOT EXISTS integration_sync_log (
-  id              BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
-  source_system   VARCHAR(32)   NOT NULL COMMENT '来源：KINGDEE',
-  target_table    VARCHAR(64)   NOT NULL COMMENT '目标表：mk_customer / mk_material / ...',
-  sync_type       VARCHAR(16)   NOT NULL COMMENT 'MANUAL / SCHEDULED',
-  direction       VARCHAR(8)    NOT NULL COMMENT 'PULL（拉取）',
-  total_count     INT           DEFAULT 0 COMMENT '总数',
-  inserted_count  INT           DEFAULT 0 COMMENT '新增数',
-  updated_count   INT           DEFAULT 0 COMMENT '更新数',
-  skipped_count   INT           DEFAULT 0 COMMENT '跳过数',
-  error_count     INT           DEFAULT 0 COMMENT '错误数',
-  duration_ms     INT           DEFAULT 0 COMMENT '耗时毫秒',
-  status          VARCHAR(16)   NOT NULL COMMENT 'SUCCESS / PARTIAL / FAILED',
-  detail          JSON          DEFAULT NULL COMMENT '详情（跳过原因/错误样本）',
-  trigger_by      VARCHAR(64)   DEFAULT NULL COMMENT '触发人 / 定时任务',
-  start_time      DATETIME      NOT NULL,
-  end_time        DATETIME      DEFAULT NULL,
-  create_time     DATETIME      DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_source_table_time (source_system, target_table, start_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='集成同步日志表';
-
--- ============================================================
--- 六、金蝶完整菜单树（覆盖 add_kingdee_menu.sql 未覆盖的部分）
+--   幂等模式：information_schema 判断 + prepare/execute
 -- ============================================================
 
--- 一级菜单（add_kingdee_menu.sql 已处理，这里重复执行幂等）
+-- credit_days
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'credit_days');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column credit_days int default 0 comment ''信用天数''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- credit_limit
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'credit_limit');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column credit_limit decimal(18,2) default null comment ''信用额度''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- customer_type
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'customer_type');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column customer_type varchar(32) default null comment ''客户类型''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- parent_customer_id
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'parent_customer_id');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column parent_customer_id varchar(64) default null comment ''上级客户编码''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- contact_phone
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'contact_phone');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column contact_phone varchar(32) default null comment ''联系电话''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- 校验：5 列全部应为 1
+SELECT 'MK_CUSTOMER_KD_COLS' tag, COUNT(*) cnt FROM information_schema.columns
+  WHERE table_schema = DATABASE() AND table_name = 'mk_customer'
+  AND column_name IN ('credit_days','credit_limit','customer_type','parent_customer_id','contact_phone');
+
+-- ============================================================
+-- 五、integration_user_binding / integration_sync_log — 已删除
+--   原脚本定义与 sql/integration_attendance.sql（生产已执行）结构冲突，
+--   且 ruoyi-kingdee 模块零引用这两张表，留着会在新环境首装埋雷。
+--   如需绑定/日志表，请在 ruoyi-integration 模块维护或另起脚本。
+-- ============================================================
+
+-- ============================================================
+-- 六、金蝶完整菜单树（幂等 NOT EXISTS 写法）
+-- ============================================================
+
+-- 一级菜单
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
 SELECT '金蝶对接', 0, 20, 'kingdee', NULL, '', '', 1, 0, 'M', '0', '0', '', 'server',
        'admin', NOW(), '金蝶云星辰对接（基础数据同步）'
@@ -127,7 +181,7 @@ FROM sys_menu m
 WHERE m.menu_name = '金蝶对接' AND m.parent_id = 0
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:config:list');
 
--- 按钮权限
+-- 按钮权限（5 个）
 INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
 SELECT '金蝶配置修改', m.menu_id, 1, 'F', '0', '0', 'kingdee:config:edit', '#', 'admin', NOW(), '保存配置 + 测试连通性'
 FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:config:edit');
@@ -148,7 +202,7 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, statu
 SELECT '全量同步', m.menu_id, 5, 'F', '0', '0', 'kingdee:sync:all', '#', 'admin', NOW(), '客户+物料+供应商一起同步'
 FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:sync:all');
 
--- 管理员角色授权（幂等）
+-- 管理员角色授权（幂等：先删后插）
 DELETE FROM sys_role_menu
 WHERE menu_id IN (
   SELECT menu_id FROM sys_menu
@@ -160,9 +214,15 @@ SELECT 1, menu_id FROM sys_menu
 WHERE perms LIKE 'kingdee:%'
    OR (menu_name = '金蝶对接' AND parent_id = 0);
 
+-- 校验：金蝶菜单数应为 7（1 个 M + 1 个 C + 5 个 F）
+SELECT 'KINGDEE_MENU_COUNT' tag, COUNT(*) cnt FROM sys_menu WHERE perms LIKE 'kingdee:%' OR (menu_name = '金蝶对接' AND parent_id = 0);
+
 -- ============================================================
 -- 七、金蝶同步定时任务（Quartz）
 -- ============================================================
 INSERT INTO sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
 SELECT '金蝶基础数据同步', 'DEFAULT', 'kingdeeSyncJob.runAll()', '0 */30 * * * ?', '1', '1', '0', 'admin', NOW(), '每 30 分钟同步一次客户/物料/供应商'
 WHERE NOT EXISTS (SELECT 1 FROM sys_job WHERE invoke_target = 'kingdeeSyncJob.runAll()');
+
+-- 校验
+SELECT 'KINGDEE_JOB' tag, job_name, invoke_target, cron_expression FROM sys_job WHERE invoke_target = 'kingdeeSyncJob.runAll()';
