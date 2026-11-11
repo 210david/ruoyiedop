@@ -30,3 +30,12 @@ export function syncSupplier() {
 export function syncAll() {
   return request({ url: '/kingdee/sync/all', method: 'post', timeout: 180000 })
 }
+
+// ===== appSecret 自动刷新 =====
+export function refreshAppSecret() {
+  return request({ url: '/kingdee/secret/refresh', method: 'post', timeout: 30000 })
+}
+
+export function getAppSecretStatus() {
+  return request({ url: '/kingdee/secret/status', method: 'get' })
+}

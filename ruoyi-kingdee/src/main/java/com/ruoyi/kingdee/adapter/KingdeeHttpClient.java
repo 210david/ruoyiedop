@@ -96,6 +96,30 @@ public class KingdeeHttpClient
     }
 
     /**
+     * POST 调用（带 query params + 可选 body）
+     * <p>
+     * 用于主动获取授权等需要 URL query 参数的 POST 鉴权接口。
+     *
+     * @param fullUrl 完整 URL（如 https://api.kingdee.com/jdyconnector/app_management/push_app_authorize）
+     * @param params  URL query 参数（outerInstanceId 等）
+     * @param body    POST body（可为 null，表示无 body）
+     * @return 金蝶原始响应 JSON 字符串
+     */
+    public String post(String fullUrl, java.util.Map<String, String> params, Object body)
+    {
+        // BUSINESS_DOMAIN 就是 https://api.kingdee.com（鉴权接口域名）
+        String path = fullUrl.startsWith(BUSINESS_DOMAIN) ? fullUrl.substring(BUSINESS_DOMAIN.length()) : fullUrl;
+        ApiRequest req = new ApiRequest(HttpMethod.POST_BODY, BUSINESS_DOMAIN, path);
+        if (params != null) params.forEach(req::addQuery);
+        if (body != null) req.setBodyJson(toJsonBytes(body));
+
+        log.info("金蝶 POST {} params={}", fullUrl, params);
+        ApiResult result = sdk.send(req);
+        log.info("金蝶 POST {} → code={}", fullUrl, result.getHttpCode());
+        return result.getBody();
+    }
+
+    /**
      * POST 调用（带重试）
      */
     public String postWithRetry(String path, Object body)

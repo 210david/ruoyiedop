@@ -412,6 +412,7 @@ public class ApigwClient
         }
 
         byte[] raw = hmacSha256(clientSecret, signStr);
+        // 金蝶官方：HMAC-SHA256 → 16进制字符串 → Base64（对 hex 字符串做 Base64，不是对 raw bytes！）
         String hex = bytesToHex(raw);
         String signature = Base64.getEncoder().encodeToString(hex.getBytes(StandardCharsets.UTF_8));
 
@@ -426,6 +427,7 @@ public class ApigwClient
     String calcAppSignature(String appSecret, String appKey)
     {
         byte[] raw = hmacSha256(appSecret, appKey);
+        // 金蝶官方：HMAC-SHA256 → 16进制字符串 → Base64
         String hex = bytesToHex(raw);
         return Base64.getEncoder().encodeToString(hex.getBytes(StandardCharsets.UTF_8));
     }
@@ -483,10 +485,30 @@ public class ApigwClient
     {
         try
         {
-            return URLEncoder.encode(s, "UTF-8")
+            // 金蝶官方要求：编码后字母应是大写（%2F 不是 %2f）
+            String encoded = URLEncoder.encode(s, "UTF-8")
                 .replace("+", "%2B")
                 .replace("*", "%2A")
                 .replace("%7E", "~");
+            // 手动把 %xx 里的十六进制字母转大写（path 里的原始 ASCII 字母不动）
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            while (i < encoded.length())
+            {
+                if (encoded.charAt(i) == '%' && i + 2 < encoded.length())
+                {
+                    sb.append('%');
+                    sb.append(Character.toUpperCase(encoded.charAt(i + 1)));
+                    sb.append(Character.toUpperCase(encoded.charAt(i + 2)));
+                    i += 3;
+                }
+                else
+                {
+                    sb.append(encoded.charAt(i));
+                    i++;
+                }
+            }
+            return sb.toString();
         }
         catch (Exception e) { return s; }
     }

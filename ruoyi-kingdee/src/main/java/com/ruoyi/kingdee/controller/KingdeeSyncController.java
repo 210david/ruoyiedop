@@ -20,6 +20,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.kingdee.adapter.AppSecretRefresher;
 import com.ruoyi.kingdee.adapter.KingdeeHttpClient;
 import com.ruoyi.kingdee.config.KingdeeConfigResolver;
 import com.ruoyi.kingdee.sync.CustomerSyncService;
@@ -38,6 +39,7 @@ public class KingdeeSyncController extends BaseController
 
     @Autowired private KingdeeConfigResolver resolver;
     @Autowired private KingdeeHttpClient kingdeeClient;
+    @Autowired private AppSecretRefresher appSecretRefresher;
     @Autowired private CustomerSyncService customerSyncService;
     @Autowired private MaterialSyncService materialSyncService;
     @Autowired private SupplierSyncService supplierSyncService;
@@ -71,6 +73,8 @@ public class KingdeeSyncController extends BaseController
         resolver.save(KingdeeConfigResolver.K_TIMEOUT,     str(body.get("timeout")), op);
         resolver.save(KingdeeConfigResolver.K_RETRY,       str(body.get("retryTimes")), op);
         resolver.save(KingdeeConfigResolver.K_SYNC_CRON,   str(body.get("syncCron")), op);
+        resolver.save(KingdeeConfigResolver.K_OUTER_INSTANCE_ID, str(body.get("outerInstanceId")), op);
+        resolver.save(KingdeeConfigResolver.K_SECRET_REFRESH_CRON, str(body.get("secretRefreshCron")), op);
 
         kingdeeClient.syncConfigToSdk();
         return AjaxResult.success("配置保存成功，SDK 已即时同步");
@@ -159,6 +163,34 @@ public class KingdeeSyncController extends BaseController
         AjaxResult ajax = AjaxResult.success("全模块同步完成");
         ajax.put("modules", all);
         return ajax;
+    }
+
+    // ==================== appSecret 自动刷新 ====================
+
+    /** 手动触发 appSecret 刷新（从金蝶主动拉取最新授权信息） */
+    @Log(title = "金蝶appSecret刷新", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('kingdee:config:edit')")
+    @PostMapping("/secret/refresh")
+    public AjaxResult refreshAppSecret()
+    {
+        Map<String, Object> r = appSecretRefresher.refreshNow();
+        if (Boolean.TRUE.equals(r.get("ok")))
+        {
+            return AjaxResult.success(r);
+        }
+        return AjaxResult.error(String.valueOf(r.get("error")), r);
+    }
+
+    /** 查看 appSecret 刷新状态 */
+    @GetMapping("/secret/status")
+    public AjaxResult appSecretStatus()
+    {
+        Map<String, Object> s = new HashMap<>();
+        s.put("outerInstanceId", resolver.getOuterInstanceId());
+        s.put("secretRefreshCron", resolver.getSecretRefreshCron());
+        s.put("lastSuccessAt", appSecretRefresher.getLastSuccessAt());
+        s.put("configured", StringUtils.isNotEmpty(resolver.getOuterInstanceId()));
+        return AjaxResult.success(s);
     }
 
     // ==================== 健康检查 ====================

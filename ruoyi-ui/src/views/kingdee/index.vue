@@ -107,6 +107,21 @@
               <div class="form-tip">账套所属 IDC 域名，授权回调返回的 domain 字段</div>
             </el-form-item>
 
+            <el-form-item label="第三方实例ID">
+              <el-input v-model="form.outerInstanceId" placeholder="open.jdy.com → 应用详情 → 授权信息 中获取">
+                <template #prefix><el-icon><Key /></el-icon></template>
+              </el-input>
+              <div class="form-tip" style="display:flex;gap:8px;align-items:center">
+                <span>主动获取最新 appSecret 的必填参数。appSecret 24h 自动刷新，建议配置</span>
+                <el-button size="small" type="primary" plain :loading="refreshingSecret" @click="handleRefreshSecret">
+                  🔄 手动刷新 appSecret
+                </el-button>
+              </div>
+              <div v-if="secretRefreshStatus" style="margin-top:4px;font-size:12px;color:#909399">
+                上次刷新: {{ formatTs(secretRefreshStatus.lastSuccessAt) }} · 定时Cron: {{ secretRefreshStatus.secretRefreshCron }}
+              </div>
+            </el-form-item>
+
             <!-- 高级设置 -->
             <div class="form-group-title">
               <el-icon><Operation /></el-icon>高级设置
@@ -287,7 +302,8 @@
 
 <script setup name="KingdeeConfig">
 import { getKingdeeConfig, updateKingdeeConfig, testKingdeeConfig,
-  syncCustomer, syncMaterial, syncSupplier, syncAll } from '@/api/kingdee/index'
+  syncCustomer, syncMaterial, syncSupplier, syncAll,
+  refreshAppSecret, getAppSecretStatus } from '@/api/kingdee/index'
 
 const { proxy } = getCurrentInstance()
 
@@ -315,8 +331,13 @@ const form = ref({
   routerAddr: 'https://tf.jdy.com/',
   timeout: 30000,
   retryTimes: 2,
-  syncCron: '0 */30 * * * ?'
+  syncCron: '0 */30 * * * ?',
+  outerInstanceId: '',
+  secretRefreshCron: '0 0 2,14 * * ?'
 })
+
+const refreshingSecret = ref(false)
+const secretRefreshStatus = ref(null)
 
 function loadConfig(showSecret) {
   loading.value = true
@@ -333,7 +354,9 @@ function loadConfig(showSecret) {
       routerAddr: d.routerAddr || 'https://tf.jdy.com/',
       timeout: parseInt(d.timeout) || 30000,
       retryTimes: parseInt(d.retryTimes) || 2,
-      syncCron: d.syncCron || '0 */30 * * * ?'
+      syncCron: d.syncCron || '0 */30 * * * ?',
+      outerInstanceId: d.outerInstanceId || '',
+      secretRefreshCron: d.secretRefreshCron || '0 0 2,14 * * ?'
     }
     clientSecretConfigured.value = d.clientSecretConfigured === true || d.clientSecretConfigured === 'true'
     appSecretConfigured.value = d.appSecretConfigured === true || d.appSecretConfigured === 'true'
@@ -403,6 +426,34 @@ function handleTest() {
     testing.value = false
     lastTestResult.value = { success: false, latencyMs: 0, error: '请求失败' }
   })
+}
+
+function handleRefreshSecret() {
+  refreshingSecret.value = true
+  refreshAppSecret().then(res => {
+    refreshingSecret.value = false
+    const d = res.data || {}
+    // 刷新成功后端会自动持久化，前端重新 load 一次拿到最新 outerInstanceId/secretRefreshCron
+    loadConfig(false)
+    // 刷新状态面板
+    getAppSecretStatus().then(s => { secretRefreshStatus.value = s.data })
+    if (res.code === 200) {
+      const changed = d.changed ? '（appSecret 已更新）' : '（appSecret 未变化，仍是最新）'
+      proxy.$modal.msgSuccess(`appSecret 刷新成功！${changed} · 耗时 ${d.elapsedMs}ms`)
+    } else {
+      proxy.$modal.msgError(res.msg || '刷新失败')
+    }
+  }).catch(e => {
+    refreshingSecret.value = false
+    proxy.$modal.msgError('刷新请求异常：' + (e?.message || '请检查后端服务'))
+  })
+}
+
+function formatTs(ms) {
+  if (!ms || ms <= 0) return '从未刷新'
+  const d = new Date(ms)
+  const pad = n => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function handleReset() {
