@@ -96,3 +96,7 @@ ruoyi-kingdee/lib/
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.png
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.jpg
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.webp
+
+# chat temp files
+*-90c85e45-*.png
+*-ca1d-4cdb-*.png
