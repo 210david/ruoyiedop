@@ -4,17 +4,21 @@
 -- ============================================================
 
 -- 1. 一级菜单：金蝶对接（顶部导航）
-INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT '金蝶对接', 0, 20, 'kingdee', NULL, '', '', 1, 0, 'M', '0', '0', '', 'server',
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 9063108, '金蝶云星辰集成', 9063000, 3, 'kingdee', NULL, '', '', 1, 0, 'M', '0', '0', '', 'server',
        'admin', NOW(), '金蝶云星辰对接（基础数据同步）'
-WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_name = '金蝶对接' AND parent_id = 0);
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063108);
+
+-- 历史环境修正: 已按旧结构(一级菜单"金蝶对接")建过菜单的库, 统一迁移为系统集成子菜单
+UPDATE sys_menu SET menu_name = '金蝶云星辰集成', parent_id = 9063000, order_num = 3
+WHERE menu_id = 9063108 AND (parent_id <> 9063000 OR menu_name <> '金蝶云星辰集成');
 
 -- 2. 二级菜单：金蝶配置（页面）
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-SELECT '金蝶配置', m.menu_id, 1, 'config', 'kingdee/index', '', '', 1, 0, 'C', '0', '0', 'kingdee:config:list', 'edit',
+SELECT '金蝶配置', m.menu_id, 1, 'setting', 'kingdee/index', '', '', 1, 0, 'C', '0', '0', 'kingdee:config:list', 'edit',
        'admin', NOW(), ''
 FROM sys_menu m
-WHERE m.menu_name = '金蝶对接' AND m.parent_id = 0
+WHERE m.menu_id = 9063108
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:config:list');
 
 -- 3. 按钮权限：保存修改
@@ -41,11 +45,11 @@ WHERE menu_id IN (
     SELECT menu_id FROM sys_menu
     WHERE perms IN (
       'kingdee:config:list', 'kingdee:config:edit', 'kingdee:sync:customer'
-    ) OR (menu_name = '金蝶对接' AND parent_id = 0)
+    ) OR (menu_id = 9063108)
   ) tmp
 );
 
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT 1, menu_id FROM sys_menu
 WHERE perms IN ('kingdee:config:list', 'kingdee:config:edit', 'kingdee:sync:customer')
-   OR (menu_name = '金蝶对接' AND parent_id = 0);
+   OR (menu_id = 9063108);
