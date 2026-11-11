@@ -1,6 +1,6 @@
 /* ============================================================
-   泛微式 Excel 表单设计器 — 命名空间样式（P0）
-   顶栏深蓝 #2F3C8E 为泛微参考图同款色值（用户已确认直接复刻）
+   Excel 式表单设计器 — 命名空间样式（P0）
+   顶栏深蓝 #2F3C8E 与设计参考图的色值一致
    仅在 .wm-designer 命名空间内生效，不污染 EDOP 全局规范
    ============================================================ */
 .wm-designer {
@@ -57,7 +57,7 @@
 .wm-designer .wm-rz-h::before { left: 25%; top: 50%; transform: translateY(-50%); height: 3px; width: 50%; border-radius: 1px; }
 .wm-designer .wm-rz-v:hover, .wm-designer .wm-rz-h:hover { background: rgba(47, 60, 142, .14); }
 .wm-designer .wm-rz-v:hover::before, .wm-designer .wm-rz-h:hover::before { opacity: 1; background: #2F3C8E; }
-/* 行高/列宽弹窗：泛微式蓝色标题栏（容器样式，全局） */
+/* 行高/列宽弹窗：Excel 式蓝色标题栏（容器样式，全局） */
 .wm-rz-dialog .el-dialog__header { background: #2F3C8E; padding: 10px 16px; margin-right: 0; border-radius: 8px 8px 0 0; }
 .wm-rz-dialog .el-dialog__header .wm-rz-head { display: flex; align-items: center; gap: 6px; color: #fff; font-weight: 600; font-size: 14px; }
 .wm-rz-dialog .el-dialog__headerbtn .el-dialog__close { color: #fff; }
@@ -66,7 +66,7 @@
 .wm-rz-dialog .el-dialog__footer { padding: 6px 18px 14px; }
 /* 单元格 */
 .wm-designer .wm-cell { position: relative; padding: 3px 8px; font-size: 12px; background: #fff; vertical-align: middle; min-width: 0; }
-/* 泛微式多格选区：选区内统一浅灰底；外框用单层细线选框叠加层（.wm-selbox），四边必然完整 */
+/* Excel 式多格选区：选区内统一浅灰底；外框用单层细线选框叠加层（.wm-selbox），四边必然完整 */
 .wm-designer .wm-cell.band { background: #e2e2e2 !important; }
 .wm-designer .wm-cell.band.sel { outline: none; box-shadow: none; }
 .wm-designer .wm-canvas { position: relative; }
@@ -75,7 +75,7 @@
 .wm-designer .wm-cell.sel { outline: 2px solid var(--wm-blue); outline-offset: -2px; box-shadow: 0 0 0 3px rgba(47, 60, 142, .10); z-index: 1; }
 .wm-designer .wm-cell.t-title { font-weight: 600; }
 .wm-designer .wm-cell.t-note { color: #e0342b; }
-/* 泛微式标签格默认浅蓝底：选中变白底+黑框时对比明显（泛微同款配色） */
+/* Excel 式标签格默认浅蓝底：选中变白底+黑框时对比明显（与参考图配色一致） */
 .wm-designer .wm-cell.t-text { background: #dbe9f6; }
 .wm-designer .ph { color: #b6c2d2; }
 .wm-designer .wm-t { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
@@ -83,7 +83,7 @@
    .wm-t 因省略号需求为 inline-block，导致 td 上的 textDecoration 不生效；
    通过 inherit 让内层文本块继承单元格的下划线/删除线样式 */
 .wm-designer .wm-cell .wm-t, .wm-designer .wm-cell .wm-ctrl b { text-decoration: inherit; }
-/* 泛微式字段格：标签列浅黄底 + 右侧控件区，画布视觉密度提升 */
+/* Excel 式字段格：标签列浅黄底 + 右侧控件区，画布视觉密度提升 */
 .wm-designer .wm-f { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; }
 .wm-designer .wm-f em {
   font-style: normal; color: #5a5040; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -100,7 +100,7 @@
 .wm-designer .wm-img { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; object-fit: contain; object-position: center; display: block; }
 .wm-designer .img-left .wm-img { object-position: left center; }
 .wm-designer .img-right .wm-img { object-position: right center; }
-/* 泛微式：行列号覆盖范围内的空白格保留淡格线；仅末尾弹性填充区（行列号之外）无线 */
+/* Excel 式：行列号覆盖范围内的空白格保留淡格线；仅末尾弹性填充区（行列号之外）无线 */
 .wm-designer table.wm-grid .wm-fill-cell { background: #fff; border-color: transparent; }
 /* 字段控件只做展示，不接收鼠标事件：按下/拖拽/双击统一落到单元格，保证从控件上也能框选 */
 .wm-designer .wm-f, .wm-designer .wm-f * { pointer-events: none; }
@@ -120,38 +120,43 @@
 /* 必填字段控件：浅红提示边，呼应红星 */
 .wm-designer .wm-f.attr-req .wm-box { border-color: #f3c1c1; }
 .wm-designer .wm-edit { display: block; width: 100%; height: 100%; min-height: 22px; border: 1px solid var(--wm-blue); outline: none; font-family: inherit; font-size: 12px; text-align: inherit; padding: 0 8px; box-sizing: border-box; background: #fff; }
-/* 编辑态：清零单元格内边距，输入框撑满整格、与外框贴合（泛微同款） */
+/* 编辑态：清零单元格内边距，输入框撑满整格、与外框贴合 */
 .wm-designer .wm-cell.editing { padding: 0; }
 .wm-designer.no-lines table.wm-grid th, .wm-designer.no-lines table.wm-grid td { border-color: transparent; }
-/* 右键菜单（fixed 定位） */
-.wm-ctx { position: fixed; z-index: 3000; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .14); padding: 4px; min-width: 150px; }
+/* 右键菜单（fixed 定位）：位置由脚本按视口钳制，菜单过高时自身滚动，避免底部项看不到 */
+.wm-ctx { position: fixed; z-index: 3000; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .14); padding: 4px; min-width: 150px; max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain; }
 .wm-ctx-i { font-size: 12px; color: #334155; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
 .wm-ctx-i:hover { background: #f1f5f9; }
 .wm-ctx-i.dis { color: #cbd5e1; cursor: not-allowed; }
 .wm-ctx-i.dis:hover { background: transparent; }
 .wm-ctx-i.danger { color: #ef4444; }
 .wm-ctx-i.danger:hover { background: #fef2f2; }
-/* 全屏预览弹窗（泛微式）：白色表单页面居中，背景灰底 */
+/* 全屏预览弹窗（Excel 式）：白色表单页面居中，背景灰底 */
 .wm-preview-dialog .el-dialog__body { background: #f0f2f7; height: calc(100vh - 54px); overflow: auto; padding: 12px; }
 .wm-preview-page { background: #fff; margin: 0 auto; padding: 20px 24px; border-radius: 8px; width: 100%; box-sizing: border-box; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
 .wm-preview-actions { display: flex; justify-content: center; gap: 10px; padding: 16px 0 4px; }
 /* 顶栏下拉菜单弹层（挂 body） */
 .wm-menu-popper .el-dropdown-menu__item { font-size: 12px; padding: 6px 14px; }
 .wm-menu-popper .wm-tag { margin-left: 6px; font-size: 10px; color: #94a3b8; }
-/* 最大化（泛微同款窗口控制）：画布随视口撑高，内容区尽量多展示（工具条已合并单行） */
+/* 最大化（窗口控制）：画布随视口撑高，内容区尽量多展示（工具条已合并单行） */
 .wm-designer.wm-full .wm-canvas-wrap { max-height: calc(100vh - 248px); }
 .wm-designer.wm-full { min-height: calc(100vh - 230px); }
 /* 全屏时右侧面板同步撑高，消除面板下方空白 */
 .wm-designer.wm-full .wm-pp { max-height: calc(100vh - 248px) !important; }
-/* 泛微式：网格设计页无底部保存/取消（保存走顶栏），关闭走右上 X */
+/* Excel 式：网格设计页无底部保存/取消（保存走顶栏），关闭走右上 X */
 .rd-no-footer .el-dialog__footer { display: none; }
 /* 全屏时压缩弹窗留白，内容区尽量多展示 */
 .el-dialog.is-fullscreen .el-dialog__body { padding: 8px 12px 10px; }
+/* 全屏弹窗（表单管理「设计 / 页面设计」）：纵向 flex，内容区撑满、页脚贴底，避免页面下方留大片空白 */
+.el-dialog.is-fullscreen.rd-dialog { display: flex; flex-direction: column; }
+.el-dialog.is-fullscreen.rd-dialog .el-dialog__header { flex: none; }
+.el-dialog.is-fullscreen.rd-dialog .el-dialog__body { flex: 1; min-height: 0; overflow: auto; }
+.el-dialog.is-fullscreen.rd-dialog .el-dialog__footer { flex: none; }
 /* 帮助抽屉内容 */
 .wm-help-list { font-size: 13px; color: #334155; line-height: 2; padding: 0 4px; }
 .wm-help-list b { color: #2F3C8E; }
 
-/* ===== 明细表占位块（参照泛微 e-cology：黄色表头 + 空白行 + Σ 合计行） ===== */
+/* ===== 明细表占位块（按 Excel 式表单设计：黄色表头 + 空白行 + Σ 合计行） ===== */
 .wm-designer .wm-detail-mini { display: flex; flex-direction: column; width: 100%; height: 100%; font-size: 11px; overflow: hidden; }
 .wm-designer .wdm-bar { display: flex; align-items: center; justify-content: space-between; background: #2F3C8E; color: #fff; font-weight: 600; padding: 3px 8px; }
 .wm-designer .wdm-bar em { font-style: normal; font-size: 10px; font-weight: 400; color: #c7d2fe; }
@@ -164,7 +169,7 @@
 .wm-designer .wdm-sum { background: #f8fafc; color: #7c3aed; font-weight: 600; }
 .wm-designer .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; margin-top: 4px; }
 
-/* ===== 明细表单行占位条（泛微式：画布中不展开，双击进入明细表编辑） ===== */
+/* ===== 明细表单行占位条（Excel 式：画布中不展开，双击进入明细表编辑） ===== */
 .wm-designer .wm-cell .wdm-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; background: #2F3C8E; color: #fff; font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 3px; cursor: pointer; }
 .wm-designer .wm-cell .wdm-bar em { font-style: normal; font-weight: 400; font-size: 11px; color: #c7d2fe; }
 /* 明细表编辑弹窗 */
@@ -172,7 +177,7 @@
 .wm-designer .wdm-toolbar .wdm-tip { font-size: 12px; color: #94a3b8; width: 220px; line-height: 1.4; }
 .wm-designer .wdm-field-table { margin-bottom: 4px; }
 
-/* ===== 明细表展开网格（泛微式：画布内展开，列宽拖拽/列选中/必填星号/Σ 合计） ===== */
+/* ===== 明细表展开网格（Excel 式：画布内展开，列宽拖拽/列选中/必填星号/Σ 合计） ===== */
 .wm-designer .wdm-grid { display: flex; flex-direction: column; width: 100%; height: 100%; font-size: 11px; overflow: hidden; border-radius: 3px; }
 .wm-designer .wdm-bar-title { border-radius: 3px 3px 0 0; }
 .wm-designer .wdm-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-top: none; }
@@ -192,7 +197,7 @@
 .wm-designer .wdm-canvas-tip b { color: #2F3C8E; }
 .wm-designer .wdm-canvas-tip .wdm-tip { margin-top: 4px; }
 
-/* ===== 独立明细编辑视图（泛微式：格式工具栏 + 返回 + 明细网格） ===== */
+/* ===== 独立明细编辑视图（Excel 式：格式工具栏 + 返回 + 明细网格） ===== */
 /* 明细表编辑弹窗：序号拖动排序 */
 .wdm-drag-idx { display: inline-flex; align-items: center; gap: 4px; cursor: grab; color: #475569; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
 .wdm-drag-idx:hover { background: #f1f5f9; }
@@ -200,7 +205,7 @@
 /* 明细表编辑弹窗：名称/数据来源 */
 .wdm-head-form { padding: 0 8px; }
 
-/* ===== 明细编辑视图布局与属性面板（泛微勾选项同款） ===== */
+/* ===== 明细编辑视图布局与属性面板（勾选面板） ===== */
 /* 明细表编辑弹窗：序号拖动排序 */
 .wm-designer .wdm-prop { font-size: 12px; color: #475569; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
 .wm-designer .wdm-prop .el-checkbox { margin-right: 0; }
@@ -218,6 +223,11 @@
 .el-dialog .wdm-drag-idx.dragging { background: #e0e7ff; color: #4f46e5; }
 .el-dialog .wdm-head-form { padding: 0 8px; }
 .el-dialog .wdm-tip { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+/* 明细表编辑弹窗：明细行设置（必须填写 / 允许新增 / 允许删除 / 默认行数） */
+.el-dialog .wdm-dtset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 8px 10px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
+.el-dialog .wdm-dtset .lb { font-size: 12px; color: #64748b; font-weight: 600; }
+.el-dialog .wdm-dtset .el-checkbox { margin-right: 0; }
+.el-dialog .wdm-dtset .el-checkbox__label { font-size: 12.5px; }
 
 /* ===== 明细表编辑弹窗：拖动动画过渡（背景高亮平滑过渡 + 行位移过渡） ===== */
 .el-table.wdm-field-table td { transition: background-color .18s ease, box-shadow .18s ease; }

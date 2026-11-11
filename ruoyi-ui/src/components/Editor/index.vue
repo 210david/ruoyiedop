@@ -19,7 +19,7 @@
       ref="quillEditorRef"
       v-model:content="content"
       contentType="html"
-      @textChange="(e) => $emit('update:modelValue', content)"
+      @textChange="onTextChange"
       :options="options"
       :style="styles"
     />
@@ -107,11 +107,53 @@ const styles = computed(() => {
 })
 
 const content = ref("")
+/** 正在执行“清空”：此期间 quill 触发的 textChange 不回写父组件，避免把旧内容又写回去 */
+let clearing = false
+const emit = defineEmits(["update:modelValue"])
+
+function onTextChange() {
+  if (clearing) return
+  emit("update:modelValue", content.value)
+}
+
+/**
+ * 清空编辑器。
+ * vue-quill 的 content watcher 开头是 `if (!quill || !newContent ...) return`，
+ * 空字符串是 falsy，直接会被忽略 —— 所以父组件只把 v-model 置空，编辑器内容不会消失。
+ * 这里改调 Quill 自己的 API（setText）清，并同步本地 content，保证视图与模型一致。
+ */
+function clearEditor() {
+  clearing = true
+  content.value = ""
+  try {
+    const qe = quillEditorRef.value
+    const q = qe && typeof qe.getQuill === "function" ? qe.getQuill() : null
+    if (q) {
+      q.setText("", "api")
+      q.setSelection(0, 0)
+    }
+  } catch (e) {
+    // 编辑器尚未初始化时只清模型，渲染后再由 watcher 补一次
+  }
+  clearing = false
+  emit("update:modelValue", "")
+  // 清空过程中 vue-quill 可能把内部 delta 回填给 content，渲染后纠正一次
+  nextTick(() => { content.value = "" })
+}
+
 watch(() => props.modelValue, (v) => {
+  // 空值：上面说过直接赋 '' 不生效，必须走 clearEditor
+  if (v === "" || v === undefined || v === null) {
+    if (content.value) clearEditor()
+    return
+  }
   if (v !== content.value) {
-    content.value = v == undefined ? "<p></p>" : v
+    content.value = v
   }
 }, { immediate: true })
+
+// 供父组件主动调用：editorRef.value.clear()
+defineExpose({ clear: clearEditor })
 
 // 如果设置了上传地址则自定义图片上传事件
 onMounted(() => {

@@ -52,11 +52,20 @@ public class FlowInstance extends BaseEntity
     /** 紧急程度（1普通 2紧急 3特急，来自业务表系统字段） */
     private String urgency;
 
+    /** 流程编号（发起时按编号规则生成，来自业务表系统字段） */
+    private String processNo;
+
     /** 当前节点名称（进行中时返回） */
     private String currentActivityName;
 
-    /** 流程状态：running=进行中 completed=已完成 canceled=已撤销 */
+    /** 流程状态：running=进行中 completed=已完成 canceled=已中断（撤销/强制结束/删除） */
     private String status;
+
+    /** 中断原因（Flowable 删除原因，含义见 endType） */
+    private String deleteReason;
+
+    /** 结束方式：normal=正常办结 canceled=撤销 forceEnd=强制结束（管理端保存删除原因后由前缀解析） */
+    private String endType;
 
     /** 流程变量（发起时传入） */
     private Map<String, Object> variables;
@@ -87,8 +96,14 @@ public class FlowInstance extends BaseEntity
     public void setTitle(String title) { this.title = title; }
     public String getUrgency() { return urgency; }
     public void setUrgency(String urgency) { this.urgency = urgency; }
+    public String getProcessNo() { return processNo; }
+    public void setProcessNo(String processNo) { this.processNo = processNo; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getDeleteReason() { return deleteReason; }
+    public void setDeleteReason(String deleteReason) { this.deleteReason = deleteReason; }
+    public String getEndType() { return endType; }
+    public void setEndType(String endType) { this.endType = endType; }
     public Map<String, Object> getVariables() { return variables; }
     public void setVariables(Map<String, Object> variables) { this.variables = variables; }
 }

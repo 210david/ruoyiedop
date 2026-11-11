@@ -59,7 +59,7 @@
             </el-input>
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-if="activeTab !== 'cc'">
           <label>创建人</label>
           <div class="control">
             <el-input v-model="queryParams.startUserName" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -68,13 +68,13 @@
           </div>
         </div>
         <div class="field">
-          <label>创建时间</label>
+          <label>{{ activeTab === 'done' ? '办理时间' : '创建时间' }}</label>
           <div class="control">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期"
               end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" />
           </div>
         </div>
-        <div class="field">
+        <div class="field" v-if="activeTab !== 'draft' && activeTab !== 'cc'">
           <label>办理环节</label>
           <div class="control">
             <el-input v-model="queryParams.taskName" placeholder="请输入" clearable @keyup.enter="handleQuery">
@@ -96,9 +96,39 @@
 
     <!-- ===== 数据列表卡片 ===== -->
     <div class="surface">
-      <div class="list-head">
-        <div class="filter-title"><span class="glyph"></span> {{ activeTab === 'todo' ? '待办列表' : '已办列表' }}</div>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="flowable_task_columns" />
+      <!-- 页签：按规范使用统一的状态标签栏（圆点 + 名称 + 数量徽章） -->
+      <div class="status-tabs">
+        <div class="tabs-track">
+          <template v-if="activeTab !== 'done'">
+            <button class="status-tab" :class="{ 'is-active': activeTab === 'all' }" @click="switchTab('all')">
+              <span class="dot"></span><span>全部</span><span class="count">{{ allTotal || 0 }}</span>
+            </button>
+            <button class="status-tab tab-audit" :class="{ 'is-active': activeTab === 'todo' }" @click="switchTab('todo')">
+              <span class="dot"></span><span>待办</span><span class="count">{{ todoTotal || 0 }}</span>
+            </button>
+            <!-- 退回：被上游驳回退回给我重新办理的流程（「待办-退回」口径） -->
+            <button class="status-tab tab-reject" :class="{ 'is-active': activeTab === 'returned' }" @click="switchTab('returned')">
+              <span class="dot"></span><span>退回</span><span class="count">{{ returnedTotal || 0 }}</span>
+            </button>
+            <button class="status-tab tab-cc" :class="{ 'is-active': activeTab === 'cc' }" @click="switchTab('cc')">
+              <span class="dot"></span><span>待阅</span><span class="count">{{ ccTotal || 0 }}</span>
+            </button>
+            <button class="status-tab tab-draft" :class="{ 'is-active': activeTab === 'draft' }" @click="switchTab('draft')">
+              <span class="dot"></span><span>草稿</span><span class="count">{{ draftTotal || 0 }}</span>
+            </button>
+          </template>
+          <template v-else>
+            <button class="status-tab" :class="{ 'is-active': doneScope === 'all' }" @click="switchDoneScope('all')">
+              <span class="dot"></span><span>全部</span><span class="count">{{ doneCounts.all || 0 }}</span>
+            </button>
+            <button v-for="s in doneScopeTabs" :key="s.value"
+              class="status-tab" :class="[statusTabClass(s.value), { 'is-active': doneScope === s.value }]"
+              @click="switchDoneScope(s.value)">
+              <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ doneCounts[s.value] || 0 }}</span>
+            </button>
+          </template>
+        </div>
+        <right-toolbar v-if="activeTab !== 'draft' && activeTab !== 'cc'" v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="flowable_task_columns" />
       </div>
       <!-- 表格 -->
       <div class="table-wrap">
@@ -107,28 +137,86 @@
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
               <span v-if="urgencyBadge(scope.row.urgency)" class="badge" :class="urgencyBadge(scope.row.urgency).cls">{{ urgencyBadge(scope.row.urgency).text }}</span>
-              <span class="col-strong link-like" @click="handleTitleClick(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
+              <span class="col-strong link-like" role="link" tabindex="0" @click="handleTitleClick(scope.row)" @keydown.enter="handleTitleClick(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 120)" show-overflow-tooltip>
-            <template #default="scope">{{ scope.row.startUserName || '-' }}</template>
+          <el-table-column v-if="columns.startUserName.visible && activeTab !== 'cc'" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 120)" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.startNickName || scope.row.startUserName || '-' }}</template>
           </el-table-column>
-          <el-table-column v-if="activeTab === 'done' && columns.endTime.visible" label="完成时间" prop="endTime" key="endTime" :width="colWidth('endTime', 170)" align="center" />
+          <el-table-column v-if="activeTab === 'draft' || activeTab === 'all' || activeTab === 'cc' || activeTab === 'done'" label="所属流程" prop="processName" width="180" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.processName || scope.row.processDefinitionName || scope.row.processKey || '-' }}</template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'cc'" label="抄送人" prop="senderName" width="120" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.senderName || '-' }}</template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'all'" label="状态" prop="statusText" width="90" align="center">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.bizType === 'draft' ? 'gray' : (scope.row.bizType === 'cc' ? 'amber' : 'blue')"><span class="dot"></span>{{ scope.row.statusText }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'cc'" label="状态" prop="readFlag" width="90" align="center">
+            <template #default="scope">
+              <span class="badge" :class="scope.row.readFlag === '1' ? 'gray' : 'amber'"><span class="dot"></span>{{ scope.row.readFlag === '1' ? '已读' : '待阅' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'done' && columns.endTime.visible" label="办理时间" prop="endTime" key="endTime" :width="colWidth('endTime', 170)" align="center" />
+          <el-table-column v-else-if="activeTab === 'draft'" label="保存时间" prop="updateTime" width="170" align="center" />
+          <el-table-column v-else-if="activeTab === 'cc'" label="抄送时间" prop="createTime" width="170" align="center" />
+          <el-table-column v-else-if="activeTab === 'all'" label="时间" prop="time" width="170" align="center" />
           <el-table-column v-else-if="columns.createTime.visible" label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 170)" align="center" />
-          <el-table-column v-if="activeTab === 'todo' && columns.taskName.visible" label="办理环节" prop="taskName" key="taskName" :min-width="colWidth('taskName', 130)" show-overflow-tooltip>
+          <!-- 退回页签专用：谁在哪个环节退回的（便于判断为什么被打回） -->
+          <el-table-column v-if="activeTab === 'returned'" label="退回来源" prop="returnFrom" min-width="200" show-overflow-tooltip>
             <template #default="scope">
-              <span class="badge blue"><span class="dot"></span>{{ scope.row.taskName || '-' }}</span>
+              <span class="badge red"><span class="dot"></span>退回自：{{ scope.row.returnFrom || '-' }}</span>
+              <span v-if="scope.row.returnByName" class="badge gray" style="margin-left:6px">{{ scope.row.returnByName }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="activeTab === 'done' && columns.comment.visible" label="审批意见" prop="comment" key="comment" :min-width="colWidth('comment', 160)" show-overflow-tooltip />
-          <el-table-column v-if="activeTab === 'done' && columns.outcome.visible" label="审批结果" prop="outcome" key="outcome" :width="colWidth('outcome', 100)" align="center">
+          <el-table-column v-if="(activeTab === 'todo' || activeTab === 'returned' || activeTab === 'all' || activeTab === 'done') && columns.taskName.visible" label="办理环节" prop="taskName" key="taskName" :min-width="colWidth('taskName', 130)" show-overflow-tooltip>
             <template #default="scope">
-              <span class="badge" :class="outcomeClass(scope.row.outcome)">
-                <span class="dot"></span>{{ outcomeLabel(scope.row.outcome) }}
-              </span>
+              <span v-if="scope.row.taskName" class="badge blue"><span class="dot"></span>{{ scope.row.taskName }}</span>
+              <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
+          <el-table-column v-if="activeTab === 'done' && columns.status.visible" label="流程状态" prop="status" key="status" :width="colWidth('status', 110)" align="center">
+            <template #default="scope">
+              <span class="badge" :class="statusClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'done'" label="当前环节" prop="currentTaskName" width="140" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.status === 'running' ? (scope.row.currentTaskName || '办理中') : '-' }}</template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'draft'" label="操作" width="160" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="EditPen" @click="handleDraftContinue(scope.row)">继续填写</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDraftDelete(scope.row)">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="activeTab === 'cc'" label="操作" width="180" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleCcView(scope.row)">查看</el-button>
+                <el-button v-if="scope.row.readFlag !== '1'" link type="primary" icon="Check" @click="handleCcRead(scope.row)">标记已读</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column v-else-if="activeTab === 'all'" label="操作" width="190" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row" v-if="scope.row.bizType === 'draft'">
+                <el-button link type="primary" icon="EditPen" @click="handleDraftContinue(scope.row)">继续填写</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDraftDelete(scope.row)">删除</el-button>
+              </div>
+              <div class="action-btn-row" v-else-if="scope.row.bizType === 'cc'">
+                <el-button link type="primary" icon="View" @click="handleCcView(scope.row)">查看</el-button>
+                <el-button link type="primary" icon="Check" @click="handleCcRead(scope.row)">标记已读</el-button>
+              </div>
+              <div class="action-btn-row" v-else>
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column v-else label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <!-- 列表不再提供「审批」按钮：待办直接点击流程标题进入办理页，此处仅保留流程详情 -->
@@ -141,7 +229,7 @@
 
       <!-- 分页 -->
       <div class="pagination-container">
-        <el-pagination background layout="total, prev, pager, next, sizes" :total="activeTab === 'todo' ? todoTotal : doneTotal"
+        <el-pagination background layout="total, prev, pager, next, sizes" :total="pageTotal"
           v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" @change="getList" />
       </div>
     </div>
@@ -151,7 +239,9 @@
 </template>
 
 <script setup name="FlowTask">
-import { listTodoTask, listDoneTask, countTodoTask, getProcessTree } from '@/api/flowable/flow'
+import { listTodoTask, listDoneTask, countDoneTask, listAllTask, countTodoTask, countTodoTasks, getProcessTree } from '@/api/flowable/flow'
+import { listDraft, delDraft } from '@/api/flowable/draft'
+import { listMyCc, getCcUnreadCount, readCc } from '@/api/flowable/cc'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { Search, Filter, Document, Folder, User, Fold, Expand } from '@element-plus/icons-vue'
 
@@ -176,14 +266,68 @@ function generateRouteHref(location) {
 const list = ref([])
 const loading = ref(true)
 const showSearch = ref(true)
-const activeTab = ref(route.query.tab === 'done' ? 'done' : 'todo')
+/** 当前页签：全部 / 待办 / 退回 / 待阅 / 草稿（由地址栏 tab 参数或菜单路径推导）；已办走独立菜单同组件 `/flow/done` */
+function resolveTab() {
+  const q = route.query.tab
+  if (q === 'all' || q === 'draft' || q === 'todo' || q === 'cc' || q === 'returned') return q
+  if (route.path && route.path.endsWith('/done')) return 'done'
+  return 'todo'
+}
+const activeTab = ref(resolveTab())
+const allTotal = ref(0)
 const todoTotal = ref(0)
-const doneTotal = ref(0)
+/** 被退回的待办数量（待办页「退回」页签角标） */
+const returnedTotal = ref(0)
+/** 已办页签（全部/未结束/已结束）数量与当前选中项 */
+const doneScopeTabs = [
+  { value: 'running', label: '未结束' },
+  { value: 'finished', label: '已结束' }
+]
+const doneCounts = reactive({ all: 0, running: 0, finished: 0 })
+/** 已办状态页签配色（对齐 list-page-style-guide 第 3 章）：未结束=蓝、已结束=绿 */
+function statusTabClass(v) {
+  if (v === 'running') return 'tab-audit'
+  if (v === 'finished') return 'tab-approved'
+  return ''
+}
+/** 已办页签从地址栏 scope 参数推导，刷新后保持 */
+function resolveDoneScope() {
+  const s = route.query.scope
+  return s === 'running' || s === 'finished' ? s : 'all'
+}
+const doneScope = ref(resolveDoneScope())
+/** 未读待阅数量 */
+const ccTotal = ref(0)
+/** 待阅列表总数（含已读） */
+const ccPageTotal = ref(0)
+/** 草稿总数（我的未提交草稿） */
+const draftTotal = ref(0)
+const pageTotal = computed(() => {
+  if (activeTab.value === 'all') return allTotal.value
+  if (activeTab.value === 'done') return doneCounts[doneScope.value] || 0
+  if (activeTab.value === 'draft') return draftTotal.value
+  if (activeTab.value === 'cc') return ccPageTotal.value
+  if (activeTab.value === 'returned') return returnedTotal.value
+  return todoTotal.value
+})
 /** 紧急程度徽标：1普通（不显示）/ 2紧急 / 3特急 */
 function urgencyBadge(v) {
   if (v === '3' || v === 3) return { text: '特急', cls: 'red' }
   if (v === '2' || v === 2) return { text: '紧急', cls: 'amber' }
   return null
+}
+
+/** 已办「流程状态」徽标：running 办理中 / completed 已办结 / canceled 已撤销 */
+const STATUS_MAP = {
+  running: { text: '办理中', cls: 'blue' },
+  completed: { text: '已办结', cls: 'green' },
+  canceled: { text: '已撤销', cls: 'gray' }
+}
+function statusLabel(v) {
+  return (STATUS_MAP[v] || { text: '-' }).text
+}
+function statusClass(v) {
+  return (STATUS_MAP[v] || { cls: 'gray' }).cls
 }
 
 const data = reactive({
@@ -197,10 +341,9 @@ const defaultColumns = {
   title: { label: '流程标题', visible: true },
   startUserName: { label: '创建人', visible: true },
   createTime: { label: '创建时间', visible: true },
-  endTime: { label: '完成时间', visible: true },
+  endTime: { label: '办理时间', visible: true },
   taskName: { label: '办理环节', visible: true },
-  comment: { label: '审批意见', visible: true },
-  outcome: { label: '审批结果', visible: true }
+  status: { label: '流程状态', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -267,18 +410,130 @@ const activeFilterCount = computed(() => {
 function getList() {
   loading.value = true
   const params = proxy.addDateRange(queryParams.value, dateRange.value)
-  const api = activeTab.value === 'todo' ? listTodoTask : listDoneTask
-  api(params).then(res => {
+  if (activeTab.value === 'all') {
+    // 全部：待办任务 + 草稿（后端合并后统一分页）
+    listAllTask(params).then(res => {
+      list.value = res.rows || []
+      allTotal.value = res.total || 0
+      loading.value = false
+      applySavedWidths()
+    }).catch(() => { loading.value = false })
+    return
+  }
+  if (activeTab.value === 'draft') {
+    // 草稿：按标题 + 流程Key 过滤（办理环节不适用）
+    listDraft({
+      pageNum: params.pageNum,
+      pageSize: params.pageSize,
+      title: params.title,
+      processKey: params.processDefinitionKey,
+      params: params.params
+    }).then(res => {
+      list.value = res.rows || []
+      draftTotal.value = res.total || 0
+      loading.value = false
+      applySavedWidths()
+    }).catch(() => { loading.value = false })
+    return
+  }
+  if (activeTab.value === 'cc') {
+    // 待阅：我收到的抄送（未读在前，含已读历史）
+    listMyCc({
+      pageNum: params.pageNum,
+      pageSize: params.pageSize,
+      title: params.title,
+      processKey: params.processDefinitionKey,
+      params: params.params
+    }).then(res => {
+      list.value = res.rows || []
+      ccPageTotal.value = res.total || 0
+      loading.value = false
+      applySavedWidths()
+    }).catch(() => { loading.value = false })
+    return
+  }
+  if (activeTab.value === 'done') {
+    // 已办：按状态页签（全部/未结束/已结束）过滤，后端内存分页
+    listDoneTask({ ...params, statusScope: doneScope.value }).then(res => {
+      list.value = res.rows || []
+      doneCounts[doneScope.value] = res.total || 0
+      loading.value = false
+      applySavedWidths()
+    }).catch(() => { loading.value = false })
+    return
+  }
+  // 退回：只看被上游驳回退回给我的待办（后端按 task-local 退回标记过滤）
+  listTodoTask({ ...params, returnedOnly: activeTab.value === 'returned' ? true : undefined }).then(res => {
     list.value = res.rows || []
-    if (activeTab.value === 'todo') todoTotal.value = res.total; else doneTotal.value = res.total
+    if (activeTab.value === 'returned') returnedTotal.value = res.total || 0
+    else todoTotal.value = res.total || 0
     loading.value = false
     applySavedWidths()
   }).catch(() => { loading.value = false })
 }
 
+/** 待办 / 已办 对应两个菜单路由，全部、草稿复用待办页 + tab 参数 */
+const TAB_PATH = { todo: '/flow/todo', done: '/flow/done' }
+/** 页签切换（同步到地址栏，刷新后保持当前页签） */
+function switchTab(tab) {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  queryParams.value.pageNum = 1
+  const target = TAB_PATH[tab]
+  const current = route.path || ''
+  let location
+  if (target) {
+    location = { path: target, query: {} }
+  } else if (current.endsWith('/done')) {
+    // 已办菜单页上切到全部/草稿，回到待办页并带上 tab
+    location = { path: '/flow/todo', query: { tab } }
+  } else {
+    location = { path: current, query: { tab } }
+  }
+  router.replace(location).catch(() => {})
+  getList()
+}
+/** 已办状态页签切换（同步到地址栏 scope，刷新后保持） */
+function switchDoneScope(scope) {
+  if (doneScope.value === scope) return
+  doneScope.value = scope
+  queryParams.value.pageNum = 1
+  router.replace({ path: route.path, query: scope === 'all' ? {} : { scope } }).catch(() => {})
+  getList()
+}
+
+/** 菜单切换（待办 / 已办 同一组件，keep-alive 复用实例）时重新推导页签 */
+watch(() => [route.path, route.query.tab, route.query.scope], () => {
+  const tab = resolveTab()
+  const scope = resolveDoneScope()
+  if (tab === activeTab.value && scope === doneScope.value) return
+  activeTab.value = tab
+  doneScope.value = scope
+  queryParams.value.pageNum = 1
+  getList()
+  loadCounts()
+})
+
 function loadCounts() {
-  countTodoTask().then(res => { todoTotal.value = res.data || 0 }).catch(() => { todoTotal.value = 0 })
-  listDoneTask({ pageNum: 1, pageSize: 1 }).then(res => { doneTotal.value = res.total || 0 }).catch(() => { doneTotal.value = 0 })
+  // 待办数量拆分：all 全部待办 / returned 被退回（退回页签角标）
+  countTodoTasks().then(res => {
+    const d = res.data || {}
+    todoTotal.value = Number(d.all || 0)
+    returnedTotal.value = Number(d.returned || 0)
+  }).catch(() => {
+    // 接口异常时回退到只取总数，不影响页面可用
+    returnedTotal.value = 0
+    countTodoTask().then(r => { todoTotal.value = r.data || 0 }).catch(() => { todoTotal.value = 0 })
+  })
+  getCcUnreadCount().then(res => { ccTotal.value = res.data ? (res.data.count || res.count || 0) : (res.count || 0) }).catch(() => { ccTotal.value = 0 })
+  countDoneTask().then(res => {
+    const d = res.data || {}
+    doneCounts.all = d.all || 0
+    doneCounts.running = d.running || 0
+    doneCounts.finished = d.finished || 0
+  }).catch(() => { doneCounts.all = 0; doneCounts.running = 0; doneCounts.finished = 0 })
+  listDraft({ pageNum: 1, pageSize: 1 }).then(res => { draftTotal.value = res.total || 0 }).catch(() => { draftTotal.value = 0 })
+  listAllTask({ pageNum: 1, pageSize: 1 }).then(res => { allTotal.value = res.total || 0 }).catch(() => { allTotal.value = 0 })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -292,10 +547,65 @@ function resetQuery() {
   handleQuery()
 }
 
-/** 点击标题：待办进入任务办理页（优先），已办进入流程详情 */
+/** 点击标题：全部→按行类型分发，待办→办理页，草稿→发起页续填，已办→流程详情 */
 function handleTitleClick(row) {
-  if (activeTab.value === 'todo') handleHandle(row)
-  else handleView(row)
+  if (activeTab.value === 'todo' || activeTab.value === 'returned') handleHandle(row)
+  else if (activeTab.value === 'draft') handleDraftContinue(row)
+  else if (activeTab.value === 'cc') handleCcView(row)
+  else if (activeTab.value === 'all') {
+    if (row.bizType === 'draft') handleDraftContinue(row)
+    else if (row.bizType === 'cc') handleCcView(row)
+    else handleHandle(row)
+  } else handleView(row)
+}
+
+/** 草稿续填：回到发起页并回填草稿内容 */
+function handleDraftContinue(row) {
+  const href = generateRouteHref({
+    path: '/flow/launch/create',
+    query: { key: row.processKey || '', draftId: row.draftId || '' }
+  })
+  window.open(href, '_blank')
+}
+
+/** 删除草稿 */
+function handleDraftDelete(row) {
+  proxy.$modal.confirm('确认删除草稿「' + (row.title || row.processName || '-') + '」？').then(() => {
+    return delDraft(row.draftId)
+  }).then(() => {
+    proxy.$modal.msgSuccess('删除成功')
+    getList()
+    loadCounts()
+  }).catch(() => {})
+}
+
+/** 查看待阅流程：未读时先标记已读，再新开流程详情页 */
+function handleCcView(row) {
+  const openDetail = () => {
+    const href = generateRouteHref({
+      path: '/flow/detail/create',
+      query: { instanceId: row.instanceId || '', defName: row.processName || row.title || '' }
+    })
+    window.open(href, '_blank')
+  }
+  if (row.readFlag === '1' || !row.ccId) {
+    openDetail()
+    return
+  }
+  readCc(row.ccId).then(() => {
+    loadCounts()
+    if (activeTab.value === 'cc' || activeTab.value === 'all') getList()
+  }).catch(() => {}).finally(openDetail)
+}
+
+/** 标记已读 */
+function handleCcRead(row) {
+  if (!row.ccId) return
+  readCc(row.ccId).then(() => {
+    proxy.$modal.msgSuccess('已标记为已读')
+    if (activeTab.value === 'cc' || activeTab.value === 'all') getList()
+    loadCounts()
+  }).catch(() => {})
 }
 
 /** 办理任务：新标签页打开办理独立页（与流程详情页同一承载口径，不再使用弹框） */
@@ -347,14 +657,7 @@ onActivated(() => { getList(); loadCounts(); loadTree() })
     flex-direction: column;
     gap: 0;
   }
-  /* 列表卡片头部（标题 + 工具栏） */
-  .list-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px 0;
-    .filter-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink-700); }
-  }
+  /* 页签 + 工具栏：样式来自 flow-model.scss 的规范状态标签栏（.status-tabs） */
   /* 紧凑筛选区（对齐车间产线） */
   .filter-card {
     padding: 12px 16px 14px;
@@ -456,10 +759,6 @@ onActivated(() => { getList(); loadCounts(); loadTree() })
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-  .link-like {
-    cursor: pointer;
-    &:hover { color: var(--el-color-primary); }
   }
 
   /* ===== 流程详情页签 ===== */

@@ -85,7 +85,7 @@
       </div>
     </div>
 
-    <!-- ===== 新建自定义表单弹窗（参照泛微e9：名称/复制/描述） ===== -->
+    <!-- ===== 新建自定义表单弹窗（名称/复制/描述） ===== -->
     <el-dialog v-model="addOpen" width="520px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
       <template #header>
         <div class="rd-detail-header">
@@ -148,19 +148,24 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 表单设计弹窗（基本信息 / 编辑字段，参照泛微e9） ===== -->
-    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false" :fullscreen="designMax"
-      :class="{ 'rd-no-footer': designMax || (activeTab === 'layout' && layout.mode === 'grid') }">
+    <!-- ===== 表单设计弹窗（基本信息 / 编辑字段，参照 Excel 式设计） ===== -->
+    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false" :show-close="false" fullscreen>
       <template #header>
-        <div class="rd-detail-header" style="position:relative">
+        <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
-          <span class="rd-detail-header-title">编辑表单：{{ form.formName || '新建表单' }}</span>
-          <el-button class="rd-max-btn" type="warning" size="default" icon="FullScreen" @click="designMax = !designMax">{{ designMax ? '还原窗口' : '最大化' }}</el-button>
+          <span class="rd-detail-header-title">{{ layoutOnly ? '页面设计：' : '编辑表单：' }}{{ form.formName || '新建表单' }}</span>
+          <!-- 保存 / 关闭放到顶部：底部页脚会占掉表格高度，导致表格底部滚动条被挡 -->
+          <!-- 页面设计页签自带保存（网格设计器菜单栏 / 简易分组工具条），顶部不再重复放保存 -->
+          <div class="rd-design-actions">
+            <el-button v-if="layoutOnly" size="default" icon="Back" @click="exitLayoutOnly">返回表单配置</el-button>
+            <el-button v-if="activeTab !== 'layout'" class="rd-head-btn" size="default" icon="Check" @click="submitForm()">保 存</el-button>
+            <el-button class="rd-head-btn" size="default" icon="Close" @click="open = false">关 闭</el-button>
+          </div>
         </div>
       </template>
-      <el-tabs v-model="activeTab" class="form-design-tabs">
+      <el-tabs v-model="activeTab" class="form-design-tabs is-design-full" :class="{ 'is-layout-only': layoutOnly }">
         <!-- ===== 基本信息 ===== -->
         <el-tab-pane label="基本信息" name="basic">
           <el-form :model="form" label-width="110px" size="small" class="basic-form">
@@ -204,7 +209,7 @@
             <span class="field-tip">当前表：{{ activeTableTab === 'main' ? mainTableName : mainTableName + '_' + activeTableTab }}<template v-if="activeTableTab !== 'main'">（明细表通过 mainid 字段关联主表主键，生成数据表时自动创建）</template></span>
           </div>
 
-          <el-table ref="fieldTableRef" :data="activeFields" border size="small" row-key="rowKey" @selection-change="onFieldSelChange" class="field-table" max-height="380">
+          <el-table ref="fieldTableRef" :data="pagedFields" border size="small" row-key="rowKey" @selection-change="onFieldSelChange" class="field-table" :max-height="fieldTableMaxHeight">
             <el-table-column width="36" align="center"><template #default><span class="drag-handle" title="拖动排序">☰</span></template></el-table-column>
             <el-table-column type="selection" width="45" align="center" :selectable="row => !row.sysField" />
             <el-table-column label="字段显示名" min-width="130" align="center"><template #default="scope"><el-input v-model="scope.row.label" placeholder="如：合同名称" size="small" /></template></el-table-column>
@@ -234,10 +239,15 @@
               <template #default="scope">
                 <!-- 多行文本：行数（默认4，可自定义1-20） -->
                 <el-input-number v-if="scope.row.form === 'textarea'" v-model="scope.row.rows" :min="1" :max="20" :controls="false" size="small" style="width:80px" />
-                <!-- 浏览框：数据源类型 -->
-                <el-select v-else-if="scope.row.form === 'browse'" v-model="scope.row.browseType" size="small" style="width:100%">
-                  <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
-                </el-select>
+                <!-- 浏览框：数据源类型 + 是否多选（数据源能力决定开关可用性） -->
+                <div v-else-if="scope.row.form === 'browse'" style="display:flex;gap:4px;align-items:center">
+                  <el-select v-model="scope.row.browseType" size="small" style="flex:1;min-width:0" @change="onBrowseTypeChange(scope.row)">
+                    <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+                  </el-select>
+                  <el-tooltip :content="browseSwitchTip(scope.row)" placement="top">
+                    <el-switch v-model="scope.row.browseMultiple" size="small" :disabled="browseSwitchDisabled(scope.row)" />
+                  </el-tooltip>
+                </div>
                 <!-- 附件：类型+数量 -->
                 <div v-else-if="scope.row.form === 'attach'" style="display:flex;gap:4px">
                   <el-select v-model="scope.row.attachType" size="small" style="flex:1">
@@ -245,9 +255,16 @@
                   </el-select>
                   <el-input-number v-model="scope.row.attachLimit" :min="1" :max="20" :controls="false" size="small" style="width:64px" />
                 </div>
-                <!-- 选择框（下拉/单选/复选）：配置按钮弹出泛微式选项配置页 -->
+                <!-- 选择框（下拉/单选/复选）：配置按钮弹出选项配置页 -->
                 <el-button v-else-if="isSelForm(scope.row.form)" link type="primary" size="small" @click="openSelConfig(scope.row)">配置</el-button>
                 <span v-else style="color:#cbd5e1">—</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="默认值" width="150" align="center">
+              <template #default="scope">
+                <el-tooltip :content="defaultSummary(scope.row) || '点击设置打开表单时的默认取值'" placement="top">
+                  <el-button link type="primary" size="small" class="dft-cell" @click="openDefaultConfig(scope.row)">{{ defaultSummary(scope.row) || '设置' }}</el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
             <el-table-column label="小数位数" width="95" align="center">
@@ -256,14 +273,19 @@
             <el-table-column label="填写提示" min-width="120" align="center"><template #default="scope"><el-input v-model="scope.row.placeholder" placeholder="如：请输入合同名称" size="small" /></template></el-table-column>
             <el-table-column label="显示顺序" width="100" align="center"><template #default="scope"><el-input-number v-model="scope.row.order" :min="1" :max="999" :controls="false" size="small" style="width:100%" /></template></el-table-column>
           </el-table>
+          <!-- 字段多时按页编辑，避免一屏堆上百行 -->
+          <div class="field-pager" v-if="activeFields.length">
+            <pagination :total="activeFields.length" v-model:page="fieldPageNum" v-model:limit="fieldPageSize"
+              :page-sizes="[10, 20, 50, 100]" :auto-scroll="false" layout="total, sizes, prev, pager, next" />
+          </div>
         </el-tab-pane>
 
         <!-- ===== 页面设计（类Excel设计器：拖拽布局/分栏/分组/说明行 + 预览） ===== -->
         <el-tab-pane label="页面设计" name="layout">
           <div class="layout-mode-bar">
             <el-button size="small" :type="layout.mode === 'grid' ? 'warning' : 'primary'" plain icon="Switch"
-              @click="toggleLayoutMode">{{ layout.mode === 'grid' ? '切换为简易分组' : '切换为 Excel 网格（泛微式）' }}</el-button>
-            <span class="field-tip">当前模式：{{ layout.mode === 'grid' ? 'Excel 网格（泛微式）' : '简易分组' }}<template v-if="layout.mode === 'grid'">，深蓝菜单栏 / 格式工具条 / 行列合并 / 单元格样式，操作见右上"帮助"</template></span>
+              @click="toggleLayoutMode">{{ layout.mode === 'grid' ? '切换为简易分组' : '切换为 Excel 网格' }}</el-button>
+            <span class="field-tip">当前模式：{{ layout.mode === 'grid' ? 'Excel 网格' : '简易分组' }}<template v-if="layout.mode === 'grid'">，深蓝菜单栏 / 格式工具条 / 行列合并 / 单元格样式，操作见右上"帮助"</template></span>
           </div>
           <div class="ed-wrap" v-if="layout.mode !== 'grid'">
             <div class="ed-main">
@@ -282,6 +304,8 @@
                   </template>
                 </el-dropdown>
                 <el-button size="small" :type="layoutPreview ? 'primary' : 'default'" :icon="layoutPreview ? 'EditPen' : 'View'" @click="layoutPreview = !layoutPreview">{{ layoutPreview ? '返回设计' : '预览效果' }}</el-button>
+                <!-- 简易分组模式没有设计器菜单栏，保存放这里（顶部保存已隐藏） -->
+                <el-button size="small" type="primary" icon="Check" @click="submitForm(true)">保存布局</el-button>
                 <span class="field-tip">像 Excel 一样操作：拖拽布局、右键合并/拆分单元格、Ctrl+Z 撤销、Delete 删除选中</span>
               </div>
               <div class="ed-canvas" v-if="!layoutPreview">
@@ -465,20 +489,16 @@
             <div class="ed-ctx-item" @click="ctxAction('editLabel')">{{ ctxCell?.note ? '编辑说明文字' : '自定义标签' }}</div>
             <div class="ed-ctx-item danger" @click="ctxAction('del')">删除单元格</div>
           </div>
-          <!-- Excel 网格设计器（泛微式，P0） -->
+          <!-- Excel 网格设计器（P0） -->
           <ExcelGridDesigner v-if="layout.mode === 'grid'" :model-value="layout.grid"
             :fields="poolFields" :form="{ formName: form.formName, formKey: form.formKey }"
-            :active="open && activeTab === 'layout'" :fullscreen="designMax"
-            @update:model-value="v => (layout.grid = v)" @save="submitForm(true)" @toggle-fullscreen="designMax = !designMax" />
+            :active="open && activeTab === 'layout'" fullscreen
+            @update:model-value="v => (layout.grid = v)" @save="submitForm(true)" />
         </el-tab-pane>
       </el-tabs>
-      <template #footer>
-        <el-button type="primary" @click="submitForm">保 存</el-button>
-        <el-button @click="open = false">取 消</el-button>
-      </template>
     </el-dialog>
 
-    <!-- ===== 添加字段弹窗（参照泛微e9） ===== -->
+    <!-- ===== 添加字段弹窗（参照 Excel 式设计） ===== -->
     <el-dialog v-model="addFieldOpen" width="520px" append-to-body draggable class="rd-dialog" title="添加字段" :close-on-click-modal="false">
       <el-form ref="addFieldRef" :model="newField" :rules="fieldRules" label-width="120px" size="small">
         <el-form-item label="字段显示名" prop="label"><el-input v-model="newField.label" placeholder="如：合同名称" @input="autoFillFieldName(newField, newField.label)" /></el-form-item>
@@ -511,10 +531,13 @@
         <el-form-item label="多行行数" v-if="newField.form === 'textarea'"><el-input-number v-model="newField.rows" :min="1" :max="20" :controls="false" style="width:160px" /><div class="form-tip">默认4行，可自定义1-20行</div></el-form-item>
         <el-form-item label="小数位数" v-if="newField.dtype === 'float'"><el-input-number v-model="newField.scale" :min="1" :max="6" :controls="false" style="width:160px" /></el-form-item>
         <el-form-item label="浏览数据源" v-if="newField.form === 'browse'">
-          <el-select v-model="newField.browseType" style="width:100%">
-            <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
-          </el-select>
-          <div class="form-tip">人员/部门/岗位/物料/客户/供应商等主数据，选择"自定义"可在数据表扩展</div>
+          <div style="display:flex;gap:8px;width:100%;align-items:center">
+            <el-select v-model="newField.browseType" style="flex:1" @change="onBrowseTypeChange(newField)">
+              <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+            </el-select>
+            <el-switch v-model="newField.browseMultiple" :disabled="browseSwitchDisabled(newField)" active-text="多选" />
+          </div>
+          <div class="form-tip">人员/部门/岗位/角色/客户/供应商/物料/设备/合同/仓库/备件/产品/项目，点击浏览按钮弹框选择</div>
         </el-form-item>
         <el-form-item label="附件类型" v-if="newField.form === 'attach'">
           <div style="display:flex;gap:8px;width:100%">
@@ -540,7 +563,7 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 批量添加字段弹窗（参照泛微e9：多行直接填写） ===== -->
+    <!-- ===== 批量添加字段弹窗（多行直接填写） ===== -->
     <el-dialog v-model="batchOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
       <template #header>
         <div class="rd-detail-header">
@@ -582,9 +605,12 @@
         <el-table-column label="格式/配置" min-width="130" align="center">
           <template #default="scope">
             <el-input-number v-if="scope.row.form === 'textarea'" v-model="scope.row.rows" :min="1" :max="20" :controls="false" size="small" style="width:72px" />
-            <el-select v-else-if="scope.row.form === 'browse'" v-model="scope.row.browseType" size="small" style="width:100%">
-              <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
-            </el-select>
+            <div v-else-if="scope.row.form === 'browse'" style="display:flex;gap:4px;align-items:center">
+              <el-select v-model="scope.row.browseType" size="small" style="flex:1;min-width:0" @change="onBrowseTypeChange(scope.row)">
+                <el-option v-for="(v, k) in BROWSE_TYPES" :key="k" :label="v" :value="k" />
+              </el-select>
+              <el-switch v-model="scope.row.browseMultiple" size="small" :disabled="browseSwitchDisabled(scope.row)" />
+            </div>
             <el-button v-else-if="isSelForm(scope.row.form)" link type="primary" size="small" @click="openSelConfig(scope.row)">配置</el-button>
             <span v-else style="color:#cbd5e1">—</span>
           </template>
@@ -598,7 +624,7 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 选择框选项配置弹窗（参照泛微e9：显示值/实际值/排序） ===== -->
+    <!-- ===== 选择框选项配置弹窗（显示值/实际值/排序） ===== -->
     <el-dialog v-model="selCfgOpen" width="620px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
       <template #header>
         <div class="rd-detail-header">
@@ -618,7 +644,7 @@
         <el-table-column label="实际值" min-width="140" align="center"><template #default="scope"><el-input v-model="scope.row.value" placeholder="留空则存显示值" size="small" /></template></el-table-column>
         <el-table-column label="默认值" width="80" align="center">
           <template #default="scope">
-            <!-- 复选勾选：可多选默认；下拉/点选单选：单选默认（泛微式） -->
+            <!-- 复选勾选：可多选默认；下拉/点选单选：默认单选 -->
             <el-checkbox v-if="selCfgField && selCfgField.form === 'checkbox'" :model-value="defaultList.includes(scope.row.value)" @change="v => toggleMultiDefault(scope.row, v)" />
             <el-radio v-else v-model="selCfgDefault" :value="scope.row.value">&nbsp;</el-radio>
           </template>
@@ -636,6 +662,45 @@
         <el-button @click="selCfgOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- ===== 字段默认值弹窗（当前用户 / 当前部门 / 当天日期时间 / 取表单字段 / 随人员带出部门） ===== -->
+    <el-dialog v-model="dftOpen" width="540px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <span class="rd-detail-header-title">字段默认值：{{ dftField ? (dftField.label || dftField.field || '（未命名字段）') : '' }}</span>
+        </div>
+      </template>
+      <el-form label-width="96px" size="small" class="basic-form">
+        <el-form-item label="取值方式">
+          <el-select v-model="dft.mode" placeholder="不设置（留空）" clearable style="width:100%" @change="onDftModeChange">
+            <el-option v-for="m in dftModes" :key="m" :label="defaultModeLabel(dftField, m)" :value="m" />
+          </el-select>
+          <div class="form-tip">{{ dftModeTip }}</div>
+        </el-form-item>
+        <el-form-item v-if="dftNeedsPick" :label="defaultModeLabel(dftField, 'fixedPick')" required>
+          <FormBrowse :f="dftPickField" v-model="dft.pickName" v-model:model-ids="dft.pickId" v-model:model-extra="dft.pickExtra" placeholder="点击从组织 / 基础数据里选一条" />
+          <div class="form-tip">这里选中的就是打开表单时的默认值（名称 + ID 一起写入，用户还能改）</div>
+        </el-form-item>
+        <el-form-item v-if="dftNeedsSrc" label="来源字段" required>
+          <el-select v-model="dft.src" placeholder="请选择来源字段" filterable style="width:100%">
+            <el-option v-for="f in dftSources" :key="f.field" :label="(f.label || f.field) + '（' + f.field + '）'" :value="f.field" />
+          </el-select>
+          <div class="form-tip" v-if="!dftSources.length">同一张表里没有可用字段：人员带出部门需要先有一个「人员」浏览字段</div>
+        </el-form-item>
+        <el-form-item v-if="dftCanFixed" label="固定值">
+          <el-input v-model="dft.fixed" placeholder="留空表示不填" maxlength="200" />
+          <div class="form-tip">固定值优先：打开表单时先填固定值，为空再按取值方式</div>
+        </el-form-item>
+        <div v-if="dftField && isSelForm(dftField.form)" class="form-tip" style="padding-left:96px">选项字段的固定默认值请在「格式/配置 → 配置」弹窗里勾选</div>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" @click="confirmDefaultConfig">确 定</el-button>
+        <el-button @click="dftOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -647,6 +712,9 @@ import { useColumnResize } from '@/composables/useColumnResize'
 import { pinyin } from 'pinyin-pro'
 import ExcelGridDesigner from './designer/ExcelGridDesigner.vue'
 import { parseLayout, sectionsToGrid, fieldsToGrid, serializeLayout } from './designer/converters'
+import { BROWSE_TYPES, browseSupportsMultiple, browseForceMultiple } from '@/components/FormBrowse/sources.js'
+import { defaultModeLabel, defaultModesOf, sourceFieldOptions, defaultSummary, isEmptyValue } from '@/views/flowable/common/field-defaults'
+import FormBrowse from '@/components/FormBrowse/index.vue'
 import Sortable from 'sortablejs'
 
 /** 中文名称 → 拼音首字母字段名（小写字母开头，仅含字母/数字/下划线），如：合同名称 → htmc */
@@ -676,6 +744,9 @@ const showSearch = ref(true)
 const total = ref(0)
 const open = ref(false)
 const activeTab = ref('basic')
+/** 进入弹窗的入口：layout=从列表「页面设计」直接进设计器（只看设计器，不显示页签）， form=从「设计」/新建进入（显示三个页签） */
+const designEntry = ref('form')
+const layoutOnly = computed(() => designEntry.value === 'layout' && activeTab.value === 'layout')
 const activeTableTab = ref('main')
 const addFieldOpen = ref(false)
 const addFieldRef = ref(null)
@@ -726,7 +797,7 @@ function clearCopySource() {
   copySelected.value = null
 }
 
-// 表现形式（参照泛微e9）：选择框组（下拉框/点选单选/复选勾选）+ 其他独立表现形式
+// 表现形式（参照 Excel 式设计）：选择框组（下拉框/点选单选/复选勾选）+ 其他独立表现形式
 const SELECT_FORM_OPTIONS = { select: '下拉框', radio: '点选单选', checkbox: '复选勾选' }
 const FORM_OPTIONS = {
   text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框',
@@ -737,10 +808,26 @@ const FORM_OPTIONS = {
 const isSelForm = f => ['select', 'radio', 'checkbox'].includes(f)
 /** 数据类型（dtype）：决定数据库列类型 */
 const DTYPE_OPTIONS = { text: '文本', date: '日期', datetime: '日期时间', float: '浮点数', int: '整数' }
-/** 浏览框数据源（主数据类型，支持自定义扩展） */
-const BROWSE_TYPES = {
-  user: '人员', dept: '部门', post: '岗位', role: '角色',
-  material: '物料', customer: '客户', supplier: '供应商', contract: '合同', custom: '自定义'
+/** 浏览按钮多选开关是否可操作：数据源本身支持多选，且不是「只能多选」（如角色） */
+function browseSwitchDisabled(row) {
+  return !browseSupportsMultiple(row.browseType) || browseForceMultiple(row.browseType)
+}
+/** 多选开关的提示文案 */
+function browseSwitchTip(row) {
+  if (browseForceMultiple(row.browseType)) return '该数据源仅支持多选'
+  if (!browseSupportsMultiple(row.browseType)) return '该数据源仅支持单选'
+  return row.browseMultiple ? '已开启多选（可跨页勾选）' : '开启多选'
+}
+/** 切换浏览数据源：强制多选的数据源自动置为多选，不支持多选的数据源自动关掉 */
+function onBrowseTypeChange(row) {
+  if (browseForceMultiple(row.browseType)) row.browseMultiple = true
+  else if (!browseSupportsMultiple(row.browseType)) row.browseMultiple = false
+  // 数据源换了，原来指定的默认值 / 来源字段不再成立，清掉重新配
+  row.defaultMode = undefined
+  row.defaultField = undefined
+  row.defaultValue = undefined
+  row.defaultValueId = undefined
+  row.defaultValueDept = undefined
 }
 /** 附件类型约束 */
 const ATTACH_TYPES = { all: '不限类型', image: '图片(image/*)', doc: '文档(doc/pdf/xls…)', custom: '自定义后缀' }
@@ -748,7 +835,7 @@ const ATTACH_TYPES = { all: '不限类型', image: '图片(image/*)', doc: '文�
 const FORM_DEFAULTS = {
   text:     { dtype: 'text', length: 500 },
   textarea: { dtype: 'text', rows: 4, length: 4000 },
-  browse:   { dtype: 'text', browseType: 'user', length: 1000 },
+  browse:   { dtype: 'text', browseType: 'user', browseMultiple: false, length: 1000 },
   check:    { dtype: 'text', length: 10 },
   select:   { dtype: 'text', length: 100, selectOptions: [] },
   attach:   { dtype: 'text', length: 2000, attachType: 'all', attachLimit: 5 },
@@ -782,11 +869,25 @@ const mainTableName = computed(() => form.value.formKey ? 'flow_data_' + form.va
 
 /** 编辑表格可见字段：系统内置字段（标题/紧急程度/签字意见/打印次数）默认新增但不在字段编辑列表中展示，
     数据仍完整保留在 fields 中（发起页/详情渲染需要），仅列表隐藏，避免用户误以为是可删业务字段 */
-const HIDDEN_SYS_FIELDS = new Set(['title', 'urgency', 'signOpinion', 'printCount'])
+const HIDDEN_SYS_FIELDS = new Set(['title', 'processNo', 'urgency', 'signOpinion', 'printCount'])
 const activeFields = computed(() => fields.value.filter(f =>
   (f.table || 'main') === activeTableTab.value && !HIDDEN_SYS_FIELDS.has(f.field)))
 
-// ===== 字段列表拖动排序（参照泛微：拖拽手柄列触发，拖动后按新顺序重写显示顺序） =====
+/** 字段分页（字段多的表单上百行，一屏堆不下）：仅影响展示，编辑仍写回 fields */
+const fieldPageNum = ref(1)
+const fieldPageSize = ref(20)
+const pagedFields = computed(() => {
+  const start = (fieldPageNum.value - 1) * fieldPageSize.value
+  return activeFields.value.slice(start, start + fieldPageSize.value)
+})
+/** 切表页签 / 改每页条数 / 字段增减后把页码收回有效范围，避免停在空页 */
+watch(activeTableTab, () => { fieldPageNum.value = 1; checkedFields.value = [] })
+watch([fieldPageSize, () => activeFields.value.length], () => {
+  const maxPage = Math.max(1, Math.ceil(activeFields.value.length / fieldPageSize.value))
+  if (fieldPageNum.value > maxPage) fieldPageNum.value = maxPage
+})
+
+// ===== 字段列表拖动排序（拖拽手柄列触发，拖动后按新顺序重写显示顺序） =====
 const fieldTableRef = ref(null)
 function initFieldDragSort() {
   const table = fieldTableRef.value && fieldTableRef.value.$el
@@ -815,16 +916,24 @@ function onFieldDragEnd(evt) {
       else tbody.appendChild(item)
     }
   }
-  // 仅当前表页签范围内重排，并按新顺序重写显示顺序
+  // 仅当前表页签范围内重排，并按新顺序重写显示顺序（下标是「当前页」的，要加偏移量）
   const list = activeFields.value.slice()
-  if (oldIndex >= list.length || newIndex >= list.length) return
-  const moved = list.splice(oldIndex, 1)[0]
-  list.splice(newIndex, 0, moved)
+  const offset = (fieldPageNum.value - 1) * fieldPageSize.value
+  const from = offset + oldIndex
+  const to = offset + newIndex
+  if (from >= list.length || to >= list.length) return
+  const moved = list.splice(from, 1)[0]
+  list.splice(to, 0, moved)
   const others = fields.value.filter(f => (f.table || 'main') !== activeTableTab.value)
   fields.value = others.concat(list)
   list.forEach((f, i) => { f.order = i + 1 })
 }
 watch([() => open.value, activeTab, activeTableTab, () => fields.value.length], () => nextTick(initFieldDragSort), { flush: 'post' })
+/** 翻页后清掉上一页的勾选，避免「删除选中」误删到看不见的行 */
+watch(fieldPageNum, () => {
+  if (fieldTableRef.value && fieldTableRef.value.clearSelection) fieldTableRef.value.clearSelection()
+  checkedFields.value = []
+})
 
 function fieldCount(json) {
   try { return normalizeFields(JSON.parse(json || '[]')).length } catch (e) { return 0 }
@@ -846,24 +955,35 @@ async function loadUrgencyOptions() {
   }
 }
 
-/** 系统内置字段（参照泛微：每个流程默认都有，用户无需添加，不可删除） */
+/** 签字意见：富文本存 HTML，长度上限（与后端 FlowSystemFields 保持一致） */
+const SIGN_OPINION_LENGTH = 4000
+
+/** 系统内置字段（每个流程默认都有，用户无需添加，不可删除） */
 const SYSTEM_FIELDS = [
   { field: 'title',       label: '标题',     form: 'text',     dtype: 'text', length: 200,  scale: 2, table: 'main', order: -4, sysField: true },
-  { field: 'urgency',     label: '紧急程度', form: 'select',   dtype: 'text', length: 20,   scale: 2, table: 'main', order: -3, sysField: true,
+  { field: 'processNo',   label: '流程编号', form: 'text',     dtype: 'text', length: 64,   scale: 2, table: 'main', order: -4, sysField: true, readonly: true, placeholder: '提交后自动生成' },
+  { field: 'urgency',     label: '紧急程度', form: 'radio',    dtype: 'text', length: 20,   scale: 2, table: 'main', order: -3, sysField: true,
     options: '1:普通,2:紧急,3:特急', selectOptions: [ { label: '普通', value: '1' }, { label: '紧急', value: '2' }, { label: '特急', value: '3' } ], defaultValue: '1' },
-  { field: 'signOpinion', label: '签字意见', form: 'textarea', dtype: 'text', length: 2000, scale: 2, table: 'main', order: -2, sysField: true, rows: 3 },
+  { field: 'signOpinion', label: '签字意见', form: 'textarea', dtype: 'text', length: SIGN_OPINION_LENGTH, scale: 2, table: 'main', order: -2, sysField: true, rows: 3 },
   { field: 'printCount',  label: '打印次数', form: 'number',   dtype: 'int',  length: 11,   scale: 0, table: 'main', order: -1, sysField: true }
 ]
 
 /** 补齐系统内置字段（已存在则沿用用户配置，仅补 sysField 标记） */
 function ensureSystemFields(list) {
   const arr = Array.isArray(list) ? [...list] : []
-  // 紧急程度：已存在字段按配置表刷新选项，保证与后台配置一致
-  if (urgencyOptionList.value.length) {
-    arr.forEach(f => {
-      if (f.field === 'urgency') f.selectOptions = urgencyOptionList.value.map(o => ({ ...o }))
-    })
-  }
+  arr.forEach(f => {
+    // 紧急程度：固定用单选按钮组展示（圆点、档位平铺），并按配置表刷新选项
+    if (f.field === 'urgency') {
+      f.form = 'radio'
+      f.rtype = 'radio'
+      if (urgencyOptionList.value.length) f.selectOptions = urgencyOptionList.value.map(o => ({ ...o }))
+      return
+    }
+    // 签字意见：历史表单里存的是 2000，仅放宽不收窄
+    if (f.field === 'signOpinion' && !(Number(f.length) >= SIGN_OPINION_LENGTH)) {
+      f.length = SIGN_OPINION_LENGTH
+    }
+  })
   const exist = new Set(arr.map(f => f.field))
   const missing = SYSTEM_FIELDS.filter(sys => !exist.has(sys.field))
   if (!missing.length) {
@@ -906,7 +1026,8 @@ function normalizeFields(arr) {
     }
     // 新类型默认值兜底
     if (n.form === 'textarea') n.rows = n.rows || 4
-    if (n.form === 'browse') n.browseType = n.browseType || 'user'
+    // 浏览按钮存的是所选数据的名称文本，列类型恒为文本，历史误配的 dtype 一并纠正
+    if (n.form === 'browse') { n.browseType = n.browseType || 'user'; n.dtype = 'text' }
     if (n.form === 'attach') { n.attachType = n.attachType || 'all'; n.attachLimit = n.attachLimit || 5 }
     return n
   })
@@ -956,8 +1077,9 @@ function submitAdd(enterDesign) {
       layout.value = normalizeLayout(detail.data.layoutJson)
       rebuildDetailTables()
       activeTab.value = 'fields'
-      designMax.value = false
+      designEntry.value = 'form'
       activeTableTab.value = 'main'
+      fieldPageNum.value = 1
       open.value = true
     }
   })
@@ -972,10 +1094,20 @@ async function handleDesign(row, tab = 'basic') {
   undoStack.value = []
   redoStack.value = []
   rebuildDetailTables()
-  if (tab === 'layout') { ensureGridMode(); designMax.value = true } else { designMax.value = false }
+  // 「设计」与「页面设计」都直接全屏打开（与页面设计弹框一致），无窗口态
+  if (tab === 'layout') ensureGridMode()
+  // 从「页面设计」按钮进入时只看设计器（不显示基本信息/编辑字段页签）
+  designEntry.value = tab === 'layout' ? 'layout' : 'form'
   activeTab.value = tab
   activeTableTab.value = 'main'
+  fieldPageNum.value = 1
   open.value = true
+}
+
+/** 「页面设计」专属视图 → 回到完整表单配置（重新显示三个页签） */
+function exitLayoutOnly() {
+  designEntry.value = 'form'
+  activeTab.value = 'basic'
 }
 
 function safeParse(json) {
@@ -996,9 +1128,14 @@ function applyFormDefaults(row) {
   const d = FORM_DEFAULTS[row.form] || {}
   row.dtype = d.dtype || row.dtype
   row.defaultValue = undefined
+  // 取值方式随类型失效：人员/日期字段的「当前用户 / 当天日期」换个类型就没意义了，重新配
+  row.defaultMode = undefined
+  row.defaultField = undefined
+  row.defaultValueId = undefined
+  row.defaultValueDept = undefined
   if (d.length) row.length = d.length
   if (d.rows) row.rows = d.rows
-  if (d.browseType) row.browseType = d.browseType
+  if (d.browseType) { row.browseType = d.browseType; row.browseMultiple = false }
   if (d.attachType) row.attachType = d.attachType
   if (d.attachLimit) row.attachLimit = d.attachLimit
   if (d.selectOptions) row.selectOptions = d.selectOptions
@@ -1007,10 +1144,11 @@ function applyFormDefaults(row) {
   if (row.form === 'date') row.dtype = 'date'
   if (row.form === 'datetime') row.dtype = 'datetime'
   if (row.form === 'number') row.dtype = row.dtype === 'int' ? 'int' : 'float'
+  if (row.form === 'browse') row.dtype = 'text'
 }
 
-/** 数据类型（dtype）是否随表现形式锁定：选项类（check/下拉/点选/复选）、附件、日期、数字类均不允许改dtype */
-function isDtypeLocked(form) { return ['date', 'datetime', 'number', 'textarea', 'check', 'select', 'radio', 'checkbox', 'attach'].includes(form) }
+/** 数据类型（dtype）是否随表现形式锁定：选项类（check/下拉/点选/复选）、附件、日期、数字、浏览按钮均不允许改dtype */
+function isDtypeLocked(form) { return ['date', 'datetime', 'number', 'textarea', 'check', 'select', 'radio', 'checkbox', 'attach', 'browse'].includes(form) }
 
 /** 自由表现形式下可选的数据类型：日期/日期时间只能通过表现形式（日期框/日期时间框）选择，避免两处重复 */
 function dtypeOptions(form) {
@@ -1022,7 +1160,7 @@ function dtypeOptions(form) {
 /** 长度是否自动推导（browse/attach/check 等不需要用户填长度） */
 function isLengthLocked(row) { return ['browse', 'attach', 'check', 'switch'].includes(row.form) }
 
-// ===== 选择框选项配置弹窗（泛微式：显示值/实际值/默认值/排序） =====
+// ===== 选择框选项配置弹窗（Excel 式：显示值/实际值/默认值/排序） =====
 const selCfgOpen = ref(false)
 const selCfgField = ref(null)
 const selCfgRows = ref([])
@@ -1074,6 +1212,95 @@ function confirmSelConfig() {
 
 function onNewFormChange() { applyFormDefaults(newField.value) }
 function onBatchFormChange(row) { applyFormDefaults(row) }
+
+// ===== 字段默认值弹窗（打开表单时自动带出） =====
+const dftOpen = ref(false)
+const dftField = ref(null)
+const dft = reactive({ mode: '', src: '', fixed: '', pickName: '', pickId: '', pickExtra: null })
+/** 当前字段可选的取值方式（按表现形式 / 浏览数据源裁剪） */
+const dftModes = computed(() => defaultModesOf(dftField.value))
+/** 「指定人员 / 指定部门 / …」：直接用该字段自己的浏览选择器选一条固定值 */
+const dftNeedsPick = computed(() => dft.mode === 'fixedPick')
+const dftPickField = computed(() => ({ form: 'browse', browseType: (dftField.value && dftField.value.browseType) || 'user', browseMultiple: false }))
+/** 来源字段候选：同一张表内，人员带出部门只列人员浏览字段 */
+const dftSources = computed(() => sourceFieldOptions(fields.value, dft.mode, dftField.value && dftField.value.field, dftField.value && dftField.value.table))
+const dftNeedsSrc = computed(() => dft.mode === 'fieldValue' || dft.mode === 'fieldUserDept')
+/** 选项类字段的固定默认值在「配置」弹窗勾选，这里只给文本/数字类提供固定值输入 */
+const dftCanFixed = computed(() => {
+  const f = dftField.value
+  return !!f && !isSelForm(f.form) && f.form !== 'attach' && f.form !== 'browse'
+})
+const dftModeTip = computed(() => {
+  switch (dft.mode) {
+    case 'currentUser':
+      return '打开表单时自动填当前登录人（名称 + ID 一起写入，还能直接打开选择器换人）'
+    case 'currentDept':
+      return '打开表单时自动填当前登录人所属部门'
+    case 'currentDate':
+      return '打开表单时填当天日期'
+    case 'currentDatetime':
+      return '打开表单时填当前时间（含时分秒）'
+    case 'fixedPick':
+      return '打开表单时自动填这里选中的那条记录（人员/部门等直接选，不用抄别的字段）'
+    case 'fieldValue':
+      return '跟着表单里另一个字段的值走，打开表单时取一次'
+    case 'fieldUserDept':
+      return '人员字段选了人，部门自动跟着变；人员清空时部门一起清空'
+    default:
+      return '不设置则打开表单时留空'
+  }
+})
+function openDefaultConfig(row) {
+  dftField.value = row
+  const mode = row.defaultMode && row.defaultMode !== 'none' ? row.defaultMode : ''
+  dft.mode = mode
+  dft.src = row.defaultField || ''
+  dft.fixed = isEmptyValue(row.defaultValue) ? '' : Array.isArray(row.defaultValue) ? row.defaultValue.join('、') : String(row.defaultValue)
+  // 指定人员/部门：回显已选中项
+  const picked = mode === 'fixedPick'
+  dft.pickName = picked && !isEmptyValue(row.defaultValue) ? String(row.defaultValue) : ''
+  dft.pickId = picked && !isEmptyValue(row.defaultValueId) ? String(row.defaultValueId) : ''
+  dft.pickExtra = picked && row.defaultValueDept ? { ...row.defaultValueDept } : null
+  dftOpen.value = true
+}
+function onDftModeChange() {
+  if (dft.mode !== 'fixedPick') {
+    dft.pickName = ''
+    dft.pickId = ''
+    dft.pickExtra = null
+  }
+  if (!dftNeedsSrc.value) dft.src = ''
+  else if (!dft.src && dftSources.value.length === 1) dft.src = dftSources.value[0].field
+}
+function confirmDefaultConfig() {
+  const row = dftField.value
+  if (!row) return
+  if (dft.mode === 'fixedPick' && !dft.pickName) {
+    proxy.$modal.msgWarning('请先在' + defaultModeLabel(row, 'fixedPick') + '里选一条')
+    return
+  }
+  if (dftNeedsSrc.value && !dft.src) {
+    proxy.$modal.msgWarning('请选择来源字段')
+    return
+  }
+  row.defaultMode = dft.mode || undefined
+  row.defaultField = dftNeedsSrc.value ? dft.src : undefined
+  if (dft.mode === 'fixedPick') {
+    row.defaultValue = dft.pickName
+    row.defaultValueId = dft.pickId || undefined
+    row.defaultValueDept = dft.pickExtra && dft.pickExtra.deptName ? { deptId: dft.pickExtra.deptId, deptName: dft.pickExtra.deptName } : undefined
+  } else {
+    row.defaultValueId = undefined
+    row.defaultValueDept = undefined
+    // 浏览类字段没有「固定值」输入框，切走「指定值」时名称也要清，否则旧名称会被当成固定值先铺上
+    if (!dftCanFixed.value) row.defaultValue = undefined
+  }
+  if (dftCanFixed.value) {
+    const v = String(dft.fixed || '').trim()
+    row.defaultValue = !v ? undefined : row.dtype === 'int' || row.dtype === 'float' ? Number(v) : v
+  }
+  dftOpen.value = false
+}
 
 function openAddField() {
   newField.value = { label: undefined, field: undefined, autoField: true, table: activeTableTab.value === '__add' ? 'main' : activeTableTab.value, order: fields.value.length + 1, form: 'text', dtype: 'text', length: 500, scale: 2, options: undefined, placeholder: undefined, required: false }
@@ -1160,7 +1387,12 @@ function removeDetailTable(name) {
 
 // ===== 页面设计（类Excel布局设计器） =====
 const layoutPreview = ref(false)
-const designMax = ref(false)
+// 全屏弹窗，字段表格随视口撑高（无底部页脚；余量含底部字段分页器）
+const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 900)
+const fieldTableMaxHeight = computed(() => Math.max(320, viewportHeight.value - 310))
+function syncViewportHeight() { viewportHeight.value = window.innerHeight }
+onMounted(() => window.addEventListener('resize', syncViewportHeight))
+onBeforeUnmount(() => window.removeEventListener('resize', syncViewportHeight))
 const layout = ref({ mode: 'section', sections: [], grid: null })
 
 const mainFields = computed(() => fields.value.filter(f => (f.table || 'main') === 'main'))
@@ -1210,7 +1442,7 @@ function addNoteRow() {
   sel.value = { si: layout.value.sections.length - 1, ri: sec.rows.length - 1, ci: 0 }
 }
 
-// ===== 明细表块（参照泛微 e-cology：明细表整体作为占位块插入布局，含表头/空白行/表尾合计） =====
+// ===== 明细表块（按 Excel 式表单设计：明细表整体作为占位块插入布局，含表头/空白行/表尾合计） =====
 /** 明细表显示名：dt1 → 明细表1 */
 function detailTableLabel(dt) {
   const idx = detailTables.value.indexOf(dt)
@@ -1220,7 +1452,7 @@ function detailTableLabel(dt) {
 function detailTableFields(dt) {
   return fields.value.filter(f => f.table === dt).sort((a, b) => (a.order || 1) - (b.order || 1))
 }
-/** 插入明细表块：整行 24 格，独立占位（泛微式：明细表区域不与其他字段混排） */
+/** 插入明细表块：整行 24 格，独立占位（Excel 式：明细表区域不与其他字段混排） */
 function addDetailBlock(dt) {
   if (!dt) return
   if (!layout.value.sections.length) addSection()
@@ -1570,7 +1802,7 @@ function submitForm(keepOpen) {
 }
 
 function handleCreateTable(row) {
-  proxy.$modal.confirm('将按当前字段定义生成数据表 ' + 'flow_data_' + row.formKey + '（明细表自动追加 _dt1/_dt2…，已存在的表仅补齐缺失字段列）。确认执行？')
+  proxy.$modal.confirm('将按当前字段定义生成数据表 ' + 'flow_data_' + row.formKey + '（明细表自动追加 _dt1/_dt2…，已存在的表仅补齐缺失列，并把变窄的文本列放宽，如签字意见 2000→4000）。确认执行？')
     .then(() => createTable(row.formId))
     .then(res => { proxy.$modal.msgSuccess('数据表已就绪：' + res.data); getList() })
     .catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('生成数据表失败：' + (e?.message || e)) })
@@ -1595,7 +1827,11 @@ onActivated(() => { getList() })
 .field-tab-bar .tab-add { font-weight: 700; color: var(--brand-600, #4f46e5); }
 .field-toolbar { display: flex; align-items: center; gap: 8px; margin: 10px 12px; }
 .field-tip { font-size: 12px; color: var(--ink-500, #94a3b8); margin-left: 8px; }
+/* 字段默认值单元格：摘要过长省略，完整内容看悬浮提示 */
+.dft-cell { max-width: 138px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 .field-table { margin: 0 12px 8px; }
+/* 字段分页：贴右、紧挨表格，别把表格挤小 */
+.field-pager { padding: 0 12px 4px; }
 /* 字段列表拖动排序：手柄样式 + 拖拽占位高亮 */
 .field-table .drag-handle { cursor: move; color: var(--ink-400, #94a3b8); font-size: 14px; user-select: none; }
 .field-table .drag-handle:hover { color: var(--brand-600, #4f46e5); }
@@ -1610,7 +1846,7 @@ onActivated(() => { getList() })
 .batch-toolbar { display: flex; align-items: center; gap: 8px; margin: 0 12px 10px; }
 .tbl-name-row { line-height: 28px; }
 
-/* ===== 明细表块（参照泛微 e-cology） ===== */
+/* ===== 明细表块（按 Excel 式表单设计） ===== */
 .ed-cell.is-detail { background: #f8fafc; }
 .ed-detail-mini { display: block; width: 100%; font-size: 11px; }
 .ed-detail-head { display: flex; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px 3px 0 0; }
@@ -1701,8 +1937,21 @@ onActivated(() => { getList() })
 .pv-b-all { border: 1px solid #94a3b8; border-radius: 4px; padding: 4px; }
 .pv-b-bottom { border-bottom: 2px solid #94a3b8; }
 .layout-mode-bar { display: flex; align-items: center; gap: 10px; margin: 0 12px 8px; }
-.rd-max-btn {
-  position: absolute; right: 52px; top: 50%; transform: translateY(-50%);
-  font-weight: 600; padding: 0 14px; height: 32px; font-size: 13px;
+/* 设计弹窗顶部操作区（保存 / 关闭）——放在蓝底标题条右侧，两个按钮同一样式 */
+.rd-detail-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rd-design-actions {
+  margin-left: auto; margin-right: 8px; flex: none;
+  display: flex; align-items: center; gap: 8px;
 }
+.rd-design-actions :deep(.el-button) { height: 32px; font-size: 13px; font-weight: 600; padding: 0 14px; }
+.rd-head-btn { background: #fff; border-color: #fff; color: #1d4ed8; }
+.rd-head-btn:hover, .rd-head-btn:focus { background: #eff6ff; border-color: #eff6ff; color: #1d4ed8; }
+/* 从列表「页面设计」进入时只看设计器：隐藏「基本信息 / 编辑字段」页签头 */
+.form-design-tabs.is-layout-only :deep(.el-tabs__header) { display: none; }
+.form-design-tabs.is-layout-only :deep(.el-tabs__content) { padding-top: 0; }
+/* 全屏设计（设计 / 页面设计）：基本信息列限制宽度，其它布局区随视口撑高，避免大片留白 */
+.form-design-tabs.is-design-full .basic-form { max-width: 900px; }
+.form-design-tabs.is-design-full .ed-canvas,
+.form-design-tabs.is-design-full .ed-side,
+.form-design-tabs.is-design-full .layout-preview { max-height: calc(100vh - 260px); }
 </style>

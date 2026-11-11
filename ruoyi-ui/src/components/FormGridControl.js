@@ -4,11 +4,23 @@
  * 避免组件反向引用页面模块造成循环依赖。
  */
 import { defineComponent, h, resolveComponent } from 'vue'
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker } from 'element-plus'
+import FormBrowse from '@/components/FormBrowse/index.vue'
+import { htmlToText } from '@/utils'
+
+/**
+ * 系统字段固定渲染类型：
+ * - 紧急程度：单选按钮组（圆点，档位全部平铺展示）
+ * - 签字意见：富文本编辑器（与「通知公告-内容」同一个 Editor 组件，可设字体/字号/粗细等）
+ * 不依赖字段配置里存下的 form（历史表单存的是 select / textarea）。
+ */
+const RTYPE_FORCED = { urgency: 'radio', signOpinion: 'editor' }
 
 /** 字段定义 → 渲染类型 rtype（兼容新版 {form,dtype} 与旧版 {type}） */
 export function rtypeOf(f) {
   if (!f) return 'text'
+  const forced = f.field ? RTYPE_FORCED[f.field] : ''
+  if (forced) return forced
   if (f.rtype) return f.rtype
   if (f.form) {
     if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate', 'date', 'datetime', 'number'].includes(f.form)) return f.form
@@ -39,6 +51,8 @@ export function optionListOf(f) {
 export function displayTextOf(f, val, placeholder = '—') {
   if (val === undefined || val === null || val === '') return placeholder
   const rt = rtypeOf(f)
+  // 富文本按纯文本回显，避免时间轴/只读表格里露出 HTML 标签
+  if (rt === 'editor') return htmlToText(val) || placeholder
   if (rt === 'select' || rt === 'radio') {
     const hit = optionListOf(f).find(o => String(o.value) === String(val))
     return hit ? hit.label : val
@@ -55,10 +69,22 @@ export function displayTextOf(f, val, placeholder = '—') {
 
 export default defineComponent({
   name: 'FormGridControl',
-  props: { f: { type: Object, required: true }, modelValue: { type: [String, Number, Boolean], default: undefined }, styleObj: { type: Object, default: null }, disabled: { type: Boolean, default: false } },
-  emits: ['update:modelValue', 'browse'],
+  props: {
+    f: { type: Object, required: true },
+    modelValue: { type: [String, Number, Boolean], default: undefined },
+    /** 浏览按钮伴生值：已选 ID（逗号分隔），仅用于弹框回显 */
+    idValue: { type: [String, Array], default: '' },
+    /** 浏览按钮附加信息（人员带回部门），存到 `${field}__extra` */
+    extraValue: { type: Object, default: null },
+    styleObj: { type: Object, default: null },
+    disabled: { type: Boolean, default: false },
+    required: { type: Boolean, default: false }
+  },
+  emits: ['update:modelValue', 'update:idValue', 'update:extraValue', 'browse'],
   setup(props, { emit }) {
     const set = v => emit('update:modelValue', v)
+    const setId = v => emit('update:idValue', v)
+    const setExtra = v => emit('update:extraValue', v)
     return () => {
       const f = props.f
       const v = props.modelValue
@@ -75,6 +101,12 @@ export default defineComponent({
           () => optionListOf(f).map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
         case 'radio': return h(ElRadioGroup, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis },
           () => optionListOf(f).map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
+        case 'editor': return h(resolveComponent('Editor'), {
+          modelValue: v || '',
+          'onUpdate:modelValue': set,
+          minHeight: f.editorHeight || 140,
+          readOnly: dis
+        })
         case 'checkbox': return h(ElCheckboxGroup, {
           modelValue: v ? String(v).split(',').filter(Boolean) : [],
           'onUpdate:modelValue': arr => set((arr || []).join(',')),
@@ -83,11 +115,18 @@ export default defineComponent({
         case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0', disabled: dis })
         case 'switch': return h(ElSwitch, { modelValue: v, 'onUpdate:modelValue': set, activeValue: '1', inactiveValue: '0', disabled: dis })
         case 'rate': return h(ElRate, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis })
-        case 'browse': return h('div', { style: 'display:flex;gap:8px;width:100%' }, [
-          h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, readonly: true, disabled: dis, placeholder: '点击右侧按钮选择数据' }),
-          h(ElButton, { onClick: () => emit('browse', f), disabled: dis }, () => '浏览…')
-        ])
-        case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis })
+        // 浏览按钮：交由 FormBrowse 按字段配置的数据源打开对应弹框选择器（人员/部门/客户/物料/设备…）
+        case 'browse': return h(FormBrowse, {
+          f,
+          modelValue: v,
+          modelIds: props.idValue,
+          modelExtra: props.extraValue,
+          disabled: dis,
+          'onUpdate:modelValue': set,
+          'onUpdate:modelIds': setId,
+          'onUpdate:modelExtra': setExtra
+        })
+        case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis, inlineTip: true, reqStar: props.required })
         case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder, disabled: dis })
         case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', placeholder: f.placeholder || '请输入', disabled: dis })
         case 'date': return isTime

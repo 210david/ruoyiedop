@@ -15,7 +15,7 @@
     <div class="wm-actions">
       <el-button size="small" @click="$emit('help')">帮助</el-button>
       <el-button size="small" @click="$emit('toggle-preview')">{{ preview ? '返回设计' : '预览' }}</el-button>
-      <el-button size="small" type="primary" @click="$emit('save')">保 存</el-button>
+      <el-button size="small" v-if="showSave" type="primary" @click="$emit('save')">保 存</el-button>
     </div>
   </div>
 </template>
@@ -25,8 +25,10 @@ import { computed, ref } from 'vue'
 
 const props = defineProps({
   preview: Boolean,
-  /** 明细表菜单动态项（泛微口径：添加明细表1/2…，已上画布的置灰）；为空时用默认单项 */
-  detailItems: { type: Array, default: null }
+  /** 明细表菜单动态项（设计口径：添加明细表1/2…，已上画布的置灰）；为空时用默认单项 */
+  detailItems: { type: Array, default: null },
+  /** 外层已提供统一保存按钮时置 false，避免同一页面多个保存按钮 */
+  showSave: { type: Boolean, default: true }
 })
 const emit = defineEmits(['cmd', 'help', 'save', 'toggle-preview'])
 

@@ -10,7 +10,9 @@
           <label>流程名称</label>
           <div class="control">
             <el-input v-model="queryParams.modelName" placeholder="请输入" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
+              <template #prefix
+                ><el-icon><Search /></el-icon
+              ></template>
             </el-input>
           </div>
         </div>
@@ -18,7 +20,9 @@
           <label>流程Key</label>
           <div class="control">
             <el-input v-model="queryParams.modelKey" placeholder="请输入" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Document /></el-icon></template>
+              <template #prefix
+                ><el-icon><Document /></el-icon
+              ></template>
             </el-input>
           </div>
         </div>
@@ -57,10 +61,14 @@
         <el-table v-loading="loading" :data="list" border class="app-table">
           <el-table-column type="index" label="序号" width="70" align="center" />
           <el-table-column label="流程名称" prop="modelName" min-width="160" show-overflow-tooltip>
-            <template #default="scope"><span class="col-strong">{{ scope.row.modelName }}</span></template>
+            <template #default="scope"
+              ><span class="col-strong">{{ scope.row.modelName }}</span></template
+            >
           </el-table-column>
           <el-table-column label="流程Key" prop="modelKey" min-width="140" show-overflow-tooltip>
-            <template #default="scope"><span class="col-mono">{{ scope.row.modelKey }}</span></template>
+            <template #default="scope"
+              ><span class="col-mono">{{ scope.row.modelKey }}</span></template
+            >
           </el-table-column>
           <el-table-column label="流程分类" prop="category" width="110" align="center">
             <template #default="scope">
@@ -70,7 +78,7 @@
           <el-table-column label="版本" prop="version" width="150" align="center">
             <template #default="scope">
               <span>v{{ scope.row.version }}</span>
-              <span class="badge blue" style="margin-left:6px" v-if="scope.row.activeFlag === '1'"><span class="dot"></span>当前版本</span>
+              <span class="badge blue" style="margin-left: 6px" v-if="scope.row.activeFlag === '1'"><span class="dot"></span>当前版本</span>
             </template>
           </el-table-column>
           <el-table-column label="版本备注" prop="remark" min-width="120" align="center" show-overflow-tooltip>
@@ -78,9 +86,7 @@
           </el-table-column>
           <el-table-column label="状态" prop="suspended" width="100" align="center">
             <template #default="scope">
-              <span class="badge" :class="scope.row.suspended ? 'gray' : 'green'">
-                <span class="dot"></span>{{ scope.row.suspended ? '已挂起' : '已激活' }}
-              </span>
+              <span class="badge" :class="scope.row.suspended ? 'gray' : 'green'"> <span class="dot"></span>{{ scope.row.suspended ? '已挂起' : '已激活' }} </span>
             </template>
           </el-table-column>
           <el-table-column label="部署时间" prop="deploymentTime" width="170" align="center" />
@@ -89,7 +95,9 @@
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleViewXml(scope.row)" v-hasPermi="['flowable:definition:query']">查看XML</el-button>
                 <el-button link type="primary" icon="EditPen" @click="handleUpdateRemark(scope.row)" v-hasPermi="['flowable:definition:state']">备注</el-button>
-                <el-button v-if="scope.row.activeFlag !== '1' && !scope.row.suspended" link type="success" icon="Select" @click="handleSetActive(scope.row)" v-hasPermi="['flowable:definition:state']">设为当前</el-button>
+                <el-button v-if="scope.row.activeFlag !== '1' && !scope.row.suspended" link type="success" icon="Select" @click="handleSetActive(scope.row)" v-hasPermi="['flowable:definition:state']"
+                  >设为当前</el-button
+                >
                 <el-button v-if="!scope.row.suspended" link type="warning" icon="VideoPause" @click="handleChangeState(scope.row, true)" v-hasPermi="['flowable:definition:state']">挂起</el-button>
                 <el-button v-else link type="success" icon="VideoPlay" @click="handleChangeState(scope.row, false)" v-hasPermi="['flowable:definition:state']">激活</el-button>
               </div>
@@ -100,8 +108,7 @@
 
       <!-- 分页 -->
       <div class="pagination-container">
-        <el-pagination background layout="total, prev, pager, next, sizes" :total="total"
-          v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" @change="getList" />
+        <el-pagination background layout="total, prev, pager, next, sizes" :total="total" v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" @change="getList" />
       </div>
     </div>
 
@@ -110,7 +117,10 @@
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
           </div>
           <span class="rd-detail-header-title">BPMN XML</span>
           <div class="rd-detail-header-sub" v-if="xmlModel.modelName">
@@ -128,33 +138,33 @@
 </template>
 
 <script setup name="FlowDefinition">
-import { listDefinition, getDefinitionXml, changeDefinitionState, updateDefinitionRemark, setActiveDefinition } from '@/api/flowable/flow'
-import { ElMessageBox } from 'element-plus'
-import { Search, Filter, Document } from '@element-plus/icons-vue'
+import { listDefinition, getDefinitionXml, changeDefinitionState, updateDefinitionRemark, setActiveDefinition } from '@/api/flowable/flow';
+import { ElMessageBox } from 'element-plus';
+import { Search, Filter, Document } from '@element-plus/icons-vue';
 
-const { proxy } = getCurrentInstance()
-const { flowable_category } = proxy.useDict('flowable_category')
+const { proxy } = getCurrentInstance();
+const { flowable_category } = proxy.useDict('flowable_category');
 
-const list = ref([])
-const loading = ref(true)
-const showSearch = ref(true)
-const total = ref(0)
-const xmlOpen = ref(false)
-const xmlContent = ref('')
-const xmlModel = ref({})
+const list = ref([]);
+const loading = ref(true);
+const showSearch = ref(true);
+const total = ref(0);
+const xmlOpen = ref(false);
+const xmlContent = ref('');
+const xmlModel = ref({});
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, modelName: undefined, modelKey: undefined, category: undefined }
-})
-const { queryParams } = toRefs(data)
+  queryParams: { pageNum: 1, pageSize: 10, modelName: undefined, modelKey: undefined, category: undefined },
+});
+const { queryParams } = toRefs(data);
 
 const activeFilterCount = computed(() => {
-  let count = 0
-  if (queryParams.value.modelName) count++
-  if (queryParams.value.modelKey) count++
-  if (queryParams.value.category) count++
-  return count
-})
+  let count = 0;
+  if (queryParams.value.modelName) count++;
+  if (queryParams.value.modelKey) count++;
+  if (queryParams.value.category) count++;
+  return count;
+});
 
 const defaultColumns = {
   modelName: { label: '流程名称', visible: true },
@@ -162,100 +172,137 @@ const defaultColumns = {
   category: { label: '流程分类', visible: true },
   version: { label: '版本', visible: true },
   suspended: { label: '状态', visible: true },
-  deploymentTime: { label: '部署时间', visible: true }
-}
-const columns = ref(loadColumnVisibility())
+  deploymentTime: { label: '部署时间', visible: true },
+};
+const columns = ref(loadColumnVisibility());
 function loadColumnVisibility() {
   try {
-    const saved = localStorage.getItem('flowable_definition_columns')
+    const saved = localStorage.getItem('flowable_definition_columns');
     if (saved) {
-      const parsed = JSON.parse(saved)
-      const result = {}
-      Object.keys(defaultColumns).forEach(key => {
-        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
-      })
-      return result
+      const parsed = JSON.parse(saved);
+      const result = {};
+      Object.keys(defaultColumns).forEach((key) => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible };
+      });
+      return result;
     }
   } catch (e) {}
-  return { ...defaultColumns }
+  return { ...defaultColumns };
 }
 
 function categoryLabel(value) {
-  const item = flowable_category.value.find(d => d.value == value)
-  return item ? item.label : (value || '-')
+  const item = flowable_category.value.find((d) => d.value == value);
+  return item ? item.label : value || '-';
 }
 
 function getList() {
-  loading.value = true
-  listDefinition(queryParams.value).then(res => {
-    list.value = res.rows || []
-    total.value = res.total
-    loading.value = false
-  }).catch(() => { loading.value = false })
+  loading.value = true;
+  listDefinition(queryParams.value)
+    .then((res) => {
+      list.value = res.rows || [];
+      total.value = res.total;
+      loading.value = false;
+    })
+    .catch(() => {
+      loading.value = false;
+    });
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
+function handleQuery() {
+  queryParams.value.pageNum = 1;
+  getList();
+}
 function resetQuery() {
-  queryParams.value.modelName = undefined
-  queryParams.value.modelKey = undefined
-  queryParams.value.category = undefined
-  handleQuery()
+  queryParams.value.modelName = undefined;
+  queryParams.value.modelKey = undefined;
+  queryParams.value.category = undefined;
+  handleQuery();
 }
 
 function handleViewXml(row) {
-  xmlModel.value = row
-  getDefinitionXml(row.modelId).then(res => {
-    xmlContent.value = res.data || ''
-    xmlOpen.value = true
-  })
+  xmlModel.value = row;
+  getDefinitionXml(row.modelId).then((res) => {
+    xmlContent.value = res.data || '';
+    xmlOpen.value = true;
+  });
 }
 
 function handleChangeState(row, suspend) {
-  const action = suspend ? '挂起' : '激活'
-  proxy.$modal.confirm(`确认${action}流程"${row.modelName}"？挂起后该流程不可发起新实例`).then(() => {
-    return changeDefinitionState(row.modelId, suspend)
-  }).then(() => {
-    proxy.$modal.msgSuccess(`已${action}`)
-    getList()
-  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError(`${action}失败：` + (e?.message || e)) })
+  const action = suspend ? '挂起' : '激活';
+  proxy.$modal
+    .confirm(`确认${action}流程"${row.modelName}"？挂起后该流程不可发起新实例`)
+    .then(() => {
+      return changeDefinitionState(row.modelId, suspend);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess(`已${action}`);
+      getList();
+    })
+    .catch((e) => {
+      if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError(`${action}失败：` + (e?.message || e));
+    });
 }
 
-/** 编辑版本备注（泛微式：每个版本可填写备注说明） */
+/** 编辑版本备注（每个版本可填写备注说明） */
 function handleUpdateRemark(row) {
   ElMessageBox.prompt('请输入版本备注说明', '版本备注：v' + row.version, {
     inputValue: row.remark || '',
     inputPlaceholder: '如：调整审批人为部门经理',
     confirmButtonText: '确定',
     cancelButtonText: '取消',
-    inputType: 'textarea'
-  }).then(({ value }) => {
-    return updateDefinitionRemark(row.modelId, value || '').then(() => {
-      proxy.$modal.msgSuccess('版本备注已更新')
-      getList()
-    }).catch(e => { proxy.$modal.msgError('版本备注更新失败：' + (e?.message || e)) })
-  }).catch(() => {})
+    inputType: 'textarea',
+  })
+    .then(({ value }) => {
+      return updateDefinitionRemark(row.modelId, value || '')
+        .then(() => {
+          proxy.$modal.msgSuccess('版本备注已更新');
+          getList();
+        })
+        .catch((e) => {
+          proxy.$modal.msgError('版本备注更新失败：' + (e?.message || e));
+        });
+    })
+    .catch(() => {});
 }
 
 /** 设为当前活动版本（发起流程时优先使用该版本） */
 function handleSetActive(row) {
-  proxy.$modal.confirm(`确认将版本 v${row.version} 设为当前版本？新发起的流程将优先使用该版本`).then(() => {
-    return setActiveDefinition(row.modelId).then(() => {
-      proxy.$modal.msgSuccess('已设为当前版本')
-      getList()
-    }).catch(e => { proxy.$modal.msgError('设为当前版本失败：' + (e?.message || e)) })
-  }).catch(() => {})
+  proxy.$modal
+    .confirm(`确认将版本 v${row.version} 设为当前版本？新发起的流程将优先使用该版本`)
+    .then(() => {
+      return setActiveDefinition(row.modelId)
+        .then(() => {
+          proxy.$modal.msgSuccess('已设为当前版本');
+          getList();
+        })
+        .catch((e) => {
+          proxy.$modal.msgError('设为当前版本失败：' + (e?.message || e));
+        });
+    })
+    .catch(() => {});
 }
 
-getList()
-onActivated(() => { getList() })
+getList();
+onActivated(() => {
+  getList();
+});
 </script>
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
 
 .xml-view {
-  background: var(--ink-900); color: #cbd5e1; padding: 16px; border-radius: 8px;
-  font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.6;
-  max-height: 520px; overflow: auto; margin: 0; white-space: pre-wrap; word-break: break-all;
+  background: var(--ink-900);
+  color: #cbd5e1;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 520px;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

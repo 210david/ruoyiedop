@@ -74,11 +74,20 @@ public class FlowModel extends BaseEntity
     /** 显示顺序（存于 metaInfo） */
     private Integer orderNum;
 
+    /** 流程编号规则（JSON 字符串，存于 metaInfo） */
+    private String processNoRule;
+
     /** 版本备注说明（来自扩展表，展示用） */
     private String remark;
 
     /** 是否当前活动版本（来自扩展表，展示用：1是 0否） */
     private String activeFlag;
+
+    /**
+     * 已产生的流程实例数（含已办结，来自 act_hi_procinst）
+     * >0 说明该流程已经跑过、有单据与审批记录，禁止删除模型
+     */
+    private Long instanceCount;
 
     /**
      * 查询开关：是否按流程 key 聚合、每 key 只返回 1 条（活动版本优先）
@@ -126,10 +135,14 @@ public class FlowModel extends BaseEntity
     public void setHelpDoc(String helpDoc) { this.helpDoc = helpDoc; }
     public Integer getOrderNum() { return orderNum; }
     public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
+    public String getProcessNoRule() { return processNoRule; }
+    public void setProcessNoRule(String processNoRule) { this.processNoRule = processNoRule; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public String getActiveFlag() { return activeFlag; }
     public void setActiveFlag(String activeFlag) { this.activeFlag = activeFlag; }
+    public Long getInstanceCount() { return instanceCount; }
+    public void setInstanceCount(Long instanceCount) { this.instanceCount = instanceCount; }
     public Boolean getOnlyActive() { return onlyActive; }
     public void setOnlyActive(Boolean onlyActive) { this.onlyActive = onlyActive; }
 }

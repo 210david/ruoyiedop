@@ -118,10 +118,14 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd">
           <el-table-column type="index" label="序号" :width="colWidth('序号', 85)" align="center" />
+          <!-- 流程编号：发起时按「流程高级设置 → 编号规则」生成，比 UUID 单号更适合业务侧引用 -->
+          <el-table-column v-if="columns.processNo.visible" label="流程编号" prop="processNo" key="processNo" :width="colWidth('processNo', 180)" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.processNo || '-' }}</template>
+          </el-table-column>
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
               <span v-if="urgencyBadge(scope.row.urgency)" class="badge" :class="urgencyBadge(scope.row.urgency).cls">{{ urgencyBadge(scope.row.urgency).text }}</span>
-              <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
+              <span class="col-strong link-like" role="link" tabindex="0" @click="handleView(scope.row)" @keydown.enter="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columns.processDefinitionName.visible" label="流程名称" prop="processDefinitionName" key="processDefinitionName" :min-width="colWidth('processDefinitionName', 150)" show-overflow-tooltip>
@@ -133,11 +137,10 @@
               <span class="badge" :class="scope.row.status === 'running' ? 'blue' : 'gray'"><span class="dot"></span>{{ scope.row.currentActivityName || (scope.row.status === 'completed' ? '流程结束' : '已终止') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="110" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-                <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === 'running'" v-hasPermi="['flowable:process:cancel']">撤销</el-button>
               </div>
             </template>
           </el-table-column>
@@ -157,7 +160,7 @@
 </template>
 
 <script setup name="FlowProcess">
-import { listMyProcess, cancelProcess, getProcessTree } from '@/api/flowable/flow'
+import { listMyProcess, getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useRouter } from 'vue-router'
@@ -230,6 +233,7 @@ function handleNodeClick(node) {
 
 // ===== 列显隐（RightToolbar 持久化） =====
 const defaultColumns = {
+  processNo: { label: '流程编号', visible: true },
   title: { label: '流程标题', visible: true },
   processDefinitionName: { label: '流程名称', visible: true },
   startTime: { label: '创建日期', visible: true },
@@ -314,18 +318,6 @@ function handleView(row) {
     query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
   }).href
   window.open(href, '_blank')
-}
-
-function handleCancel(row) {
-  proxy.$modal.confirm('确认撤销该流程？撤销后流程终止且不可恢复').then(() => {
-    return proxy.$prompt('请输入撤销原因（可选）', '撤销流程', { confirmButtonText: '确定', cancelButtonText: '取消', inputType: 'textarea' })
-  }).then(({ value }) => {
-    return cancelProcess(row.instanceId, value)
-  }).then(() => {
-    proxy.$modal.msgSuccess('流程已撤销')
-    getList()
-    loadStatusCounts()
-  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('撤销失败：' + (e?.message || e)) })
 }
 
 getList()
@@ -444,10 +436,6 @@ onActivated(() => { getList(); loadStatusCounts(); loadTree() })
       height: 32px;
       border-radius: 8px;
     }
-  }
-  .link-like {
-    cursor: pointer;
-    &:hover { color: var(--el-color-primary); }
   }
 }
 </style>

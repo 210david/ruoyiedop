@@ -40,7 +40,15 @@ public class FlowableEngineConfig
             configuration.setLabelFontName("宋体");
             configuration.setAnnotationFontName("宋体");
             // 操作组任务监听器：任务创建时按节点 flowable:operatorGroups 解析候选用户（部门/分部/岗位/创建人）
-            configuration.setEventListeners(Arrays.asList(new com.ruoyi.flowable.listener.OperatorGroupTaskListener()));
+            // 参与者派发监听器：任务创建时按节点 flowable:participantConfig 解析并指派办理人（活动/组织/表单字段关系）
+            // 参与者预置监听器已移除：会签/串签的集合改由表达式
+            // ${participantCollection.collectionFor('节点ID', execution)} 在引擎求值时回调解析器，
+            // 不再依赖 ACTIVITY/SEQUENCEFLOW 事件的执行时序
+            // 抄送监听器：任务到达 / 办理完成时按节点 flowable:ccConfig 生成「待阅」记录
+            configuration.setEventListeners(Arrays.asList(
+                    new com.ruoyi.flowable.listener.OperatorGroupTaskListener(),
+                    new com.ruoyi.flowable.listener.ParticipantResolveListener(),
+                    new com.ruoyi.flowable.listener.FlowCcListener()));
         };
     }
 }

@@ -1,6 +1,6 @@
 /**
  * Excel 网格设计器 — 纯函数内核（不依赖 Vue，可 Node 单测）
- * 数据模型对标泛微 eformdesign：
+ * 数据模型对标 Excel 式表单设计：
  *   rowheads/colheads  → rowHeights[]/colWidths[]（px）
  *   ec(id="r,c" + colspan/rowspan) → cells[{ r,c,rs,cs }]
  *   etype(1文本/2字段名/3表单内容/6图片/7明细表/12标签页) → type(title/text/note/field/image/detail/tab)
@@ -227,20 +227,49 @@ export function serializeGrid(g) {
   return { rows: g.rows, cols: g.cols, rowHeights: g.rowHeights, colWidths: g.colWidths, rowheadW: g.rowheadW || 34, cells }
 }
 
-/** 载入规范化：坐标钳制、锚点去重、样式补默认值 */
+/** 区域是否已被占用（重叠检测） */
+function areaTaken(taken, r, c, rs, cs) {
+  for (let i = 0; i < rs; i++) {
+    for (let j = 0; j < cs; j++) {
+      if (taken[r + i] && taken[r + i][c + j]) return true
+    }
+  }
+  return false
+}
+
+/** 标记区域已占用 */
+function markArea(taken, r, c, rs, cs) {
+  for (let i = 0; i < rs; i++) {
+    for (let j = 0; j < cs; j++) {
+      if (taken[r + i]) taken[r + i][c + j] = true
+    }
+  }
+}
+
+/** 载入规范化：坐标钳制、锚点去重、重叠丢弃、样式补默认值 */
 export function normalizeGrid(obj) {
   const g = createGrid(obj && obj.rows > 0 ? obj.rows : GRID_DEFAULT.rows, obj && obj.cols > 0 ? obj.cols : GRID_DEFAULT.cols)
   if (Array.isArray(obj && obj.rowHeights)) obj.rowHeights.forEach((h, i) => { if (i < g.rows && h >= 20) g.rowHeights[i] = h })
   if (Array.isArray(obj && obj.colWidths)) obj.colWidths.forEach((w, i) => { if (i < g.cols && (isPct(w) || (typeof w === 'number' && w >= 40))) g.colWidths[i] = w })
   g.rowheadW = Math.max(24, Math.min(120, (obj && obj.rowheadW) || 34))
   const seen = new Set()
-  for (const raw of ((obj && obj.cells) || [])) {
+  // 占用矩阵：HTML 表格无法叠放单元格，两个格压在同一个位置会让整行错位（后放的格被挤到画布边缘、
+  // 点不中），所以载入时直接丢弃后放置的重叠格
+  const taken = Array.from({ length: g.rows }, () => new Array(g.cols).fill(false))
+  // 重叠取舍：有实际内容的格（字段/明细/图片/说明/文字）优先占位，空白占位格让位，避免误删绑定字段
+  const raws = ((obj && obj.cells) || []).filter(r => r && typeof r === 'object')
+  const isBlank = r => !r.type || (r.type === 'text' && !String(r.text || '').trim())
+  const ordered = [...raws.filter(r => !isBlank(r)), ...raws.filter(r => isBlank(r))]
+  for (const raw of ordered) {
     if (!raw || typeof raw !== 'object') continue
     const r = Math.max(0, Math.min(raw.r | 0, g.rows - 1))
     const c = Math.max(0, Math.min(raw.c | 0, g.cols - 1))
     const key = r + ',' + c
     if (seen.has(key)) continue
-    const cell = { id: raw.id || uid(), r, c, rs: Math.max(1, raw.rs | 0), cs: Math.max(1, raw.cs | 0), type: raw.type || 'text', style: hydrateStyle(raw.style) }
+    const rs = Math.max(1, Math.min(raw.rs | 0, g.rows - r))
+    const cs = Math.max(1, Math.min(raw.cs | 0, g.cols - c))
+    if (areaTaken(taken, r, c, rs, cs)) continue
+    const cell = { id: raw.id || uid(), r, c, rs, cs, type: raw.type || 'text', style: hydrateStyle(raw.style) }
     if (cell.type === 'field') cell.field = raw.field
     if (['title', 'text', 'note', 'detail'].includes(cell.type)) cell.text = raw.text || ''
     if (cell.type === 'image' && raw.src) cell.src = raw.src
@@ -248,6 +277,7 @@ export function normalizeGrid(obj) {
     if (raw.attr) cell.attr = raw.attr
     if (raw.detail) cell.detail = raw.detail
     seen.add(key)
+    markArea(taken, r, c, rs, cs)
     g.cells.push(cell)
   }
   return g
@@ -277,7 +307,7 @@ export function cellCss(st, noGrid) {
     if (!e) continue
     const key = 'border' + k[0].toUpperCase() + k.slice(1)
     // s:0（无边框）≠ border:none：collapse 表格中 none 会把默认浅色背景网格线一并擦除。
-    // 泛微口径：无边框 = 清掉用户加的边框、恢复表格默认背景线；只有合并单元格内部才真正无线。
+    // 设计口径：无边框 = 清掉用户加的边框、恢复表格默认背景线；只有合并单元格内部才真正无线。
     // e.w：宽度覆盖（px）——共享边邻格跨度超出时，锚点侧边加粗以赢得 collapse 裁决（宽者优先）
     if (e.s === 0) { if (!noGrid) o[key] = '1px solid ' + (BORDER_DEF.c || '#dbe3ec') }
     else o[key] = (e.w ? e.w + 'px' : (wMap[e.s] || '1px')) + ' ' + (sMap[e.s] || 'solid') + ' ' + (e.c || '#333333')

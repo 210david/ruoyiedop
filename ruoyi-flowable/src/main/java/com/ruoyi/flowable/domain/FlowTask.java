@@ -66,6 +66,42 @@ public class FlowTask extends BaseEntity
     /** 流程定义Key（用于按流程过滤） */
     private String processDefinitionKey;
 
+    /** 流程实例状态（已办返回）：running 进行中 / completed 已办结 / canceled 已撤销 */
+    private String status;
+
+    /** 当前所在环节名称（流程未办结时返回） */
+    private String currentTaskName;
+
+    /** 已办页签筛选（仅查询参数）：all 全部 / running 未结束 / finished 已结束 */
+    private String statusScope;
+
+    /**
+     * 参与状态（流程状态/审批意见展示用）：
+     * done 已办理 / pending 待办理 / undone 未办理（是候选人但流程已被他人处理或已走过）
+     */
+    private String state;
+
+    /**
+     * 是否候选人展开行：同一节点多名候选人时，为每人各展开一行；
+     * true 表示该行是按候选人身份补出来的，不是实际办理人那一行。
+     */
+    private Boolean candidate;
+
+    /** 是否「被退回」的待办（true=上游节点驳回退回给本人，待办「退回」页签展示） */
+    private Boolean returned;
+
+    /** 退回来源环节（哪个节点退回来的） */
+    private String returnFrom;
+
+    /** 退回操作人姓名 */
+    private String returnByName;
+
+    /** 退回时间（yyyy-MM-dd HH:mm:ss） */
+    private String returnTime;
+
+    /** 待办查询条件：true=仅看被退回的 / false=仅看正常待办 / null=全部 */
+    private Boolean returnedOnly;
+
     public String getTaskId() { return taskId; }
     public void setTaskId(String taskId) { this.taskId = taskId; }
     public String getTaskName() { return taskName; }
@@ -100,4 +136,24 @@ public class FlowTask extends BaseEntity
     public void setUrgency(String urgency) { this.urgency = urgency; }
     public String getProcessDefinitionKey() { return processDefinitionKey; }
     public void setProcessDefinitionKey(String processDefinitionKey) { this.processDefinitionKey = processDefinitionKey; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getCurrentTaskName() { return currentTaskName; }
+    public void setCurrentTaskName(String currentTaskName) { this.currentTaskName = currentTaskName; }
+    public String getStatusScope() { return statusScope; }
+    public void setStatusScope(String statusScope) { this.statusScope = statusScope; }
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+    public Boolean getCandidate() { return candidate; }
+    public void setCandidate(Boolean candidate) { this.candidate = candidate; }
+    public Boolean getReturned() { return returned; }
+    public void setReturned(Boolean returned) { this.returned = returned; }
+    public String getReturnFrom() { return returnFrom; }
+    public void setReturnFrom(String returnFrom) { this.returnFrom = returnFrom; }
+    public String getReturnByName() { return returnByName; }
+    public void setReturnByName(String returnByName) { this.returnByName = returnByName; }
+    public String getReturnTime() { return returnTime; }
+    public void setReturnTime(String returnTime) { this.returnTime = returnTime; }
+    public Boolean getReturnedOnly() { return returnedOnly; }
+    public void setReturnedOnly(Boolean returnedOnly) { this.returnedOnly = returnedOnly; }
 }

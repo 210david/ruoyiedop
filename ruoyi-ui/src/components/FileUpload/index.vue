@@ -1,30 +1,33 @@
 <template>
   <div class="upload-file">
-    <el-upload
-      v-if="!disabled"
-      multiple
-      :action="uploadFileUrl"
-      :before-upload="handleBeforeUpload"
-      :file-list="fileList"
-      :data="data"
-      :limit="limit"
-      :on-error="handleUploadError"
-      :on-exceed="handleExceed"
-      :on-success="handleUploadSuccess"
-      :on-progress="handleUploadProgress"
-      :show-file-list="false"
-      :headers="headers"
-      class="upload-file-uploader"
-      ref="fileUpload"
-    >
-      <!-- 上传按钮 -->
-      <el-button type="primary">选取文件</el-button>
-    </el-upload>
-    <!-- 上传提示 -->
-    <div class="el-upload__tip" v-if="showTip && !disabled">
-      单个文件不超过 <b style="color: #f56c6c">{{ effectiveFileSize }}MB</b><template v-if="fileType">，支持 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> 格式</template>
-      <br />
-      <span class="upload-file-tip-extra">大文件上传耗时较长，请保持页面打开，勿重复点击</span>
+    <!-- 一行式布局（表单网格用）：按钮 / 必填星号 / 提示文字 同一行排布，避免提示区占满整行 -->
+    <div class="upload-file-main" :class="{ 'is-inline': inlineTip }">
+      <el-upload
+        v-if="!disabled"
+        multiple
+        :action="uploadFileUrl"
+        :before-upload="handleBeforeUpload"
+        :file-list="fileList"
+        :data="data"
+        :limit="limit"
+        :on-error="handleUploadError"
+        :on-exceed="handleExceed"
+        :on-success="handleUploadSuccess"
+        :on-progress="handleUploadProgress"
+        :show-file-list="false"
+        :headers="headers"
+        class="upload-file-uploader"
+        ref="fileUpload"
+      >
+        <!-- 上传按钮 -->
+        <el-button type="primary">选取文件</el-button>
+      </el-upload>
+      <!-- 必填星号：紧跟“选取文件”按钮，不被满宽的提示区推到最右 -->
+      <i v-if="reqStar && !disabled" class="upload-file-req" title="必填">*</i>
+      <!-- 上传提示：仅保留大小与格式约束 -->
+      <div class="el-upload__tip" v-if="showTip && !disabled">
+        单个文件不超过 <b style="color: #f56c6c">{{ effectiveFileSize }}MB</b><template v-if="fileType">，支持 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> 格式</template>
+      </div>
     </div>
     <!-- 上传进度（仅在上传中显示，避免只有转圈无法判断进度） -->
     <div v-if="uploading" class="upload-file-progress">
@@ -95,6 +98,16 @@ const props = defineProps({
   drag: {
     type: Boolean,
     default: true
+  },
+  // 行内排版：上传按钮 / 必填星号 / 提示说明 排在同一行（表单网格单元格里用）
+  inlineTip: {
+    type: Boolean,
+    default: false
+  },
+  // 是否在按钮后渲染必填星号（由表单渲染层传入，避免星号被容器推到单元格最右）
+  reqStar: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -321,6 +334,29 @@ onMounted(() => {
 .upload-file-uploader {
   margin-bottom: 5px;
 }
+/* 行内排版：按钮与提示说明同一行，提示文字自适应剩余宽度，不够时自动折到下一行 */
+.upload-file-main.is-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.upload-file-main.is-inline .upload-file-uploader {
+  margin-bottom: 0;
+}
+.upload-file-main.is-inline .el-upload__tip {
+  flex: 1 1 260px;
+  min-width: 0;
+  margin: 0;
+  line-height: 20px;
+}
+.upload-file-req {
+  color: #f56c6c;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 32px;
+  flex: none;
+}
 .upload-file-list .el-upload-list__item {
   border: 1px solid #e4e7ed;
   line-height: 2;
@@ -336,9 +372,6 @@ onMounted(() => {
 }
 .ele-upload-list__item-content-action .el-link {
   margin-right: 10px;
-}
-.upload-file-tip-extra {
-  color: #909399;
 }
 .upload-file-progress {
   margin: 6px 0 10px;

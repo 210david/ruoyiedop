@@ -3,6 +3,8 @@ package com.ruoyi.flowable.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.flowable.config.FlowSystemFields;
 import com.ruoyi.flowable.domain.FlowForm;
 import com.ruoyi.flowable.mapper.FlowFormMapper;
+import com.ruoyi.flowable.service.FlowProcessNoService;
 import com.ruoyi.flowable.service.IFlowFormService;
 import com.ruoyi.system.service.ISysUserService;
 
@@ -28,6 +31,8 @@ import com.ruoyi.system.service.ISysUserService;
 @Service
 public class FlowFormServiceImpl implements IFlowFormService
 {
+    private static final Logger log = LoggerFactory.getLogger(FlowFormServiceImpl.class);
+
     @Autowired
     private FlowFormMapper flowFormMapper;
 
@@ -41,10 +46,17 @@ public class FlowFormServiceImpl implements IFlowFormService
     private org.flowable.engine.RuntimeService runtimeService;
 
     @Autowired
+    private org.flowable.engine.TaskService taskService;
+
+    @Autowired
     private ISysUserService userService;
 
     @Autowired
     private com.ruoyi.flowable.service.IFlowUrgencyLevelService urgencyLevelService;
+
+    /** 流程编号生成（按流程高级设置里的编号规则） */
+    @Autowired
+    private FlowProcessNoService processNoService;
 
     /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
@@ -283,12 +295,32 @@ public class FlowFormServiceImpl implements IFlowFormService
     {
         List<JSONObject> base = mainFields == null ? new ArrayList<>() : new ArrayList<>(mainFields);
         JSONArray urgencyOptions = buildUrgencyOptions();
-        // 先按配置更新「已存在」紧急程度字段的选项，再合并缺失的系统字段
+        JSONArray defs = FlowSystemFields.definitions(urgencyOptions);
+        // 先按系统定义刷新「已存在」的系统字段：紧急程度选项按配置表、文本长度只放宽不收窄
         for (JSONObject f : base)
         {
-            if (FlowSystemFields.FIELD_URGENCY.equals(f.getString("field")) && urgencyOptions != null)
+            String field = f.getString("field");
+            JSONObject def = findDefinition(defs, field);
+            if (def == null)
             {
-                f.put("selectOptions", urgencyOptions);
+                continue;
+            }
+            if (FlowSystemFields.FIELD_URGENCY.equals(field))
+            {
+                if (urgencyOptions != null)
+                {
+                    f.put("selectOptions", urgencyOptions);
+                }
+                continue;
+            }
+            // 系统定义升级（如签字意见 2000 → 4000）时同步到表单已保存的字段清单
+            if (def.getIntValue("length") > f.getIntValue("length"))
+            {
+                f.put("length", def.getIntValue("length"));
+            }
+            if (StringUtils.isEmpty(f.getString("dtype")))
+            {
+                f.put("dtype", def.getString("dtype"));
             }
         }
         java.util.Set<String> exist = new java.util.HashSet<>();
@@ -297,7 +329,6 @@ public class FlowFormServiceImpl implements IFlowFormService
             exist.add(f.getString("field"));
         }
         List<JSONObject> built = new ArrayList<>();
-        JSONArray defs = FlowSystemFields.definitions(urgencyOptions);
         for (int i = 0; i < defs.size(); i++)
         {
             JSONObject def = defs.getJSONObject(i);
@@ -319,6 +350,24 @@ public class FlowFormServiceImpl implements IFlowFormService
             }
         }
         return merged;
+    }
+
+    /** 从系统字段定义中按字段名取定义，未命中返回 null */
+    private JSONObject findDefinition(JSONArray defs, String field)
+    {
+        if (defs == null || StringUtils.isEmpty(field))
+        {
+            return null;
+        }
+        for (int i = 0; i < defs.size(); i++)
+        {
+            JSONObject def = defs.getJSONObject(i);
+            if (field.equals(def.getString("field")))
+            {
+                return def;
+            }
+        }
+        return null;
     }
 
     /** 读取紧急程度可选档位（配置表 → [{label, value}]），无数据返回 null */
@@ -356,14 +405,40 @@ public class FlowFormServiceImpl implements IFlowFormService
             return;
         }
         java.util.LinkedHashSet<String> existing = new java.util.LinkedHashSet<>();
+        // 现有列的文本容量：varchar(n) 记 n，text 记 -1（不限长），非文本列记 null
+        java.util.Map<String, Long> textLen = new java.util.HashMap<>();
         boolean tableExists = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
             Long.class, tableName) > 0;
         if (tableExists)
         {
-            existing.addAll(jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
-                String.class, tableName));
+            List<java.util.Map<String, Object>> columns = jdbcTemplate.queryForList(
+                "SELECT column_name AS col, data_type AS dt, character_maximum_length AS maxlen "
+                    + "FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
+                tableName);
+            for (java.util.Map<String, Object> c : columns)
+            {
+                Object colObj = c.get("col");
+                if (colObj == null)
+                {
+                    continue;
+                }
+                String col = String.valueOf(colObj);
+                existing.add(col);
+                Object dtObj = c.get("dt");
+                String dataType = dtObj == null ? "" : String.valueOf(dtObj);
+                Object maxObj = c.get("maxlen");
+                Long len = null;
+                if ("text".equalsIgnoreCase(dataType))
+                {
+                    len = -1L;
+                }
+                else if (maxObj instanceof Number)
+                {
+                    len = ((Number) maxObj).longValue();
+                }
+                textLen.put(col, len);
+            }
         }
         if (!tableExists)
         {
@@ -386,7 +461,7 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 // 主表系统字段索引：标题快速检索 / 紧急程度过滤排序
                 ensureSystemFieldIndexes(tableName, new java.util.LinkedHashSet<>(java.util.Arrays.asList(
-                        FlowSystemFields.FIELD_TITLE, FlowSystemFields.FIELD_URGENCY)));
+                        FlowSystemFields.FIELD_TITLE, FlowSystemFields.FIELD_URGENCY, FlowSystemFields.FIELD_PROCESS_NO)));
             }
             return;
         }
@@ -401,9 +476,69 @@ public class FlowFormServiceImpl implements IFlowFormService
                 existing.add(col);
             }
         }
+        // 已存在：类型偏窄的文本列按最新字段定义放宽（如签字意见 varchar(2000) → varchar(4000)）
+        for (JSONObject f : fields)
+        {
+            widenTextColumn(tableName, f, textLen);
+        }
         if (!isDetail)
         {
             ensureSystemFieldIndexes(tableName, existing);
+        }
+    }
+
+    /**
+     * 已存在列的文本容量放宽（只放宽、不收窄）：
+     * 目标为 text 时 varchar → text；目标为 varchar(n) 时仅当列上限小于 n 才 MODIFY。
+     * 数值/日期等非文本列一律不动，避免误改用户手工调整过的列类型。
+     *
+     * @param tableName 物理表名
+     * @param f 字段定义
+     * @param textLen 现有文本列容量：varchar(n) → n，text → -1，非文本列 → null
+     */
+    private void widenTextColumn(String tableName, JSONObject f, java.util.Map<String, Long> textLen)
+    {
+        String col = f.getString("field");
+        if (StringUtils.isEmpty(col) || textLen == null)
+        {
+            return;
+        }
+        Long cur = textLen.get(col);
+        if (cur == null)
+        {
+            return;
+        }
+        String target = columnType(f);
+        String comment = f.getString("label") == null ? "" : f.getString("label").replace("'", "''");
+        try
+        {
+            if ("text".equals(target))
+            {
+                if (cur >= 0)
+                {
+                    jdbcTemplate.execute("ALTER TABLE `" + tableName + "` MODIFY COLUMN `" + col
+                        + "` text COMMENT '" + comment + "'");
+                    textLen.put(col, -1L);
+                }
+                return;
+            }
+            if (!target.startsWith("varchar("))
+            {
+                return;
+            }
+            int targetLen = Integer.parseInt(target.substring("varchar(".length(), target.length() - 1));
+            if (cur < 0 || cur >= targetLen)
+            {
+                return;
+            }
+            jdbcTemplate.execute("ALTER TABLE `" + tableName + "` MODIFY COLUMN `" + col + "` " + target
+                + " COMMENT '" + comment + "'");
+            textLen.put(col, (long) targetLen);
+        }
+        catch (Exception e)
+        {
+            // 放宽失败不阻断建表（如列被索引占用），保留原列类型
+            log.warn("放宽字段长度失败：{}.{} → {}", tableName, col, target, e);
         }
     }
 
@@ -441,6 +576,10 @@ public class FlowFormServiceImpl implements IFlowFormService
         if (columns.contains(FlowSystemFields.FIELD_URGENCY))
         {
             createIndexIfAbsent(tableName, "idx_urgency", "`urgency`");
+        }
+        if (columns.contains(FlowSystemFields.FIELD_PROCESS_NO))
+        {
+            createIndexIfAbsent(tableName, "idx_process_no", "`processNo`");
         }
     }
 
@@ -499,6 +638,42 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 throw new ServiceException("表单尚未生成数据表，请先在表单管理中执行“生成数据表”");
             }
+            // 流程编号：按「流程 → 高级设置 → 流程编号规则」生成，必须早于插入数据行（编号要落库），
+            // 同时写入流程变量，详情页/打印页回显与列表检索都用它
+            String processNo = null;
+            com.alibaba.fastjson2.JSONObject noRule = processNoService.ruleOf(definitionKey);
+            // 规则允许手工修改时，优先用发起人填的号；与历史单重号则退回自动发号，避免两张同号
+            if (noRule != null && noRule.getBooleanValue("allowEdit"))
+            {
+                Object userNo = vars.get(FlowSystemFields.FIELD_PROCESS_NO);
+                if (userNo != null && StringUtils.isNotEmpty(String.valueOf(userNo).trim()))
+                {
+                    String candidate = String.valueOf(userNo).trim();
+                    if (!processNoExists(form.getTableName(), candidate))
+                    {
+                        processNo = candidate;
+                    }
+                    else
+                    {
+                        log.warn("手工填写的流程编号 {} 已存在，改为按规则自动生成", candidate);
+                    }
+                }
+            }
+            if (StringUtils.isEmpty(processNo))
+            {
+                processNo = processNoService.next(definitionKey, vars);
+            }
+            if (StringUtils.isNotEmpty(processNo))
+            {
+                vars.put(FlowSystemFields.FIELD_PROCESS_NO, processNo);
+            }
+            // 表单字段里已有「流程编号」但业务表还没这一列（字段保存与重建表之间的时间差）时补上：
+            // 插入语句会带上该列，缺列会直接报 Unknown column 导致发不出去
+            if (form.getFieldsJson() != null
+                    && form.getFieldsJson().contains("\"" + FlowSystemFields.FIELD_PROCESS_NO + "\""))
+            {
+                ensureProcessNoColumn(form.getTableName());
+            }
             businessKey = insertFormData(form, vars);
         }
         Long userId = SecurityUtils.getUserId();
@@ -508,6 +683,22 @@ public class FlowFormServiceImpl implements IFlowFormService
         {
             org.flowable.engine.runtime.ProcessInstance instance = runtimeService
                     .startProcessInstanceById(definition.getId(), businessKey, vars);
+            // 发起时的签字意见：写一条流程级批注（taskId 为空），供「审批意见」发起行展示；
+            // 失败不影响发起（这里已经启动成功，注释写不进去也不能把单子搅黄）
+            try
+            {
+                Object signVar = vars.get(FlowSystemFields.FIELD_SIGN_OPINION);
+                String sign = signVar == null ? null : String.valueOf(signVar);
+                if (StringUtils.isNotEmpty(sign)
+                        && StringUtils.isNotEmpty(sign.replaceAll("<[^>]*>", "").replace("&nbsp;", "").trim()))
+                {
+                    taskService.addComment(null, instance.getId(), "comment", "【start】" + sign);
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("发起签字意见写入失败：{}", e.getMessage());
+            }
             // 流程标题：优先取表单里的「标题」系统字段（用户可检索），其次用入参 title
             String instanceTitle = null;
             if (vars != null && vars.get(FlowSystemFields.FIELD_TITLE) != null)
@@ -537,6 +728,65 @@ public class FlowFormServiceImpl implements IFlowFormService
         finally
         {
             org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null);
+        }
+    }
+
+    /**
+     * 编号是否已被占用（发起人手工改号时判重用）。
+     * 表或列不存在、查询异常一律按「不重复」处理：宁可发号成功，也不要因为判重把单子挡住。
+     */
+    private boolean processNoExists(String tableName, String processNo)
+    {
+        if (StringUtils.isEmpty(tableName) || StringUtils.isEmpty(processNo))
+        {
+            return false;
+        }
+        try
+        {
+            Integer col = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()"
+                            + " AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                    Integer.class, tableName, FlowSystemFields.FIELD_PROCESS_NO);
+            if (col == null || col == 0)
+            {
+                return false;
+            }
+            Integer cnt = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `" + tableName
+                    + "` WHERE `" + FlowSystemFields.FIELD_PROCESS_NO + "` = ?", Integer.class, processNo);
+            return cnt != null && cnt > 0;
+        }
+        catch (Exception e)
+        {
+            log.warn("流程编号判重失败（{}）：{}", processNo, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 老业务表没有「流程编号」列时补上。
+     * 表单保存（fieldsJson 已含 processNo）与重建数据表之间有时间差，期间发起会撞 Unknown column，
+     * 这里只补这一列，避免为了一次加列去跑整套重建。
+     */
+    private void ensureProcessNoColumn(String tableName)
+    {
+        if (StringUtils.isEmpty(tableName))
+        {
+            return;
+        }
+        try
+        {
+            Long cnt = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
+                    Long.class, tableName, FlowSystemFields.FIELD_PROCESS_NO);
+            if (cnt == null || cnt == 0)
+            {
+                jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD COLUMN `"
+                        + FlowSystemFields.FIELD_PROCESS_NO + "` varchar(64) COMMENT '流程编号'");
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("补齐流程编号列失败（{}）：{}", tableName, e.getMessage());
         }
     }
 

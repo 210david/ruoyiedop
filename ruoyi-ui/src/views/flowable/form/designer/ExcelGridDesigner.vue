@@ -1,7 +1,7 @@
 <template>
   <div class="wm-designer" :class="{ 'wm-full': fullscreen }" v-show="active">
     <input ref="imageInput" type="file" accept="image/*" style="display:none" @change="onImagePicked" />
-    <MenuBar :preview="preview" :detail-items="detailMenuItems" @cmd="onCmd" @help="helpOpen = true" @save="$emit('save')" @toggle-preview="preview = !preview" />
+    <MenuBar :preview="preview" :detail-items="detailMenuItems" :show-save="!hideSave" @cmd="onCmd" @help="helpOpen = true" @save="$emit('save')" @toggle-preview="preview = !preview" />
     <FormatToolbar v-if="!preview" :has-sel="!!rect" :pos-label="posLabel" :style-obj="activeStyle"
       :can-merge="canMergeSel" :can-split="canSplitSel" :painter="!!painterStyle"
       @set="onSetStyle" @toggle="onToggleStyle" @align="v => onSetStyle({ k: 'align', v })"
@@ -73,22 +73,27 @@
             </table>
           </div>
         </div>
-        <PropPanel v-show="!preview" :form-name="form.formName" :form-key="form.formKey" :fields="mainFields"
+        <PropPanel v-show="!preview" :form-name="form.formName" :form-key="form.formKey" :fields="mainFields" :head-slot="headSlot"
           :placed="placedSet" :placed-labels="placedLabelSet" :active-cell="activeCell" :field-defs="fieldMap" :pos-label="posLabel"
           @bind="f => bindField(f.field || f)" @insert-label="insertLabel" @clear-bind="clearBind" @pick="openPicker"
-          @patch="patchActive" @set="onSetStyle" @toggle="onToggleStyle" />
+          @patch="patchActive" @set="onSetStyle" @toggle="onToggleStyle">
+          <template #head-extra><slot name="panel-head" /></template>
+        </PropPanel>
       </div>
     </template>
-    <div v-if="ctx.show" class="wm-ctx" :style="{ left: ctx.x + 'px', top: ctx.y + 'px' }">
-      <div v-for="(it, i) in ctxItems" :key="i" class="wm-ctx-i" :class="{ dis: it.dis, danger: it.danger }" @click="!it.dis && it.run()">{{ it.label }}</div>
-    </div>
+    <!-- 右键菜单挂到 body：弹窗（.el-overlay-dialog）带 transform，会让 fixed 相对它定位而产生偏移/被裁 -->
+    <Teleport to="body">
+      <div v-if="ctx.show" ref="ctxEl" class="wm-ctx" :style="{ left: ctx.x + 'px', top: ctx.y + 'px', zIndex: ctx.z }">
+        <div v-for="(it, i) in ctxItems" :key="i" class="wm-ctx-i" :class="{ dis: it.dis, danger: it.danger }" @click="runCtxItem(it)">{{ it.label }}</div>
+      </div>
+    </Teleport>
     <el-drawer v-model="helpOpen" title="Excel 网格设计器 · 操作说明" size="430px" append-to-body>
       <div class="wm-help-list">
         <div><b>选择</b>：单击选格；Shift+单击扩展选区；按住拖动框选；点击行号/列标选中整行/整列；Ctrl+点击 追加/移除选区（单元格、行号、列标均支持；多选后加粗、清除、删行列等批量生效）</div>
         <div><b>复制/粘贴</b>：选中区域后 Ctrl+C 复制整块（含样式/合并/字段绑定），选目标位置 Ctrl+V 粘贴覆盖；Ctrl+Z 撤销 / Ctrl+Y 重做</div>
         <div><b>格式化</b>：顶部工具条设置字体/字号/颜色/对齐/边框，作用于选中格</div>
         <div><b>合并/拆分</b>：选中区域后点工具条"合/拆"</div>
-        <div><b>格式刷</b>：选中样式格 → 点"刷" → 单击目标格应用</div>
+        <div><b>格式刷</b>：选中样式格（可多格/整行/整列）→ 点“刷” → 框选目标区松开，按源选区逐格对应的方式平铺应用；单击一次生效后自动退出</div>
         <div><b>双击</b>：标题/文本/说明格原地编辑；字段格打开绑定选择</div>
         <div><b>标签/字段</b>：完全独立添加；拖入字段只放字段控件，需要标签时单独拖入标签</div>
         <div><b>行高列宽</b>：拖动行号下缘/列标右缘调整</div>
@@ -105,7 +110,7 @@
         <el-button @click="pickerOpen = false">取 消</el-button>
       </template>
     </el-dialog>
-    <!-- 明细表编辑弹窗（泛微式：明细表名称/数据来源 + 逐列配置标签/列宽/表尾合计/必填，序号可拖动排序） -->
+    <!-- 明细表编辑弹窗（Excel 式：明细表名称/数据来源 + 逐列配置标签/列宽/表尾合计/必填，序号可拖动排序） -->
     <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑'" width="760px" append-to-body :close-on-click-modal="false">
       <el-form label-width="90px" size="small" class="wdm-head-form">
         <el-row :gutter="12">
@@ -117,7 +122,16 @@
           </el-form-item></el-col>
         </el-row>
       </el-form>
-      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分</div>
+      <!-- 明细行设置：控制运行态能否删到 0 行、能否增删行、默认预置几行 -->
+      <div class="wdm-dtset">
+        <span class="lb">明细行设置</span>
+        <el-checkbox v-model="dtPropsForm.mustAdd">必须填写明细（至少保留一行，不可删至空）</el-checkbox>
+        <el-checkbox v-model="dtPropsForm.allowAdd">允许新增行</el-checkbox>
+        <el-checkbox v-model="dtPropsForm.allowDelete">允许删除行</el-checkbox>
+        <span class="lb">默认明细行数</span>
+        <el-input-number v-model="dtPropsForm.defaultRows" :min="0" :max="20" size="small" style="width:110px" />
+      </div>
+      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分。列的「必填」只校验已填写的行，明细表是否必须有数据由上方「必须填写明细」控制（不勾则整表可留空）</div>
       <el-table :data="dtEditRows" border size="small" row-key="field" max-height="320" class="wdm-field-table"
         :row-class-name="dtRowClass">
         <el-table-column label="序号" width="80" align="center">
@@ -160,7 +174,7 @@
       </template>
     </el-dialog>
     <CellFormatDialog v-model="fmtOpen" :cell="activeCell" />
-    <!-- 全屏预览（泛微式）：字段渲染真实控件可模拟输入，必填可校验，模拟发起页填写效果 -->
+    <!-- 全屏预览（Excel 式）：字段渲染真实控件可模拟输入，必填可校验，模拟发起页填写效果 -->
     <el-dialog v-model="preview" :title="'表单预览 · ' + (form.formName || '')" fullscreen append-to-body
       class="wm-preview-dialog" :close-on-click-modal="false" @open="resetPreviewValues">
       <div class="wm-preview-page">
@@ -188,6 +202,7 @@ import CellFormatDialog from './CellFormatDialog.vue'
 import ResizeDialog from './ResizeDialog.vue'
 import PropPanel from './PropPanel.vue'
 import FormGridRender from '@/components/FormGridRender.vue'
+import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults'
 import './designer.scss'
 import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, GRID_DEFAULT, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
 
@@ -196,7 +211,11 @@ const props = defineProps({
   fields: { type: Array, default: () => [] },
   form: { type: Object, default: () => ({}) },
   active: Boolean,
-  fullscreen: Boolean
+  fullscreen: Boolean,
+  /** 外层弹窗已有统一「保存」时置 true，菜单栏不再显示保存，避免多个保存按钮误解 */
+  hideSave: Boolean,
+  /** 外层通过 panel-head 插槽自定义右侧面板头部（如节点模板名称） */
+  headSlot: Boolean
 })
 const emit = defineEmits(['update:modelValue', 'save'])
 
@@ -209,6 +228,7 @@ const selRange = ref(null)          // {r1,c1,r2,c2} 主选区（普通/Shift）
 const selRanges = ref([])           // Ctrl+点击 追加的多选区（批量选择）
 const editing = ref(null)           // {r,c}
 const editText = ref('')
+/** 格式刷源快照：{ h, w, matrix } —— matrix 为 h×w 的样式二维数组（逐格保存，合并格内取锚点格样式） */
 const painterStyle = ref(null)
 const preview = ref(false)
 const gridLines = ref(true)
@@ -221,13 +241,35 @@ const canvasWrapRef = ref(null)
 // ---- 全屏预览：模拟发起页填写（数据不保存，重开预览重置） ----
 const pvFormRef = ref(null)
 const pvValues = reactive({})
-/** 预览重置：清空后回填字段配置的默认值（选项默认值） */
+/** 预览重置：清空后按字段配置回填默认值（固定值 / 当前用户 / 当前部门 / 当天日期时间） */
 function resetPreviewValues() {
   for (const k of Object.keys(pvValues)) delete pvValues[k]
-  for (const f of props.fields || []) {
-    if (f.defaultValue !== undefined && f.defaultValue !== null && f.defaultValue !== '') pvValues[f.field] = f.defaultValue
-  }
+  const pvFields = mainFieldsOf(props.fields)
+  applyFieldDefaults(pvFields, pvValues, null)
+  currentUserCtx().then((ctx) => {
+    pvCtx.userId = ctx.userId
+    pvCtx.userName = ctx.userName
+    pvCtx.deptId = ctx.deptId
+    pvCtx.deptName = ctx.deptName
+    applyFieldDefaults(pvFields, pvValues, ctx)
+    syncPersonDept(pvFields, pvValues, ctx)
+  })
 }
+const pvCtx = reactive({ userId: '', userName: '', deptId: '', deptName: '' })
+/** 人员→部门联动：只盯配置了「随人员带出部门」的源字段，避免预览里每次输入都计算 */
+const pvLinkKey = computed(() =>
+  mainFieldsOf(props.fields)
+    .filter((f) => f && f.defaultMode === 'fieldUserDept' && f.defaultField)
+    .map((f) => {
+      const s = f.defaultField
+      const extra = pvValues[s + '__extra']
+      return `${s}=${pvValues[s]}|${pvValues[s + '__id']}|${extra ? extra.deptName : ''}`
+    })
+    .join('~'),
+)
+watch(pvLinkKey, (v) => {
+  if (v) syncPersonDept(mainFieldsOf(props.fields), pvValues, pvCtx)
+})
 function validatePreview() {
   if (!pvFormRef.value) return
   pvFormRef.value.validate(isValid => {
@@ -395,7 +437,7 @@ function fieldPlaceholder(f) {
   const suffix = { select: '（请选择）', radio: '（请选择）', browse: '（点击选择）', date: '（选择日期）', datetime: '（选择时间）', attach: '（上传附件）', check: '（勾选）', switch: '（开关）' }[d.form] || ''
   return (d.label || f) + suffix
 }
-/** 占位提示仅在单格选中时显示：多格/整行整列选区内不显示，避免干扰泛微式选中效果 */
+/** 占位提示仅在单格选中时显示：多格/整行整列选区内不显示，避免干扰多格选中效果 */
 function isSingleActiveCell(r, c) {
   const t = rect.value
   return !!t && t.r1 === t.r2 && t.c1 === t.c2 && t.r1 === r && t.c1 === c
@@ -404,7 +446,7 @@ function cellCls(e) {
   const t = rect.value
   // Ctrl 多选：点位落在任一选区内即高亮；band（灰底）仅按主选区计算
   const inSel = inAnyRange(e.r, e.c)
-  // 泛微式多格选区：选区内浅灰底 + 外圈黑色粗框（band-t/b/l/r 标记边缘格）；单格选中为蓝色描边
+  // Excel 式多格选区：选区内浅灰底 + 外圈黑色粗框（band-t/b/l/r 标记边缘格）；单格选中为蓝色描边
   const multi = !!t && (t.r1 !== t.r2 || t.c1 !== t.c2)
   const band = !!t && inSel && multi
   const cls = {
@@ -486,7 +528,7 @@ function onCellEnter(e, r, c) {
   // 三重防护：dragging 且左键按下且位移超过阈值才扩展选区（过滤残留 dragging、伪 enter、边缘漂移）
   if (dragging && selRange.value && (e.buttons & 1) && movedPastThreshold(e)) selRange.value = expandSelRange(selRange.value.r1, selRange.value.c1, r, c)
 }
-// 泛微/Excel 选择规则：选区碰到合并格自动扩展为整个合并格（整行/整列），
+// Excel 选择规则：选区碰到合并格自动扩展为整个合并格（整行/整列），
 // 避免选框叠加层只画在部分列、灰色底铺满整格的错位"拆分"观感
 function expandSelRange(r1, c1, r2, c2) {
   const g = grid.value
@@ -561,23 +603,19 @@ function openRowCtx(e, r) {
   // 基于全部选区（主选区 + Ctrl 追加选区）判断：右键任一已选整行时保留多选，仅右键未选行才重置
   const inSel = allRanges.value.some(t => t.c1 === 0 && t.c2 === grid.value.cols - 1 && r >= t.r1 && r <= t.r2)
   if (!inSel) selRange.value = { r1: r, c1: 0, r2: r, c2: grid.value.cols - 1 }
-  ctx.x = e.clientX
-  ctx.y = e.clientY
   ctx.r = r
   ctx.c = 0
   ctx.kind = 'row' // 行号右键：仅行操作
-  ctx.show = true
+  showCtxAt(e)
 }
 function openColCtx(e, c) {
   // 基于全部选区（主选区 + Ctrl 追加选区）判断：右键任一已选整列时保留多选，仅右键未选列才重置
   const inSel = allRanges.value.some(t => t.r1 === 0 && t.r2 === grid.value.rows - 1 && c >= t.c1 && c <= t.c2)
   if (!inSel) selRange.value = { r1: 0, c1: c, r2: grid.value.rows - 1, c2: c }
-  ctx.x = e.clientX
-  ctx.y = e.clientY
   ctx.r = 0
   ctx.c = c
   ctx.kind = 'col' // 列标右键：仅列操作
-  ctx.show = true
+  showCtxAt(e)
 }
 function selAll() { closeCtx(); selRange.value = { r1: 0, c1: 0, r2: grid.value.rows - 1, c2: grid.value.cols - 1 }; selRanges.value = [] }
 function rowSel(r) { const t = rect.value; return !!t && t.r1 <= r && t.r2 >= r }
@@ -801,12 +839,29 @@ function clearStyles() {
 function togglePainter() {
   // 已激活时再次点击按钮 = 取消格式刷
   if (painterStyle.value) { painterStyle.value = null; ElMessage.info('已取消格式刷'); return }
-  if (!rect.value || !activeCell.value) { ElMessage.warning('请先选中要吸取样式的单元格'); return }
-  painterStyle.value = JSON.parse(JSON.stringify(activeCell.value.style || {}))
-  selRange.value = null // 吸取后清空选区，进入目标框选态（泛微同款：按钮保持高亮直到应用）
-  ElMessage.success('格式刷已吸取样式，框选目标单元格后松开应用（Esc 取消）')
+  const t = rect.value
+  if (!t) { ElMessage.warning('请先选中要吸取样式的单元格'); return }
+  // 设计口径：源选区是几行几列，就按原样保存成矩阵（合并格内每个位置取锚点格样式），
+  // 套用时目标区按源块尺寸平铺，逐个位置对应，而不是整块都刷第一个格的样式。
+  const h = t.r2 - t.r1 + 1, w = t.c2 - t.c1 + 1
+  const matrix = []
+  for (let r = 0; r < h; r++) {
+    const row = []
+    for (let c = 0; c < w; c++) {
+      const cell = findAnchorCell(grid.value, t.r1 + r, t.c1 + c)
+      row.push(cell && cell.style ? JSON.parse(JSON.stringify(cell.style)) : {})
+    }
+    matrix.push(row)
+  }
+  painterStyle.value = { h, w, matrix }
+  selRange.value = null // 吸取后清空选区，进入目标框选态（按钮保持高亮直到应用）
+  selRanges.value = [] // Ctrl 追加的旧选区一并清空，否则应用时会误刷到旧选区
+  ElMessage.success(h > 1 || w > 1
+    ? `已吸取 ${h} 行 × ${w} 列样式，框选目标后松开按源块逐格平铺应用（Esc 取消）`
+    : '格式刷已吸取样式，框选目标单元格后松开应用（Esc 取消）')
 }
-// 格式刷应用：源样式完整复制（含边框共享边镜像），支持多格框选与 Ctrl 多选区；应用后自动退出激活态
+// 格式刷应用：按源块尺寸平铺，目标区第 n 行第 m 列取源块 (n % 源行数, m % 源列数)。
+// 源块尺寸 1×1 时退化为原来的“整片刷同一格式”；多个目标区各自从自己的左上角开始平铺。
 function applyPainterTo(r, c) {
   const ranges = allRanges.value.length ? allRanges.value : [expandSelRange(r, c, r, c)]
   const src = painterStyle.value
@@ -816,6 +871,7 @@ function applyPainterTo(r, c) {
   const seen = new Set()
   let applied = 0
   for (const t of ranges) for (let rr = t.r1; rr <= t.r2; rr++) for (let cc = t.c1; cc <= t.c2; cc++) {
+    const s = src.matrix[(rr - t.r1) % src.h][(cc - t.c1) % src.w] || {}
     let cell = findAnchorCell(g, rr, cc)
     // 空白区域/未建格的合并区域没有宿主单元格：先创建承载格，否则格式刷点击后无任何反应
     if (!cell) {
@@ -824,7 +880,9 @@ function applyPainterTo(r, c) {
     }
     if (seen.has(cell.id)) continue
     seen.add(cell.id)
-    cell.style = hydrateStyle(JSON.parse(JSON.stringify(src)))
+    // 先清除旧格式镜像到邻格的边框，否则源块该位置是“无边框”时目标会残留黑线
+    clearMirrorBorders(cell)
+    cell.style = hydrateStyle(JSON.parse(JSON.stringify(s)))
     mirrorBorders(cell)
     applied++
   }
@@ -954,7 +1012,7 @@ function insTitle() {
   selRange.value = { r1: at, c1: 0, r2: at, c2: 0 }
 }
 
-// ---- 明细表块（参照泛微 e-cology：明细占位条双击进入独立明细编辑视图） ----
+// ---- 明细表块（按 Excel 式表单设计：明细占位条双击进入独立明细编辑视图） ----
 /** 画布中已有的明细表 key 集合（含字段定义中的明细表），用于编号与下拉 */
 const detailTableKeys = computed(() => {
   const set = new Set()
@@ -962,7 +1020,7 @@ const detailTableKeys = computed(() => {
   for (const c of grid.value.cells) if (c.type === 'detail' && c.detail && c.detail.table) set.add(c.detail.table)
   return [...set].sort()
 })
-/** 明细表菜单动态项（泛微口径）：添加明细表1/2…，数据来源可来自"编辑字段"明细表或画布已有块；已上画布的置灰 */
+/** 明细表菜单动态项（设计口径）：添加明细表1/2…，数据来源可来自"编辑字段"明细表或画布已有块；已上画布的置灰 */
 const detailMenuItems = computed(() => {
   const keys = [...detailTableKeys.value]
   if (!keys.includes('dt1')) keys.unshift('dt1')
@@ -977,7 +1035,7 @@ const detailMenuItems = computed(() => {
 function rowHasContent(r) {
   return grid.value.cells.some(c => c.r === r)
 }
-/** 新增明细表：泛微口径——添加到鼠标指向的单元格内（占用该格，原格内容被覆盖），双击条展开/收起明细网格 */
+/** 新增明细表：添加到鼠标指向的单元格内（占用该格，原格内容被覆盖），双击条展开/收起明细网格 */
 function insDetailBlock(key) {
   if (!key) key = nextDetailKey()
   pushUndo()
@@ -1005,9 +1063,20 @@ function insDetailBlock(key) {
 function initDtColumns(dt) {
   return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, required: !!f.required }))
 }
-/** 明细表属性默认值（泛微勾选面板同款） */
+/** 明细表属性默认值（勾选面板） */
 function initDtProps() {
-  return { allowAdd: true, allowEdit: true, allowDelete: true, mustAdd: false, defaultRows: 1 }
+return { allowAdd: true, allowEdit: true, allowDelete: true, mustAdd: false, defaultRows: 1 }
+}
+/** 弹窗回填：布局里可能没有 props（老布局），按默认值兜底 */
+function detailPropsOrDefault(p) {
+  const src = p || {}
+  const n = Number(src.defaultRows)
+  return {
+    mustAdd: !!src.mustAdd,
+    allowAdd: src.allowAdd !== false,
+    allowDelete: src.allowDelete !== false,
+    defaultRows: Number.isFinite(n) ? Math.min(20, Math.max(0, n)) : 1
+  }
 }
 function detailFieldsOf(dt) {
   return (props.fields || []).filter(f => f.table === dt)
@@ -1027,13 +1096,17 @@ function detailBlockTitle(key) {
 /** 双击明细占位条 → 弹窗编辑（明细表名称/数据来源 + 逐列配置：标签/列宽/表尾合计/必填，序号可拖动排序） */
 const dtPropsOpen = ref(false)
 const dtPropsCell = ref(null)
-const dtPropsForm = ref({ table: undefined, title: '' })
+const dtPropsForm = ref({ table: undefined, title: '', mustAdd: false, allowAdd: true, allowDelete: true, defaultRows: 1 })
 /** 可编辑列副本：弹窗内逐行编辑与拖动排序，确定时写回明细块 */
 const dtEditRows = ref([])
 function openDtProps(cell) {
   if (!cell || cell.type !== 'detail') return
   dtPropsCell.value = cell
-  dtPropsForm.value = { table: (cell.detail && cell.detail.table) || undefined, title: cell.text || '' }
+  dtPropsForm.value = {
+    table: (cell.detail && cell.detail.table) || undefined,
+    title: cell.text || '',
+    ...detailPropsOrDefault(cell.detail && cell.detail.props)
+  }
   dtEditRows.value = ((cell.detail && cell.detail.columns) || []).map(c => ({
     field: c.field,
     label: c.label,
@@ -1115,6 +1188,15 @@ function confirmDtProps() {
   cell.detail.columns = dtEditRows.value.map(r => ({
     field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, attr: r.attr || 'edit'
   }))
+  // 明细行设置写回：mustAdd=必须填写明细（不可删至空），默认行数允许 0（从空开始）
+  const prev = cell.detail.props || {}
+  cell.detail.props = {
+    allowAdd: !!dtPropsForm.value.allowAdd,
+    allowEdit: prev.allowEdit !== false,
+    allowDelete: !!dtPropsForm.value.allowDelete,
+    mustAdd: !!dtPropsForm.value.mustAdd,
+    defaultRows: Math.min(20, Math.max(0, Number(dtPropsForm.value.defaultRows) || 0))
+  }
   dtPropsOpen.value = false
 }
 function insNote() {
@@ -1153,7 +1235,7 @@ function onCellDialog() {
   fmtOpen.value = true
 }
 
-// ---- 行高/列宽设置弹窗（右键菜单入口，复刻泛微） ----
+// ---- 行高/列宽设置弹窗（右键菜单入口） ----
 const rzOpen = ref(false)
 const rzKind = ref('row')
 const rzIndex = ref(0)
@@ -1259,7 +1341,7 @@ function applyTemplate(kind) {
   replaceGrid(g)
 }
 
-// ---- 拖拽落格：标签与字段完全独立，拖入字段只放字段控件（泛微一致） ----
+// ---- 拖拽落格：标签与字段完全独立，拖入字段只放字段控件（与设计参考一致） ----
 function onDrop(e, r, c) {
   const data = e.dataTransfer ? e.dataTransfer.getData('text/plain') || '' : ''
   const sep = data.indexOf(':')
@@ -1273,7 +1355,8 @@ function onDrop(e, r, c) {
 }
 
 // ---- 右键菜单 ----
-const ctx = reactive({ show: false, x: 0, y: 0, r: 0, c: 0, kind: 'cell' })
+const ctx = reactive({ show: false, x: 0, y: 0, z: 3000, r: 0, c: 0, kind: 'cell' })
+const ctxEl = ref(null)
 function openCtx(e, r, c) {
   const t = rect.value
   const inside = !!t && r >= t.r1 && r <= t.r2 && c >= t.c1 && c <= t.c2
@@ -1283,14 +1366,57 @@ function openCtx(e, r, c) {
     if (cell) selRange.value = { r1: cell.r, c1: cell.c, r2: cell.r + cell.rs - 1, c2: cell.c + cell.cs - 1 }
     else selRange.value = { r1: r, c1: c, r2: r, c2: c }
   }
-  ctx.x = e.clientX
-  ctx.y = e.clientY
   ctx.r = r
   ctx.c = c
   ctx.kind = 'cell' // 单元格右键：完整菜单
+  showCtxAt(e)
+}
+/**
+ * 右键菜单定位：先按鼠标位置显示，渲染后测量菜单实际尺寸并对视口做钳制。
+ * 画布底部/右侧右键时菜单会超出视口被裁掉（如「删除选中行」看不到也点不到），
+ * 因此下方空间不足时向上翻转、右侧不足时左移。
+ */
+function showCtxAt(e) {
+  const x = e.clientX
+  const y = e.clientY
+  ctx.x = x
+  ctx.y = y
+  // 设计器常在 append-to-body 的弹窗内，弹窗层级会随打开次数递增；菜单需高于当前所有弹层
+  ctx.z = topLayerZIndex() + 1
   ctx.show = true
+  nextTick(() => {
+    const el = ctxEl.value
+    if (!el) return
+    const pad = 8
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let nx = x
+    let ny = y
+    if (nx + w + pad > vw) nx = vw - w - pad
+    if (ny + h + pad > vh) ny = y - h
+    ctx.x = Math.max(pad, nx)
+    ctx.y = Math.max(pad, ny)
+  })
+}
+/** 当前页面所有弹层（el-overlay / 弹窗 / 抽屉）里最大的 z-index，菜单取其上一位避免被盖住 */
+function topLayerZIndex() {
+  let max = 2000
+  document.querySelectorAll('.el-overlay, .el-overlay-dialog, .el-popper').forEach(node => {
+    const z = parseInt(window.getComputedStyle(node).zIndex, 10)
+    if (!Number.isNaN(z) && z > max) max = z
+  })
+  return max
 }
 function closeCtx() { ctx.show = false }
+/** 菜单项统一出口：先收起菜单再执行，避免操作后菜单悬在原位（行高变化后位置也随之失效） */
+function runCtxItem(it) {
+  if (!it || it.dis) return
+  const run = it.run
+  closeCtx()
+  run()
+}
 const ctxItems = computed(() => {
   const cell = findAnchorCell(grid.value, ctx.r, ctx.c)
   const t = rect.value
@@ -1347,7 +1473,7 @@ const ctxItems = computed(() => {
     { label: '删除该单元格', run: delCell, dis: !cell, danger: true }
   ]
 })
-/** 设置字段格展示属性：只读 ro / 编辑 edit / 必填 req（泛微右键同款）。
+/** 设置字段格展示属性：只读 ro / 编辑 edit / 必填 req（右键菜单入口）。
  * 批量选择时作用于全部选区内的字段格（Ctrl 多选批量生效）；无选区时作用于被右键的单格。 */
 function setAttr(attr) {
   if (allRanges.value.length) {
@@ -1484,6 +1610,13 @@ function onWinMouseup() {
 /** 窗口失焦时复位拖拽状态：mouseup 在窗口外丢失时 dragging 残留，是偶发误扩选的根源之一 */
 function onWinBlur() { dragging = false; headerDrag.mode = null; dragStart = null }
 function onWinResize() { fillRows() }
-onMounted(() => { window.addEventListener('keydown', onKeydown); window.addEventListener('mouseup', onWinMouseup); window.addEventListener('blur', onWinBlur); window.addEventListener('resize', onWinResize); nextTick(fillRows) })
-onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); window.removeEventListener('mouseup', onWinMouseup); window.removeEventListener('blur', onWinBlur); window.removeEventListener('resize', onWinResize) })
+/** 点击菜单以外区域收起右键菜单（capture 阶段：单元格 mousedown 会 stop 冒泡） */
+function onDocMouseDown(e) {
+  if (!ctx.show) return
+  const el = e.target
+  if (el && el.closest && el.closest('.wm-ctx')) return
+  closeCtx()
+}
+onMounted(() => { window.addEventListener('keydown', onKeydown); window.addEventListener('mouseup', onWinMouseup); window.addEventListener('blur', onWinBlur); window.addEventListener('resize', onWinResize); document.addEventListener('mousedown', onDocMouseDown, true); nextTick(fillRows) })
+onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); window.removeEventListener('mouseup', onWinMouseup); window.removeEventListener('blur', onWinBlur); window.removeEventListener('resize', onWinResize); document.removeEventListener('mousedown', onDocMouseDown, true) })
 </script>

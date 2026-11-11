@@ -72,13 +72,14 @@ export function getProcessHistory(instanceId) {
   return request({ url: '/flowable/process/history/' + instanceId, method: 'get' })
 }
 
-export function cancelProcess(instanceId, reason) {
-  return request({ url: '/flowable/process/cancel/' + instanceId, method: 'put', params: { reason } })
-}
-
 // ===== 任务 =====
 export function listTodoTask(query) {
   return request({ url: '/flowable/task/todoList', method: 'get', params: query })
+}
+
+// 我的全部未结事项（待办任务 + 草稿，行上用 bizType 区分）
+export function listAllTask(query) {
+  return request({ url: '/flowable/task/allList', method: 'get', params: query })
 }
 
 // 流程分类树（待办/查询页左侧树）
@@ -94,10 +95,55 @@ export function listDoneTask(query) {
   return request({ url: '/flowable/task/doneList', method: 'get', params: query })
 }
 
+// 已办页签数量（全部 / 未结束 / 已结束）
+export function countDoneTask() {
+  return request({ url: '/flowable/task/doneCount', method: 'get' })
+}
+
 export function completeTask(data) {
   return request({ url: '/flowable/task/complete', method: 'put', data: data })
 }
 
+// 驳回（退回）时可选的节点：本人当前节点之前走过的环节 + 提交申请节点
+export function getReturnNodes(taskId) {
+  return request({ url: '/flowable/task/prevNodes/' + taskId, method: 'get' })
+}
+
+// 待办页签数量：{ all: 全部待办, returned: 被退回 }
+export function countTodoTasks() {
+  return request({ url: '/flowable/task/todoCounts', method: 'get' })
+}
+
 export function delegateTask(taskId, targetUserId, comment) {
   return request({ url: '/flowable/task/delegate/' + taskId, method: 'put', params: { targetUserId, comment } })
+}
+
+// 办理页「加签」：先委派给他人办理，办完回到当前办理人
+export function addSignTask(taskId, targetUserId, comment) {
+  return request({ url: '/flowable/task/addSign/' + taskId, method: 'put', params: { targetUserId, comment } })
+}
+
+// 办理页「终止」：办理人强制结束流程
+export function terminateTask(taskId, reason) {
+  return request({ url: '/flowable/task/terminate/' + taskId, method: 'put', params: { reason } })
+}
+
+// 办理页「抄送」：把手动选择的接收人写入待阅
+export function sendTaskCc(data) {
+  return request({ url: '/flowable/task/cc', method: 'post', data: data })
+}
+
+// 流程人员选择（转办/加签/抄送）：组织全量人员，不受数据权限过滤
+export function listOrgPickerUsers(keyword) {
+  return request({ url: '/flowable/picker/users', method: 'get', params: { keyword } })
+}
+
+// 流程人员选择：组织全量部门树，不受数据权限过滤
+export function getOrgPickerDepts() {
+  return request({ url: '/flowable/picker/depts', method: 'get' })
+}
+
+// 办理页「打印」：节点配置的打印模板（未配置时 configured=false，前端回退节点显示模板）
+export function getTaskPrintTemplate(taskId) {
+  return request({ url: '/flowable/task/printTemplate/' + taskId, method: 'get' })
 }

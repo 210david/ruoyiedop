@@ -6,6 +6,28 @@ import { createGrid, makeCell, normalizeGrid, serializeGrid, hydrateStyle } from
 
 const GRID_COLS = 4
 
+/** 流程系统字段：物理数据列必须保留（发起/办理/列表要用），但不再默认铺进表单画布 */
+export const FLOW_SYS_FIELD_KEYS = new Set(['urgency', 'signOpinion', 'printCount', 'procStatus'])
+
+/** 是否流程系统字段 */
+export function isFlowSysField(field) { return !!field && FLOW_SYS_FIELD_KEYS.has(field) }
+
+/**
+ * 清掉布局中绑定流程系统字段的单元格（仅用于历史脏数据）。
+ * 历史版本会把紧急程度/签字意见/流程状态/打印次数自动补进画布，且常与跨列明细栏重叠，
+ * 导致渲染错位、单元格点不中。新版本（layoutJson 带 v>=2 标记）中系统字段由用户主动放置，不再清理。
+ * @returns {number} 被清理的单元格数量
+ */
+export function stripFlowSysCells(grid) {
+  if (!grid || !Array.isArray(grid.cells)) return 0
+  const before = grid.cells.length
+  grid.cells = grid.cells.filter(c => !(c && c.type === 'field' && isFlowSysField(c.field)))
+  return before - grid.cells.length
+}
+
+/** 布局版本：2 起系统字段（紧急程度/签字意见/流程状态/打印次数）可被用户放到画布上并持久保留 */
+export const LAYOUT_VERSION = 2
+
 /** 旧 sections 布局 → 网格（span/24 → 列区间映射，分组标题 → 标题行，说明 → 说明格红字） */
 export function sectionsToGrid(sections) {
   const grid = createGrid(20, GRID_COLS)
@@ -35,7 +57,7 @@ export function sectionsToGrid(sections) {
   return grid
 }
 
-/** 字段清单 → 网格（标题行 + 两栏字段，对标泛微"从字段初始化"） */
+/** 字段清单 → 网格（标题行 + 两栏字段，对标 Excel 式"从字段初始化"） */
 export function fieldsToGrid(fields) {
   const grid = createGrid(20, GRID_COLS)
   let r = 0
@@ -43,7 +65,7 @@ export function fieldsToGrid(fields) {
   r++
   let c = 0
   for (const f of fields || []) {
-    if (!f || !f.field) continue
+    if (!f || !f.field || isFlowSysField(f.field)) continue
     if (c + 2 > GRID_COLS) { r++; c = 0 }
     if (r >= grid.rows) break
     grid.cells.push(makeCell(r, c, { type: 'field', field: f.field, rs: 1, cs: 2 }))
@@ -60,13 +82,16 @@ export function parseLayout(json) {
   try { obj = JSON.parse(json || '{}') || {} } catch (e) { obj = {} }
   const sections = Array.isArray(obj.sections) ? obj.sections : []
   const mode = obj.mode === 'grid' ? 'grid' : (obj.grid ? 'grid' : (obj.mode === 'section' ? 'section' : 'section'))
+  // 仅清理历史脏数据（无版本标记）：它们会先占位，把同位置的空白格挤掉；
+  // 新版本布局里系统字段是用户主动放置的，必须原样保留
+  if (obj.grid && !(Number(obj.v) >= LAYOUT_VERSION)) stripFlowSysCells(obj.grid)
   const grid = obj.grid ? normalizeGrid(obj.grid) : null
   return { mode: grid ? 'grid' : (mode === 'grid' && !grid ? 'section' : mode), sections, grid }
 }
 
 /** 布局对象 → layoutJson 字符串（网格走瘦身序列化；双布局并存时都保留） */
 export function serializeLayout(layout) {
-  const out = { mode: (layout && layout.mode) || 'section' }
+  const out = { mode: (layout && layout.mode) || 'section', v: LAYOUT_VERSION }
   if (layout && layout.sections && layout.sections.length) out.sections = layout.sections
   if (layout && layout.grid) out.grid = serializeGrid(layout.grid)
   return JSON.stringify(out)

@@ -13,7 +13,7 @@ const props = defineProps({
   size: { type: Number, default: 15 }
 })
 
-/** 统一线性图标（对标 Excel/泛微工具条观感） */
+/** 统一线性图标（Excel 工具条观感） */
 const ICONS = {
   'align-left': 'M3 5h18M3 9h11M3 13h14M3 17h8',
   'align-center': 'M3 5h18M7 9h10M5 13h14M8 17h8',

@@ -148,7 +148,7 @@
           </el-table-column>
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 200)" show-overflow-tooltip>
             <template #default="scope">
-              <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || '-' }}</span>
+              <span class="col-strong link-like" role="link" tabindex="0" @click="handleView(scope.row)" @keydown.enter="handleView(scope.row)">{{ scope.row.title || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 110)" align="center" show-overflow-tooltip>
@@ -466,10 +466,6 @@ onActivated(() => { getList(); loadStatusCounts(); loadTree() })
       height: 32px;
       border-radius: 8px;
     }
-  }
-  .link-like {
-    cursor: pointer;
-    &:hover { color: var(--el-color-primary); }
   }
 }
 </style>

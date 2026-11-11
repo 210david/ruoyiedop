@@ -387,4 +387,27 @@ export function camelCase(str) {
 export function isNumberStr(str) {
   return /^[+-]?(0|([1-9]\d*))(\.\d+)?$/g.test(str)
 }
+
+/**
+ * 富文本(HTML) → 纯文本：用于时间轴/表格等单行回显，避免把标签原样显示出来。
+ * 不做 DOM 解析，纯字符串处理，可在模板格式化函数里安全调用。
+ */
+export function htmlToText(html) {
+  if (html === undefined || html === null) return ''
+  const s = String(html)
+  if (!s) return ''
+  if (!/[<&]/.test(s)) return s
+  return s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|blockquote|pre|tr)>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/\n{2,}/g, '\n')
+    .trim()
+}
  

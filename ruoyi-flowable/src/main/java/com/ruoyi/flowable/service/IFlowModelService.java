@@ -37,6 +37,12 @@ public interface IFlowModelService
     /** 根据流程定义ID导出BPMN XML */
     public String getDefinitionBpmnXml(String processDefinitionId);
 
+    /**
+     * 按流程 Key 取当前活动版本（无活动版本时取最高版本）的 BPMN XML
+     * 供前台发起页用 bpmn-js 渲染流程图，样式与后台设计器一致
+     */
+    public String getDefinitionBpmnXmlByKey(String processKey);
+
     /** 查询流程定义列表（已部署） */
     public List<FlowModel> selectDefinitionList(FlowModel model);
 

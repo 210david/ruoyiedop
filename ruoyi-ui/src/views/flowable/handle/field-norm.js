@@ -13,6 +13,9 @@ export function normalizeHandleField(f, perm) {
     else if (f.form === 'number') t = 'number'
     else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
   } else if (!t) t = 'text'
+  // 系统字段固定渲染：紧急程度→单选按钮组；签字意见→富文本编辑器
+  if (f.field === 'urgency') t = 'radio'
+  if (f.field === 'signOpinion') t = 'editor'
   g.rtype = t
   if (t === 'select' || t === 'radio' || t === 'checkbox') {
     if (Array.isArray(f.selectOptions) && f.selectOptions.length) {

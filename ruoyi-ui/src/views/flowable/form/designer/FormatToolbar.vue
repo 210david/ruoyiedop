@@ -1,6 +1,6 @@
 <template>
   <div class="wm-ft">
-    <!-- 单行分组（泛微式）：字体 | 对齐 | 缩进 | 线框 | 合并格式 | 行列 | 清除 | 坐标 -->
+    <!-- 单行分组（Excel 式）：字体 | 对齐 | 缩进 | 线框 | 合并格式 | 行列 | 清除 | 坐标 -->
     <div class="wm-g" title="字体">
       <el-select :model-value="styleObj?.font ?? 'Microsoft YaHei'" size="small" @update:model-value="v => emitSet('font', v)" :disabled="!hasSel" style="width:100px">
         <el-option v-for="f in fonts" :key="f" :label="fontCn(f)" :value="f" />
@@ -112,7 +112,7 @@ function onBorderPreset(p) {
 
 <style lang="scss" scoped>
 .wm-ft { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; background: #f5f6fa; border: 1px solid #d9def0; border-radius: 6px; padding: 3px 6px; flex: none; }
-/* 泛微式分组：单行排布，组间深色竖线分隔，组内图标紧凑 */
+/* Excel 式分组：单行排布，组间深色竖线分隔，组内图标紧凑 */
 .wm-g { display: flex; align-items: center; gap: 2px; padding: 0 7px; border-right: 1px solid #c9d2e8; }
 .wm-g.no-sep { border-right: none; }
 .wm-ft :deep(.el-select) { width: 96px; }

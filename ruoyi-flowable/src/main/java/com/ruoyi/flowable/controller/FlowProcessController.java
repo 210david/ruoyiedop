@@ -44,7 +44,8 @@ public class FlowProcessController extends BaseController
     @PostMapping("/start")
     public AjaxResult start(@Validated @RequestBody FlowStartDTO dto)
     {
-        return success(flowProcessService.startProcess(dto));
+        // 显式返回 (msg, data)：success(String) 重载会把实例ID放进 msg，前端取 data 时拿不到
+        return AjaxResult.success("操作成功", flowProcessService.startProcess(dto));
     }
 
     /**
@@ -114,6 +115,30 @@ public class FlowProcessController extends BaseController
     }
 
     /**
+     * 流程图数据（BPMN XML + 已流转/当前节点）
+     * 前端用 bpmn-js 实时渲染，替代 PNG 位图：矢量清晰、可缩放、与设计器同配色
+     */
+    @PreAuthorize("@ss.hasPermi('flowable:process:query')")
+    @GetMapping("/diagramData/{instanceId}")
+    public AjaxResult diagramData(@PathVariable("instanceId") String instanceId)
+    {
+        return success(flowProcessService.selectInstanceDiagram(instanceId));
+    }
+
+    /**
+     * 记录节点已查看（办理人/候选人打开办理页时上报）
+     *
+     * 用途：运行期流程图「已查看人员」——谁打开过该节点但还没办理。
+     * 只写展示数据，失败不影响办理，故不抛业务异常。
+     */
+    @PostMapping("/nodeViewed/{taskId}")
+    public AjaxResult nodeViewed(@PathVariable("taskId") String taskId)
+    {
+        flowProcessService.recordNodeView(taskId);
+        return success();
+    }
+
+    /**
      * 流程图（高亮当前节点）
      */
     @PreAuthorize("@ss.hasPermi('flowable:process:query')")
@@ -122,17 +147,5 @@ public class FlowProcessController extends BaseController
     {
         byte[] png = flowProcessService.generateProcessDiagram(instanceId);
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(png);
-    }
-
-    /**
-     * 撤销流程
-     */
-    @Log(title = "流程实例", businessType = BusinessType.DELETE)
-    @PreAuthorize("@ss.hasPermi('flowable:process:cancel')")
-    @PutMapping("/cancel/{instanceId}")
-    public AjaxResult cancel(@PathVariable("instanceId") String instanceId,
-            @RequestParam(value = "reason", required = false) String reason)
-    {
-        return toAjax(flowProcessService.cancelProcess(instanceId, reason));
     }
 }

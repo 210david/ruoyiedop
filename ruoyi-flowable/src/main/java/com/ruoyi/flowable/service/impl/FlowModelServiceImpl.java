@@ -5,8 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import javax.xml.stream.XMLStreamReader;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
@@ -15,12 +17,15 @@ import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.FlowNode;
 import org.flowable.bpmn.model.SequenceFlow;
 import org.apache.commons.io.IOUtils;
+import org.flowable.engine.HistoryService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.Model;
 import org.flowable.engine.repository.ModelQuery;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.repository.ProcessDefinitionQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +34,7 @@ import com.ruoyi.common.utils.StringUtils;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.flowable.domain.FlowModel;
 import com.ruoyi.flowable.domain.FlowProcdefExt;
+import com.ruoyi.flowable.config.FlowReturnConstants;
 import com.ruoyi.flowable.mapper.FlowFormMapper;
 import com.ruoyi.flowable.mapper.FlowProcdefExtMapper;
 import com.ruoyi.flowable.service.IFlowModelService;
@@ -41,8 +47,13 @@ import com.ruoyi.flowable.service.IFlowModelService;
 @Service
 public class FlowModelServiceImpl implements IFlowModelService
 {
+    private static final Logger log = LoggerFactory.getLogger(FlowModelServiceImpl.class);
     @Autowired
     private RepositoryService repositoryService;
+
+    /** 删除模型前判定「是否已产生流程数据」需要查历史实例 */
+    @Autowired
+    private HistoryService historyService;
 
     @Autowired
     private FlowFormMapper flowFormMapper;
@@ -100,6 +111,8 @@ public class FlowModelServiceImpl implements IFlowModelService
         for (Model model : models)
         {
             FlowModel fm = convert(model);
+            // 已产生的流程实例数（含已办结）：>0 时前端标注「已发起 N 单」，并禁止删除
+            fm.setInstanceCount(countInstances(model.getKey()));
             // 判断是否已部署，并取「最新部署版本」作为列表展示版本
             // 注意：act_re_model.VERSION_ 是模型编辑修订号，不等于流程定义部署版本，
             // 因此列表版本以 act_re_procdef 的最高版本为准（未部署时清空，前端显示为 -）
@@ -170,7 +183,8 @@ public class FlowModelServiceImpl implements IFlowModelService
         model.setMetaInfo(buildMetaInfo(flowModel.getDescription(), flowModel.getFormId()));
         repositoryService.saveModel(model);
         // 初始化空 BPMN XML
-        String xml = String.format(EMPTY_BPMN_TEMPLATE, flowModel.getModelKey(), flowModel.getModelName());
+        String xml = String.format(EMPTY_BPMN_TEMPLATE, flowModel.getModelKey(), flowModel.getModelName(),
+                flowModel.getModelKey());
         repositoryService.addModelEditorSource(model.getId(), xml.getBytes(StandardCharsets.UTF_8));
         return model.getId();
     }
@@ -214,7 +228,10 @@ public class FlowModelServiceImpl implements IFlowModelService
                 : oldMeta.getString("helpDoc");
         Integer orderNum = flowModel.getOrderNum() != null ? flowModel.getOrderNum()
                 : oldMeta.getInteger("orderNum");
-        model.setMetaInfo(buildMetaInfo(desc, formId, deployMode, locked, helpDoc, orderNum));
+        // 流程编号规则：前端传 JSON 字符串覆盖，未传沿用原规则
+        String processNoRule = flowModel.getProcessNoRule() != null ? flowModel.getProcessNoRule()
+                : oldMeta.getString("processNoRule");
+        model.setMetaInfo(buildMetaInfo(desc, formId, deployMode, locked, helpDoc, orderNum, processNoRule));
         repositoryService.saveModel(model);
         // 名称同步：模型改名后，已部署的流程定义（act_re_procdef.NAME_）仍是部署时的快照，
         // 不同步会导致前台/流程定义列表显示旧名。此处按 key 同步所有已部署定义名。
@@ -263,17 +280,59 @@ public class FlowModelServiceImpl implements IFlowModelService
             {
                 continue;
             }
-            // 删除该模型对应的所有部署（级联删除其流程定义及运行中实例）
-            List<Deployment> deployments = repositoryService.createDeploymentQuery()
-                    .deploymentName(model.getName()).list();
-            for (Deployment deployment : deployments)
+            String processKey = model.getKey();
+            // 防误删：已经跑过的流程（有实例，含已办结）不允许删模型。
+            // 否则 deleteDeployment(cascade=true) 会把该流程的单据、审批意见、附件一起删掉，不可恢复。
+            long instances = countInstances(processKey);
+            if (instances > 0)
             {
-                repositoryService.deleteDeployment(deployment.getId(), true);
+                throw new ServiceException("流程《" + model.getName() + "》已产生 " + instances
+                        + " 个流程实例（含已办结），删除会一并删掉这些单据与审批记录，因此已阻止本次删除。"
+                        + "如果只是不再启用该流程，请在设计器的「版本管理」中挂起该版本（挂起后不能发起新流程，历史数据全部保留）。");
+            }
+            // 只删该 Key 下的部署：原来按「部署名 = 模型名」匹配，同名流程会误删其它模型的部署
+            Set<String> deploymentIds = new LinkedHashSet<>();
+            if (StringUtils.isNotEmpty(processKey))
+            {
+                List<ProcessDefinition> definitions = repositoryService.createProcessDefinitionQuery()
+                        .processDefinitionKey(processKey).list();
+                for (ProcessDefinition definition : definitions)
+                {
+                    deploymentIds.add(definition.getDeploymentId());
+                }
+            }
+            for (String deploymentId : deploymentIds)
+            {
+                // cascade=false：即使有残留运行实例也不允许连带删除，异常向上抛，避免静默丢数据
+                repositoryService.deleteDeployment(deploymentId, false);
             }
             repositoryService.deleteModel(modelId);
             rows++;
         }
         return rows;
+    }
+
+    /**
+     * 统计某个流程 Key 已产生的实例数（含已办结）。
+     *
+     * <p>用于「有数据就不允许删模型」的校验，也是列表上「已发起 N 单」标识的数据源。</p>
+     */
+    private long countInstances(String processKey)
+    {
+        if (StringUtils.isEmpty(processKey))
+        {
+            return 0L;
+        }
+        try
+        {
+            return historyService.createHistoricProcessInstanceQuery()
+                    .processDefinitionKey(processKey).count();
+        }
+        catch (Exception e)
+        {
+            log.warn("统计流程实例数失败（{}）：{}", processKey, e.getMessage());
+            return 0L;
+        }
     }
 
     @Override
@@ -297,6 +356,8 @@ public class FlowModelServiceImpl implements IFlowModelService
         byte[] deployBytes = normalizeBpmnNamespace(bpmnBytes, model.getCategory());
         // 在 <process> 上记录本次部署绑定的数据表表单ID，供后续「结构对比」判断是否更换数据表
         deployBytes = injectFormId(deployBytes, parseMetaInfo(model.getMetaInfo()).getLong("formId"));
+        // "提交申请"发起人节点：让「驳回 → 退回发起人」有落点（无入线，正常流转不经过）
+        deployBytes = injectInitiatorNode(deployBytes);
         repositoryService.createDeployment()
                 .name(model.getName())
                 .key(model.getKey())
@@ -480,7 +541,24 @@ public class FlowModelServiceImpl implements IFlowModelService
     }
 
     @Override
-    public byte[] generateDefinitionDiagram(String processKey)
+    public String getDefinitionBpmnXmlByKey(String processKey)
+    {
+        ProcessDefinition target = resolveDefinitionByKey(processKey);
+        try
+        {
+            return IOUtils.toString(repositoryService.getResourceAsStream(
+                    target.getDeploymentId(), target.getResourceName()), StandardCharsets.UTF_8);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("读取流程定义XML失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 按流程 Key 定位发起时使用的流程定义：优先活动版本，无活动标志时回退最高版本
+     */
+    private ProcessDefinition resolveDefinitionByKey(String processKey)
     {
         // 取当前活动版本；无活动标志时回退到最高版本（与发起路由口径一致）
         List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
@@ -501,6 +579,13 @@ public class FlowModelServiceImpl implements IFlowModelService
                 break;
             }
         }
+        return target;
+    }
+
+    @Override
+    public byte[] generateDefinitionDiagram(String processKey)
+    {
+        ProcessDefinition target = resolveDefinitionByKey(processKey);
         // 1. 优先取部署时自带的流程图资源（部分历史版本未生成，DGRM_RESOURCE_NAME_ 为空）
         try (java.io.InputStream in = repositoryService.getProcessDiagram(target.getId()))
         {
@@ -670,6 +755,7 @@ public class FlowModelServiceImpl implements IFlowModelService
         fm.setLocked(meta.getBoolean("locked"));
         fm.setHelpDoc(meta.getString("helpDoc"));
         fm.setOrderNum(meta.getInteger("orderNum"));
+        fm.setProcessNoRule(meta.getString("processNoRule"));
         if (formId != null)
         {
             try
@@ -699,10 +785,11 @@ public class FlowModelServiceImpl implements IFlowModelService
 
     private String buildMetaInfo(String description, Long formId)
     {
-        return buildMetaInfo(description, formId, null, null, null, null);
+        return buildMetaInfo(description, formId, null, null, null, null, null);
     }
 
-    private String buildMetaInfo(String description, Long formId, String deployMode, Boolean locked, String helpDoc, Integer orderNum)
+    private String buildMetaInfo(String description, Long formId, String deployMode, Boolean locked, String helpDoc, Integer orderNum,
+            String processNoRule)
     {
         JSONObject meta = new JSONObject();
         meta.put("description", description == null ? "" : description.replace("\"", "'"));
@@ -725,6 +812,10 @@ public class FlowModelServiceImpl implements IFlowModelService
         if (orderNum != null)
         {
             meta.put("orderNum", orderNum);
+        }
+        if (processNoRule != null)
+        {
+            meta.put("processNoRule", processNoRule);
         }
         return meta.toJSONString();
     }
@@ -776,6 +867,294 @@ public class FlowModelServiceImpl implements IFlowModelService
         catch (Exception e)
         {
             return bpmnBytes;
+        }
+    }
+
+    /** 开始事件标签（属性部分） */
+    private static final java.util.regex.Pattern START_EVENT_TAG_PATTERN =
+            java.util.regex.Pattern.compile("<(?:\\w+:)?startEvent\\b([^>]*)>");
+
+    /** 顺序流标签（属性部分） */
+    private static final java.util.regex.Pattern SEQUENCE_FLOW_TAG_PATTERN =
+            java.util.regex.Pattern.compile("<(?:\\w+:)?sequenceFlow\\b([^>]*)>");
+
+    /** 流程图节点（DI）标签 */
+    private static final java.util.regex.Pattern BPMN_SHAPE_PATTERN =
+            java.util.regex.Pattern.compile("<bpmndi:BPMNShape\\b([^>]*)>(.*?)</bpmndi:BPMNShape>",
+                    java.util.regex.Pattern.DOTALL);
+
+    /**
+     * 部署前注入「提交申请」发起人节点。
+     *
+     * 背景：Flowable 不能把执行流停在开始事件上（跳过去会立刻沿出线继续往下走），
+     * 所以「驳回 → 退回发起人」没有落点。这里在部署时补一个只做出线的用户任务（发起人节点）：
+     * 没有入线 → 正常发起/流转永远不会经过它；退回时把执行流挪到它上面，
+     * 发起人就在待办里收到「提交申请」，改完表单提交后沿它的出线回到第一审批环节。
+     *
+     * 安全兜底：注入后的 XML 必须能被引擎解析，且原有节点/连线保持不变，
+     * 任何异常都退回原始 XML，不影响正常部署。
+     */
+    private byte[] injectInitiatorNode(byte[] bpmnBytes)
+    {
+        if (bpmnBytes == null || bpmnBytes.length == 0)
+        {
+            return bpmnBytes;
+        }
+        String xml = new String(bpmnBytes, StandardCharsets.UTF_8);
+        try
+        {
+            // 已注入过（或模型里本来就有同名节点）：直接返回，保证幂等
+            if (xml.contains("id=\"" + FlowReturnConstants.INITIATOR_NODE_ID + "\""))
+            {
+                return bpmnBytes;
+            }
+            java.util.regex.Matcher startMatcher = START_EVENT_TAG_PATTERN.matcher(xml);
+            if (!startMatcher.find())
+            {
+                log.warn("注入发起人节点跳过：BPMN 中未找到开始事件");
+                return bpmnBytes;
+            }
+            String startAttrs = startMatcher.group(1);
+            String startId = attrValue(startAttrs, "id");
+            if (StringUtils.isEmpty(startId))
+            {
+                log.warn("注入发起人节点跳过：开始事件缺少 id 属性");
+                return bpmnBytes;
+            }
+            // 开始事件必须只有一条出线：多出线（并行分支）注入后会改变正常流转语义，直接放弃注入
+            String firstTarget = null;
+            int outCount = 0;
+            java.util.regex.Matcher flowMatcher = SEQUENCE_FLOW_TAG_PATTERN.matcher(xml);
+            while (flowMatcher.find())
+            {
+                String attrs = flowMatcher.group(1);
+                if (startId.equals(attrValue(attrs, "sourceRef")))
+                {
+                    outCount++;
+                    firstTarget = attrValue(attrs, "targetRef");
+                }
+            }
+            if (outCount != 1 || StringUtils.isEmpty(firstTarget))
+            {
+                log.warn("注入发起人节点跳过：开始事件出线数={}（只支持单一出线）", outCount);
+                return bpmnBytes;
+            }
+            // 发起人节点：名称沿用开始事件（如「提交申请」），表单属性一并带过去，
+            // 退回后发起人在办理页看到的还是发起时那张表单
+            StringBuilder node = new StringBuilder();
+            node.append("\n    <userTask id=\"").append(FlowReturnConstants.INITIATOR_NODE_ID).append("\" ");
+            String rawName = rawAttr(startAttrs, "name");
+            node.append(StringUtils.isNotEmpty(rawName) ? rawName : "name=\"提交申请\"");
+            node.append(" flowable:").append(FlowReturnConstants.ATTR_INITIATOR_NODE).append("=\"true\"");
+            appendRawAttr(startAttrs, "flowable:formKey", node);
+            appendRawAttr(startAttrs, "flowable:nodeFormName", node);
+            appendRawAttr(startAttrs, "flowable:nodeFormJson", node);
+            node.append("/>");
+            String flowId = "flowApplyTo_" + firstTarget;
+            node.append("\n    <sequenceFlow id=\"").append(flowId)
+                    .append("\" sourceRef=\"").append(FlowReturnConstants.INITIATOR_NODE_ID)
+                    .append("\" targetRef=\"").append(firstTarget).append("\"/>");
+            int processEnd = xml.indexOf("</process>", startMatcher.end());
+            if (processEnd < 0)
+            {
+                log.warn("注入发起人节点跳过：未找到 </process> 结束标签");
+                return bpmnBytes;
+            }
+            String injected = xml.substring(0, processEnd) + node + xml.substring(processEnd);
+            injected = injectInitiatorDiagram(injected, startId, firstTarget, flowId);
+            // 校验：能被引擎解析才采用；解析不出开始事件说明结构不对，回退原 XML
+            BpmnModel check = new BpmnXMLConverter().convertToBpmnModel(
+                    javax.xml.stream.XMLInputFactory.newInstance()
+                            .createXMLStreamReader(new ByteArrayInputStream(injected.getBytes(StandardCharsets.UTF_8))));
+            if (check == null || check.getMainProcess() == null
+                    || check.getMainProcess().getFlowElement(FlowReturnConstants.INITIATOR_NODE_ID) == null)
+            {
+                log.warn("注入发起人节点跳过：注入后的 BPMN 校验不通过，按原始内容部署");
+                return bpmnBytes;
+            }
+            return injected.getBytes(StandardCharsets.UTF_8);
+        }
+        catch (Exception e)
+        {
+            // 注入失败不阻断部署，退回原始内容
+            log.warn("注入发起人节点失败，按原始 BPMN 部署：{}", e.getMessage(), e);
+            return bpmnBytes;
+        }
+    }
+
+    /** 给发起人节点补图形信息（形状 + 连线），否则流程图里看不到这个节点 */
+    private String injectInitiatorDiagram(String xml, String startId, String firstTarget, String flowId)
+    {
+        try
+        {
+            int planeEnd = xml.indexOf("</bpmndi:BPMNPlane>");
+            if (planeEnd < 0)
+            {
+                return xml;
+            }
+            double[] startBox = shapeBox(xml, startId);
+            double[] targetBox = shapeBox(xml, firstTarget);
+            double x;
+            double y;
+            if (targetBox != null)
+            {
+                // 放在第一审批环节上方，箭头指向第一审批环节：读起来就是「发起人节点也能流到这里」
+                x = targetBox[0];
+                y = targetBox[1] - 110;
+            }
+            else if (startBox != null)
+            {
+                x = startBox[0];
+                y = startBox[1] - 110;
+            }
+            else
+            {
+                x = 200;
+                y = 40;
+            }
+            double width = 100;
+            double height = 60;
+            // 图形元素前缀跟随文档已有声明：设计器（bpmn-js）导出为 dc/di，引擎内置模板为 omgdc/omgdi。
+            // 写死前缀会导致注入后的 XML 解析失败，发起人节点因此被整体回退（退回发起人不可用）。
+            String dcPrefix = namespacePrefix(xml, "dc");
+            String diPrefix = namespacePrefix(xml, "di");
+            if (dcPrefix == null || diPrefix == null)
+            {
+                // 文档没有声明图形命名空间：跳过图形注入，正文节点仍可正常工作
+                return xml;
+            }
+            StringBuilder di = new StringBuilder();
+            di.append("\n      <bpmndi:BPMNShape id=\"").append(FlowReturnConstants.INITIATOR_NODE_ID)
+                    .append("_di\" bpmnElement=\"").append(FlowReturnConstants.INITIATOR_NODE_ID).append("\">")
+                    .append("<").append(dcPrefix).append(":Bounds x=\"").append(fmt(x)).append("\" y=\"").append(fmt(y))
+                    .append("\" width=\"").append(fmt(width)).append("\" height=\"").append(fmt(height))
+                    .append("\"/></bpmndi:BPMNShape>");
+            double[] endBox = targetBox != null ? targetBox : startBox;
+            StringBuilder edge = new StringBuilder();
+            edge.append("\n      <bpmndi:BPMNEdge id=\"").append(flowId).append("_di\" bpmnElement=\"")
+                    .append(flowId).append("\">")
+                    .append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(x + width / 2)).append("\" y=\"").append(fmt(y + height))
+                    .append("\"/>");
+            if (endBox != null)
+            {
+                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(endBox[0] + endBox[4] / 2)).append("\" y=\"")
+                        .append(fmt(endBox[1])).append("\"/>");
+            }
+            else
+            {
+                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(x + width / 2)).append("\" y=\"").append(fmt(y + height + 40))
+                        .append("\"/>");
+            }
+            edge.append("</bpmndi:BPMNEdge>");
+            return xml.substring(0, planeEnd) + di + edge + xml.substring(planeEnd);
+        }
+        catch (Exception e)
+        {
+            return xml;
+        }
+    }
+
+    /**
+     * 探测文档中已声明的图形命名空间前缀（Bounds 用 dc，连线用 di）
+     *
+     * 设计器（bpmn-js）导出为 {@code xmlns:dc / xmlns:di}，
+     * 引擎内置模板使用 {@code xmlns:omgdc / xmlns:omgdi}，两种都要兼容。
+     *
+     * @return 可用前缀；未声明返回 null（此时不注入图形，避免产生非法 XML）
+     */
+    private String namespacePrefix(String xml, String kind)
+    {
+        String[] candidates = "dc".equals(kind) ? new String[] { "dc", "omgdc" } : new String[] { "di", "omgdi" };
+        for (String prefix : candidates)
+        {
+            if (xml.contains("xmlns:" + prefix + "="))
+            {
+                return prefix;
+            }
+        }
+        return null;
+    }
+
+    /** 读取流程图节点坐标 [x, y, width, height, 中心x]，取不到返回 null */
+    private double[] shapeBox(String xml, String bpmnElement)
+    {
+        java.util.regex.Matcher matcher = BPMN_SHAPE_PATTERN.matcher(xml);
+        while (matcher.find())
+        {
+            if (!bpmnElement.equals(attrValue(matcher.group(1), "bpmnElement")))
+            {
+                continue;
+            }
+            String bounds = matcher.group(2);
+            String x = boundsAttr(bounds, "x");
+            String y = boundsAttr(bounds, "y");
+            String w = boundsAttr(bounds, "width");
+            String h = boundsAttr(bounds, "height");
+            if (x == null || y == null)
+            {
+                return null;
+            }
+            try
+            {
+                double dx = Double.parseDouble(x);
+                double dy = Double.parseDouble(y);
+                double dw = w == null ? 36 : Double.parseDouble(w);
+                double dh = h == null ? 36 : Double.parseDouble(h);
+                return new double[] { dx, dy, dw, dh, dx + dw / 2 };
+            }
+            catch (NumberFormatException e)
+            {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private String boundsAttr(String bounds, String name)
+    {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("\\b" + name + "\\s*=\\s*\"([^\"]*)\"").matcher(bounds);
+        return m.find() ? m.group(1) : null;
+    }
+
+    private String fmt(double value)
+    {
+        return String.valueOf(Math.round(value * 10) / 10.0).replace(".0", "");
+    }
+
+    /** 读取标签属性值（属性名大小写敏感，支持 flowable:xxx 形式） */
+    private String attrValue(String attrs, String name)
+    {
+        if (attrs == null)
+        {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(?:^|\\s)" + java.util.regex.Pattern.quote(name) + "\\s*=\\s*\"([^\"]*)\"")
+                .matcher(attrs);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /** 原样取属性片段（形如 name="提交申请"），用于在注入节点上复刻开始事件的属性 */
+    private String rawAttr(String attrs, String name)
+    {
+        if (attrs == null)
+        {
+            return null;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(?:^|\\s)(" + java.util.regex.Pattern.quote(name) + "\\s*=\\s*\"[^\"]*\")")
+                .matcher(attrs);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /** 把开始事件上的某个属性原样追加到注入节点上（不存在则跳过） */
+    private void appendRawAttr(String attrs, String name, StringBuilder sb)
+    {
+        String raw = rawAttr(attrs, name);
+        if (StringUtils.isNotEmpty(raw))
+        {
+            sb.append(' ').append(raw);
         }
     }
 

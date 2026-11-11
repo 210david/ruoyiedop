@@ -1,5 +1,5 @@
 <template>
-  <!-- 线框样式小图标（参照 Excel/泛微边框下拉的视觉样式） -->
+  <!-- 线框样式小图标（Excel 边框下拉的视觉样式） -->
   <svg class="bp-icon" viewBox="0 0 16 14" width="16" height="14" aria-hidden="true">
     <!-- kind=preset：边框类型 -->
     <template v-if="kind === 'preset'">

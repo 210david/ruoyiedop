@@ -10,7 +10,9 @@
           <label>请假标题</label>
           <div class="control">
             <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
+              <template #prefix
+                ><el-icon><Search /></el-icon
+              ></template>
             </el-input>
           </div>
         </div>
@@ -18,8 +20,7 @@
           <label>请假类型</label>
           <div class="control is-select">
             <el-select v-model="queryParams.leaveType" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="事假" value="1" /><el-option label="病假" value="2" />
-              <el-option label="年假" value="3" /><el-option label="调休" value="4" />
+              <el-option label="事假" value="1" /><el-option label="病假" value="2" /> <el-option label="年假" value="3" /><el-option label="调休" value="4" />
             </el-select>
           </div>
         </div>
@@ -27,8 +28,7 @@
           <label>状态</label>
           <div class="control is-select">
             <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
-              <el-option label="草稿" value="0" /><el-option label="审批中" value="1" />
-              <el-option label="已通过" value="2" /><el-option label="已驳回" value="3" />
+              <el-option label="草稿" value="0" /><el-option label="审批中" value="1" /> <el-option label="已通过" value="2" /><el-option label="已驳回" value="3" />
               <el-option label="已撤销" value="4" />
             </el-select>
           </div>
@@ -86,7 +86,9 @@
         <el-table v-loading="loading" :data="list" border class="app-table">
           <el-table-column type="index" label="序号" width="70" align="center" />
           <el-table-column label="请假标题" prop="title" min-width="150" show-overflow-tooltip>
-            <template #default="scope"><span class="col-strong">{{ scope.row.title }}</span></template>
+            <template #default="scope"
+              ><span class="col-strong">{{ scope.row.title }}</span></template
+            >
           </el-table-column>
           <el-table-column label="类型" prop="leaveType" width="90" align="center">
             <template #default="scope">
@@ -98,25 +100,23 @@
           <el-table-column label="天数" prop="days" width="80" align="right" class-name="col-num" />
           <el-table-column label="状态" prop="status" width="100" align="center">
             <template #default="scope">
-              <span class="badge" :class="statusBadge(scope.row.status)">
-                <span class="dot"></span>{{ statusLabel(scope.row.status) }}
-              </span>
+              <span class="badge" :class="statusBadge(scope.row.status)"> <span class="dot"></span>{{ statusLabel(scope.row.status) }} </span>
             </template>
           </el-table-column>
           <el-table-column label="审批意见" prop="auditOpinion" min-width="140" show-overflow-tooltip>
             <template #default="scope">{{ scope.row.auditOpinion || '-' }}</template>
           </el-table-column>
           <el-table-column label="申请时间" prop="createTime" width="170" align="center" />
-          <el-table-column label="操作" width="240" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
-                <el-button link type="success" icon="Promotion" @click="handleSubmit(scope.row)"
-                  v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['flowable:leave:submit']">提交</el-button>
+                <el-button link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['flowable:leave:submit']"
+                  >提交</el-button
+                >
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
-                  v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['flowable:leave:remove']">删除</el-button>
-                <el-button link type="warning" icon="CircleClose" @click="handleCancel(scope.row)"
-                  v-if="scope.row.status === '1'" v-hasPermi="['flowable:process:cancel']">撤销</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === '0' || scope.row.status === '3'" v-hasPermi="['flowable:leave:remove']"
+                  >删除</el-button
+                >
               </div>
             </template>
           </el-table-column>
@@ -125,8 +125,7 @@
 
       <!-- 分页 -->
       <div class="pagination-container">
-        <el-pagination background layout="total, prev, pager, next, sizes" :total="total"
-          v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" @change="getList" />
+        <el-pagination background layout="total, prev, pager, next, sizes" :total="total" v-model:current-page="queryParams.pageNum" v-model:page-size="queryParams.pageSize" @change="getList" />
       </div>
     </div>
 
@@ -135,7 +134,10 @@
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
           </div>
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
@@ -146,8 +148,7 @@
         </el-form-item>
         <el-form-item label="请假类型" prop="leaveType">
           <el-select v-model="form.leaveType" style="width: 100%">
-            <el-option label="事假" value="1" /><el-option label="病假" value="2" />
-            <el-option label="年假" value="3" /><el-option label="调休" value="4" />
+            <el-option label="事假" value="1" /><el-option label="病假" value="2" /> <el-option label="年假" value="3" /><el-option label="调休" value="4" />
           </el-select>
         </el-form-item>
         <el-row :gutter="16">
@@ -182,7 +183,10 @@
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
           </div>
           <span class="rd-detail-header-title">提交审批</span>
           <div class="rd-detail-header-sub" v-if="submitRow.title">
@@ -196,7 +200,7 @@
           <el-select v-model="approverUserId" placeholder="请选择审批人" style="width: 100%">
             <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + '（' + u.userName + '）'" :value="u.userId" />
           </el-select>
-          <div style="font-size:12px;color:#94a3b8;margin-top:4px">流程将发起至所选审批人的待办</div>
+          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px">流程将发起至所选审批人的待办</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -210,7 +214,10 @@
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
           </div>
           <span class="rd-detail-header-title">请假详情</span>
           <div class="rd-detail-header-sub" v-if="detailData.title">
@@ -222,47 +229,67 @@
       </template>
       <div class="rd-page">
         <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon">i</span>请假信息</div></div>
-          <div class="rd-card-body" style="display:block">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon">i</span>请假信息</div>
+          </div>
+          <div class="rd-card-body" style="display: block">
             <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">请假标题</span><div class="rd-value">{{ detailData.title || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">请假类型</span><div class="rd-value">{{ leaveTypeLabel(detailData.leaveType) }}</div></div>
-              <div class="rd-item"><span class="rd-label">请假天数</span><div class="rd-value">{{ detailData.days || '-' }} 天</div></div>
-              <div class="rd-item"><span class="rd-label">开始日期</span><div class="rd-value">{{ detailData.startDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">结束日期</span><div class="rd-value">{{ detailData.endDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">申请人</span><div class="rd-value">{{ detailData.startUserName || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">请假事由</span><div class="rd-value">{{ detailData.reason || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">审批意见</span><div class="rd-value">{{ detailData.auditOpinion || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card" v-if="detailData.instanceId">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon">◈</span>流程图</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="diagram-wrap">
-              <img v-if="diagramUrl" :src="diagramUrl" class="diagram-img" alt="流程图" />
-              <div v-else class="diagram-empty">流程图加载中…</div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card" v-if="detailData.instanceId">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon">≡</span>流转记录</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-timeline">
-              <div class="rd-timeline-item" v-for="t in historyTasks" :key="t.taskId">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': t.endTime, 'rd-timeline-dot--active': !t.endTime }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">{{ t.taskName }}</span>
-                    <span class="rd-timeline-time">{{ t.createTime }}</span>
-                  </div>
-                  <div class="rd-timeline-comment" v-if="t.comment"><strong>审批意见：</strong>{{ t.comment }}</div>
-                </div>
+              <div class="rd-item">
+                <span class="rd-label">请假标题</span>
+                <div class="rd-value">{{ detailData.title || '-' }}</div>
               </div>
-              <div class="rd-empty" v-if="!historyTasks.length"><p class="rd-empty-text">暂无流转记录</p></div>
+              <div class="rd-item">
+                <span class="rd-label">请假类型</span>
+                <div class="rd-value">{{ leaveTypeLabel(detailData.leaveType) }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label">请假天数</span>
+                <div class="rd-value">{{ detailData.days || '-' }} 天</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label">开始日期</span>
+                <div class="rd-value">{{ detailData.startDate || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label">结束日期</span>
+                <div class="rd-value">{{ detailData.endDate || '-' }}</div>
+              </div>
+              <div class="rd-item">
+                <span class="rd-label">申请人</span>
+                <div class="rd-value">{{ detailData.startUserName || '-' }}</div>
+              </div>
+              <div class="rd-item rd-item--full">
+                <span class="rd-label">请假事由</span>
+                <div class="rd-value">{{ detailData.reason || '-' }}</div>
+              </div>
+              <div class="rd-item rd-item--full">
+                <span class="rd-label">审批意见</span>
+                <div class="rd-value">{{ detailData.auditOpinion || '-' }}</div>
+              </div>
             </div>
           </div>
         </section>
+        <section class="rd-card" v-if="detailData.instanceId">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon">◈</span>流程图</div>
+          </div>
+          <div class="rd-card-body" style="display: block">
+            <div class="diagram-wrap">
+              <!-- 与发起页/后台设计器同一套 bpmn-js 实时渲染，按实例状态高亮 -->
+              <wm-process-diagram
+                :xml="diagramData.xml"
+                :done-ids="diagramData.doneIds"
+                :active-ids="diagramData.activeIds"
+                :done-flow-ids="diagramData.doneFlowIds"
+                :node-info="diagramData.nodes"
+                :height="420"
+                empty-text="暂无流程图（流程定义缺少图形信息，请在设计器重新保存并部署）"
+              />
+            </div>
+          </div>
+        </section>
+        <!-- 审批意见：逐节点展示办理人与签字意见（与通用流程办理/详情页同一口径） -->
+        <FlowOpinion v-if="detailData.instanceId" :tasks="historyTasks" title="审批意见" />
       </div>
       <template #footer>
         <el-button @click="detailOpen = false">关 闭</el-button>
@@ -272,28 +299,30 @@
 </template>
 
 <script setup name="FlowLeave">
-import { listLeave, getLeave, addLeave, updateLeave, delLeave, submitLeave } from '@/api/flowable/leave'
-import request from '@/utils/request'
-import { Search, Filter } from '@element-plus/icons-vue'
+import { listLeave, getLeave, addLeave, updateLeave, delLeave, submitLeave } from '@/api/flowable/leave';
+import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
+import FlowOpinion from '@/components/FlowOpinion/index.vue';
+import request from '@/utils/request';
+import { Search, Filter } from '@element-plus/icons-vue';
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance();
 
-const list = ref([])
-const loading = ref(true)
-const showSearch = ref(true)
-const total = ref(0)
-const activeStatusTab = ref('all')
-const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 })
-const open = ref(false)
-const title = ref('')
-const submitOpen = ref(false)
-const submitRow = ref({})
-const approverUserId = ref(undefined)
-const userOptions = ref([])
-const detailOpen = ref(false)
-const detailData = ref({})
-const historyTasks = ref([])
-const diagramUrl = ref('')
+const list = ref([]);
+const loading = ref(true);
+const showSearch = ref(true);
+const total = ref(0);
+const activeStatusTab = ref('all');
+const statusCounts = ref({ all: 0, 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 });
+const open = ref(false);
+const title = ref('');
+const submitOpen = ref(false);
+const submitRow = ref({});
+const approverUserId = ref(undefined);
+const userOptions = ref([]);
+const detailOpen = ref(false);
+const detailData = ref({});
+const historyTasks = ref([]);
+const diagramData = ref({ xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} });
 
 const data = reactive({
   form: {},
@@ -303,18 +332,18 @@ const data = reactive({
     startDate: [{ required: true, message: '请选择开始日期', trigger: 'change' }],
     endDate: [{ required: true, message: '请选择结束日期', trigger: 'change' }],
     days: [{ required: true, message: '请输入请假天数', trigger: 'blur' }],
-    reason: [{ required: true, message: '请输入请假事由', trigger: 'blur' }]
-  }
-})
-const { queryParams, form, rules } = toRefs(data)
+    reason: [{ required: true, message: '请输入请假事由', trigger: 'blur' }],
+  },
+});
+const { queryParams, form, rules } = toRefs(data);
 
 const activeFilterCount = computed(() => {
-  let count = 0
-  if (queryParams.value.title) count++
-  if (queryParams.value.leaveType) count++
-  if (queryParams.value.status) count++
-  return count
-})
+  let count = 0;
+  if (queryParams.value.title) count++;
+  if (queryParams.value.leaveType) count++;
+  if (queryParams.value.status) count++;
+  return count;
+});
 
 const defaultColumns = {
   title: { label: '请假标题', visible: true },
@@ -324,122 +353,180 @@ const defaultColumns = {
   days: { label: '天数', visible: true },
   status: { label: '状态', visible: true },
   auditOpinion: { label: '审批意见', visible: true },
-  createTime: { label: '申请时间', visible: true }
-}
-const columns = ref(loadColumnVisibility())
+  createTime: { label: '申请时间', visible: true },
+};
+const columns = ref(loadColumnVisibility());
 function loadColumnVisibility() {
   try {
-    const saved = localStorage.getItem('flowable_leave_columns')
+    const saved = localStorage.getItem('flowable_leave_columns');
     if (saved) {
-      const parsed = JSON.parse(saved)
-      const result = {}
-      Object.keys(defaultColumns).forEach(key => {
-        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible }
-      })
-      return result
+      const parsed = JSON.parse(saved);
+      const result = {};
+      Object.keys(defaultColumns).forEach((key) => {
+        result[key] = { label: defaultColumns[key].label, visible: parsed[key] !== undefined ? parsed[key] : defaultColumns[key].visible };
+      });
+      return result;
     }
   } catch (e) {}
-  return { ...defaultColumns }
+  return { ...defaultColumns };
 }
 
-function leaveTypeLabel(v) { return { '1': '事假', '2': '病假', '3': '年假', '4': '调休' }[v] || '-' }
-function statusBadge(s) { return { '0': 'amber', '1': 'blue', '2': 'green', '3': 'red', '4': 'gray' }[s] || 'gray' }
-function statusLabel(s) { return { '0': '草稿', '1': '审批中', '2': '已通过', '3': '已驳回', '4': '已撤销' }[s] || s }
+function leaveTypeLabel(v) {
+  return { 1: '事假', 2: '病假', 3: '年假', 4: '调休' }[v] || '-';
+}
+function statusBadge(s) {
+  return { 0: 'amber', 1: 'blue', 2: 'green', 3: 'red', 4: 'gray' }[s] || 'gray';
+}
+function statusLabel(s) {
+  return { 0: '草稿', 1: '审批中', 2: '已通过', 3: '已驳回', 4: '已撤销' }[s] || s;
+}
 
 function getList() {
-  loading.value = true
-  listLeave(queryParams.value).then(res => {
-    list.value = res.rows || []
-    total.value = res.total
-    loading.value = false
-  }).catch(() => { loading.value = false })
+  loading.value = true;
+  listLeave(queryParams.value)
+    .then((res) => {
+      list.value = res.rows || [];
+      total.value = res.total;
+      loading.value = false;
+    })
+    .catch(() => {
+      loading.value = false;
+    });
 }
 
 function loadStatusCounts() {
-  listLeave({ pageNum: 1, pageSize: 999 }).then(res => {
-    const counts = { all: res.total, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 }
-    ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
-    statusCounts.value = counts
-  }).catch(() => { statusCounts.value = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0 } })
+  listLeave({ pageNum: 1, pageSize: 999 })
+    .then((res) => {
+      const counts = { all: res.total, 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+      (res.rows || []).forEach((r) => {
+        if (counts[r.status] !== undefined) counts[r.status]++;
+      });
+      statusCounts.value = counts;
+    })
+    .catch(() => {
+      statusCounts.value = { all: 0, 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    });
 }
 
-function handleQuery() { queryParams.value.pageNum = 1; getList() }
+function handleQuery() {
+  queryParams.value.pageNum = 1;
+  getList();
+}
 function resetQuery() {
-  queryParams.value.title = undefined; queryParams.value.leaveType = undefined
-  activeStatusTab.value = 'all'; queryParams.value.status = undefined
-  handleQuery()
+  queryParams.value.title = undefined;
+  queryParams.value.leaveType = undefined;
+  activeStatusTab.value = 'all';
+  queryParams.value.status = undefined;
+  handleQuery();
 }
 function handleStatusTabClick(s) {
-  activeStatusTab.value = s
-  queryParams.value.status = s === 'all' ? undefined : s
-  handleQuery()
+  activeStatusTab.value = s;
+  queryParams.value.status = s === 'all' ? undefined : s;
+  handleQuery();
 }
 
 function handleAdd() {
-  form.value = { title: undefined, leaveType: '1', startDate: undefined, endDate: undefined, days: 1, reason: undefined }
-  open.value = true; title.value = '新增请假'
+  form.value = { title: undefined, leaveType: '1', startDate: undefined, endDate: undefined, days: 1, reason: undefined };
+  open.value = true;
+  title.value = '新增请假';
 }
 
 function submitForm() {
-  proxy.$refs['leaveRef'].validate(valid => {
+  proxy.$refs['leaveRef'].validate((valid) => {
     if (valid) {
       if (form.value.leaveId) {
-        updateLeave(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
+        updateLeave(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+          loadStatusCounts();
+        });
       } else {
-        addLeave(form.value).then(() => { proxy.$modal.msgSuccess('保存成功，可点击"提交"发起审批'); open.value = false; getList(); loadStatusCounts() })
+        addLeave(form.value).then(() => {
+          proxy.$modal.msgSuccess('保存成功，可点击"提交"发起审批');
+          open.value = false;
+          getList();
+          loadStatusCounts();
+        });
       }
     }
-  })
+  });
 }
 
 function handleSubmit(row) {
-  submitRow.value = row
-  approverUserId.value = undefined
-  submitOpen.value = true
+  submitRow.value = row;
+  approverUserId.value = undefined;
+  submitOpen.value = true;
   // 加载用户列表（选择审批人）
-  request({ url: '/system/user/list', method: 'get', params: { pageNum: 1, pageSize: 100 } }).then(res => {
-    userOptions.value = res.rows || []
-  })
+  request({ url: '/system/user/list', method: 'get', params: { pageNum: 1, pageSize: 100 } }).then((res) => {
+    userOptions.value = res.rows || [];
+  });
 }
 
 function doSubmit() {
-  if (!approverUserId.value) { proxy.$modal.msgWarning('请选择审批人'); return }
+  if (!approverUserId.value) {
+    proxy.$modal.msgWarning('请选择审批人');
+    return;
+  }
   submitLeave(submitRow.value.leaveId, approverUserId.value).then(() => {
-    proxy.$modal.msgSuccess('审批流程已发起，可在"我的待办"（审批人）中查看')
-    submitOpen.value = false
-    getList(); loadStatusCounts()
-  })
+    proxy.$modal.msgSuccess('审批流程已发起，可在"我的待办"（审批人）中查看');
+    submitOpen.value = false;
+    getList();
+    loadStatusCounts();
+  });
 }
 
 function handleView(row) {
-  detailData.value = {}; historyTasks.value = []; diagramUrl.value = ''
-  detailOpen.value = true
-  getLeave(row.leaveId).then(res => { detailData.value = res.data || {} })
+  detailData.value = {};
+  historyTasks.value = [];
+  diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+  detailOpen.value = true;
+  getLeave(row.leaveId).then((res) => {
+    detailData.value = res.data || {};
+  });
   if (row.instanceId) {
-    request({ url: '/flowable/process/history/' + row.instanceId, method: 'get' }).then(res => { historyTasks.value = res.data || [] })
-    request({ url: '/flowable/process/diagram/' + row.instanceId, method: 'get', responseType: 'blob' }).then(res => {
-      diagramUrl.value = URL.createObjectURL(new Blob([res], { type: 'image/png' }))
-    }).catch(() => { diagramUrl.value = '' })  // 降级：页面显示「暂无流程图」空态
+    request({ url: '/flowable/process/history/' + row.instanceId, method: 'get' }).then((res) => {
+      historyTasks.value = res.data || [];
+    });
+    // 流程图：取 BPMN XML + 已流转/当前节点，前端 bpmn-js 实时渲染（不再取 PNG 位图）
+    request({ url: '/flowable/process/diagramData/' + row.instanceId, method: 'get' })
+      .then((res) => {
+        const d = res.data || {};
+        diagramData.value = {
+          xml: d.xml || '',
+          doneIds: d.doneIds || [],
+          activeIds: d.activeIds || [],
+          doneFlowIds: d.doneFlowIds || [],
+          // 节点人员：节点下显示审批人 + 点击节点看已操作/未审批/已查看
+          nodes: d.nodes || {},
+        };
+      })
+      .catch(() => {
+        diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+      });
   }
 }
 
 function handleDelete(row) {
-  proxy.$modal.confirm('确认删除请假单"' + row.title + '"？').then(() => delLeave(row.leaveId)).then(() => {
-    proxy.$modal.msgSuccess('删除成功'); getList(); loadStatusCounts()
-  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
+  proxy.$modal
+    .confirm('确认删除请假单"' + row.title + '"？')
+    .then(() => delLeave(row.leaveId))
+    .then(() => {
+      proxy.$modal.msgSuccess('删除成功');
+      getList();
+      loadStatusCounts();
+    })
+    .catch((e) => {
+      if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e));
+    });
 }
 
-function handleCancel(row) {
-  proxy.$modal.confirm('确认撤销该请假流程？').then(() => {
-    return request({ url: '/flowable/process/cancel/' + row.instanceId, method: 'put', params: { reason: '申请人撤销' } })
-  }).then(() => {
-    proxy.$modal.msgSuccess('流程已撤销'); getList(); loadStatusCounts()
-  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('撤销失败：' + (e?.message || e)) })
-}
-
-getList()
-loadStatusCounts()
-onActivated(() => { getList(); loadStatusCounts() })
+getList();
+loadStatusCounts();
+onActivated(() => {
+  getList();
+  loadStatusCounts();
+});
 </script>
 
 <style lang="scss" scoped>

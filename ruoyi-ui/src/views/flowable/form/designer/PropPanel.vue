@@ -1,8 +1,12 @@
 <template>
   <div class="wm-pp">
     <div class="wm-pp-head">
-      <div class="wm-pp-row"><span class="k">模板名称</span><span class="v">{{ formName || '未命名表单' }}</span></div>
-      <div class="wm-pp-row"><span class="k">表　　单</span><span class="v">{{ formName || '—' }}（{{ formKey || '—' }}）</span></div>
+      <!-- 外部（如节点表单设计）接管上方名称/操作区 -->
+      <slot name="head-extra" />
+      <template v-if="!headSlot">
+        <div class="wm-pp-row"><span class="k">模板名称</span><span class="v">{{ formName || '未命名表单' }}</span></div>
+        <div class="wm-pp-row"><span class="k">表　　单</span><span class="v">{{ formName || '—' }}（{{ formKey || '—' }}）</span></div>
+      </template>
     </div>
     <!-- 当前选中单元格提示：始终可见，明确“点击字段即绑定到该格” -->
     <div class="wm-pp-cur" :class="{ on: !!activeCell }">
@@ -113,6 +117,7 @@
       <div class="wm-pp-row"><span class="k">显示名</span><span class="v">{{ fieldDef.label }}</span></div>
       <div class="wm-pp-row"><span class="k">字段名</span><span class="v">{{ fieldDef.field }}</span></div>
       <div class="wm-pp-row"><span class="k">表现形式</span><span class="v">{{ formLabel(fieldDef.form) }}</span></div>
+      <div class="wm-pp-row" v-if="fieldDef.form === 'browse'"><span class="k">浏览数据源</span><span class="v">{{ browseInfo }}</span></div>
       <div class="wm-pp-row"><span class="k">数据类型</span><span class="v">{{ fieldDef.dtype || 'text' }}</span></div>
       <div class="wm-pp-row"><span class="k">必　填</span><span class="v">{{ fieldDef.required ? '是' : '否' }}</span></div>
     </div>
@@ -122,10 +127,13 @@
 <script setup name="WmPropPanel">
 import { computed, ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
+import { browseLabel, browseForceMultiple } from '@/components/FormBrowse/sources.js'
 
 const props = defineProps({
   formName: String,
   formKey: String,
+  /** 外部通过 head-extra 插槽自定义头部（如节点模板名称 + 表单编辑）时置 true，不再重复渲染默认两行 */
+  headSlot: Boolean,
   fields: { type: Array, default: () => [] },
   placed: { type: Object, default: () => new Set() },
   placedLabels: { type: Object, default: () => new Set() },
@@ -134,7 +142,7 @@ const props = defineProps({
   fieldDefs: { type: Object, default: () => ({}) }
 })
 const emit = defineEmits(['bind', 'insert-label', 'clear-bind', 'pick', 'patch', 'set', 'toggle'])
-/** 标签与字段使用独立拖拽协议，匹配泛微右侧两列分别添加的交互。 */
+/** 标签与字段使用独立拖拽协议：右侧按「标签」「字段」两列分别添加。 */
 function startDrag(e, kind, f) {
   const used = kind === 'field' ? props.placed.has(f.field) : props.placedLabels.has(f.field)
   if (!e.dataTransfer || used) return
@@ -179,6 +187,13 @@ const fieldDef = computed(() => {
   return f ? props.fieldDefs[f] : null
 })
 function formLabel(k) { return FORM_LABELS[k] || k || '—' }
+/** 浏览按钮配置摘要：数据源 + 单选/多选 */
+const browseInfo = computed(() => {
+  const f = fieldDef.value
+  if (!f || f.form !== 'browse') return ''
+  const multi = !!f.browseMultiple || browseForceMultiple(f.browseType)
+  return browseLabel(f) + '·' + (multi ? '多选' : '单选')
+})
 </script>
 
 <style lang="scss" scoped>
@@ -203,7 +218,7 @@ function formLabel(k) { return FORM_LABELS[k] || k || '—' }
 .wm-pp-attr :deep(.el-collapse-item__wrap) { border-bottom: 0; }
 .wm-pp-attr :deep(.el-collapse-item__content) { padding: 6px 0 2px; }
 .wm-pp-title-sub { font-size: 11px; font-weight: 400; color: #94a3b8; margin-left: 6px; }
-/* 泛微式两列字段清单：标签 | 字段，表头 + 搜索框 */
+/* Excel 式两列字段清单：标签 | 字段，表头 + 搜索框 */
 .wm-pp-search { padding: 6px 2px 4px; }
 .wm-pp-hint { margin: 0 2px 6px; padding: 6px 8px; border-radius: 4px; background: #f0f4ff; color: #6470a8; font-size: 11px; line-height: 1.5; }
 .wm-pp-table { display: flex; flex-direction: column; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin: 0 2px; }

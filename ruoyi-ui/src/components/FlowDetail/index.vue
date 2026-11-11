@@ -1,9 +1,19 @@
 <template>
-  <el-dialog :model-value="open" fullscreen append-to-body :show-close="false" class="rd-dialog flow-detail-dialog" @update:model-value="v => emit('update:open', v)" @open="load">
+  <el-dialog
+    :model-value="open"
+    fullscreen
+    append-to-body
+    :show-close="false"
+    :class="['rd-dialog', 'flow-detail-dialog', { 'fd-standalone': standalone }]"
+    @update:model-value="(v) => emit('update:open', v)"
+  >
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
         </div>
         <span class="rd-detail-header-title">流程详情</span>
         <div class="rd-detail-header-sub" v-if="detailData.processDefinitionName">
@@ -11,6 +21,10 @@
           <span class="rd-detail-header-no">{{ detailData.processDefinitionName }}（{{ detailData.instanceId }}）</span>
         </div>
         <slot name="header-extra"></slot>
+        <!-- 独立详情页：弹窗自带头部是唯一出口，关闭按钮放这里，不再另占一条底部操作条 -->
+        <div class="rd-detail-header-ops" v-if="standalone">
+          <el-button size="small" icon="Close" @click="emit('update:open', false)">关 闭</el-button>
+        </div>
       </div>
     </template>
 
@@ -24,7 +38,7 @@
     <!-- 页签：流程表单 -->
     <div class="rd-page" v-show="detailTab === 'form'">
       <section class="rd-card">
-        <div class="rd-card-body" style="display:block">
+        <div class="rd-card-body" style="display: block">
           <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="detailData.variables" />
           <template v-else-if="formGroups.length">
             <template v-for="(grp, gi) in formGroups" :key="gi">
@@ -39,7 +53,8 @@
           </template>
           <div class="rd-grid" v-else>
             <div class="rd-item" v-for="(v, k) in detailData.variables || {}" :key="k">
-              <span class="rd-label">{{ k }}</span><div class="rd-value">{{ v ?? '-' }}</div>
+              <span class="rd-label">{{ k }}</span>
+              <div class="rd-value">{{ v ?? '-' }}</div>
             </div>
             <div class="rd-empty" v-if="!hasVariables">
               <p class="rd-empty-text">{{ emptyFormText }}</p>
@@ -47,209 +62,174 @@
           </div>
         </div>
       </section>
-      <section class="rd-card">
-        <div class="rd-card-body" style="display:block">
-          <div class="rd-timeline">
-            <div class="rd-timeline-item" v-for="t in historyTasks" :key="t.taskId">
-              <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': t.endTime, 'rd-timeline-dot--active': !t.endTime }"></div>
-              <div class="rd-timeline-content">
-                <div class="rd-timeline-header">
-                  <span class="rd-timeline-title">{{ t.taskName }}（{{ t.assigneeName || t.assigneeId || '-' }}）</span>
-                  <span class="rd-timeline-time">{{ t.createTime }}</span>
-                </div>
-                <div class="rd-timeline-comment" v-if="t.comment"><strong>意见：</strong>{{ t.comment }}</div>
-              </div>
-            </div>
-            <div class="rd-empty" v-if="!historyTasks.length"><p class="rd-empty-text">暂无流转意见</p></div>
-          </div>
-        </div>
-      </section>
+      <!-- 审批意见：签批意见表（节点 / 办理人 / 动作 / 时间 / 意见 / 环节附件 + 抄送） -->
+      <FlowOpinion :tasks="historyTasks" :attachments="attachList" :cc-list="ccList" :loading="statusLoading" />
     </div>
 
-    <!-- 页签：流程图 -->
-    <div class="rd-page" v-show="detailTab === 'diagram'">
+    <!-- 页签：流程图（独立详情页下卡片铺满剩余高度，不再留出下方空白） -->
+    <div class="rd-page rd-page--diagram" v-show="detailTab === 'diagram'">
       <section class="rd-card">
-        <div class="rd-card-header rd-card-header--legend-only" style="background:none;border-bottom:none;cursor:default;padding:4px 0 8px;justify-content:flex-end">
-          <!-- 颜色图例说明 -->
-          <div class="diagram-legend">
-            <span class="legend-item"><span class="legend-swatch swatch-current-node"></span>当前停留节点</span>
-            <span class="legend-item"><span class="legend-swatch swatch-highlight"></span>已流转节点/路径</span>
-            <span class="legend-item"><span class="legend-swatch swatch-default"></span>未流转节点/路径</span>
-            <span class="legend-item"><span class="legend-swatch swatch-end-event"></span>结束事件（红色圆心）</span>
-          </div>
-        </div>
-        <div class="rd-card-body" style="display:block">
+        <div class="rd-card-body rd-card-body--diagram">
           <div class="diagram-wrap">
-            <img v-if="diagramUrl" :src="diagramUrl" class="diagram-img" alt="流程图" />
-            <div v-else class="diagram-empty">{{ diagramEmptyText }}</div>
+            <!-- 与发起页/后台设计器同一套 bpmn-js 实时渲染，按实例状态高亮（图例由组件自带） -->
+            <wm-process-diagram
+              v-if="detailTab === 'diagram'"
+              :xml="diagramData.xml"
+              :done-ids="diagramData.doneIds"
+              :active-ids="diagramData.activeIds"
+              :done-flow-ids="diagramData.doneFlowIds"
+              :node-info="diagramData.nodes"
+              :height="560"
+              :fill="standalone"
+              :empty-text="diagramEmptyText"
+            />
           </div>
         </div>
       </section>
     </div>
 
-    <!-- 页签：流程状态 -->
-    <div class="rd-page" v-show="detailTab === 'status'">
-      <div class="status-cards">
-        <div class="status-card"><div class="sc-num">{{ statusStats.total }}</div><div class="sc-label">总人次</div></div>
-        <div class="status-card"><div class="sc-num sc-green">{{ statusStats.finished }}</div><div class="sc-label">已提交</div></div>
-        <div class="status-card"><div class="sc-num sc-amber">{{ statusStats.pending }}</div><div class="sc-label">未提交</div></div>
-        <div class="status-card"><div class="sc-num">{{ statusStats.nodes }}</div><div class="sc-label">节点数</div></div>
-      </div>
-      <section class="rd-card">
-        <div class="rd-card-body">
-          <el-table :data="historyTasks" border size="small">
-            <el-table-column type="index" label="序号" width="60" align="center" />
-            <el-table-column label="节点" prop="taskName" min-width="120" show-overflow-tooltip />
-            <el-table-column label="操作人" prop="assigneeName" width="120">
-              <template #default="s">{{ s.row.assigneeName || s.row.assigneeId || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="状态" width="100" align="center">
-              <template #default="s">
-                <span v-if="s.row.endTime" class="badge" :class="outcomeClass(s.row.outcome)"><span class="dot"></span>{{ outcomeLabel(s.row.outcome) || '已办理' }}</span>
-                <span v-else class="badge amber"><span class="dot"></span>待办理</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="接收时间" prop="createTime" width="165" align="center" />
-            <el-table-column label="操作时间" prop="endTime" width="165" align="center">
-              <template #default="s">{{ s.row.endTime || '-' }}</template>
-            </el-table-column>
-            <el-table-column label="操作耗时" width="110" align="center">
-              <template #default="s">{{ s.row.endTime ? durationText(s.row.createTime, s.row.endTime) : '-' }}</template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </section>
+    <!-- 页签：流程状态（统计概览 + 当前节点 + 流程记录，统一由 FlowStatus 承载） -->
+    <div class="fs-host" v-show="detailTab === 'status'">
+      <FlowStatus :tasks="historyTasks" :loading="statusLoading" />
     </div>
 
-    <!-- 页签：相关资源 -->
+    <!-- 页签：相关资源（流程过程中各节点上传的附件汇总） -->
     <div class="rd-page" v-show="detailTab === 'resource'">
       <section class="rd-card">
-        <div class="rd-card-body">
-          <el-table :data="[]" border size="small">
-            <el-table-column label="资源名称" min-width="200" />
-            <el-table-column label="创建人" width="120" />
-            <el-table-column label="创建时间" width="170" align="center" />
+        <div class="rd-card-header">
+          <div class="rd-card-title"><span class="rd-card-icon">▤</span>相关资源</div>
+          <span class="resource-count" v-if="attachList.length">共 {{ attachList.length }} 个附件</span>
+        </div>
+        <div class="rd-card-body" style="display: block">
+          <el-table :data="attachList" border size="small" empty-text="流程过程中未上传附件">
+            <el-table-column label="附件名称" min-width="240">
+              <template #default="scope">
+                <a class="resource-link" :href="fileHref(scope.row.fileUrl)" target="_blank" rel="noopener">{{ scope.row.fileName || '附件' }}</a>
+                <span class="resource-size" v-if="fileSizeText(scope.row.fileSize)">{{ fileSizeText(scope.row.fileSize) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="所属节点" min-width="140" align="center">
+              <template #default="scope">{{ scope.row.taskName || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="上传人" width="120" align="center">
+              <template #default="scope">{{ scope.row.uploaderName || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="上传时间" width="170" align="center">
+              <template #default="scope">{{ scope.row.createTime || '-' }}</template>
+            </el-table-column>
           </el-table>
-          <div class="resource-empty">流程过程中上传的附件将在后续版本中自动汇总展示</div>
         </div>
       </section>
     </div>
 
-    <template #footer>
+    <template #footer v-if="!standalone">
       <el-button @click="emit('update:open', false)">关 闭</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup name="FlowDetail">
-import request from '@/utils/request'
-import FormGridRender from '@/components/FormGridRender.vue'
-import { parseLayout } from '@/views/flowable/form/designer/converters'
+import request from '@/utils/request';
+import FormGridRender from '@/components/FormGridRender.vue';
+import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
+import FlowStatus from '@/components/FlowStatus/index.vue';
+import FlowOpinion from '@/components/FlowOpinion/index.vue';
+import { listFlowAttach } from '@/api/flowable/attach';
+import { listCcByInstance } from '@/api/flowable/cc';
+import { getToken } from '@/utils/auth';
+import { parseLayout } from '@/views/flowable/form/designer/converters';
 
 const props = defineProps({
   open: { type: Boolean, default: false },
   instanceId: { type: String, default: '' },
   /* 附件列过滤：业务表单生成的数据表中，哪些列属于附件（由调用方按流程传） */
-  attachmentFields: { type: Array, default: () => [] }
-})
-const emit = defineEmits(['update:open'])
+  attachmentFields: { type: Array, default: () => [] },
+  /**
+   * 独立详情页模式：弹窗即页面，正文纵向铺满视口、流程图卡片吃掉剩余高度，
+   * 关闭按钮收进头部、不占底部操作条（页面本身不再画一条重复的标题栏）。
+   */
+  standalone: { type: Boolean, default: false },
+});
+const emit = defineEmits(['update:open']);
 
-const detailData = ref({})
-const historyTasks = ref([])
-const diagramUrl = ref('')
-const detailTab = ref('form')
-const formFields = ref([])
-const formLayout = ref({ sections: [] })
+const detailData = ref({});
+const historyTasks = ref([]);
+const statusLoading = ref(false);
+/** 环节附件（审批意见表 + 相关资源页签共用） */
+const attachList = ref([]);
+/** 抄送记录（审批意见表底部「抄送」） */
+const ccList = ref([]);
+const diagramData = ref({ xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} });
+const detailTab = ref('form');
+const formFields = ref([]);
+const formLayout = ref({ sections: [] });
 /** 网格布局（mode=grid 时走 FormGridRender 只读回显） */
-const gridLayout = ref(null)
+const gridLayout = ref(null);
 
 /** 表单展示分组：按 layoutJson 分组；无布局时整体单组展示 */
 const formGroups = computed(() => {
-  const all = formFields.value
-  if (!all.length) return []
-  const sections = formLayout.value.sections || []
-  if (!sections.length) return [{ title: '', fields: all }]
-  const byField = {}
-  all.forEach(f => { byField[f.field] = f })
-  const used = new Set()
-  const groups = []
+  const all = formFields.value;
+  if (!all.length) return [];
+  const sections = formLayout.value.sections || [];
+  if (!sections.length) return [{ title: '', fields: all }];
+  const byField = {};
+  all.forEach((f) => {
+    byField[f.field] = f;
+  });
+  const used = new Set();
+  const groups = [];
   for (const sec of sections) {
-    const fields = (sec.rows || []).flat().filter(c => c && c.field && byField[c.field]).map(c => { used.add(c.field); return byField[c.field] })
-    if (fields.length) groups.push({ title: sec.title || '', fields })
+    const fields = (sec.rows || [])
+      .flat()
+      .filter((c) => c && c.field && byField[c.field])
+      .map((c) => {
+        used.add(c.field);
+        return byField[c.field];
+      });
+    if (fields.length) groups.push({ title: sec.title || '', fields });
   }
-  const rest = all.filter(f => !used.has(f.field))
-  if (rest.length) groups.push({ title: sections.length ? '其他信息' : '', fields: rest })
-  return groups
-})
+  const rest = all.filter((f) => !used.has(f.field));
+  if (rest.length) groups.push({ title: sections.length ? '其他信息' : '', fields: rest });
+  return groups;
+});
 
-/** 流程图空态文案：区分「实例已结束无图」与「接口未返回图」 */
+/** 流程图空态文案：接口未返回图 / 流程定义缺少图形段时显示 */
 const diagramEmptyText = computed(() => {
-  if (detailData.value && detailData.value.endTime) {
-    return '该流程已结束，流程图暂不可用'
-  }
-  return '暂无流程图（该流程定义未生成流程图资源）'
-})
+  if (!props.instanceId) return '暂无流程图（缺少流程实例标识）';
+  return '暂无流程图（流程定义缺少图形信息，请在设计器重新保存并部署）';
+});
 
 /** 是否存在流程变量（有表单数据） */
 const hasVariables = computed(() => {
-  const v = detailData.value.variables
-  return !!(v && Object.keys(v).length)
-})
+  const v = detailData.value.variables;
+  return !!(v && Object.keys(v).length);
+});
 
 /**
  * 表单页签空态文案（精准区分三种情况）：
- * 1. 流程定义无绑定表单        → 该流程未绑定表单
- * 2. 已绑定表单但本实例无数据  → 该实例发起时未填写表单
- * 3. 其他（接口返回异常等）    → 暂无表单数据
+ * 1. 流程定义无绑定表单 → 该流程未绑定表单
+ * 2. 已绑定表单但本实例无数据 → 该实例发起时未填写表单
+ * 3. 其他（接口返回异常等） → 暂无表单数据
  */
 const emptyFormText = computed(() => {
   if (formFields.value.length) {
     // 说明流程已绑定表单（拿到了字段定义），只是本实例没有数据
-    return '该实例发起时未填写表单'
+    return '该实例发起时未填写表单';
   }
   if (detailData.value.processDefinitionKey) {
     // 有流程定义键但没解析到字段：表单未绑定或表单未设计字段
-    return '该流程未绑定表单（或表单尚未设计字段）'
+    return '该流程未绑定表单（或表单尚未设计字段）';
   }
-  return '暂无表单数据'
-})
+  return '暂无表单数据';
+});
 
-const statusStats = computed(() => {
-  const tasks = historyTasks.value
-  return {
-    total: tasks.length,
-    finished: tasks.filter(t => t.endTime).length,
-    pending: tasks.filter(t => !t.endTime).length,
-    nodes: new Set(tasks.map(t => t.taskName)).size
-  }
-})
-
-function outcomeClass(outcome) {
-  const map = { approved: 'green', rejected: 'red', delegate: 'blue', start: 'violet', end: 'green', canceled: 'gray' }
-  return map[outcome] || 'gray'
-}
-function outcomeLabel(outcome) {
-  const map = { approved: '同意', rejected: '驳回', delegate: '转办', start: '发起', end: '结束', canceled: '已撤销' }
-  return map[outcome] || ''
-}
-function durationText(begin, end) {
-  try {
-    const ms = new Date(end.replace(/-/g, '/')) - new Date(begin.replace(/-/g, '/'))
-    if (isNaN(ms) || ms < 0) return '-'
-    const min = Math.floor(ms / 60000)
-    if (min < 1) return '不足1分钟'
-    if (min < 60) return min + '分钟'
-    const h = Math.floor(min / 60)
-    return h + '小时' + (min % 60) + '分钟'
-  } catch (e) { return '-' }
-}
 /* select 选项转中文 */
 function formatValue(field, val) {
-  if (val === undefined || val === null || val === '') return '-'
+  if (val === undefined || val === null || val === '') return '-';
   if (field.type === 'select' && Array.isArray(field.options)) {
-    return field.options.includes(val) ? val : val
+    return field.options.includes(val) ? val : val;
   }
-  return val
+  return val;
 }
 
 /**
@@ -258,24 +238,24 @@ function formatValue(field, val) {
  * 避免「申请表单」空白。
  */
 async function loadFormFields(processKey) {
-  formFields.value = []
-  formLayout.value = { sections: [] }
-  gridLayout.value = null
-  let key = processKey
+  formFields.value = [];
+  formLayout.value = { sections: [] };
+  gridLayout.value = null;
+  let key = processKey;
   if (!key && props.instanceId) {
-    key = await resolveProcessKeyByTask(props.instanceId)
+    key = await resolveProcessKeyByTask(props.instanceId);
   }
-  if (!key) return
+  if (!key) return;
   try {
-    const res = await request({ url: '/flowable/form/byProcess/' + key, method: 'get' })
-    const form = res.data
+    const res = await request({ url: '/flowable/form/byProcess/' + key, method: 'get' });
+    const form = res.data;
     if (form && form.fieldsJson) {
-      formFields.value = JSON.parse(form.fieldsJson) || []
+      formFields.value = JSON.parse(form.fieldsJson) || [];
     }
     if (form && form.layoutJson) {
-      const p = parseLayout(form.layoutJson)
-      if (p.mode === 'grid' && p.grid) gridLayout.value = p.grid
-      else formLayout.value = { sections: p.sections }
+      const p = parseLayout(form.layoutJson);
+      if (p.mode === 'grid' && p.grid) gridLayout.value = p.grid;
+      else formLayout.value = { sections: p.sections };
     }
   } catch (e) {}
 }
@@ -283,32 +263,96 @@ async function loadFormFields(processKey) {
 /** 兜底：通过当前待办任务的 fieldPerms 接口（其内部按流程定义回查表单）取流程定义 Key */
 async function resolveProcessKeyByTask(instanceId) {
   try {
-    const t = await request({ url: '/flowable/task/todoList', method: 'get', params: { pageNum: 1, pageSize: 200 } })
-    const hit = (t.rows || []).find(r => r.instanceId === instanceId)
-    return hit ? hit.processDefinitionKey : ''
-  } catch (e) { return '' }
+    const t = await request({ url: '/flowable/task/todoList', method: 'get', params: { pageNum: 1, pageSize: 200 } });
+    const hit = (t.rows || []).find((r) => r.instanceId === instanceId);
+    return hit ? hit.processDefinitionKey : '';
+  } catch (e) {
+    return '';
+  }
 }
 
 async function load() {
-  if (!props.instanceId) return
-  detailData.value = {}
-  historyTasks.value = []
-  diagramUrl.value = ''
-  formFields.value = []
-  formLayout.value = { sections: [] }
-  gridLayout.value = null
-  detailTab.value = 'form'
-  request({ url: '/flowable/process/' + props.instanceId, method: 'get' }).then(res => {
-    detailData.value = res.data || {}
-    loadFormFields(detailData.value.processDefinitionKey)
-  })
-  request({ url: '/flowable/process/history/' + props.instanceId, method: 'get' }).then(res => {
-    historyTasks.value = res.data || []
-  })
-  request({ url: '/flowable/process/diagram/' + props.instanceId, method: 'get', responseType: 'blob' }).then(res => {
-    diagramUrl.value = URL.createObjectURL(new Blob([res], { type: 'image/png' }))
-  }).catch(() => { diagramUrl.value = '' })  // 降级：空态由 diagramEmptyText 精准说明
+  if (!props.instanceId) return;
+  detailData.value = {};
+  historyTasks.value = [];
+  attachList.value = [];
+  ccList.value = [];
+  diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+  formFields.value = [];
+  formLayout.value = { sections: [] };
+  gridLayout.value = null;
+  detailTab.value = 'form';
+  request({ url: '/flowable/process/' + props.instanceId, method: 'get' }).then((res) => {
+    detailData.value = res.data || {};
+    loadFormFields(detailData.value.processDefinitionKey);
+  });
+  statusLoading.value = true;
+  request({ url: '/flowable/process/history/' + props.instanceId, method: 'get' })
+    .then((res) => {
+      historyTasks.value = res.data || [];
+    })
+    .finally(() => {
+      statusLoading.value = false;
+    });
+  // 环节附件 + 抄送：供审批意见表展示「环节附件」「抄送人」与「相关资源」页签
+  listFlowAttach(props.instanceId)
+    .then((res) => {
+      attachList.value = res.data || [];
+    })
+    .catch(() => {
+      attachList.value = [];
+    });
+  listCcByInstance(props.instanceId)
+    .then((res) => {
+      ccList.value = res.data || [];
+    })
+    .catch(() => {
+      ccList.value = [];
+    });
+  // 流程图：取 BPMN XML + 已流转/当前节点，前端 bpmn-js 实时渲染（不再取 PNG 位图）
+  request({ url: '/flowable/process/diagramData/' + props.instanceId, method: 'get' })
+    .then((res) => {
+      const d = res.data || {};
+      diagramData.value = {
+        xml: d.xml || '',
+        doneIds: d.doneIds || [],
+        activeIds: d.activeIds || [],
+        doneFlowIds: d.doneFlowIds || [],
+        // 节点人员：节点下显示审批人 + 点击节点看已操作/未审批/已查看
+        nodes: d.nodes || {},
+      };
+    })
+    .catch(() => {
+      diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+    });
 }
+
+/* 附件访问地址（<a> 无法携带 Authorization，通过 token 参数访问） */
+function fileHref(url) {
+  if (!url) return '';
+  return import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken();
+}
+
+function fileSizeText(size) {
+  const n = Number(size || 0);
+  if (!n) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+/**
+ * 打开即加载：
+ * - 列表页弹窗入口：open 由 false → true，监听触发；
+ * - 独立详情页入口：挂载时 open 已为 true，@open 不会再次触发，需 immediate 立即拉取。
+ */
+watch(
+  () => [props.open, props.instanceId],
+  ([open, instanceId]) => {
+    if (open && instanceId) load();
+  },
+  { immediate: true },
+);
 </script>
 
 <style lang="scss" scoped>
@@ -317,7 +361,15 @@ async function load() {
   gap: 4px;
   border-bottom: 1px solid var(--rd-border, #e5e7eb);
   margin-bottom: 12px;
-  .form-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--el-color-primary); padding-left: 8px; margin: 8px 0 4px; }  .detail-tab {
+  .form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    border-left: 3px solid var(--el-color-primary);
+    padding-left: 8px;
+    margin: 8px 0 4px;
+  }
+  .detail-tab {
     background: none;
     border: none;
     padding: 10px 16px;
@@ -325,30 +377,15 @@ async function load() {
     color: var(--rd-muted, #6b7280);
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    transition: color .15s;
-    &:hover { color: var(--el-color-primary); }
+    transition: color 0.15s;
+    &:hover {
+      color: var(--el-color-primary);
+    }
     &.is-active {
       color: var(--el-color-primary);
       font-weight: 600;
       border-bottom-color: var(--el-color-primary);
     }
-  }
-}
-.status-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
-  .status-card {
-    background: #f8fafc;
-    border: 1px solid var(--rd-border, #e5e7eb);
-    border-radius: 10px;
-    text-align: center;
-    padding: 12px 0;
-    .sc-num { font-size: 22px; font-weight: 700; color: var(--ink-900, #0f172a); }
-    .sc-num.sc-green { color: #10b981; }
-    .sc-num.sc-amber { color: #f59e0b; }
-    .sc-label { font-size: 12px; color: var(--rd-muted, #6b7280); margin-top: 2px; }
   }
 }
 .resource-empty {
@@ -357,54 +394,92 @@ async function load() {
   font-size: 13px;
   padding: 14px 0 4px;
 }
-:deep(.badge.amber) {
-  background: #fef3c7;
-  color: #b45309;
+.resource-count {
+  font-size: 12px;
+  color: var(--rd-muted, #6b7280);
 }
-.diagram-wrap { text-align: center; min-height: 120px; }
-.diagram-img { max-width: 100%; }
-.diagram-empty { color: var(--rd-muted, #9ca3af); font-size: 13px; padding: 24px 0; }
-/* 流程图颜色图例 */
-.diagram-legend {
+.resource-link {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+.resource-link:hover {
+  text-decoration: underline;
+}
+.resource-size {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--rd-muted, #9ca3af);
+}
+/* 流程状态页签：横向铺开（统计卡 + 两张宽表），不再受 rd-page 的 840px 收窄限制 */
+.fs-host {
+  padding-top: 2px;
+}
+.diagram-wrap {
+  min-height: 120px;
+}
+
+/* ===== 独立详情页：一张卡片铺满全屏 =====
+ * 弹窗自身是 display:block，正文不会撑满视口，流程图卡片只有 460px 高，下方全空；
+ * 这里把弹窗改成纵向 flex，正文吃掉剩余高度，流程图页签的卡片（及其画布）一路撑到底。
+ * 注意：.el-dialog 根节点由 Element Plus 渲染、不承载本组件的作用域属性，
+ * 因此这三条必须用 :global 命中，写在 scoped 里会静默失效。 */
+:global(.flow-detail-dialog.fd-standalone) {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  .legend-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--rd-muted, #6b7280);
-  }
-  .legend-swatch {
-    width: 14px;
-    height: 10px;
-    border-radius: 2px;
-    border: 1px solid rgba(15, 23, 42, .12);
-    flex-shrink: 0;
-    &.swatch-highlight { background: #10b981; }    /* 已流转：Flowable 默认高亮绿 */
-    &.swatch-default { background: #fff; }          /* 未流转：白底默认样式 */
-    &.swatch-current-node {                         /* 当前停留节点：红框标注 */
-      background: #fff;
-      border: 2px solid #ef4444;
-    }
-    &.swatch-end-event {                            /* 结束事件：红色实心圆心 */
-      background: #fff;
-      border: 2px solid #dc2626;
-      border-radius: 50%;
-      position: relative;
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 2px;
-        margin: auto;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: #dc2626;
-      }
-    }
-  }
+  flex-direction: column;
+}
+:global(.flow-detail-dialog.fd-standalone .el-dialog__header) {
+  flex: none;
+}
+:global(.flow-detail-dialog.fd-standalone .el-dialog__body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+/* 头部右侧的关闭出口（独立页唯一出口，替代原来的底部操作条） */
+.flow-detail-dialog .rd-detail-header-ops {
+  margin-left: auto;
+  flex: none;
+}
+
+/* 各页签都是弹窗正文的 flex 子项：全局 .rd-page 的 margin:0 auto 会让它们缩成内容宽度
+ * （相关资源、流程状态页签会突然变窄），这里统一取消自动外边距并拉满宽度 */
+.flow-detail-dialog.fd-standalone .rd-page,
+.flow-detail-dialog.fd-standalone .fs-host {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.flow-detail-dialog.fd-standalone .rd-page--diagram {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+.flow-detail-dialog.fd-standalone .rd-page--diagram .rd-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+.flow-detail-dialog.fd-standalone .rd-page--diagram .rd-card-body--diagram {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.flow-detail-dialog.fd-standalone .rd-page--diagram .diagram-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.flow-detail-dialog.fd-standalone .rd-page--diagram .diagram-wrap > * {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 </style>
