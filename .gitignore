@@ -82,6 +82,13 @@ run-java*.bat
 autorun.bat
 maven/
 
+# 第三方 jar / 压缩包（不应入库）
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
 # 会话临时调试截图（uuid 命名，不入库）
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.png
 /[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.jpg
