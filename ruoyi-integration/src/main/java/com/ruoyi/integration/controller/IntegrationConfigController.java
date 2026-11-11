@@ -48,6 +48,11 @@ public class IntegrationConfigController extends BaseController
 
     private static final String KEY_WECOM_MOCK_ENABLED = "integration.wecom.mockEnabled";
 
+    /** 企业微信回调配置键（用于接收消息服务器URL验证） */
+    private static final String KEY_WECOM_CALLBACK_TOKEN = "integration.wecom.callbackToken";
+
+    private static final String KEY_WECOM_CALLBACK_AES_KEY = "integration.wecom.callbackEncodingAesKey";
+
     /** 前端占位符：出现该值视为"未修改" */
     private static final String SECRET_PLACEHOLDER = "******";
 
@@ -79,6 +84,10 @@ public class IntegrationConfigController extends BaseController
             String secret = configService.selectConfigByKey(KEY_WECOM_SECRET);
             ajax.put("hasSecret", StringUtils.isNotEmpty(secret));
             ajax.put("secretPlaceholder", SECRET_PLACEHOLDER);
+            ajax.put("callbackToken", configService.selectConfigByKey(KEY_WECOM_CALLBACK_TOKEN));
+            String callbackAesKey = configService.selectConfigByKey(KEY_WECOM_CALLBACK_AES_KEY);
+            ajax.put("hasCallbackAesKey", StringUtils.isNotEmpty(callbackAesKey));
+            ajax.put("callbackUrl", "/integration/wecom/callback");
             return ajax;
         }
         ajax.put("appKey", configService.selectConfigByKey(KEY_APP_KEY));
@@ -180,6 +189,21 @@ public class IntegrationConfigController extends BaseController
         if (StringUtils.isNotEmpty(mockEnabled))
         {
             configService.updateConfigByKeyForced(KEY_WECOM_MOCK_ENABLED, "true".equals(mockEnabled) ? "true" : "false");
+        }
+        String callbackToken = body.get("callbackToken");
+        if (StringUtils.isNotEmpty(callbackToken))
+        {
+            configService.updateConfigByKeyForced(KEY_WECOM_CALLBACK_TOKEN, callbackToken.trim());
+        }
+        String callbackAesKey = body.get("callbackEncodingAesKey");
+        if (StringUtils.isNotEmpty(callbackAesKey) && !SECRET_PLACEHOLDER.equals(callbackAesKey))
+        {
+            String trimmed = callbackAesKey.trim();
+            if (trimmed.length() != 43)
+            {
+                return error("EncodingAESKey 长度须为 43 位字符（企业微信后台回调配置页提供）");
+            }
+            configService.updateConfigByKeyForced(KEY_WECOM_CALLBACK_AES_KEY, trimmed);
         }
         return success("保存成功");
     }
