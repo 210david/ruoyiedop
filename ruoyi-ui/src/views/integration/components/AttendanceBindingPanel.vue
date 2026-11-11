@@ -257,6 +257,18 @@
               <el-form-item label="启用集成">
                 <el-switch v-model="configForm.enabled" active-text="启用" inactive-text="停用" inline-prompt />
               </el-form-item>
+              <template v-if="isWecom">
+                <el-form-item label="回调Token">
+                  <el-input v-model="configForm.callbackToken" placeholder="企业微信后台「接收消息」配置页的 Token" clearable maxlength="64" :disabled="configForm.mockEnabled" />
+                </el-form-item>
+                <el-form-item label="回调AESKey">
+                  <el-input v-model="configForm.callbackAesKey" type="password" show-password autocomplete="new-password"
+                    :placeholder="configForm.hasCallbackAesKey ? '已配置，留空则不修改' : '企业微信后台的 EncodingAESKey（43位）'" clearable maxlength="64" :disabled="configForm.mockEnabled" />
+                  <div class="config-tip" style="margin-top:4px">
+                    <p v-if="configForm.callbackUrl">回调URL（填到企业微信后台「接收消息服务器URL」）：http://服务器IP:端口{{ configForm.callbackUrl }}</p>
+                  </div>
+                </el-form-item>
+              </template>
               <el-form-item label="模拟数据模式">
                 <el-switch v-model="configForm.mockEnabled" active-text="开启" inactive-text="关闭" inline-prompt />
                 <span style="margin-left:10px;font-size:13px;color:#94a3b8">开启后无需{{ accountLabel }}/{{ secretLabel }}，使用内置模拟通讯录与打卡数据</span>
@@ -435,7 +447,11 @@ const configForm = reactive({
   enabled: false,
   matchType: 'mobile',
   hasSecret: false,
-  mockEnabled: false
+  mockEnabled: false,
+  callbackToken: '',
+  callbackAesKey: '',
+  hasCallbackAesKey: false,
+  callbackUrl: ''
 })
 
 const data = reactive({
@@ -675,6 +691,12 @@ function getConfigInfo() {
     configForm.hasSecret = res.hasSecret === true
     configForm.mockEnabled = res.mockEnabled === true
     configForm.appSecret = ''
+    if (isWecom.value) {
+      configForm.callbackToken = res.callbackToken || ''
+      configForm.hasCallbackAesKey = res.hasCallbackAesKey === true
+      configForm.callbackAesKey = ''
+      configForm.callbackUrl = res.callbackUrl || ''
+    }
   })
 }
 
@@ -706,6 +728,8 @@ function handleSaveConfig() {
   if (isWecom.value) {
     payload.corpId = configForm.appKey
     payload.secret = configForm.appSecret
+    payload.callbackToken = configForm.callbackToken
+    payload.callbackEncodingAesKey = configForm.callbackAesKey
   } else {
     payload.appKey = configForm.appKey
     payload.appSecret = configForm.appSecret
@@ -714,6 +738,7 @@ function handleSaveConfig() {
   saveIntegrationConfig(payload).then(res => {
     proxy.$modal.msgSuccess(res.msg || '保存成功')
     configForm.appSecret = ''
+    configForm.callbackAesKey = ''
     configOpen.value = false
     getConfigInfo()
   }).finally(() => {
