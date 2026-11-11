@@ -268,7 +268,15 @@
                 <artifactId>ruoyi-pdm</artifactId>
                 <version>${ruoyi.version}</version>
             </dependency>
-            <!-- HTML解析-->
+
+            <!-- 金蝶云星辰对接模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-kingdee</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- SpringBoot的依赖配置 -->
             <dependency>
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
@@ -298,6 +306,7 @@
         <module>ruoyi-bid</module>
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
+        <module>ruoyi-kingdee</module>
     </modules>
     <packaging>pom</packaging>
 
