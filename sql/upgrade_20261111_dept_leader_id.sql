@@ -51,3 +51,11 @@ WHERE menu_id IN (4808, 5214) AND visible = '0';
 
 -- 校验: 两菜单 visible 均应为 1
 SELECT 'GHOST_HIDDEN' tag, menu_id, menu_name, visible FROM sys_menu WHERE menu_id IN (4808, 5214);
+
+-- ---------- 6. 消息跳转链接修复: 守则学习任务消息 redirectUrl 与真实路由不一致导致「前往处理」报"处理页面暂未配置" ----------
+-- 真实路由: /safety/rule/learn (安全守则→学习任务), 代码硬编码误写为 /safety/ruleLearn
+UPDATE sys_message SET redirect_url = '/safety/rule/learn'
+WHERE redirect_url = '/safety/ruleLearn';
+
+-- 校验: 错误链接应为 0 条
+SELECT 'BAD_REDIRECT' tag, COUNT(*) cnt FROM sys_message WHERE redirect_url = '/safety/ruleLearn';

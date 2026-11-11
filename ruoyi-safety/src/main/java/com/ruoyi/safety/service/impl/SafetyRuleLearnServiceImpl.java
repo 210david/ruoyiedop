@@ -88,7 +88,7 @@ public class SafetyRuleLearnServiceImpl implements ISafetyRuleLearnService {
                 msg.setMessageLevel("2");
                 msg.setBizSource("safety");
                 msg.setBizId(task.getTaskId());
-                msg.setRedirectUrl("/safety/ruleLearn");
+                msg.setRedirectUrl("/safety/rule/learn");
                 msg.setRecipientId(l.getUserId());
                 msg.setStatus("1");
                 messageService.insertMessage(msg);
