@@ -32,3 +32,12 @@ SELECT 'LEADER_ID_COL' tag, COUNT(*) cnt FROM information_schema.columns
 SELECT 'LEADER_BACKFILLED' tag, COUNT(*) cnt FROM sys_dept WHERE leader_id IS NOT NULL;
 
 -- 回退: ALTER TABLE sys_dept DROP COLUMN leader_id;
+
+-- ---------- 4. 危化品台账菜单path改名(修复与mms物料管理路由名Material冲突导致的404) ----------
+-- 冲突: menu 4666(危化品台账, path=material) 与 mms物料管理(path=material) 生成的路由名同为 Material,
+--       后注册者顶掉先注册者, 导致 /safety/hazmat/material 404。改名后路由名 HazmatMaterial 唯一。
+UPDATE sys_menu SET path = 'hazmatMaterial'
+WHERE menu_id = 4666 AND path = 'material';
+
+-- 校验: 应返回 hazmatMaterial
+SELECT 'HAZMAT_PATH' tag, path FROM sys_menu WHERE menu_id = 4666;
