@@ -41,3 +41,13 @@ WHERE menu_id = 4666 AND path = 'material';
 
 -- 校验: 应返回 hazmatMaterial
 SELECT 'HAZMAT_PATH' tag, path FROM sys_menu WHERE menu_id = 4666;
+
+-- ---------- 5. 隐藏两个幽灵菜单(视图文件不存在, 点击即404) ----------
+-- menu 4808 质量目标(qms/target/index): 后端控制器存在但前端视图从未入库
+-- menu 5214 产能负荷(mms/capacity/index): 前后端均未实现, 生产库本已 visible=1(隐藏)
+-- 处理: 统一 visible='1'(隐藏), 待后续开发页面后再放开
+UPDATE sys_menu SET visible = '1', remark = CONCAT(IFNULL(remark,''), '[2026-11-11隐藏: 视图未实现]')
+WHERE menu_id IN (4808, 5214) AND visible = '0';
+
+-- 校验: 两菜单 visible 均应为 1
+SELECT 'GHOST_HIDDEN' tag, menu_id, menu_name, visible FROM sys_menu WHERE menu_id IN (4808, 5214);
