@@ -75,7 +75,28 @@ public final class KingdeeSignUtil
 
     private static String urlEncodeOnce(String s)
     {
-        try { return URLEncoder.encode(s, "UTF-8").replace("+", "%2B"); }
+        try {
+            String encoded = URLEncoder.encode(s, "UTF-8").replace("+", "%2B");
+            // 手动把 %xx 里的十六进制字母转大写
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            while (i < encoded.length())
+            {
+                if (encoded.charAt(i) == '%' && i + 2 < encoded.length())
+                {
+                    sb.append('%');
+                    sb.append(Character.toUpperCase(encoded.charAt(i + 1)));
+                    sb.append(Character.toUpperCase(encoded.charAt(i + 2)));
+                    i += 3;
+                }
+                else
+                {
+                    sb.append(encoded.charAt(i));
+                    i++;
+                }
+            }
+            return sb.toString();
+        }
         catch (Exception e) { return s; }
     }
 

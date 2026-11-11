@@ -37,6 +37,8 @@ public class KingdeeConfigResolver
     public static final String K_TIMEOUT      = "kingdee.timeout";
     public static final String K_RETRY        = "kingdee.retry_times";
     public static final String K_SYNC_CRON    = "kingdee.sync_cron";
+    public static final String K_OUTER_INSTANCE_ID = "kingdee.outer_instance_id"; // 主动刷新 appSecret 必填
+    public static final String K_SECRET_REFRESH_CRON = "kingdee.secret_refresh_cron"; // appSecret 刷新 cron
 
     private static final String[] SECRET_KEYS = { K_CLIENT_SECRET, K_APP_SECRET };
 
@@ -114,6 +116,26 @@ public class KingdeeConfigResolver
         return StringUtils.isNotEmpty(v) ? parseInt(v, props.getRetryTimes()) : props.getRetryTimes();
     }
 
+    /** 第三方实例 ID（主动获取 appSecret 接口必填） */
+    public String getOuterInstanceId()
+    {
+        return getDb(K_OUTER_INSTANCE_ID);
+    }
+
+    /** appSecret 自动刷新 cron（默认每天 02:00 和 14:00 各一次） */
+    public String getSecretRefreshCron()
+    {
+        String v = getDb(K_SECRET_REFRESH_CRON);
+        return StringUtils.isNotEmpty(v) ? v : "0 0 2,14 * * ?";
+    }
+
+    /** 同步任务 cron */
+    public String getSyncCron()
+    {
+        String v = getDb(K_SYNC_CRON);
+        return StringUtils.isNotEmpty(v) ? v : "0 */30 * * * ?";
+    }
+
     /**
      * 组装完整配置快照（给前端回显 + 给 HttpClient 用）
      */
@@ -133,6 +155,9 @@ public class KingdeeConfigResolver
         m.put("routerAddr", getRouterAddr());
         m.put("timeout", getTimeout());
         m.put("retryTimes", getRetryTimes());
+        m.put("syncCron", getSyncCron());
+        m.put("outerInstanceId", getOuterInstanceId());
+        m.put("secretRefreshCron", getSecretRefreshCron());
         return m;
     }
 
