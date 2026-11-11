@@ -68,3 +68,8 @@ sql/_build/
 ct.hex
 dec_out.txt
 dec_pwd.py
+
+# 会话临时调试截图（uuid 命名，不入库）
+/[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.png
+/[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.jpg
+/[0-9][0-9a-f]*-[0-9a-f][0-9a-f]*-*.webp
