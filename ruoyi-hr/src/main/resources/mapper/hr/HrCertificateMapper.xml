@@ -75,10 +75,10 @@
     <update id="updateHrCertificate" parameterType="HrCertificate">
         UPDATE biz_hr_certificate
         <set>
-            <if test="employeeId != null">employee_id = #{employeeId},</if>
-            <if test="employeeName != null and employeeName != ''">employee_name = #{employeeName},</if>
-            <if test="employeeNo != null and employeeNo != ''">employee_no = #{employeeNo},</if>
-            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
+            employee_id = #{employeeId},
+            employee_name = #{employeeName},
+            employee_no = #{employeeNo},
+            dept_name = #{deptName},
             <if test="certType != null and certType != ''">cert_type = #{certType},</if>
             <if test="certName != null and certName != ''">cert_name = #{certName},</if>
             <if test="certNo != null and certNo != ''">cert_no = #{certNo},</if>

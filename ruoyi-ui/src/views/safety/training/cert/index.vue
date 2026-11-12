@@ -116,7 +116,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" :width="colWidth('操作', 140)" align="center" fixed="right" class-name="col-action" resizable>
+          <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['safety:training:cert:query']">查看</el-button>
@@ -162,7 +162,7 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="获证人员" prop="userId">
-                    <el-input v-model="form.userName" readonly placeholder="请选择获证人员" style="width: 100%" @click="openUserPicker">
+                    <el-input v-model="form.userName" :readonly="!!form.userId" placeholder="选择人员或直接输入外部人员姓名" style="width: 100%" @click="openUserPicker">
                       <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                       <template #suffix><el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon></template>
                     </el-input>
@@ -380,7 +380,7 @@ function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.userId) }
 /** 获证人员选择确认回调 */
 function onUserPickerConfirm(user) { form.value.userId = user.userId; form.value.userName = user.nickName; form.value.deptId = user.deptId; form.value.deptName = user.deptName || '' }
 /** 清除获证人员 */
-function clearUser() { form.value.userId = undefined; form.value.userName = undefined; form.value.deptId = undefined; form.value.deptName = undefined }
+function clearUser() { form.value.userId = undefined; form.value.deptId = undefined; form.value.deptName = undefined }
 
 function certTypeLabel(type) { const item = safety_cert_type.value.find(d => d.value == type); return item ? item.label : '-' }
 
