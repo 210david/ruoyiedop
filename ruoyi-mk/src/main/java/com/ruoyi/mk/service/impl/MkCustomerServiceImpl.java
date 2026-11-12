@@ -54,6 +54,15 @@ public class MkCustomerServiceImpl implements IMkCustomerService
         return customer;
     }
 
+    /**
+     * 查询客户列表（手机号明文，金蝶同步适配用，不走脱敏）
+     */
+    @Override
+    public List<MkCustomer> selectCustomerListPlain(MkCustomer customer)
+    {
+        return mkCustomerMapper.selectCustomerList(customer);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertCustomer(MkCustomer customer)

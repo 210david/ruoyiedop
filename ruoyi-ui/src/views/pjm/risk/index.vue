@@ -204,6 +204,7 @@
                       （自动跟随项目）
                     </el-tag>
                     <el-button type="warning" plain icon="CollectionTag" style="margin-left:10px" @click="openStdMatch">从国家标准识别</el-button>
+                    <el-button type="success" plain icon="Lightning" style="margin-left:6px" @click="quickApplyFromStd" :loading="quickApplying">⚡ 一键匹配</el-button>
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
@@ -632,8 +633,31 @@ function applyStdToForm(row) {
     if (row.measure_emergency) parts.push('应急处置：' + row.measure_emergency)
     if (parts.length) form.value.solution = parts.join('\n')
   }
-  ElMessage.success(`已应用：${row.risk_name}（${row.gb_std || '无标准条款'}）`)
-  stdOpen.value = false
+}
+
+// ★ ⚡ 一键匹配：直接用当前工程类别取第一条匹配，不弹窗
+const quickApplying = ref(false)
+function quickApplyFromStd() {
+  const ec = form.value.engineeringCategory
+  if (!ec) {
+    ElMessage.warning('请先选择所属项目（工程类别会自动带出）')
+    return
+  }
+  quickApplying.value = true
+  standardMatchRisk(ec, form.value.title || null).then(res => {
+    const list = res.data || []
+    if (list.length === 0) {
+      ElMessage.info('暂无匹配的国家标准风险点，请点击「从国家标准识别」手动搜索')
+      stdKeyword.value = form.value.title || ''
+      stdEngineeringCategory.value = ec
+      stdOpen.value = true
+      reloadStd()
+      return
+    }
+    const pick = list[0]   // 取最匹配的第一条
+    applyStdToForm(pick)
+    ElMessage.success(`⚡ 一键匹配：${pick.risk_name}（${pick.gb_std || '无标准'}）`)
+  }).finally(() => { quickApplying.value = false })
 }
 
 function handleAdd() {

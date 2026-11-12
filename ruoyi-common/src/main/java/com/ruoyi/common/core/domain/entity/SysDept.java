@@ -34,11 +34,8 @@ public class SysDept extends BaseEntity
     /** 显示顺序 */
     private Integer orderNum;
 
-    /** 部门领导（姓名） */
+    /** 负责人 */
     private String leader;
-
-    /** 部门领导（人员ID） */
-    private Long leaderId;
 
     /** 部门简称 */
     private String deptShortName;
@@ -128,16 +125,6 @@ public class SysDept extends BaseEntity
     public void setLeader(String leader)
     {
         this.leader = leader;
-    }
-
-    public Long getLeaderId()
-    {
-        return leaderId;
-    }
-
-    public void setLeaderId(Long leaderId)
-    {
-        this.leaderId = leaderId;
     }
 
     public String getDeptShortName()
@@ -239,7 +226,6 @@ public class SysDept extends BaseEntity
             .append("deptName", getDeptName())
             .append("orderNum", getOrderNum())
             .append("leader", getLeader())
-            .append("leaderId", getLeaderId())
             .append("deptShortName", getDeptShortName())
             .append("deptCode", getDeptCode())
             .append("chargeLeaderId", getChargeLeaderId())

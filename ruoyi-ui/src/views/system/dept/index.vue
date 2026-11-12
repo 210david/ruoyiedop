@@ -210,16 +210,12 @@
                      </span>
                      归属信息
                   </div>
-                  <div class="rd-card-actions">
-                     <el-button type="primary" plain size="small" icon="Refresh" :disabled="!form.deptId"
-                        @click="handleSyncToUsers" v-hasPermi="['system:dept:edit']">同步到人员</el-button>
-                  </div>
                </div>
                <div class="rd-card-body">
                   <el-row :gutter="16">
                      <el-col :span="12">
-                        <el-form-item label="部门领导" prop="leader">
-                           <el-input v-model="form.leader" readonly placeholder="请选择部门领导" style="width: 100%" @click="onLeaderFieldClick">
+                        <el-form-item label="负责人" prop="leader">
+                           <el-input v-model="form.leader" readonly placeholder="请选择负责人" style="width: 100%" @click="onLeaderFieldClick">
                               <template #append>
                                  <el-button v-if="form.leader" icon="CircleClose" @click="onLeaderFieldClick" />
                                  <el-button v-else icon="Search" @click="onLeaderFieldClick" />
@@ -251,9 +247,6 @@
                         </el-form-item>
                      </el-col>
                   </el-row>
-                  <div class="sync-tip">
-                     <span>设置后可一键将「部门领导」「分管领导」同步给本部门所有人员，免去逐个设置</span>
-                  </div>
                </div>
             </section>
          </el-form>
@@ -265,8 +258,8 @@
          </template>
       </el-dialog>
 
-      <!-- 部门领导选择弹窗 -->
-      <user-picker ref="userPickerRef" title="选择部门领导" @confirm="onUserPickerConfirm" />
+      <!-- 负责人选择弹窗 -->
+      <user-picker ref="userPickerRef" title="选择部门负责人" @confirm="onUserPickerConfirm" />
       <!-- 分管领导选择弹窗 -->
       <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
    </div>
@@ -275,7 +268,7 @@
 <script setup name="Dept">
 import TreePanel from "@/components/TreePanel"
 import UserPicker from "@/components/UserPicker"
-import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild, syncDeptLeaders } from "@/api/system/dept"
+import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild } from "@/api/system/dept"
 import { deptTreeSelect } from "@/api/system/user"
 import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -396,7 +389,7 @@ function reset() {
   proxy.resetForm("deptRef")
 }
 
-/** ===== 部门领导弹框选择 ===== */
+/** ===== 负责人弹框选择 ===== */
 function openUserPicker() {
   proxy.$refs.userPickerRef.open(form.value.leaderId)
 }
@@ -509,27 +502,6 @@ function submitForm() {
       }
     }
   })
-}
-
-/** 同步部门领导、分管领导到本部门人员 */
-function handleSyncToUsers() {
-  if (!form.value.deptId) {
-    proxy.$modal.msgWarning("请先保存部门")
-    return
-  }
-  if (!form.value.leaderId && !form.value.chargeLeaderId) {
-    proxy.$modal.msgWarning("请先设置部门领导或分管领导")
-    return
-  }
-  proxy.$modal.confirm('确认将「部门领导」「分管领导」同步到本部门所有人员吗？').then(() => {
-    // 先保存当前表单，确保同步的是最新的领导设置
-    return updateDept(form.value)
-  }).then(() => {
-    return syncDeptLeaders(form.value.deptId)
-  }).then(response => {
-    proxy.$modal.msgSuccess("同步成功，共更新 " + (response.data || 0) + " 人")
-    getList()
-  }).catch(() => {})
 }
 
 /** 递归记录原始排序 */
@@ -652,9 +624,6 @@ onMounted(() => {
 .sys-dept-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
 .sys-dept-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .sys-dept-page .app-table :deep(.el-table__border-left-patch) { display:none; }
-
-/* ===== 同步到人员提示 ===== */
-.sync-tip { margin-top: 2px; padding: 8px 12px; font-size: 13px; color: #64748b; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 6px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

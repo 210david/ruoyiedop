@@ -244,8 +244,8 @@
                       </el-col>
                       <el-col :span="12">
                         <el-form-item label="工程类别" prop="engineeringCategory">
-                          <el-select v-model="form.engineeringCategory" placeholder="影响风险管控标准" style="width:100%" clearable>
-                            <el-option v-for="d in engineeringCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
+                          <el-select v-model="form.engineeringCategory" placeholder="请先选择项目类型" style="width:100%" clearable>
+                            <el-option v-for="d in filteredEngineeringCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
                           </el-select>
                         </el-form-item>
                       </el-col>
@@ -1191,7 +1191,16 @@ const { proxy } = getCurrentInstance()
 
 // ★ 字典：wms_unit 单位字典 + pjm_engineering_category 工程类别字典 + pjm_purchase_detail_type 采购明细类型 + pjm_project_attachment_type 附件类型
 const { wms_unit, wms_material_type, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
-const engineeringCategoryOptions = pjm_engineering_category
+// ★ 工程类别：按已选项目类型级联过滤
+const allEngineeringCategoryOptions = pjm_engineering_category
+const filteredEngineeringCategoryOptions = computed(() => {
+  const all = allEngineeringCategoryOptions.value || []
+  const prefix = projectTypeToEngCatPrefix[form.projectType]
+  if (!prefix) return all   // 没选项目类型时显示全部
+  return all.filter(d => String(d.value).startsWith(prefix))
+})
+// 兼容旧引用（详情/审批只读展示用全部，不影响）
+const engineeringCategoryOptions = allEngineeringCategoryOptions
 const peDetailTypeOptions = computed(() => (pjm_purchase_detail_type.value || []).map(d => ({ ...d, value: String(d.value) })))
 // ★ 采购清单页签：按物料类型（wms_material_type 字典）动态分类统计，替代写死的明细类型
 const procTypeOptions = computed(() => {
@@ -1307,6 +1316,16 @@ const projectTypeOptions = [
   { value: '5', label: '园林绿化' }, { value: '6', label: '基础设施' },
   { value: '7', label: 'EPC总承包' }
 ]
+// ★ 项目类型 → 工程类别字典 value 前缀映射（用于级联过滤）
+const projectTypeToEngCatPrefix = {
+  '1': 'house_',      // 房屋建筑 → house_residential / house_public / ...
+  '2': 'municipal_',  // 市政工程 → municipal_road / municipal_bridge / ...
+  '3': 'mep_',        // 机电安装 → mep_industrial / mep_building / ...
+  '4': 'deco_',       // 装饰装修 → deco_indoor / deco_curtain / ...
+  '5': 'landscape_',  // 园林绿化 → landscape_park / landscape_road / ...
+  '6': 'infra_',      // 基础设施 → infra_transport / infra_water / ...
+  '7': 'epc_'         // EPC总承包 → epc_general
+}
 const qualityOptions = [
   { value: '合格', label: '合格' }, { value: '优良', label: '优良' },
   { value: '省优', label: '省优' }, { value: '国优', label: '国优' },
@@ -1531,6 +1550,16 @@ function ensureAttachmentGroups() {
   })
 }
 watch(attachmentTypeOptions, ensureAttachmentGroups, { immediate: true })
+
+// ★ 级联：项目类型变化时清空已选工程类别（避免残留旧类型的选项）
+watch(() => form.projectType, (newType, oldType) => {
+  if (newType !== oldType && form.engineeringCategory) {
+    const prefix = projectTypeToEngCatPrefix[newType]
+    if (prefix && !String(form.engineeringCategory).startsWith(prefix)) {
+      form.engineeringCategory = ''
+    }
+  }
+})
 
 /** 从 attFileGroups 中抽取 url 字符串数组给 UploadFile 组件（它只认字符串/逗号串） */
 function getAttUrlList(type) {
