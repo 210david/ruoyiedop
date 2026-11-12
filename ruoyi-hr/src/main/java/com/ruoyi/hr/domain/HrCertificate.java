@@ -12,7 +12,6 @@ public class HrCertificate extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     private Long certId;
-    @NotNull(message = "员工ID不能为空")
     @Excel(name = "员工ID")
     private Long employeeId;
     @Excel(name = "员工姓名")
