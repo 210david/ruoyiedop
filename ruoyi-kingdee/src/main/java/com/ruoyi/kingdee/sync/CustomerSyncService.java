@@ -125,7 +125,6 @@ public class CustomerSyncService
             MkCustomer c = new MkCustomer();
             c.setCustomerNo(kdNumber);
             c.setCustomerName(kdName);
-            c.setCustomerType("1");
             c.setCustomerLevel("3");
             c.setCustomerSource("0");
             c.setCustomerStatus("1".equals(kdEnable) ? "0" : "1");

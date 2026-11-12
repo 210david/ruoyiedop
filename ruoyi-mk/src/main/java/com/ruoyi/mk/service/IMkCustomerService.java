@@ -14,6 +14,9 @@ public interface IMkCustomerService
     public List<MkCustomer> selectCustomerList(MkCustomer customer);
     public MkCustomer selectCustomerById(Long customerId);
     public int insertCustomer(MkCustomer customer);
+    /** 查询客户列表（手机号明文，金蝶同步适配用，不走脱敏） */
+    public List<MkCustomer> selectCustomerListPlain(MkCustomer customer);
+
     public int updateCustomer(MkCustomer customer);
     public int deleteCustomerByIds(Long[] customerIds);
 
