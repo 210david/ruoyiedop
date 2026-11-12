@@ -5,7 +5,7 @@
 --       之后的全部数据库变更；保守并入 2026-10-29 起的所有增量（含
 --       upgrade_20261102_all 全部内容），生产重复执行无副作用。
 -- -------------------------------------------------------------
--- 本脚本合并 42 段变更（按序执行），覆盖：
+-- 本脚本合并 43 段变更（按序执行），覆盖：
 --   1. 仓库编码自动编码开关（mk_number_rule.auto_enabled）
 --   2. 20261102 合并版（合同长期有效/上传上限参数/合同与订单状态字典）
 --   3. WMS 供应商固定电话列
@@ -4217,8 +4217,7 @@ BEGIN
 -- =============================================
 
 -- 1. 题库分类表（主数据/共享资源，豁免数据权限归属字段）
-DROP TABLE IF EXISTS biz_safety_exam_category;
-CREATE TABLE biz_safety_exam_category (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_category (
     category_id        BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '分类ID',
     parent_id          BIGINT       DEFAULT 0                COMMENT '父分类ID（支持两级）',
     category_name      VARCHAR(50)  NOT NULL                 COMMENT '分类名称',
@@ -4236,8 +4235,7 @@ CREATE TABLE biz_safety_exam_category (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='考试题库分类表';
 
 -- 2. 题库表（主数据/共享资源，豁免数据权限归属字段）
-DROP TABLE IF EXISTS biz_safety_exam_question;
-CREATE TABLE biz_safety_exam_question (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_question (
     question_id        BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '题目ID',
     question_type      CHAR(1)      NOT NULL                 COMMENT '题型（字典 safety_exam_question_type）',
     content            TEXT         NOT NULL                 COMMENT '题干',
@@ -4262,8 +4260,7 @@ CREATE TABLE biz_safety_exam_question (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='安全生产考试题库表';
 
 -- 3. 试卷表（主数据，发布后题目集合冻结）
-DROP TABLE IF EXISTS biz_safety_exam_paper;
-CREATE TABLE biz_safety_exam_paper (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_paper (
     paper_id           BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '试卷ID',
     paper_name         VARCHAR(100) NOT NULL                 COMMENT '试卷名称',
     course_id          BIGINT                                COMMENT '关联培训课程ID（biz_safety_training_course）',
@@ -4291,8 +4288,7 @@ CREATE TABLE biz_safety_exam_paper (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='考试试卷表';
 
 -- 4. 试卷题目明细表（快照式：发布时冻结题干/选项/答案，判分依据）
-DROP TABLE IF EXISTS biz_safety_exam_paper_question;
-CREATE TABLE biz_safety_exam_paper_question (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_paper_question (
     id                 BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '明细ID',
     paper_id           BIGINT       NOT NULL                 COMMENT '试卷ID',
     question_id        BIGINT       NOT NULL                 COMMENT '来源题目ID（biz_safety_exam_question）',
@@ -4315,8 +4311,7 @@ CREATE TABLE biz_safety_exam_paper_question (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='试卷题目明细表（快照）';
 
 -- 5. 考试场次表（事务单据：必须带 dept_id，接入 @DataScope）
-DROP TABLE IF EXISTS biz_safety_exam;
-CREATE TABLE biz_safety_exam (
+CREATE TABLE IF NOT EXISTS biz_safety_exam (
     exam_id            BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '考试ID',
     exam_name          VARCHAR(100) NOT NULL                 COMMENT '考试名称',
     paper_id           BIGINT       NOT NULL                 COMMENT '试卷ID',
@@ -4343,8 +4338,7 @@ CREATE TABLE biz_safety_exam (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='考试场次表';
 
 -- 6. 考生考试记录表（人员归属型：dept_id + user_id，接入 @DataScope）
-DROP TABLE IF EXISTS biz_safety_exam_record;
-CREATE TABLE biz_safety_exam_record (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_record (
     record_id          BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '考试记录ID',
     exam_id            BIGINT       NOT NULL                 COMMENT '考试ID',
     paper_id           BIGINT       NOT NULL                 COMMENT '试卷ID',
@@ -4376,8 +4370,7 @@ CREATE TABLE biz_safety_exam_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='考生考试记录表';
 
 -- 7. 答题明细表（追溯数据，随考试记录权限）
-DROP TABLE IF EXISTS biz_safety_exam_answer;
-CREATE TABLE biz_safety_exam_answer (
+CREATE TABLE IF NOT EXISTS biz_safety_exam_answer (
     answer_id          BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '答题明细ID',
     record_id          BIGINT       NOT NULL                 COMMENT '考试记录ID',
     paper_question_id  BIGINT       NOT NULL                 COMMENT '试卷题目明细ID',
@@ -4892,3 +4885,168 @@ CREATE TABLE IF NOT EXISTS biz_safety_exam_user (
     UNIQUE KEY uk_exam_user (exam_id, user_id),
     KEY idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='考试手动添加人员表';
+-- =============================================================
+-- 第 43 段 / 共 43 段：金蝶云星辰对接（配置/字段/菜单/授权/定时任务，幂等）
+-- 来源：deploy/config/sql/add_kingdee_full_upgrade_20261111.sql（此前遗漏未并入）
+-- 加工：剥离 USE edop_yhny；一级菜单改 perms 判重自增 id（生产 9063109 有占用风险）；
+--       历史修正 DELETE 9063108 加 menu_name 限定（防误删生产同 id 菜单）；授权引用改变量
+-- =============================================================
+
+-- 43.1 sys_config 金蝶配置项（NOT EXISTS 幂等）
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT '金蝶对接开关', 'kingdee.enabled', 'true', 'Y', 'admin', NOW(), '是否启用金蝶云星辰对接'
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.enabled');
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT '金蝶接口超时', 'kingdee.timeout', '30000', 'Y', 'admin', NOW(), 'API 超时毫秒数'
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.timeout');
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT '金蝶重试次数', 'kingdee.retry_times', '2', 'Y', 'admin', NOW(), 'API 失败重试次数'
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.retry_times');
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT 'appSecret 刷新 cron', 'kingdee.secret_refresh_cron', '0 0 2,14 * * ?', 'Y', 'admin', NOW(), '每天凌晨 2 点、下午 2 点主动刷新'
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.secret_refresh_cron');
+
+INSERT INTO sys_config (config_name, config_key, config_value, config_type, create_by, create_time, remark)
+SELECT '同步 cron', 'kingdee.sync_cron', '0 */30 * * * ?', 'Y', 'admin', NOW(), '每 30 分钟自动同步一次'
+WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'kingdee.sync_cron');
+
+-- ★ 密钥字段（kingdee.app_key/client_id/outer_instance_id/base_url/router_addr/app_secret/client_secret）
+--   部署时通过前端「金蝶配置」页填写，或用 SecureKeyUtils 加密后插入（AES 加密，
+--   加密密钥在 application.yml 的 ruoyi.fileEncryptionKey）
+
+-- 43.2 sys_user 补 6 列（information_schema + PREPARE 幂等加列）
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column leader_id bigint default null comment ''直接领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column leader_name varchar(64) default null comment ''直接领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'superior_leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column superior_leader_id bigint default null comment ''上级领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'superior_leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column superior_leader_name varchar(64) default null comment ''上级领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'charge_leader_id');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column charge_leader_id bigint default null comment ''分管领导ID''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'sys_user' and column_name = 'charge_leader_name');
+set @sql := if(@col_exists = 0,
+    'alter table sys_user add column charge_leader_name varchar(64) default null comment ''分管领导姓名''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- 43.3 sys_logininfor msg 列加长（MODIFY 幂等）
+ALTER TABLE sys_logininfor MODIFY COLUMN msg VARCHAR(500) DEFAULT '' COMMENT '提示消息';
+
+-- 43.4 mk_customer 补 5 列（information_schema + PREPARE 幂等加列）
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'credit_days');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column credit_days int default 0 comment ''信用天数''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'credit_limit');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column credit_limit decimal(18,2) default null comment ''信用额度''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'customer_type');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column customer_type varchar(32) default null comment ''客户类型''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'parent_customer_id');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column parent_customer_id varchar(64) default null comment ''上级客户编码''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+set @col_exists := (select count(*) from information_schema.columns
+    where table_schema = database() and table_name = 'mk_customer' and column_name = 'contact_phone');
+set @sql := if(@col_exists = 0,
+    'alter table mk_customer add column contact_phone varchar(32) default null comment ''联系电话''',
+    'select 1');
+prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+
+-- 43.5 金蝶菜单（一级菜单按 perms 判重自增 id，生产 9063109 有占用风险）
+SET @kingdeeMenuId := (SELECT menu_id FROM sys_menu WHERE perms = 'kingdee:config:list' AND menu_type = 'C' LIMIT 1);
+INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '金蝶云星辰集成', 9063000, 3, 'kingdee', 'kingdee/index', '', '', 1, 0, 'C', '0', '0', 'kingdee:config:list', 'edit',
+       'admin', NOW(), '金蝶云星辰对接（基础数据同步）'
+WHERE @kingdeeMenuId IS NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063109);
+SET @kingdeeMenuId := (SELECT menu_id FROM sys_menu WHERE perms = 'kingdee:config:list' AND menu_type = 'C' LIMIT 1);
+
+-- 历史环境修正（仅针对金蝶旧结构；menu_name 限定防误删生产同 id 菜单）
+DELETE FROM sys_menu WHERE menu_id = 9063108 AND menu_name IN ('金蝶对接', '金蝶云星辰集成', '金蝶配置');
+
+-- 按钮权限（5 个，按 perms 判重）
+INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '金蝶配置修改', m.menu_id, 1, 'F', '0', '0', 'kingdee:config:edit', '#', 'admin', NOW(), '保存配置 + 测试连通性'
+FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:config:edit');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '客户同步', m.menu_id, 2, 'F', '0', '0', 'kingdee:sync:customer', '#', 'admin', NOW(), '手动触发客户全量同步'
+FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:sync:customer');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '物料同步', m.menu_id, 3, 'F', '0', '0', 'kingdee:sync:material', '#', 'admin', NOW(), '手动触发物料全量同步'
+FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:sync:material');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '供应商同步', m.menu_id, 4, 'F', '0', '0', 'kingdee:sync:supplier', '#', 'admin', NOW(), '手动触发供应商全量同步'
+FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:sync:supplier');
+
+INSERT INTO sys_menu (menu_name, parent_id, order_num, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT '全量同步', m.menu_id, 5, 'F', '0', '0', 'kingdee:sync:all', '#', 'admin', NOW(), '客户+物料+供应商一起同步'
+FROM sys_menu m WHERE m.perms = 'kingdee:config:list' AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'kingdee:sync:all');
+
+-- 43.6 管理员角色授权（先删后插，范围限定金蝶菜单）
+DELETE FROM sys_role_menu
+WHERE menu_id IN (
+  SELECT menu_id FROM sys_menu WHERE perms LIKE 'kingdee:%'
+);
+INSERT INTO sys_role_menu (role_id, menu_id)
+SELECT 1, menu_id FROM sys_menu WHERE perms LIKE 'kingdee:%';
+
+-- 43.7 金蝶同步定时任务（Quartz，NOT EXISTS 幂等）
+INSERT INTO sys_job (job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark)
+SELECT '金蝶基础数据同步', 'DEFAULT', 'kingdeeSyncJob.runAll()', '0 */30 * * * ?', '1', '1', '0', 'admin', NOW(), '每 30 分钟同步一次客户/物料/供应商'
+WHERE NOT EXISTS (SELECT 1 FROM sys_job WHERE invoke_target = 'kingdeeSyncJob.runAll()');
+
+-- 43.8 执行后复核
+SELECT 'KINGDEE_MENU_COUNT' tag, COUNT(*) cnt FROM sys_menu WHERE perms LIKE 'kingdee:%';
+SELECT 'KINGDEE_CONFIG' tag, COUNT(*) cnt FROM sys_config WHERE config_key LIKE 'kingdee.%';
+SELECT 'KINGDEE_JOB' tag, COUNT(*) cnt FROM sys_job WHERE invoke_target = 'kingdeeSyncJob.runAll()';
+-- =============================================================
