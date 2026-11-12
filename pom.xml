@@ -288,6 +288,13 @@
                 <version>1.17.2</version>
             </dependency>
 
+            <!-- 金蝶云星辰对接模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-kingdee</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -313,6 +320,7 @@
         <module>ruoyi-pdm</module>
         <module>ruoyi-bi</module>
         <module>ruoyi-integration</module>
+        <module>ruoyi-kingdee</module>
     </modules>
     <packaging>pom</packaging>
 
