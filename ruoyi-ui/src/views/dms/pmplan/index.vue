@@ -649,7 +649,19 @@ const data = reactive({
     cycleValue: [{ required: true, message: '周期值不能为空', trigger: 'blur' }],
     cycleUnit: [{ required: true, message: '周期单位不能为空', trigger: 'change' }],
     estimatedHours: [{ required: true, message: '预计工时不能为空', trigger: 'blur' }],
-    taskList: [{ required: true, message: '任务清单不能为空', trigger: 'change' }]
+    // 任务清单输入绑定的是 taskItems 数组而非 form.taskList，
+    // 必须用自定义 validator 校验 taskItems，否则 form.taskList 始终为 undefined，必填规则必然误报
+    taskList: [{
+        validator: (rule, value, callback) => {
+            const validItems = taskItems.value.filter(i => i.text && i.text.trim())
+            if (validItems.length === 0) {
+                callback(new Error('任务清单不能为空，请至少填写一条任务项'))
+            } else {
+                callback()
+            }
+        },
+        trigger: 'change'
+    }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
