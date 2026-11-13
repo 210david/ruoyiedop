@@ -1,8 +1,11 @@
 -- =============================================================
 -- 生产库升级状态自检脚本（只读，不改任何数据）
--- 用途：核对历史升级脚本是否执行到位。在【生产库】上执行：
+-- 日期：2026-11-14（补齐 C 段决策菜单检查项，与累积总入口配套）
+-- 用途：核对累积升级总入口 upgrade_20261113_all.sql 三段是否执行到位：
+--   A 段（20261021 基线后 43 段变更）/ B 段（20261113 增量）/ C 段（决策菜单修复）
+-- 在【生产库】上执行：
 --   mysql -uroot -p --default-character-set=utf8mb4 edop_jsly < check_upgrade_status.sql
--- 预期值来自本地开发库（已全量执行所有升级）。
+-- 预期值来自本地开发库（已全量执行所有升级）；全部 PASS 即升级到位。
 -- =============================================================
 SELECT '20261109 BI模块表数' AS check_item, COUNT(*) AS actual, '>=5' AS expected
   FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'bi_%'
@@ -54,4 +57,14 @@ SELECT '20261113 风险点种子数', COUNT(*), '>=32'
 UNION ALL
 SELECT '编号规则菜单query格式(JSON)', COUNT(*), '=1'
   FROM sys_menu WHERE menu_name='编号规则' AND parent_id=2000 AND query LIKE '%module%'
+UNION ALL
+SELECT '20261113 统计分析分组为M(C段)', COUNT(*), '=11'
+  FROM sys_menu WHERE menu_type='M' AND parent_id=(
+    SELECT m2.menu_id FROM sys_menu m2 JOIN sys_menu bi ON m2.parent_id=bi.menu_id
+    WHERE m2.menu_name='统计分析' AND m2.menu_type='M' AND bi.menu_name='决策支持' LIMIT 1)
+UNION ALL
+SELECT '20261113 计件报工按钮挂载(C段)', COUNT(*), '=4'
+  FROM sys_menu f
+  WHERE f.menu_type='F' AND f.menu_name IN ('计件报工查询','计件报工新增','计件报工修改','计件报工删除')
+    AND f.parent_id=(SELECT menu_id FROM sys_menu WHERE menu_name='计件报工' AND menu_type='C' LIMIT 1)
 ORDER BY check_item;
