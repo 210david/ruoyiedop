@@ -33,6 +33,11 @@ public class HrCertificateServiceImpl implements IHrCertificateService
         {
             throw new com.ruoyi.common.exception.ServiceException("证书编号不能为空");
         }
+        // 方案A：员工ID与姓名至少其一（外部人员证书无 employeeId，按姓名录入）
+        if (hrCertificate.getEmployeeId() == null && StringUtils.isEmpty(hrCertificate.getEmployeeName()))
+        {
+            throw new com.ruoyi.common.exception.ServiceException("员工ID与员工姓名至少填一项");
+        }
         HrCertificate dup = new HrCertificate();
         dup.setCertNo(hrCertificate.getCertNo());
         List<HrCertificate> exist = hrCertificateMapper.selectHrCertificateList(dup);
