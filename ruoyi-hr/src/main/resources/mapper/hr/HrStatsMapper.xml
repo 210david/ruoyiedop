@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.hr.mapper.HrStatsMapper">
+
+    <!-- 决策支持指标专用统计（HrStatsProvider）。
+         跨模块数据来源声明：产值取 MMS 完工入库（mms_finish_receipt）× WMS 入库取价（wms_inbound_order_detail），
+         单库单体 SQL 联查，零 Maven 依赖；若后续拆分服务应迁移至 BI 快照层。 -->
+
+    <select id="selectFinishOutputValue" resultType="java.math.BigDecimal">
+        select sum(f.qualified_qty * p.ref_price)
+        from mms_finish_receipt f
+        inner join (
+            select material_id, avg(unit_price) as ref_price
+            from wms_inbound_order_detail
+            where del_flag = '0' and unit_price is not null and unit_price &gt; 0
+            group by material_id
+        ) p on p.material_id = f.product_id
+        where f.del_flag = '0'
+          and f.status = '1'
+          and f.qualified_qty is not null and f.qualified_qty &gt; 0
+          and f.finish_time &gt;= #{start}
+          and f.finish_time &lt; #{end}
+    </select>
+
+    <select id="selectNetSalaryTotal" resultType="java.math.BigDecimal">
+        select sum(net_salary)
+        from biz_hr_payslip
+        where del_flag = '0'
+          and `year_month` = #{yearMonth}
+    </select>
+
+    <select id="selectEmployeeStatusCount" resultType="java.util.HashMap">
+        select employee_status as status, count(*) as cnt
+        from biz_hr_employee
+        where del_flag = '0'
+        group by employee_status
+    </select>
+
+</mapper>

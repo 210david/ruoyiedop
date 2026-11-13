@@ -27,8 +27,8 @@ public class BizDeptFillAspect
 {
     private static final Logger log = LoggerFactory.getLogger(BizDeptFillAspect.class);
 
-    /** 匹配各业务模块 ServiceImpl 的新增方法 */
-    @Pointcut("execution(* com.ruoyi..service.impl.*ServiceImpl.insert*(..))")
+    /** 匹配各业务模块 ServiceImpl 的新增方法（排除 system 系统模块：sys_dept/sys_user 等主键/归属语义不同，deptId 是主键而非归属字段） */
+    @Pointcut("execution(* com.ruoyi..service.impl.*ServiceImpl.insert*(..)) && !execution(* com.ruoyi.system..*(..))")
     public void bizInsertPointcut()
     {
     }

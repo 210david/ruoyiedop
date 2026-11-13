@@ -59,3 +59,10 @@ image-*.png
 image-*.webp
 managed-browser-*.png
 *.artifact.json
+
+# ===== Local temp check / runtime upload artifacts =====
+_tmp_chk/
+uploadPath/
+
+# 金蝶 SDK 原始包（以源码形式内嵌 ruoyi-kingdee/src/main/java/com/kingdee/apigw/）
+ruoyi-kingdee/lib/

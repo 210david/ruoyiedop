@@ -25,6 +25,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"     />
         <result property="remark"        column="remark"          />
         <result property="postName"      column="post_name"       />
+        <result property="superiorLeaderId"   column="superior_leader_id"   />
+        <result property="superiorLeaderName" column="superior_leader_name" />
+        <result property="chargeLeaderId"     column="charge_leader_id"     />
+        <result property="chargeLeaderName"   column="charge_leader_name"   />
         <association property="dept"     javaType="SysDept"         resultMap="deptResult" />
         <collection  property="roles"    javaType="java.util.List"  resultMap="RoleResult" />
     </resultMap>
@@ -49,7 +53,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 	
 	<sql id="selectUserVo">
-        select u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.pwd_update_date, u.create_by, u.create_time, u.update_by, u.update_time, u.remark, 
+        select u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.avatar, u.phonenumber, u.password, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.pwd_update_date, u.create_by, u.create_time, u.update_by, u.update_time, u.remark, u.superior_leader_id, u.charge_leader_id,
+        (select su.nick_name from sys_user su where su.user_id = u.superior_leader_id) as superior_leader_name,
+        (select cu.nick_name from sys_user cu where cu.user_id = u.charge_leader_id) as charge_leader_name,
         d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.status as dept_status,
         r.role_id, r.role_name, r.role_key, r.role_sort, r.data_scope, r.status as role_status
         from sys_user u
@@ -59,7 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
     
     <select id="selectUserList" parameterType="SysUser" resultMap="SysUserResult">
-		select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, d.dept_name, d.leader,
+		select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, u.superior_leader_id, u.charge_leader_id, d.dept_name, d.leader,
 		(select GROUP_CONCAT(p.post_name) from sys_user_post up left join sys_post p on up.post_id = p.post_id where up.user_id = u.user_id) as post_name
 		from sys_user u
 		left join sys_dept d on u.dept_id = d.dept_id
@@ -169,6 +175,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="pwdUpdateDate != null">pwd_update_date,</if>
  			<if test="createBy != null and createBy != ''">create_by,</if>
  			<if test="remark != null and remark != ''">remark,</if>
+ 			<if test="superiorLeaderId != null">superior_leader_id,</if>
+ 			<if test="chargeLeaderId != null">charge_leader_id,</if>
  			create_time
  		)values(
  			<if test="userId != null and userId != ''">#{userId},</if>
@@ -184,6 +192,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="pwdUpdateDate != null">#{pwdUpdateDate},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>
+ 			<if test="superiorLeaderId != null">#{superiorLeaderId},</if>
+ 			<if test="chargeLeaderId != null">#{chargeLeaderId},</if>
  			sysdate()
  		)
 	</insert>
@@ -203,6 +213,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="loginDate != null">login_date = #{loginDate},</if>
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
  			<if test="remark != null">remark = #{remark},</if>
+ 			superior_leader_id = #{superiorLeaderId},
+ 			charge_leader_id = #{chargeLeaderId},
  			update_time = sysdate()
  		</set>
  		where user_id = #{userId}
