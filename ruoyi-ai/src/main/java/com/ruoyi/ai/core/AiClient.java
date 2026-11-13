@@ -58,6 +58,12 @@ public class AiClient
     /** Redis月度计数key前缀 */
     private static final String CALL_COUNT_KEY = "ai:call:";
 
+    /** 瞬时失败重试次数（与 NL2SQL 链路口径一致：共尝试最多 1+RETRY_TIMES 次） */
+    private static final int RETRY_TIMES = 2;
+
+    /** 重试间隔毫秒 */
+    private static final long RETRY_INTERVAL_MS = 2000L;
+
     /** 异步线程用户上下文（SSE等无SecurityContext的线程，由入口请求线程显式捕获并传入，用于审计落库操作人） */
     private static final ThreadLocal<Long> ASYNC_USER_ID = new ThreadLocal<>();
     private static final ThreadLocal<String> ASYNC_USER_NAME = new ThreadLocal<>();
@@ -194,12 +200,13 @@ public class AiClient
             // 3. 敏感信息脱敏（进入prompt前）
             String maskedPrompt = SensitiveDataMasker.mask(prompt);
 
-            // 4. 调用LLM
-            content = doChat(maskedPrompt, maxTokens);
+            // 4. 调用LLM（瞬时网络故障如 Connection reset 自动重试，避免用户直接看到"AI调用失败"）
+            content = doChatWithRetry(maskedPrompt, maxTokens);
             if (content == null)
             {
                 status = AiResult.STATUS_DEGRADED;
-                error = "AI调用失败";
+                // 该错误绝大多数为瞬时网络波动或服务繁忙（已自动重试），文案引导用户重试而非误导为系统故障
+                error = "AI 服务暂时不可用（网络波动或服务繁忙），请稍后重试";
                 AiResult r = AiResult.degraded(error);
                 audit(module, feature, status, System.currentTimeMillis() - start, maskedPrompt, error);
                 return r;
@@ -427,10 +434,30 @@ public class AiClient
 
     // ==================== 内部实现 ====================
 
+    /** 调用LLM（瞬时失败自动重试：共尝试最多 1+RETRY_TIMES 次，间隔 RETRY_INTERVAL_MS 毫秒，避免用户直接看到"AI调用失败"） */
+    private String doChatWithRetry(String prompt, int maxTokens)
+    {
+        String content = doChat(prompt, maxTokens);
+        for (int i = 1; content == null && i <= RETRY_TIMES; i++)
+        {
+            try
+            {
+                Thread.sleep(RETRY_INTERVAL_MS);
+            }
+            catch (InterruptedException ie)
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            log.warn("AI调用失败(第{}次重试)", i);
+            content = doChat(prompt, maxTokens);
+        }
+        return content;
+    }
+
     /** 实际调用LLM，返回content或null */
     private String doChat(String prompt, int maxTokens)
-    {
-        try
+    {        try
         {
             String apiUrl = getApiUrl();
             String apiKey = getSecretConfig("ai.api_key");

@@ -24,6 +24,9 @@ public class PjmPayment extends BaseEntity
     private String payer;
     private String delFlag;
 
+    /** 回款凭证（多个url逗号分隔） */
+    private String voucherUrls;
+
     /** 关联查询字段 */
     private String projectName;
     private String projectNo;
@@ -31,6 +34,9 @@ public class PjmPayment extends BaseEntity
     /** 汇总字段 */
     private BigDecimal contractAmount;
     private BigDecimal receivedAmount;
+
+    /** 汇总字段：已开票金额（仅已开票状态，不含已作废） */
+    private BigDecimal invoicedAmount;
 
     public Long getPaymentId() { return paymentId; }
     public void setPaymentId(Long paymentId) { this.paymentId = paymentId; }
@@ -46,6 +52,8 @@ public class PjmPayment extends BaseEntity
     public void setPaymentDate(Date paymentDate) { this.paymentDate = paymentDate; }
     public String getPayer() { return payer; }
     public void setPayer(String payer) { this.payer = payer; }
+    public String getVoucherUrls() { return voucherUrls; }
+    public void setVoucherUrls(String voucherUrls) { this.voucherUrls = voucherUrls; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
     public String getProjectName() { return projectName; }
@@ -56,4 +64,6 @@ public class PjmPayment extends BaseEntity
     public void setContractAmount(BigDecimal contractAmount) { this.contractAmount = contractAmount; }
     public BigDecimal getReceivedAmount() { return receivedAmount; }
     public void setReceivedAmount(BigDecimal receivedAmount) { this.receivedAmount = receivedAmount; }
+    public BigDecimal getInvoicedAmount() { return invoicedAmount; }
+    public void setInvoicedAmount(BigDecimal invoicedAmount) { this.invoicedAmount = invoicedAmount; }
 }

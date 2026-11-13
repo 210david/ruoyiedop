@@ -115,7 +115,11 @@
           <el-table-column label="项目编号" prop="projectNo" key="projectNo" :width="colWidth('projectNo', 160)" resizable v-if="columns.projectNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.projectNo }}</span></template>
           </el-table-column>
-          <el-table-column label="项目名称" prop="projectName" key="projectName" :min-width="colWidth('projectName', 240)" resizable show-overflow-tooltip v-if="columns.projectName.visible" />
+          <el-table-column label="项目名称" prop="projectName" key="projectName" :min-width="colWidth('projectName', 240)" resizable show-overflow-tooltip v-if="columns.projectName.visible">
+            <template #default="{row}">
+              <el-link type="primary" underline="never" @click="handleView(row)" v-hasPermi="['pjm:project:query']">{{ row.projectName }}</el-link>
+            </template>
+          </el-table-column>
           <el-table-column label="类型" prop="projectType" key="projectType" :width="colWidth('projectType', 100)" resizable align="center" v-if="columns.projectType.visible">
             <template #default="scope">
               <span class="badge violet">{{ projectTypeLabel(scope.row.projectType) }}</span>
@@ -189,7 +193,7 @@
     </div>
 
     <!-- 新增/修改/详情弹框 -->
-    <el-dialog v-model="open" width="1100px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="calc(100vw - 172px)" top="3vh" append-to-body draggable class="rd-dialog pj-wide-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><el-icon :size="18"><FolderOpened /></el-icon></div>
@@ -214,8 +218,12 @@
                   </div>
                 </template>
                 <div class="dtab-body">
-                  <div class="form-section">
-                    <div class="form-section-title"><el-icon><Document /></el-icon>基础信息</div>
+                  <section class="rd-card">
+                    <div class="rd-card-header" @click="toggleCard('c0')">
+                      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基础信息</div>
+                      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c0 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+                    </div>
+                    <div class="rd-card-body" v-show="!collapsedCards.c0">
                     <el-row :gutter="20">
                       <el-col :span="12">
                         <el-form-item label="项目编号" prop="projectNo">
@@ -266,10 +274,15 @@
                         </el-form-item>
                       </el-col>
                     </el-row>
-                  </div>
+                    </div>
+                  </section>
 
-                  <div class="form-section">
-                    <div class="form-section-title"><el-icon><Calendar /></el-icon>计划与预算</div>
+                  <section class="rd-card">
+                    <div class="rd-card-header" @click="toggleCard('c1')">
+                      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划与预算</div>
+                      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+                    </div>
+                    <div class="rd-card-body" v-show="!collapsedCards.c1">
                     <el-row :gutter="20">
                       <el-col :span="12">
                         <el-form-item label="预算金额" prop="budgetAmount">
@@ -288,10 +301,15 @@
                         </el-form-item>
                       </el-col>
                     </el-row>
-                  </div>
+                    </div>
+                  </section>
 
-                  <div class="form-section">
-                    <div class="form-section-title"><el-icon><OfficeBuilding /></el-icon>工程信息</div>
+                  <section class="rd-card">
+                    <div class="rd-card-header" @click="toggleCard('c2')">
+                      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>工程信息</div>
+                      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+                    </div>
+                    <div class="rd-card-body" v-show="!collapsedCards.c2">
                     <el-row :gutter="20">
                       <el-col :span="12">
                         <el-form-item label="建设单位">
@@ -331,9 +349,7 @@
                       </el-col>
                       <el-col :span="12">
                         <el-form-item label="质量标准">
-                          <el-select v-model="form.qualityStandard" clearable style="width:100%">
-                            <el-option v-for="q in qualityOptions" :key="q.value" :label="q.label" :value="q.value" />
-                          </el-select>
+                          <el-input v-model="form.qualityStandard" maxlength="200" placeholder="如：符合《建筑工程施工质量验收统一标准》（GB50300-2013），一次验收合格" style="width:100%" />
                         </el-form-item>
                       </el-col>
                       <el-col :span="12">
@@ -353,14 +369,20 @@
                         </el-form-item>
                       </el-col>
                     </el-row>
-                  </div>
+                    </div>
+                  </section>
 
-                  <div class="form-section">
-                    <div class="form-section-title"><el-icon><Tickets /></el-icon>项目描述</div>
+                  <section class="rd-card">
+                    <div class="rd-card-header" @click="toggleCard('c3')">
+                      <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>项目描述</div>
+                      <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c3 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+                    </div>
+                    <div class="rd-card-body" v-show="!collapsedCards.c3">
                     <el-form-item label="项目描述">
                       <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入项目描述" />
                     </el-form-item>
-                  </div>
+                    </div>
+                  </section>
                 </div>
               </el-tab-pane>
 
@@ -385,7 +407,7 @@
                       <UploadFile
                         :model-value="getAttUrlList(t.value)"
                         @update:model-value="v => syncAttFromUpload(t.value, v)"
-                        :limit="20" :fileSize="100" :fileType="['pdf', 'docx', 'doc', 'txt', 'md', 'xlsx', 'xls']" />
+                        :limit="20" :fileSize="50" :fileType="['pdf', 'docx', 'doc', 'txt', 'md', 'xlsx', 'xls']" />
                     </el-tab-pane>
                   </el-tabs>
                   <div style="margin-top:12px; color:var(--ink-400); font-size:12px;">
@@ -406,8 +428,8 @@
                 <div class="dtab-body">
                   <div class="dtab-toolbar">
                     <div class="proc-tabs">
-                      <button v-for="t in peDetailTypeOptions" :key="t.value" type="button"
-                        :class="['proc-tab', 't' + t.value, { 'is-active': procActiveType === t.value }]"
+                      <button v-for="(t, ti) in procTypeOptions" :key="t.value" type="button"
+                        :class="['proc-tab', 't' + (ti % 6), { 'is-active': procActiveType === t.value }]"
                         @click="procActiveType = t.value">
                         <span class="dot"></span>
                         <span>{{ t.label }}</span>
@@ -425,24 +447,25 @@
                   </div>
                   <el-table :data="procRows" border size="small" class="app-table" :empty-text="'暂无' + procActiveTypeLabel + '明细，可点击右上角「新增一行」添加'">
                     <el-table-column type="index" label="#" width="48" align="center" />
-                    <el-table-column v-if="procActiveType === '1'" label="选择物料" min-width="260">
+                    <el-table-column label="物料" min-width="200">
                       <template #default="{row}">
-                        <el-input :model-value="row.itemName ? (row.itemCode ? row.itemCode + ' - ' + row.itemName : row.itemName) : ''" readonly size="small" placeholder="点击浏览选择物料" style="cursor:pointer" @click="openMaterialPicker(row)">
+                        <el-input :model-value="row.itemCode ? (row.itemName ? row.itemCode + ' - ' + row.itemName : row.itemCode) : ''" readonly size="small" placeholder="选择物料" style="cursor:pointer" @click="openMaterialPicker(row)">
                           <template #append>
                             <el-button v-if="row.materialId" icon="CircleClose" size="small" @click.stop="clearMaterial(row)" />
                             <el-button v-else icon="Search" size="small" @click.stop="openMaterialPicker(row)" />
                           </template>
                         </el-input>
-                        <div v-if="!row.itemName" style="margin-top:4px; font-size:12px; color:var(--ink-400);">
-                          或手动填写下方字段 →
-                        </div>
                       </template>
                     </el-table-column>
-                    <el-table-column label="物料编码" prop="itemCode" min-width="120">
-                      <template #default="{row}"><el-input v-model="row.itemCode" size="small" placeholder="手动填写" :disabled="!!row.materialId" /></template>
+                    <el-table-column label="名称/内容" prop="itemName" min-width="180">
+                      <template #default="{row}"><el-input v-model="row.itemName" size="small" placeholder="必填" :disabled="!!row.materialId" /></template>
                     </el-table-column>
-                    <el-table-column :label="procActiveType === '1' ? '物料名称' : '名称/内容'" prop="itemName" min-width="180">
-                      <template #default="{row}"><el-input v-model="row.itemName" size="small" placeholder="必填" /></template>
+                    <el-table-column label="物料类型" width="110">
+                      <template #default="{row}">
+                        <el-select v-model="row.materialType" size="small" style="width:100%" :disabled="!!row.materialId" placeholder="类型">
+                          <el-option v-for="d in wms_material_type" :key="d.value" :label="d.label" :value="String(d.value)" />
+                        </el-select>
+                      </template>
                     </el-table-column>
                     <el-table-column label="规格型号" prop="specModel" min-width="140">
                       <template #default="{row}"><el-input v-model="row.specModel" size="small" :disabled="!!row.materialId" /></template>
@@ -612,8 +635,14 @@
         </div>
       </el-form>
 
-      <!-- ★ AI 解析确认弹窗 -->
-      <el-dialog v-model="aiParseDialogOpen" width="680px" append-to-body class="rd-dialog" title="🤖 AI 自动解析">
+      <!-- ★ AI 解析确认弹窗（规范：rd-detail-header 蓝色横幅使白色关闭按钮可见；draggable 支持拖动标题移动；宽度 880px） -->
+      <el-dialog v-model="aiParseDialogOpen" width="880px" append-to-body draggable class="rd-dialog">
+        <template #header>
+          <div class="rd-detail-header">
+            <div class="rd-detail-header-icon"><el-icon :size="18"><MagicStick /></el-icon></div>
+            <span class="rd-detail-header-title">AI 自动解析</span>
+          </div>
+        </template>
         <el-form label-width="110px">
           <el-form-item label="附件类型">
             <el-select v-model="aiParseCurrentType" style="width:100%">
@@ -728,37 +757,236 @@
       </template>
     </el-dialog>
 
+    <!-- 查看详情弹框（规范第十节：查看与编辑弹窗分离，只读布局 rd-page + rd-card + rd-grid） -->
+    <el-dialog v-model="viewOpen" width="calc(100vw - 172px)" top="3vh" append-to-body draggable class="rd-dialog pj-wide-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="18"><FolderOpened /></el-icon></div>
+          <span class="rd-detail-header-title">项目详情</span>
+          <div class="rd-detail-header-sub" v-if="viewData.projectNo">
+            <span class="rd-detail-header-divider"></span>
+            <span class="rd-detail-header-no">{{ viewData.projectNo }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page">
+        <el-tabs v-model="viewTab" class="project-detail-tabs">
+          <el-tab-pane name="base">
+            <template #label>
+              <div class="dtab-label"><el-icon><Document /></el-icon><span>基本信息</span></div>
+            </template>
+            <div class="dtab-body" style="padding-top: 12px;">
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>基本信息</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">项目编号</span><div class="rd-value">{{ viewData.projectNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目名称</span><div class="rd-value">{{ viewData.projectName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目类型</span><div class="rd-value">{{ dictLabel(projectTypeOptions, viewData.projectType) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, viewData.engineeringCategory) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, viewData.priority) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ viewData.managerName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划与预算</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">计划开始</span><div class="rd-value">{{ viewData.startDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计划结束</span><div class="rd-value">{{ viewData.endDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">预算金额</span><div class="rd-value rd-amount">{{ viewData.budgetAmount != null ? '¥' + viewData.budgetAmount : '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>工程信息</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">建设单位</span><div class="rd-value">{{ viewData.ownerUnit || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">施工单位</span><div class="rd-value">{{ viewData.buildUnit || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">监理单位</span><div class="rd-value">{{ viewData.supervisorUnit || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">设计单位</span><div class="rd-value">{{ viewData.designUnit || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">工程地点</span><div class="rd-value">{{ viewData.projectAddress || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">建设规模</span><div class="rd-value">{{ viewData.buildScale || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同工期</span><div class="rd-value">{{ viewData.contractDuration != null ? viewData.contractDuration + ' 日历天' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">质量标准</span><div class="rd-value">{{ viewData.qualityStandard || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同总额</span><div class="rd-value rd-amount">{{ viewData.contractAmount != null ? '¥' + viewData.contractAmount : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">开工日期</span><div class="rd-value">{{ viewData.commenceDate || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计划竣工</span><div class="rd-value">{{ viewData.completionDate || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card" v-if="viewData.description">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>项目描述</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-value">{{ viewData.description }}</div>
+          </div>
+        </section>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane name="attach">
+            <template #label>
+              <div class="dtab-label"><el-icon><Paperclip /></el-icon><span>资料清单</span><span v-if="(viewData.attachmentList || []).length > 0" class="dtab-badge">{{ (viewData.attachmentList || []).length }}</span></div>
+            </template>
+            <div class="dtab-body">
+              <!-- 按附件类型分类显示（与新增页一致的内层 border-card 页签） -->
+              <el-tabs v-model="viewAttachType" type="border-card" class="attach-inner-tabs">
+                <el-tab-pane v-for="t in attachmentTypeOptions" :key="t.value" :label="t.label" :name="t.value">
+                  <el-table :data="(viewData.attachmentList || []).filter(a => String(a.attachmentType) === t.value)" border size="small" class="app-table" :empty-text="'暂无' + t.label">
+                    <el-table-column type="index" label="#" width="48" align="center" />
+                    <el-table-column label="文件名" prop="fileName" min-width="320" show-overflow-tooltip />
+                    <el-table-column label="大小" width="110" align="right">
+                      <template #default="{row}">{{ row.fileSize != null ? (row.fileSize / 1024).toFixed(0) + ' KB' : '-' }}</template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="140" align="center">
+                      <template #default="{row}">
+                        <el-button link type="primary" icon="View" @click="handleDetailPreview(row)">预览</el-button>
+                        <el-button link type="success" icon="Download" @click="handleDetailDownload(row)">下载</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </el-tab-pane>
+              </el-tabs>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane name="proc">
+            <template #label>
+              <div class="dtab-label"><el-icon><Goods /></el-icon><span>采购清单</span><span v-if="(viewData.procurementList || []).length > 0" class="dtab-badge">{{ (viewData.procurementList || []).length }}</span></div>
+            </template>
+            <div class="dtab-body">
+              <el-table :data="viewData.procurementList || []" border size="small" class="app-table" empty-text="暂无采购明细">
+                <el-table-column type="index" label="#" width="48" align="center" />
+                <el-table-column label="物料类型" width="120">
+                  <template #default="{row}">{{ (wms_material_type.find(d => d.value === String(row.materialType)) || {}).label || '未分类' }}</template>
+                </el-table-column>
+                <el-table-column label="物料名称" prop="itemName" min-width="180" show-overflow-tooltip />
+                <el-table-column label="规格型号" prop="specModel" min-width="120" show-overflow-tooltip />
+                <el-table-column label="单位" prop="unit" width="80" align="center" />
+                <el-table-column label="数量" prop="qty" width="90" align="right" />
+                <el-table-column label="单价(元)" width="110" align="right">
+                  <template #default="{row}">{{ row.unitPrice != null ? Number(row.unitPrice).toLocaleString() : '-' }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane name="team">
+            <template #label>
+              <div class="dtab-label"><el-icon><User /></el-icon><span>项目成员</span><span v-if="(viewData.memberList || []).length > 0" class="dtab-badge">{{ (viewData.memberList || []).length }}</span></div>
+            </template>
+            <div class="dtab-body">
+              <el-table :data="viewData.memberList || []" border size="small" class="app-table" empty-text="暂无项目团队成员">
+                <el-table-column type="index" label="#" width="48" align="center" />
+                <el-table-column label="姓名" prop="userName" min-width="120" />
+                <el-table-column label="角色" width="140" align="center">
+                  <template #default="{row}">{{ teamRoleLabel(row.roleType) }}</template>
+                </el-table-column>
+                <el-table-column label="所属部门" prop="deptName" min-width="140" show-overflow-tooltip />
+                <el-table-column label="加入日期" prop="joinDate" width="120" align="center" />
+              </el-table>
+            </div>
+          </el-tab-pane>
+
+          <el-tab-pane name="wbs">
+            <template #label>
+              <div class="dtab-label"><el-icon><List /></el-icon><span>WBS 任务分解</span><span v-if="(viewData.wbsTaskList || []).length > 0" class="dtab-badge">{{ (viewData.wbsTaskList || []).length }}</span></div>
+            </template>
+            <div class="dtab-body">
+              <el-table :data="viewData.wbsTaskList || []" border size="small" class="app-table" empty-text="暂无 WBS 任务">
+                <el-table-column type="index" label="#" width="48" align="center" />
+                <el-table-column label="任务名称" prop="taskName" min-width="200" show-overflow-tooltip />
+                <el-table-column label="负责人" prop="ownerName" width="110" />
+                <el-table-column label="计划开始" prop="planStartDate" width="110" align="center" />
+                <el-table-column label="计划结束" prop="planEndDate" width="110" align="center" />
+                <el-table-column label="进度%" prop="progress" width="90" align="right" />
+              </el-table>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+      <template #footer>
+        <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 附件预览（全站统一 FilePreview 组件） -->
+    <file-preview ref="detailFilePreviewRef" />
+
     <!-- 审批弹框 -->
-    <el-dialog v-model="auditOpen" width="540px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="auditOpen" width="880px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><el-icon :size="18"><Stamp /></el-icon></div>
           <span class="rd-detail-header-title">项目审批</span>
-          <template v-if="form.projectName">
+          <template v-if="auditProjectData.projectNo">
             <span class="rd-detail-header-divider"></span>
-            <span class="rd-detail-header-no">{{ form.projectName }}</span>
+            <span class="rd-detail-header-no">{{ auditProjectData.projectNo }} {{ auditProjectData.projectName }}</span>
           </template>
         </div>
       </template>
       <div class="rd-page">
+        <!-- 项目信息（审批人核对用，getProject 全量只读） -->
         <section class="rd-card">
-          <div class="rd-card-body">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>项目信息</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">项目编号</span><div class="rd-value">{{ auditProjectData.projectNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目名称</span><div class="rd-value">{{ auditProjectData.projectName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目类型</span><div class="rd-value">{{ dictLabel(projectTypeOptions, auditProjectData.projectType) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, auditProjectData.engineeringCategory) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, auditProjectData.priority) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ auditProjectData.managerName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ auditProjectData.deptName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">建设单位</span><div class="rd-value">{{ auditProjectData.ownerUnit || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>计划与金额</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">预算金额</span><div class="rd-value rd-amount">{{ auditProjectData.budgetAmount != null ? '¥' + auditProjectData.budgetAmount : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同总额</span><div class="rd-value rd-amount">{{ auditProjectData.contractAmount != null ? '¥' + auditProjectData.contractAmount : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">合同工期</span><div class="rd-value">{{ auditProjectData.contractDuration != null ? auditProjectData.contractDuration + ' 日历天' : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">质量标准</span><div class="rd-value">{{ auditProjectData.qualityStandard || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">工程地点</span><div class="rd-value">{{ auditProjectData.projectAddress || '-' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">建设规模</span><div class="rd-value">{{ auditProjectData.buildScale || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <!-- 审批意见（通过/驳回由底部按钮决定，驳回必填意见） -->
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>审批意见</div>
+          </div>
+          <div class="rd-card-body" style="display:block">
             <el-form label-width="90px">
-              <el-form-item label="审批结果">
-                <el-radio-group v-model="auditStatus">
-                  <el-radio value="2">通过</el-radio>
-                  <el-radio value="7">驳回</el-radio>
-                </el-radio-group>
-              </el-form-item>
               <el-form-item label="审批意见">
-                <el-input v-model="auditOpinion" type="textarea" :rows="3" placeholder="请输入审批意见" />
+                <el-input v-model="auditOpinion" type="textarea" :rows="3" placeholder="通过时可填写审批备注；驳回时必填驳回原因" />
               </el-form-item>
             </el-form>
           </div>
         </section>
       </div>
       <template #footer>
-        <el-button type="primary" @click="submitAudit">提 交</el-button>
+        <el-button type="success" @click="submitAudit(true)">通 过</el-button>
+        <el-button type="danger" @click="submitAudit(false)">驳 回</el-button>
         <el-button @click="auditOpen = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -782,16 +1010,16 @@
         </el-alert>
         <el-table :data="peItems" border size="small" class="app-table">
           <el-table-column type="index" label="#" width="46" align="center" />
-          <el-table-column label="明细类型" prop="detailType" width="110" align="center">
+          <el-table-column label="物料类型" width="120" align="center">
             <template #default="{row}">
-              <el-select v-model="row.detailType" size="small" style="width:92px" @change="onPeDetailTypeChange(row)">
-                <el-option v-for="d in peDetailTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
+              <el-select v-model="row.materialType" size="small" style="width:100px" @change="onPeMaterialTypeChange(row)">
+                <el-option v-for="d in wms_material_type" :key="d.value" :label="d.label" :value="String(d.value)" />
               </el-select>
             </template>
           </el-table-column>
           <el-table-column label="物料名称/内容" min-width="250" show-overflow-tooltip>
             <template #default="{row, $index}">
-              <el-input v-if="row.detailType === '1'" :model-value="row.itemName ? (row.itemCode ? row.itemCode + ' - ' + row.itemName : row.itemName) : ''" readonly size="small" placeholder="点击浏览选择物料" style="cursor:pointer" @click="openPeMaterialPicker($index)">
+              <el-input v-if="row.materialId" :model-value="row.itemName ? (row.itemCode ? row.itemCode + ' - ' + row.itemName : row.itemName) : ''" readonly size="small" placeholder="点击浏览选择物料" style="cursor:pointer" @click="openPeMaterialPicker($index)">
                 <template #append>
                   <el-button v-if="row.materialId" icon="CircleClose" size="small" @click.stop="clearPeMaterial($index)" />
                   <el-button v-else icon="Search" size="small" @click.stop="openPeMaterialPicker($index)" />
@@ -812,26 +1040,24 @@
           <el-table-column label="需求数量" prop="needQty" width="100" align="right" class-name="col-num" />
           <el-table-column label="可用库存" width="110" align="right" class-name="col-num">
             <template #default="{row}">
-              <span v-if="row.detailType !== '1'" class="muted-dash">—</span>
+              <span v-if="!row.materialId" class="muted-dash">—</span>
               <span v-else-if="!row.materialId" class="muted-dash">未关联物料</span>
               <el-tag v-else :type="row.availQty > 0 ? 'success' : 'info'" size="small" effect="light">{{ row.availQty }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="出库数量" width="130" align="center">
             <template #default="{row}">
-              <el-input-number v-if="row.detailType === '1'" v-model="row.outboundQty" :min="0" :max="Math.min(row.needQty, row.availQty)" :precision="2"
+              <el-input-number v-if="row.materialId" v-model="row.outboundQty" :min="0" :max="Math.min(row.needQty, row.availQty)" :precision="2"
                 :disabled="!row.materialId || row.availQty <= 0" controls-position="right" size="small" style="width:100%"
                 @change="onPeOutboundChange(row)" />
               <span v-else class="muted-dash">—</span>
             </template>
           </el-table-column>
-          <el-table-column label="出库仓库" width="120" align="center">
-            <template #default="{row, $index}">
-              <span v-if="row.detailType !== '1' || !row.materialId" class="muted-dash">—</span>
+          <el-table-column label="出库仓库" width="130" align="center">
+            <template #default="{row}">
+              <span v-if="!row.materialId || Number(row.outboundQty) <= 0" class="muted-dash">—</span>
               <el-tooltip v-else :content="peAllocText(row)" placement="top" :disabled="!row.outboundAlloc || !row.outboundAlloc.length">
-                <el-button link type="primary" size="small" :disabled="row.availQty <= 0" @click="openPeAlloc($index)">
-                  {{ row.outboundAlloc && row.outboundAlloc.length ? row.outboundAlloc.length + ' 个仓' : '出库分配' }}
-                </el-button>
+                <span style="font-size:12px;color:#409eff;">{{ row.outboundAlloc && row.outboundAlloc.length ? '自动 ' + row.outboundAlloc.length + ' 个仓' : '自动分配' }}</span>
               </el-tooltip>
             </template>
           </el-table-column>
@@ -852,10 +1078,7 @@
           </el-table-column>
         </el-table>
         <div style="margin-top:10px;">
-          <el-button type="primary" plain icon="Plus" size="small" @click="addPeItem('1')">+ 物料明细</el-button>
-          <el-button type="warning" plain icon="User" size="small" @click="addPeItem('2')">+ 劳务外包</el-button>
-          <el-button type="success" plain icon="Monitor" size="small" @click="addPeItem('3')">+ 机械设备</el-button>
-          <el-button plain icon="MoreFilled" size="small" @click="addPeItem('4')">+ 其他</el-button>
+          <el-button type="primary" plain icon="Plus" size="small" @click="addPeItem('')">+ 新增一行</el-button>
           <span style="margin-left:12px;color:#909399;font-size:12px;">提示：物料明细行可从系统物料库浏览选择；劳务/设备/其他为非物料行，直接手填内容</span>
         </div>
 
@@ -863,16 +1086,8 @@
         <div v-if="peHasOutbound" class="pe-section">
           <div class="pe-section-title">📦 出库设置（生成 WMS 领料出库单，草稿状态）</div>
           <el-form label-width="110px" inline>
-            <el-form-item label="默认出库仓库">
-              <el-select v-model="peWarehouseId" placeholder="未单独分配的行使用此仓库" style="width:320px" filterable clearable>
-                <el-option v-for="w in peWarehouseOptions" :key="w.warehouseId" :value="w.warehouseId" :label="w.warehouseName">
-                  <span>{{ w.warehouseName }}</span>
-                  <el-tag :type="w.sufficient ? 'success' : 'danger'" size="small" effect="plain" style="float:right;margin-left:8px;">
-                    {{ w.sufficient ? '库存充足' : '库存不足' }}
-                  </el-tag>
-                </el-option>
-              </el-select>
-              <span class="pe-section-hint">物料在多个仓库有库存时，点击明细行「出库分配」按仓库拆分出库数量，每个仓库生成一张出库单</span>
+            <el-form-item label="出库仓库">
+              <span class="pe-section-hint">系统自动按各仓库可用库存分配：优先单个仓库足量出库，单仓不足时自动跨仓库拆分出库（每个仓库生成一张出库单），无需手动选择仓库</span>
             </el-form-item>
           </el-form>
         </div>
@@ -968,22 +1183,32 @@ import UserPicker from '@/components/UserPicker/index.vue'
 import UploadFile from '@/components/FileUpload/index.vue'
 import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import { CircleClose } from '@element-plus/icons-vue'
+import { downloadFile } from '@/utils/downloadFile'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 
 // ★ 字典：wms_unit 单位字典 + pjm_engineering_category 工程类别字典 + pjm_purchase_detail_type 采购明细类型 + pjm_project_attachment_type 附件类型
-const { wms_unit, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
+const { wms_unit, wms_material_type, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
 const engineeringCategoryOptions = pjm_engineering_category
 const peDetailTypeOptions = computed(() => (pjm_purchase_detail_type.value || []).map(d => ({ ...d, value: String(d.value) })))
+// ★ 采购清单页签：按物料类型（wms_material_type 字典）动态分类统计，替代写死的明细类型
+const procTypeOptions = computed(() => {
+  const opts = (wms_material_type.value || []).map(d => ({ value: String(d.value), label: d.label }))
+  if ((form.procurementList || []).some(p => p.materialType == null || p.materialType === '')) {
+    opts.push({ value: '', label: '未分类' })
+  }
+  return opts
+})
+const procTypeKey = (p) => (p.materialType == null || p.materialType === '') ? '' : String(p.materialType)
 const engCatLabel = (v) => engineeringCategoryOptions.find(x => String(x.value) === String(v))?.label || v || '-'
 const unitDictLabel = (v) => {
   if (v == null || v === '') return ''
   const item = wms_unit.value?.find(d => String(d.value) === String(v))
   return item ? item.label : String(v)
 }
-const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'])
+const { collapsedCards, toggleCard } = useDetailCard(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pjm_project_index')
 
 const loading = ref(true)
@@ -997,6 +1222,12 @@ const projectList = ref([])
 const userOptions = ref([])
 const open = ref(false)
 const auditOpen = ref(false)
+const auditProjectData = ref({})      // 审批弹窗的项目全量信息（getProject 拉取）
+const viewOpen = ref(false)
+const viewData = ref({})
+const viewTab = ref('base')            // 详情弹窗当前页签
+const viewAttachType = ref('1')        // 详情弹窗资料清单内层分类页签
+const detailFilePreviewRef = ref(null) // 详情弹窗附件预览（全站统一 FilePreview 组件）
 const auditStatus = ref('2')
 const auditOpinion = ref('')
 const title = ref('')
@@ -1169,7 +1400,7 @@ function handleAdd() {
   form.procurementList = []
   form.memberList = []
   form.wbsTaskList = []
-  procActiveType.value = '1'
+  procActiveType.value = '0'
   detailTab.value = 'base'
   aiParseResult.value = null
   aiParseLoading.value = false
@@ -1204,8 +1435,30 @@ function handleUpdate(row) {
 }
 
 function handleView(row) {
-  title.value = '项目详情'
-  getProject(row.projectId).then(res => { Object.assign(form, res.data); open.value = true })
+  getProject(row.projectId).then(res => {
+    viewData.value = res.data || {}
+    viewTab.value = 'base'
+    viewAttachType.value = '1'
+    viewOpen.value = true
+  })
+}
+
+// 字典值转标签（查看弹窗用）
+function dictLabel(options, value) {
+  if (value == null || value === '') return ''
+  const hit = (options.value || options || []).find(d => String(d.value) === String(value))
+  return hit ? hit.label : String(value)
+}
+
+/** 附件安全访问 URL（落盘文件为加密存储，经后端 /common/file/access 解密输出，与 FileUpload 组件预览同通道） */
+/** 详情弹窗附件预览（全站统一 FilePreview 组件：office 转 PDF/图片/文本在线预览，弹窗内自带下载按钮） */
+function handleDetailPreview(row) {
+  detailFilePreviewRef.value?.open(row.fileUrl, row.fileName)
+}
+
+/** 详情弹窗附件下载（全站统一 downloadFile 工具） */
+function handleDetailDownload(row) {
+  downloadFile(row.fileUrl)
 }
 
 function cancel() { open.value = false }
@@ -1226,8 +1479,13 @@ function handleExport() {
 }
 
 function handleAudit(row) {
-  Object.assign(form, row)
-  auditOpen.value = true; auditStatus.value = '2'; auditOpinion.value = ''
+  getProject(row.projectId).then(res => {
+    auditProjectData.value = res.data || {}
+    form.projectId = row.projectId
+    form.projectNo = auditProjectData.value.projectNo
+    form.projectName = auditProjectData.value.projectName
+    auditOpen.value = true; auditStatus.value = '2'; auditOpinion.value = ''
+  })
 }
 
 /** 草稿/驳回 → 提交审批 */
@@ -1237,9 +1495,14 @@ function handleSubmitAudit(row) {
   }).catch(() => {})
 }
 
-function submitAudit() {
-  auditProject(form.projectId, auditStatus.value, auditOpinion.value).then(() => {
-    ElMessage.success('审批成功'); auditOpen.value = false; handleQuery()
+function submitAudit(pass) {
+  const status = pass ? '2' : '7'
+  if (!pass && !auditOpinion.value.trim()) {
+    ElMessage.warning('驳回时请填写审批意见，说明驳回原因')
+    return
+  }
+  auditProject(form.projectId, status, auditOpinion.value).then(() => {
+    ElMessage.success(pass ? '审批通过' : '已驳回，项目退回为草稿状态'); auditOpen.value = false; handleQuery()
   })
 }
 
@@ -1277,6 +1540,10 @@ function getAttUrlList(type) {
 
 /** UploadFile emit 回 url 数组后，合并回对象数组（保留已有的 attachmentId/name；新增的从 url 末段取文件名） */
 function syncAttFromUpload(type, urlList) {
+  // UploadFile 组件 emit 的是逗号拼接字符串（listToString 结果），须先归一化为数组，否则 .map 会抛错并中断组件的 closeLoading
+  const urls = Array.isArray(urlList)
+    ? urlList
+    : String(urlList || '').split(',').map(u => u.trim()).filter(Boolean)
   const arr = attFileGroups[type] || []
   // 旧表按 url 建索引
   const oldMap = new Map()
@@ -1284,7 +1551,7 @@ function syncAttFromUpload(type, urlList) {
     const u = typeof f === 'string' ? f : f.url
     if (u) oldMap.set(u, f)
   })
-  attFileGroups[type] = (urlList || []).map(url => {
+  attFileGroups[type] = urls.map(url => {
     if (oldMap.has(url)) {
       const old = oldMap.get(url)
       return typeof old === 'string'
@@ -1423,7 +1690,14 @@ function doAiParse() {
       ElMessage.error(res.msg || 'AI 解析失败')
     }
   }).catch(err => {
-    ElMessage.error('AI 解析接口异常：' + (err?.message || '未知错误'))
+    const msg = err?.message || ''
+    if (msg.includes('timeout')) {
+      ElMessage.error('解析耗时超过 2 分钟仍未返回，可能是网络波动或 AI 服务繁忙，请点击「开始解析」重试')
+    } else if (msg.includes('Network Error') || msg.includes('NetworkError')) {
+      ElMessage.error('网络连接异常，请检查网络后点击「开始解析」重试')
+    } else {
+      ElMessage.error('AI 解析服务暂时不可用，请点击「开始解析」重试；若多次失败请联系管理员')
+    }
   }).finally(() => { aiParseLoading.value = false })
 }
 
@@ -1442,7 +1716,12 @@ function applyAiParseResult() {
     if (p.designUnit) form.designUnit = p.designUnit
     if (p.projectAddress) form.projectAddress = p.projectAddress
     if (p.buildScale) form.buildScale = p.buildScale
-    if (p.contractAmount != null) form.contractAmount = Number(p.contractAmount)
+    if (p.contractAmount != null) {
+      form.contractAmount = Number(p.contractAmount)
+    } else if (p.budgetAmount != null) {
+      // 招标文件通常只有预算金额/最高限价，无合同金额（签约时才确定）；招标阶段默认取预算金额
+      form.contractAmount = Number(p.budgetAmount)
+    }
     if (p.budgetAmount != null) form.budgetAmount = Number(p.budgetAmount)
     if (p.contractDuration != null) form.contractDuration = Number(p.contractDuration)
     if (p.startDate) form.startDate = p.startDate
@@ -1456,6 +1735,7 @@ function applyAiParseResult() {
   if (aiSelectedProcurement.value.length > 0) {
     form.procurementList = aiSelectedProcurement.value.map(x => ({
       detailType: '1',
+      materialType: x.materialType != null ? String(x.materialType) : '',
       itemCode: x.itemCode || '',
       itemName: x.itemName || '',
       specModel: x.specModel || '',
@@ -1481,16 +1761,18 @@ function applyAiParseResult() {
     return
   }
   aiParseDialogOpen.value = false
+  // 填入成功后自动切换到基本信息页签，避免用户手动翻找核对
+  detailTab.value = 'base'
   ElMessage.success(`已填入 ${appliedCount} 项内容，请核对后提交`)
 }
 
 /** 编辑时从后端回填附件 */
 function handleUpdateAttachmentsAndProcurement(resData) {
   syncAttachmentFromBackend(resData.attachmentList || [])
-  form.procurementList = (resData.procurementList || []).map(p => ({ ...p, detailType: p.detailType || '1' }))
-  // 默认定位到第一个有数据的明细类型页签
-  const firstHasData = peDetailTypeOptions.value.find(t => form.procurementList.some(p => p.detailType === t.value))
-  procActiveType.value = firstHasData ? firstHasData.value : '1'
+  form.procurementList = (resData.procurementList || []).map(p => ({ ...p, detailType: p.detailType || '1', materialType: p.materialType != null ? String(p.materialType) : '' }))
+  // 默认定位到第一个有数据的物料类型页签
+  const firstHasData = procTypeOptions.value.find(t => form.procurementList.some(p => procTypeKey(p) === t.value))
+  procActiveType.value = firstHasData ? firstHasData.value : (procTypeOptions.value[0]?.value ?? '0')
   form.memberList = resData.memberList || []
   form.wbsTaskList = resData.wbsTaskList || []
 }
@@ -1550,15 +1832,15 @@ const procurementTotal = computed(() => {
   return sum.toFixed(2)
 })
 
-/** 采购清单当前页签的明细行（按明细类型过滤，历史数据缺省为物料明细） */
-const procRows = computed(() => (form.procurementList || []).filter(p => (p.detailType || '1') === procActiveType.value))
+/** 采购清单当前页签的明细行（按物料类型过滤） */
+const procRows = computed(() => (form.procurementList || []).filter(p => procTypeKey(p) === procActiveType.value))
 
-/** 各明细类型的条数 */
+/** 各物料类型的条数 */
 const procTypeCounts = computed(() => {
   const counts = {}
-  peDetailTypeOptions.value.forEach(t => { counts[t.value] = 0 })
+  procTypeOptions.value.forEach(t => { counts[t.value] = 0 })
   ;(form.procurementList || []).forEach(p => {
-    const k = p.detailType || '1'
+    const k = procTypeKey(p)
     if (counts[k] !== undefined) counts[k]++
   })
   return counts
@@ -1575,13 +1857,13 @@ const procActiveTotal = computed(() => {
 
 /** 当前页签名称 */
 const procActiveTypeLabel = computed(() => {
-  const t = peDetailTypeOptions.value.find(d => d.value === procActiveType.value)
+  const t = procTypeOptions.value.find(d => d.value === procActiveType.value)
   return t ? t.label : '明细'
 })
 
 function addProcurementRow() {
   if (!form.procurementList) form.procurementList = []
-  form.procurementList.push({ detailType: procActiveType.value, itemCode: '', itemName: '', specModel: '', unit: '', qty: null, unitPrice: null })
+  form.procurementList.push({ detailType: '1', materialType: procActiveType.value || '', itemCode: '', itemName: '', specModel: '', unit: '', qty: null, unitPrice: null })
 }
 
 function removeProcurementRow(row) {
@@ -1619,6 +1901,7 @@ function onMaterialPickerConfirm(material) {
   row.itemName = material.materialName
   row.specModel = material.specModel
   row.unit = material.unit
+  row.materialType = material.materialType != null ? String(material.materialType) : row.materialType
   ElMessage.success(`已关联物料：${material.materialCode} ${material.materialName}`)
 }
 
@@ -1726,15 +2009,27 @@ function openPeAlloc(index) {
   peAllocRows.value = whRows
   peAllocOpen.value = true
 }
-/** 按仓库库存顺序自动分配 */
-function autoAllocPe() {
-  let remain = peAllocNeedQty.value
-  peAllocRows.value.forEach(w => {
+/** ★ 出库仓库自动分配：按各仓库可用库存贪心拆分（单仓足量优先，不足自动跨仓累加） */
+function autoAllocPe(row) {
+  const rows = peStockRows.value
+    .filter(s => s.materialId === row.materialId)
+    .reduce((arr, s) => {
+      const hit = arr.find(x => x.warehouseId === s.warehouseId)
+      if (hit) hit.availQty += Number(s.availQty || 0)
+      else arr.push({ warehouseId: s.warehouseId, warehouseName: s.warehouseName || ('仓库' + s.warehouseId), availQty: Number(s.availQty || 0), qty: 0 })
+      return arr
+    }, [])
+    .sort((a, b) => (Number(b.availQty) || 0) - (Number(a.availQty) || 0))
+  let remain = Number(row.outboundQty) || 0
+  rows.forEach(w => {
     const take = Math.min(remain, Number(w.availQty) || 0)
     w.qty = Math.max(0, Math.round(take * 100) / 100)
     remain = Math.round((remain - w.qty) * 100) / 100
   })
+  row.outboundAlloc = rows.filter(w => Number(w.qty) > 0)
+    .map(w => ({ warehouseId: w.warehouseId, warehouseName: w.warehouseName, qty: Number(w.qty) }))
 }
+
 /** 确认分配 → 回写该行出库数量与仓库明细 */
 function confirmPeAlloc() {
   const row = peItems.value[peAllocRowIndex.value]
@@ -1762,14 +2057,19 @@ function openPurchaseExecute() {
   }
   peItems.value = rows.map(p => ({
     detailType: p.detailType || '1',
+    materialType: p.materialType != null ? String(p.materialType) : '',
     materialId: p.materialId || null,
     itemCode: p.itemCode, itemName: p.itemName, specModel: p.specModel, unit: p.unit,
     needQty: Number(p.qty), availQty: 0, outboundQty: 0, purchaseQty: Number(p.qty),
     unitPrice: p.unitPrice
   }))
-  peWarehouseId.value = null
+  // ★ 出库仓库自动分配：库存加载后按各仓库可用库存自动拆分
+  peItems.value.forEach(r => { if (Number(r.outboundQty) > 0 && r.materialId) autoAllocPe(r) })
   peMode.value = '1'
-  peTitle.value = ''
+  // ★ 申请标题默认值：项目名称-采购申请-日期（可手动修改）
+  const _d = new Date()
+  const _today = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0')
+  peTitle.value = form.projectName ? `${form.projectName}-采购申请-${_today}` : ''
   peExpectDate.value = null
   peStockRows.value = []
   peOpen.value = true
@@ -1795,29 +2095,27 @@ function openPurchaseExecute() {
   }).finally(() => { peLoading.value = false })
 }
 
-/** 出库数量变化 → 采购数量 = 需求 - 出库（手动修改后清空仓库分配，按默认仓库出库） */
+/** 出库数量变化 → 采购数量 = 需求 - 出库；清空分配后按各仓库可用库存自动重新分配 */
 function onPeOutboundChange(row) {
   const max = Math.min(row.needQty, row.availQty)
   if (Number(row.outboundQty) > max) row.outboundQty = max
   if (Number(row.outboundQty) < 0 || row.outboundQty == null) row.outboundQty = 0
   row.outboundAlloc = null
   row.purchaseQty = Math.round((row.needQty - Number(row.outboundQty)) * 100) / 100
+  autoAllocPe(row)
 }
 
 // ====== ★ 采购明细类型相关函数 ======
 /** 明细类型切换 — 物料明细才查库存/走出库；其他 3 类一律只走采购 */
-function onPeDetailTypeChange(row) {
+function onPeMaterialTypeChange(row) {
   row.outboundAlloc = null
-  if (row.detailType === '1') {
-    // 切回物料明细：如果有 materialId 重新查库存
-    row.outboundQty = 0
-    row.purchaseQty = Number(row.needQty) || 0
-  } else {
-    // 非物料行：清空出库/库存，全部计入采购
+  if (row.materialId) {
+    // 类型切换后解除物料关联，需重新选择对应类型的物料
     row.materialId = null; row.itemCode = ''; row.specModel = ''; row.unit = ''
     row.availQty = 0; row.outboundQty = 0
-    row.purchaseQty = Number(row.needQty) || 0
+    ElMessage.info('物料类型已切换，请重新选择物料')
   }
+  row.purchaseQty = Number(row.needQty) || 0
 }
 /** 打开物料浏览框（peItems 某行） */
 function openPeMaterialPicker(index) {
@@ -1849,6 +2147,7 @@ function onPeMaterialPickerConfirm(material) {
   row.itemName = material.materialName
   row.specModel = material.specModel
   row.unit = material.unit
+  row.materialType = material.materialType != null ? String(material.materialType) : row.materialType
   row.outboundAlloc = null
   // 刷新库存（重新拉取该物料所有仓库库存，确保跨仓库分配可用）
   if (material.materialId) {
@@ -1862,9 +2161,9 @@ function onPeMaterialPickerConfirm(material) {
   }
 }
 /** 新增一行明细 */
-function addPeItem(detailType) {
+function addPeItem(materialType) {
   peItems.value.push({
-    detailType, materialId: null,
+    detailType: '1', materialType: materialType || '', materialId: null,
     itemCode: '', itemName: '', specModel: '', unit: '',
     needQty: 1, availQty: 0, outboundQty: 0, purchaseQty: 1,
     unitPrice: 0
@@ -1886,18 +2185,12 @@ function submitPurchaseExecute() {
       r.outboundAlloc.forEach(a => {
         if (Number(a.qty) > 0) outboundItems.push({ ...base, qty: a.qty, warehouseId: a.warehouseId })
       })
-    } else {
-      outboundItems.push({ ...base, qty: r.outboundQty, warehouseId: peWarehouseId.value })
     }
   }
   const purchaseItems = peItems.value.filter(r => Number(r.purchaseQty) > 0).map(r => ({
     materialId: r.materialId, materialCode: r.itemCode, materialName: r.itemName,
     specModel: r.specModel, unit: r.unit, qty: r.purchaseQty, estimatedPrice: r.unitPrice
   }))
-  if (outboundItems.length > 0 && outboundItems.some(i => !i.warehouseId)) {
-    ElMessage.warning('请为出库明细分配出库仓库，或在出库设置中选择默认仓库')
-    return
-  }
   if (purchaseItems.length > 0 && !peMode.value) {
     ElMessage.warning('请选择采购模式')
     return
@@ -1905,7 +2198,6 @@ function submitPurchaseExecute() {
   peExecuting.value = true
   executeProjectPurchase({
     projectId: form.projectId,
-    warehouseId: peWarehouseId.value,
     outboundItems,
     purchaseMode: peMode.value,
     purchaseTitle: peTitle.value || null,
@@ -1955,10 +2247,12 @@ function submitPurchaseExecute() {
 .proc-tab:hover { border-color: #c7d2fe; color: #4338ca; }
 .proc-tab.is-active { border-color: #a5b4fc; background: #eef2ff; color: #4338ca; font-weight: 600; }
 .proc-tab.is-active .count { background: #fff; color: #4f46e5; }
-.proc-tab.t1 .dot { background: #6366f1; }
-.proc-tab.t2 .dot { background: #f59e0b; }
-.proc-tab.t3 .dot { background: #10b981; }
-.proc-tab.t4 .dot { background: #94a3b8; }
+.proc-tab.t0 .dot { background: #6366f1; }
+.proc-tab.t1 .dot { background: #f59e0b; }
+.proc-tab.t2 .dot { background: #10b981; }
+.proc-tab.t3 .dot { background: #94a3b8; }
+.proc-tab.t4 .dot { background: #ec4899; }
+.proc-tab.t5 .dot { background: #14b8a6; }
 
 /* ★ 详情区外层 el-tabs（工单详情式页签） */
 .detail-tabs {
@@ -1977,20 +2271,29 @@ function submitPurchaseExecute() {
 }
 .project-detail-tabs :deep(.el-tabs__nav-wrap::after) { height: 1px; background: #e5e7eb; }
 .project-detail-tabs :deep(.el-tabs__item) {
-  height: 44px;
-  line-height: 44px;
+  height: 40px;
+  line-height: 40px;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink-500);
-  padding: 0 18px;
+  padding: 0 12px;
+  margin: 6px 6px 0;
+  min-width: 140px;
+  text-align: center;
+  border-radius: 8px 8px 0 0;
+  transition: background .2s, color .2s;
 }
-.project-detail-tabs :deep(.el-tabs__item:hover) { color: var(--brand-600); }
-.project-detail-tabs :deep(.el-tabs__item.is-active) { color: var(--brand-600); font-weight: 600; }
-.project-detail-tabs :deep(.el-tabs__active-bar) {
-  height: 2px;
-  background: var(--brand-600);
-  border-radius: 2px 2px 0 0;
+.project-detail-tabs :deep(.el-tabs__item:hover) { color: var(--brand-600); background: #f5f8ff; }
+/* 激活页签：浅蓝底 + 品牌蓝字 + 底部强调线，轻量突出（新增/详情弹窗共用） */
+.project-detail-tabs :deep(.el-tabs__item.is-active) {
+  color: var(--brand-600);
+  font-weight: 600;
+  background: #e8f1ff;
+  border-bottom: 2px solid var(--brand-600);
 }
+.project-detail-tabs :deep(.el-tabs__item.is-active:hover) { color: var(--brand-600); background: #e8f1ff; }
+.project-detail-tabs :deep(.el-tabs__item.is-active .dtab-badge) { background: #fff; color: var(--brand-600); }
+.project-detail-tabs :deep(.el-tabs__active-bar) { display: none; }
 .project-detail-tabs :deep(.el-tabs__content) { padding: 0; }
 .project-detail-tabs :deep(.el-tab-pane) { padding: 0; }
 
@@ -2055,4 +2358,30 @@ function submitPurchaseExecute() {
 
 /* 内部附件 border-card tabs 修正 */
 .attach-inner-tabs :deep(.el-tabs__item) { height: 34px; line-height: 32px; font-size: 13px; }
+/* 附件上传区：内容留白，按钮/提示不再顶着左边缘 */
+.attach-inner-tabs :deep(.el-tabs__content) { padding: 16px 18px; }
+.attach-inner-tabs :deep(.el-tab-pane) { padding: 2px 2px 4px; }
+.attach-inner-tabs :deep(.upload-file-uploader) { margin-bottom: 12px; }
+.attach-inner-tabs :deep(.el-upload__tip) {
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 6px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.attach-inner-tabs :deep(.upload-file-list .el-upload-list__item) { padding: 6px 10px; border-radius: 6px; }
+</style>
+
+<style>
+/* 项目立项：新增/详情弹窗自适应铺满内容区（append-to-body 弹窗需非 scoped 样式）
+   左侧定位在侧边栏（约152px）右侧，右侧贴近视口边缘，宽度 calc(100vw - 172px) */
+.pj-wide-dialog {
+  margin-left: 164px !important;
+  margin-right: 8px !important;
+}
+.pj-wide-dialog .el-dialog__body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
 </style>

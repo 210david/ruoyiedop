@@ -288,6 +288,7 @@ public class PjmProjectController extends BaseController
         StringBuilder sb = new StringBuilder();
         String[] urls = fileUrls.split(",");
         int idx = 1;
+        boolean pdfParseFailed = false;
         for (String u : urls)
         {
             String url = u.trim();
@@ -309,15 +310,28 @@ public class PjmProjectController extends BaseController
             int dot = f.getName().lastIndexOf('.');
             if (dot >= 0) ext = f.getName().substring(dot + 1).toLowerCase();
 
+            // 落盘文件为加密格式（EDOPENC 魔数 + AES + GZIP），AI 解析前须先解密还原原始内容
+            byte[] raw = java.nio.file.Files.readAllBytes(f.toPath());
+            byte[] content = raw;
+            if (raw.length > 8 && "EDOPENC".equals(new String(raw, 0, 7, java.nio.charset.StandardCharsets.UTF_8)))
+            {
+                content = com.ruoyi.common.utils.file.FileStorageUtils.decryptAndDecompress(raw);
+            }
+
             String part = "";
-            try (InputStream in = new java.io.FileInputStream(f))
+            try (InputStream in = new java.io.ByteArrayInputStream(content))
             {
                 if ("pdf".equals(ext))
                 {
-                    try (PDDocument pdf = PDDocument.load(in))
+                    String pdfText = extractPdfText(in);
+                    if (pdfText == null)
                     {
-                        part = new PDFTextStripper().getText(pdf);
+                        // 单个 PDF 损坏/非标准不中断整体解析，继续处理其余附件
+                        pdfParseFailed = true;
+                        log.warn("PDF 文本提取失败，跳过该附件：{}", f.getName());
+                        continue;
                     }
+                    part = pdfText;
                 }
                 else if ("docx".equals(ext))
                 {
@@ -344,7 +358,29 @@ public class PjmProjectController extends BaseController
                 sb.append(part.trim()).append("\n");
             }
         }
+        // 一个字都没提出来且存在解析失败的 PDF 时，给出可操作的中文提示而不是原始异常
+        if (sb.length() == 0 && pdfParseFailed)
+        {
+            throw new ServiceException("PDF 文件解析失败：文件可能已损坏或为扫描件/图片型 PDF，无法提取文本。"
+                    + "请用 WPS/Office 将其另存为标准 PDF 后重新上传，或切换到「粘贴文本摘要」方式解析");
+        }
         return sb.toString();
+    }
+
+    /**
+     * 提取 PDF 文本；文件损坏、加密或非标准（如 trailer 缺 Root 对象）时返回 null，由调用方决定降级策略。
+     */
+    private String extractPdfText(InputStream in)
+    {
+        try (PDDocument pdf = PDDocument.load(in))
+        {
+            return new PDFTextStripper().getText(pdf);
+        }
+        catch (Exception e)
+        {
+            log.warn("PDF 解析失败：{}", e.getMessage());
+            return null;
+        }
     }
 
     /** 从附件提取文本（PDF / DOCX / TXT） */
@@ -361,10 +397,13 @@ public class PjmProjectController extends BaseController
         {
             if ("pdf".equals(ext))
             {
-                try (PDDocument pdf = PDDocument.load(in))
+                String pdfText = extractPdfText(in);
+                if (pdfText == null)
                 {
-                    return new PDFTextStripper().getText(pdf);
+                    throw new ServiceException("PDF 文件解析失败：文件可能已损坏或为扫描件/图片型 PDF，无法提取文本。"
+                            + "请用 WPS/Office 将其另存为标准 PDF 后重新上传，或切换到「粘贴文本摘要」方式解析");
                 }
+                return pdfText;
             }
             if ("docx".equals(ext))
             {

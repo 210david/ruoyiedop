@@ -65,6 +65,10 @@ spring:
     basename: i18n/messages
   profiles:
     active: druid
+
+  # 加载额外模块配置
+  config:
+    include: application-kingdee.yml
   # 文件上传
   servlet:
     multipart:
@@ -89,7 +93,7 @@ spring:
       port: 6379
       # 数据库索引（分支仓库隔离：master=0, cfsp/dwx=1, ylsp=2, lyjs=3）
       database: 3
-      # 密码（本地开发 Redis 无密码留空；生产环境必须由部署包外部 config 覆盖为 requirepass 对应密码）
+      # 密码（本地开发 Redis 无密码留空；生产环境由部署包外部 config 覆盖）
       password:
       # 连接超时时间
       timeout: 10s

@@ -81,7 +81,7 @@
           <el-table-column label="操作" width="160" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
-                <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['pjm:member:edit']">角色</el-button>
+                <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['pjm:member:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleRemove(scope.row)" v-hasPermi="['pjm:member:remove']">移除</el-button>
               </div>
             </template>
@@ -96,7 +96,7 @@
       </div>
     </div>
 
-    <!-- 邀请成员 / 修改角色 -->
+    <!-- 邀请成员 / 修改成员 -->
     <el-dialog v-model="open" width="640px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
@@ -286,7 +286,7 @@ function handleAdd() {
 }
 
 function handleEdit(row) {
-  getMember(row.memberId).then(res => { form.value = res.data; title.value = '修改角色'; open.value = true })
+  getMember(row.memberId).then(res => { form.value = res.data; title.value = '修改成员'; open.value = true })
 }
 
 /** 成员选择（组织架构） */
