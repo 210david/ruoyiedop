@@ -257,7 +257,10 @@ function getList() {
     params.deptId = selectedDeptId.value
   }
   listUser(params).then(res => {
-    list.value = (res.rows || []).map(toEmployeeShape)
+    // 与 UserPicker 保持一致：排除超级管理员（userId=1 / admin）
+    list.value = (res.rows || [])
+      .filter(u => u.userId !== 1 && u.userName !== 'admin')
+      .map(toEmployeeShape)
     total.value = res.total
     loading.value = false
     if (props.multiple && pendingIds.value.length > 0) {
