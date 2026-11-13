@@ -195,8 +195,8 @@
             </el-row>
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item label="上级领导" prop="superiorLeaderId">
-                  <el-input v-model="form.superiorLeaderName" readonly placeholder="请选择上级领导" style="width: 100%" @click="onSuperiorLeaderFieldClick">
+                <el-form-item label="部门领导" prop="superiorLeaderId">
+                  <el-input v-model="form.superiorLeaderName" readonly placeholder="请选择部门领导" style="width: 100%" @click="onSuperiorLeaderFieldClick">
                     <template #append>
                       <el-button v-if="form.superiorLeaderName" icon="CircleClose" @click="onSuperiorLeaderFieldClick" />
                       <el-button v-else icon="Search" @click="onSuperiorLeaderFieldClick" />
@@ -301,12 +301,8 @@
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择归属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
-    <!-- 上级领导选择弹窗 -->
-    <user-picker ref="superiorLeaderPickerRef" title="选择上级领导" @confirm="onSuperiorLeaderPickerConfirm" />
-    <!-- 分管领导选择弹窗 -->
-    <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
-    <!-- 上级领导选择弹窗 -->
-    <user-picker ref="superiorLeaderPickerRef" title="选择上级领导" @confirm="onSuperiorLeaderPickerConfirm" />
+    <!-- 部门领导选择弹窗 -->
+    <user-picker ref="superiorLeaderPickerRef" title="选择部门领导" @confirm="onSuperiorLeaderPickerConfirm" />
     <!-- 分管领导选择弹窗 -->
     <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
     <!-- 岗位选择弹窗（多选） -->
@@ -436,7 +432,7 @@ function onDeptFieldClick(e) {
   openDeptPicker()
 }
 
-/** ===== 上级领导弹框选择 ===== */
+/** ===== 部门领导弹框选择 ===== */
 function openSuperiorLeaderPicker() {
   proxy.$refs.superiorLeaderPickerRef.open(form.value.superiorLeaderId)
 }

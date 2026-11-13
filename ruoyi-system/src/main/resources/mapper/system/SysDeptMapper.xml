@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="deptName"   column="dept_name"   />
 		<result property="orderNum"   column="order_num"   />
 		<result property="leader"     column="leader"      />
+		<result property="leaderId"   column="leader_id"   />
 		<result property="deptShortName" column="dept_short_name" />
 		<result property="deptCode"   column="dept_code"   />
 		<result property="chargeLeaderId" column="charge_leader_id" />
@@ -26,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 	
 	<sql id="selectDeptVo">
-        select d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.dept_short_name, d.dept_code, d.charge_leader_id, d.staff_count, d.status, d.del_flag, d.create_by, d.create_time 
+        select d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.leader_id, d.dept_short_name, d.dept_code, d.charge_leader_id, d.staff_count, d.status, d.del_flag, d.create_by, d.create_time 
         from sys_dept d
     </sql>
     
@@ -62,7 +63,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
     
     <select id="selectDeptById" parameterType="Long" resultMap="SysDeptResult">
-		select d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.dept_short_name, d.dept_code, d.charge_leader_id, d.staff_count, d.status,
+		select d.dept_id, d.parent_id, d.ancestors, d.dept_name, d.order_num, d.leader, d.leader_id, d.dept_short_name, d.dept_code, d.charge_leader_id, d.staff_count, d.status,
 			(select dept_name from sys_dept where dept_id = d.parent_id) parent_name,
 			(select u.nick_name from sys_user u where u.user_id = d.charge_leader_id) charge_leader_name
 		from sys_dept d
@@ -99,6 +100,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="ancestors != null and ancestors != ''">ancestors,</if>
  			<if test="orderNum != null">order_num,</if>
  			<if test="leader != null and leader != ''">leader,</if>
+ 			<if test="leaderId != null">leader_id,</if>
  			<if test="deptShortName != null and deptShortName != ''">dept_short_name,</if>
  			<if test="deptCode != null and deptCode != ''">dept_code,</if>
  			<if test="chargeLeaderId != null">charge_leader_id,</if>
@@ -113,6 +115,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="ancestors != null and ancestors != ''">#{ancestors},</if>
  			<if test="orderNum != null">#{orderNum},</if>
  			<if test="leader != null and leader != ''">#{leader},</if>
+ 			<if test="leaderId != null">#{leaderId},</if>
  			<if test="deptShortName != null and deptShortName != ''">#{deptShortName},</if>
  			<if test="deptCode != null and deptCode != ''">#{deptCode},</if>
  			<if test="chargeLeaderId != null">#{chargeLeaderId},</if>
@@ -131,6 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="ancestors != null and ancestors != ''">ancestors = #{ancestors},</if>
  			<if test="orderNum != null">order_num = #{orderNum},</if>
  			<if test="leader != null">leader = #{leader},</if>
+ 			leader_id = #{leaderId},
  			<if test="deptShortName != null">dept_short_name = #{deptShortName},</if>
  			<if test="deptCode != null">dept_code = #{deptCode},</if>
  			charge_leader_id = #{chargeLeaderId},
@@ -164,6 +168,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	
 	<update id="updateDeptSort" parameterType="SysDept">
 		update sys_dept set order_num = #{orderNum} where dept_id = #{deptId}
+	</update>
+
+	<update id="syncLeaderToUsers">
+		update sys_user
+		<set>
+			<if test="leaderId != null">superior_leader_id = case when user_id = #{leaderId} then superior_leader_id else #{leaderId} end,</if>
+			<if test="chargeLeaderId != null">charge_leader_id = case when user_id = #{chargeLeaderId} then charge_leader_id else #{chargeLeaderId} end,</if>
+			update_time = sysdate()
+		</set>
+		where dept_id = #{deptId} and del_flag = '0'
 	</update>
 	
 	<delete id="deleteDeptById" parameterType="Long">
