@@ -363,7 +363,7 @@ const currentModule = computed(() => route.query.module || 'mk')
 const presetRuleCode = computed(() => route.query.ruleCode || '')
 
 /** 模块名称映射 */
-const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理', mms: '生产管控' }
+const moduleNames = { mk: '营销管理', dms: '设备管理', wms: '仓储管理', pms: '采购管理', safety: '安全生产管理', qms: '质量管理', mms: '生产管控', pjm: '项目管理', hr: '人力资源', fin: '资金管理' }
 const currentModuleName = computed(() => moduleNames[currentModule.value] || '编号规则')
 
 /** 预设规则提示文案 */

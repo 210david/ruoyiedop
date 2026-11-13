@@ -167,10 +167,10 @@
             <div class="rd-card-body" v-show="!collapsedCards.e0">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="姓名" prop="employeeName">
-                  <el-input v-model="form.employeeName" :readonly="!!form.employeeId" placeholder="选择人员或直接输入外部人员姓名">
+                  <el-input v-model="form.employeeName" placeholder="选择人员或直接输入外部人员姓名" @input="onEmployeeNameInput">
                     <template #append>
-                      <el-button v-if="form.employeeId" icon="CircleClose" @click="onEmployeeFieldClick" />
-                      <el-button v-else icon="Search" @click="onEmployeeFieldClick" />
+                      <el-button v-if="form.employeeId" icon="CircleClose" @click="onEmployeeClear" />
+                      <el-button v-else icon="Search" @click="openEmployeePicker" />
                     </template>
                   </el-input>
                 </el-form-item></el-col>
@@ -521,15 +521,20 @@ function onEmployeePickerConfirm(emp) {
   form.value.employeeNo = emp.employeeNo;
   form.value.deptName = emp.orgName;
 }
-function onEmployeeFieldClick(e) {
-  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
-    if (form.value.employeeId) {
-      // 清除系统人员关联后，保留姓名供外部人员直改
-      form.value.employeeId = null;
-    } else { openEmployeePicker(); }
-    return;
+/** 手输姓名 = 外部人员：清除系统人员关联及工号/部门（程序赋值不触发本事件，选人填充不受影响） */
+function onEmployeeNameInput() {
+  if (form.value.employeeId) {
+    form.value.employeeId = null;
+    form.value.employeeNo = '';
+    form.value.deptName = '';
   }
-  openEmployeePicker();
+}
+/** 清除系统人员关联并清空姓名/工号/部门 */
+function onEmployeeClear() {
+  form.value.employeeId = null;
+  form.value.employeeName = '';
+  form.value.employeeNo = '';
+  form.value.deptName = '';
 }
 
 function toggleCard(key) {

@@ -108,9 +108,9 @@ AND menu_id NOT IN (SELECT menu_id FROM sys_role_menu WHERE role_id=1);
 -- =============================================
 -- 更新各模块编号规则菜单的query参数，传递module标识
 -- =============================================
-UPDATE sys_menu SET query='module=mk' WHERE menu_name='编号规则' AND parent_id=4000;
-UPDATE sys_menu SET query='module=dms' WHERE menu_name='编号规则' AND parent_id=3000;
-UPDATE sys_menu SET query='module=wms' WHERE menu_name='编号规则' AND parent_id=2000;
+UPDATE sys_menu SET query='{\"module\":\"mk\"}' WHERE menu_name='编号规则' AND parent_id=4000;
+UPDATE sys_menu SET query='{\"module\":\"dms\"}' WHERE menu_name='编号规则' AND parent_id=3000;
+UPDATE sys_menu SET query='{\"module\":\"wms\"}' WHERE menu_name='编号规则' AND parent_id=2000;
 
 -- =============================================
 -- 物料按类型分组编码规则（原材料/半成品/成品/辅料）

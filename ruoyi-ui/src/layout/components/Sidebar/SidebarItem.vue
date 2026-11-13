@@ -93,6 +93,12 @@ function resolvePath(routePath, routeQuery) {
       let query = JSON.parse(routeQuery)
       return { path: fullPath, query: query }
     } catch (e) {
+      // 兼容旧格式裸字符串 query（如 module=wms）：按 URL 参数解析，避免模块过滤失效
+      try {
+        const parsed = {}
+        for (const [k, v] of new URLSearchParams(routeQuery)) parsed[k] = v
+        if (Object.keys(parsed).length) return { path: fullPath, query: parsed }
+      } catch (e2) { /* ignore */ }
       return fullPath
     }
   }
