@@ -144,6 +144,12 @@
             <artifactId>ruoyi-integration</artifactId>
         </dependency>
 
+        <!-- 金蝶云星辰对接模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-kingdee</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
