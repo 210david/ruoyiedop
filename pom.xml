@@ -254,6 +254,11 @@
                 <artifactId>ruoyi-bid</artifactId>
                 <version>${ruoyi.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-bi</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
 
             <!-- FIN财务管理模块-->
             <dependency>
@@ -268,6 +273,21 @@
                 <artifactId>ruoyi-pdm</artifactId>
                 <version>${ruoyi.version}</version>
             </dependency>
+
+            <!-- 第三方集成模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-integration</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
+            <!-- 金蝶云星辰对接模块 -->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-kingdee</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
             <!-- HTML解析-->
             <dependency>
                 <groupId>org.jsoup</groupId>
@@ -298,6 +318,9 @@
         <module>ruoyi-bid</module>
         <module>ruoyi-fin</module>
         <module>ruoyi-pdm</module>
+        <module>ruoyi-bi</module>
+        <module>ruoyi-integration</module>
+        <module>ruoyi-kingdee</module>
     </modules>
     <packaging>pom</packaging>
 

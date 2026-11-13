@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.integration.mapper.IntegrationUserBindingMapper">
+
+    <resultMap type="com.ruoyi.integration.domain.IntegrationUserBinding" id="IntegrationUserBindingResult">
+        <result property="bindingId" column="binding_id"/>
+        <result property="connectorType" column="connector_type"/>
+        <result property="externalUserid" column="external_userid"/>
+        <result property="externalName" column="external_name"/>
+        <result property="mobile" column="mobile"/>
+        <result property="externalJobNo" column="external_job_no"/>
+        <result property="employeeNo" column="employee_no"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="employeeName" column="employee_name"/>
+        <result property="matchType" column="match_type"/>
+        <result property="syncTime" column="sync_time"/>
+        <result property="remark" column="remark"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        SELECT b.binding_id, b.connector_type, b.external_userid, b.external_name, b.mobile,
+               b.external_job_no, b.employee_no, b.employee_id, e.employee_name AS employee_name,
+               b.match_type, b.sync_time, b.remark, b.create_time, b.update_time
+        FROM integration_user_binding b
+        LEFT JOIN biz_hr_employee e ON b.employee_id = e.employee_id
+    </sql>
+
+    <select id="selectIntegrationUserBindingById" parameterType="Long" resultMap="IntegrationUserBindingResult">
+        <include refid="selectVo"/> WHERE b.binding_id = #{bindingId}
+    </select>
+
+    <select id="selectByConnectorAndExternalUserid" resultMap="IntegrationUserBindingResult">
+        <include refid="selectVo"/>
+        WHERE b.connector_type = #{connectorType} AND b.external_userid = #{externalUserid}
+    </select>
+
+    <select id="selectIntegrationUserBindingList" parameterType="com.ruoyi.integration.domain.IntegrationUserBinding" resultMap="IntegrationUserBindingResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="connectorType != null and connectorType != ''"> AND b.connector_type = #{connectorType}</if>
+            <if test="externalName != null and externalName != ''"> AND b.external_name LIKE CONCAT('%', #{externalName}, '%')</if>
+            <if test="mobile != null and mobile != ''"> AND b.mobile LIKE CONCAT('%', #{mobile}, '%')</if>
+            <if test="externalJobNo != null and externalJobNo != ''"> AND b.external_job_no LIKE CONCAT('%', #{externalJobNo}, '%')</if>
+            <if test="employeeNo != null and employeeNo != ''"> AND b.employee_no = #{employeeNo}</if>
+            <if test="matchType != null and matchType != ''"> AND b.match_type = #{matchType}</if>
+            <if test="params.matched != null and params.matched == 'yes'"> AND b.employee_id IS NOT NULL</if>
+            <if test="params.matched != null and params.matched == 'no'"> AND b.employee_id IS NULL</if>
+            <if test="params.beginSyncTime != null and params.beginSyncTime != ''"> AND b.sync_time &gt;= CONCAT(#{params.beginSyncTime}, ' 00:00:00')</if>
+            <if test="params.endSyncTime != null and params.endSyncTime != ''"> AND b.sync_time &lt;= CONCAT(#{params.endSyncTime}, ' 23:59:59')</if>
+        </where>
+        ORDER BY b.employee_id IS NULL DESC, b.external_name
+    </select>
+
+    <!-- 状态页签计数：matched 为 null 统计全部，yes 统计已匹配，no 统计未匹配 -->
+    <select id="countBinding" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM integration_user_binding b
+        <where>
+            <if test="connectorType != null and connectorType != ''"> AND b.connector_type = #{connectorType}</if>
+            <if test="matched != null and matched == 'yes'"> AND b.employee_id IS NOT NULL</if>
+            <if test="matched != null and matched == 'no'"> AND b.employee_id IS NULL</if>
+        </where>
+    </select>
+
+    <select id="selectMatchedBindings" parameterType="String" resultMap="IntegrationUserBindingResult">
+        <include refid="selectVo"/>
+        WHERE b.connector_type = #{connectorType} AND b.employee_id IS NOT NULL
+    </select>
+
+    <insert id="insertIntegrationUserBinding" parameterType="com.ruoyi.integration.domain.IntegrationUserBinding" useGeneratedKeys="true" keyProperty="bindingId">
+        INSERT INTO integration_user_binding (
+            connector_type, external_userid, external_name, mobile, external_job_no, employee_no, employee_id, match_type, sync_time, create_by, create_time, remark
+        ) VALUES (
+            #{connectorType}, #{externalUserid}, #{externalName}, #{mobile}, #{externalJobNo}, #{employeeNo}, #{employeeId}, #{matchType}, #{syncTime}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateIntegrationUserBinding" parameterType="com.ruoyi.integration.domain.IntegrationUserBinding">
+        UPDATE integration_user_binding
+        <set>
+            <if test="externalName != null">external_name = #{externalName},</if>
+            <if test="mobile != null">mobile = #{mobile},</if>
+            <if test="externalJobNo != null">external_job_no = #{externalJobNo},</if>
+            <if test="employeeNo != null">employee_no = #{employeeNo},</if>
+            <if test="employeeId != null">employee_id = #{employeeId},</if>
+            <if test="matchType != null">match_type = #{matchType},</if>
+            sync_time = #{syncTime},
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        WHERE binding_id = #{bindingId}
+    </update>
+
+    <!-- 解绑：置空员工关联（动态 update 会忽略 null，故单独定义） -->
+    <update id="clearBinding">
+        UPDATE integration_user_binding
+        SET employee_id = NULL,
+            employee_no = NULL,
+            match_type = NULL,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        WHERE binding_id = #{bindingId}
+    </update>
+    <!-- 一一绑定校验：查该员工是否已被其他外部用户占用 -->
+    <select id="selectOccupiedBinding" resultMap="IntegrationUserBindingResult">
+        <include refid="selectVo"/>
+        WHERE b.connector_type = #{connectorType}
+          AND b.employee_id = #{employeeId}
+        <if test="excludeBindingId != null"> AND b.binding_id != #{excludeBindingId}</if>
+        ORDER BY b.binding_id
+        LIMIT 1
+    </select>
+
+    <!-- 数据自检：同一员工被多个外部用户绑定的员工ID -->
+    <select id="selectDuplicatedEmployeeIds" resultType="java.lang.Long">
+        SELECT b.employee_id
+        FROM integration_user_binding b
+        WHERE b.connector_type = #{connectorType} AND b.employee_id IS NOT NULL
+        GROUP BY b.employee_id
+        HAVING COUNT(*) &gt; 1
+    </select>
+
+</mapper>

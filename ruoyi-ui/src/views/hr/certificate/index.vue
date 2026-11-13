@@ -166,8 +166,8 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.e0">
               <el-row :gutter="20">
-                <el-col :span="12"><el-form-item label="姓名" prop="employeeId">
-                  <el-input :model-value="form.employeeName" readonly placeholder="请选择人员">
+                <el-col :span="12"><el-form-item label="姓名" prop="employeeName">
+                  <el-input v-model="form.employeeName" :readonly="!!form.employeeId" placeholder="选择人员或直接输入外部人员姓名">
                     <template #append>
                       <el-button v-if="form.employeeId" icon="CircleClose" @click="onEmployeeFieldClick" />
                       <el-button v-else icon="Search" @click="onEmployeeFieldClick" />
@@ -425,7 +425,7 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, employeeName: undefined, employeeNo: undefined, certType: undefined, certName: undefined, certNo: undefined, remindStatus: undefined },
   rules: {
-    employeeId: [{ required: true, message: '请选择人员', trigger: 'change' }],
+    employeeName: [{ required: true, message: '请选择人员或输入外部人员姓名', trigger: 'change' }],
     certType: [{ required: true, message: '证书类别不能为空', trigger: 'change' }],
     certName: [{ required: true, message: '证书名称不能为空', trigger: 'blur' }],
     certNo: [{ required: true, message: '证书编号不能为空', trigger: 'blur' }],
@@ -523,8 +523,10 @@ function onEmployeePickerConfirm(emp) {
 }
 function onEmployeeFieldClick(e) {
   if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
-    if (form.value.employeeId) { form.value.employeeId = null; form.value.employeeName = ''; }
-    else { openEmployeePicker(); }
+    if (form.value.employeeId) {
+      // 清除系统人员关联后，保留姓名供外部人员直改
+      form.value.employeeId = null;
+    } else { openEmployeePicker(); }
     return;
   }
   openEmployeePicker();
