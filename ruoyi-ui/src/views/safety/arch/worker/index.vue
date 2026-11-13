@@ -141,12 +141,12 @@
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="姓名" prop="workerName">
-                  <el-input v-model="form.workerName" readonly placeholder="请选择人员" style="width: 100%" @click="openEmployeePicker">
+                  <el-input v-model="form.workerName" placeholder="可直接输入姓名（外部聘用人员）或点击选择" style="width: 100%" @input="onWorkerNameInput">
                     <template #append><el-button icon="Search" @click="openEmployeePicker" /></template>
                     <template #suffix><el-icon v-if="form.workerName" class="clear-icon" @click.stop="clearEmployee"><CircleClose /></el-icon></template>
                   </el-input>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="选择人员后自动带出" disabled /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="选择人员后自动带出，外部人员可手动输入" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
@@ -293,8 +293,8 @@ const data = reactive({
   form: {},
   queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, deptName: undefined, phone: undefined, params: {} },
   rules: {
-    workerName: [{ required: true, message: '请选择人员', trigger: 'change' }],
-    deptId: [{ required: true, message: '所属部门不能为空', trigger: 'change' }],
+    workerName: [{ required: true, message: '请输入或选择人员', trigger: 'change' }],
+    deptId: [{ validator: (rule, value, callback) => { (form.value.employeeId && !value) ? callback(new Error('所属部门不能为空')) : callback() }, trigger: 'change' }],
     position: [{ required: true, message: '岗位不能为空', trigger: 'blur' }],
     phone: [
       { required: true, message: '联系电话不能为空', trigger: 'blur' },
@@ -345,6 +345,14 @@ function reset() {
 }
 /** 打开员工选择弹窗 */
 function openEmployeePicker() { proxy.$refs.employeePickerRef.open(form.value.employeeId) }
+/** 手动输入姓名（外部聘用人员）：解除组织用户关联 */
+function onWorkerNameInput() {
+  if (form.value.employeeId) {
+    form.value.employeeId = undefined
+    if (form.value.workerNo) form.value.workerNo = undefined
+    if (form.value.deptId) { form.value.deptId = undefined; form.value.deptName = undefined }
+  }
+}
 /** 员工选择确认回调：自动带出工号、部门、岗位、联系电话 */
 function onEmployeePickerConfirm(emp) {
   form.value.employeeId = emp.employeeId
