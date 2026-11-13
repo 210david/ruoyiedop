@@ -14,7 +14,7 @@ DELETE FROM biz_safety_risk_point WHERE engineering_category IS NULL OR engineer
 -- =============================================================
 -- 1. 房屋建筑（house_）
 -- =============================================================
-INSERT INTO biz_safety_risk_point (risk_code, risk_name, area_name, engineering_category, gb_std, hazard_desc, accident_type, risk_level, control_level, measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency, del_flag, create_by, create_time, remark) VALUES
+INSERT INTO biz_safety_risk_point (risk_code, risk_name, area_name, engineering_category, gb_std, hazard_desc, accident_type, risk_level, control_level, measure_engine, measure_manage, measure_training, measure_ppe, measure_emergency) VALUES
 ('RF-HOUSE-001','高处坠落风险（临边洞口）','主体结构施工区','house_residential','JGJ59-2011 3.2','楼层临边、楼梯口、电梯井口未设防护栏杆或防护栏松动，作业人员易坠落','高处坠落','2','2','设置 1.2m 高双道防护栏杆，中杆 0.6m，立网封闭','班前检查防护设施，专人维护','高处作业专项安全教育，交底签字','安全帽、安全带、防滑鞋','立即停止作业，救治伤员，设置警戒隔离带'),
 ('RF-HOUSE-002','模板支撑体系失稳','模板支撑区','house_residential','JGJ59-2011 3.3','模板支撑架未按方案搭设，立杆间距过大、扫地杆缺失，浇筑时坍塌','坍塌','2','2','模板支撑按 JGJ130 专项方案搭设，立杆基础垫板','专项方案审批，搭设验收挂牌','模板工持证上岗，专项交底','安全帽','启动应急预案，警戒疏散'),
 ('RF-HOUSE-003','塔吊倾覆风险','塔吊作业区','house_public','GB5144-2012','塔吊基础沉降、附墙间距超规范、超载作业，导致倾覆','起重伤害','1','1','定期检测塔吊垂直度，附墙装置按方案安装','"十不吊"制度，专人指挥，持证上岗','塔吊司机信号工专项培训','安全帽、防滑鞋','紧急停工，切断电源，警戒隔离'),
