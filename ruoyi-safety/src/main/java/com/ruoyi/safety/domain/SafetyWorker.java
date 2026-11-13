@@ -16,9 +16,7 @@ public class SafetyWorker extends BaseEntity
     private String workerName;
     @Excel(name = "工号")
     private String workerNo;
-    @NotNull(message = "所属部门不能为空")
     private Long deptId;
-    @NotBlank(message = "所属部门不能为空")
     @Excel(name = "所属部门")
     private String deptName;
     @Excel(name = "岗位")
