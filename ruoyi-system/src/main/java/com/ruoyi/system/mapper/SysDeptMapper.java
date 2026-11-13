@@ -116,6 +116,17 @@ public interface SysDeptMapper
     public void updateDeptSort(SysDept dept);
 
     /**
+     * 将部门领导、分管领导同步到该部门人员
+     *
+     * @param deptId 部门ID
+     * @param leaderId 部门领导（人员ID）
+     * @param chargeLeaderId 分管领导（人员ID）
+     * @return 更新人数
+     */
+    public int syncLeaderToUsers(@Param("deptId") Long deptId, @Param("leaderId") Long leaderId,
+            @Param("chargeLeaderId") Long chargeLeaderId);
+
+    /**
      * 删除部门管理信息
      * 
      * @param deptId 部门ID
