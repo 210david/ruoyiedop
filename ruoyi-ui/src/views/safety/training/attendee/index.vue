@@ -130,7 +130,7 @@
               </el-form-item>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="参训人员" prop="userName">
-                  <el-input v-model="form.userName" readonly placeholder="请选择参训人员" style="width: 100%" @click="openUserPicker">
+                  <el-input v-model="form.userName" placeholder="可直接输入姓名（外部参训人员）或点击选择" style="width: 100%" @input="onUserNameInput">
                     <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                     <template #suffix><el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon></template>
                   </el-input>
@@ -404,6 +404,8 @@ function clearRecordFilter() {
 
 /** 打开参训人员选择弹窗 */
 function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.userId) }
+/** 手动输入参训人员姓名（外部人员）：解除组织用户关联 */
+function onUserNameInput() { if (form.value.userId) { form.value.userId = undefined; form.value.deptId = undefined; form.value.deptName = undefined } }
 /** 参训人员选择确认回调 */
 function onUserPickerConfirm(user) { form.value.userId = user.userId; form.value.userName = user.nickName; form.value.deptId = user.deptId; form.value.deptName = user.deptName || '' }
 /** 清除参训人员 */
