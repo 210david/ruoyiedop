@@ -1,7 +1,12 @@
 <template>
   <section class="app-main">
     <router-view v-slot="{ Component, route }">
-      <transition name="fade-transform" mode="out-in">
+      <!-- 注意：transition 不能加 mode="out-in"。
+           本站路由组件由 loadView 动态返回，<component :is> 拿到的是 vnode，
+           配合 keep-alive 时 out-in 模式会出现「切走正常、切入白屏」的问题
+           （离开动画结束后新节点不再插入，需刷新页面才恢复）。
+           保持默认（同时进出）模式即可规避，动画效果不受影响。 -->
+      <transition name="fade-transform">
         <keep-alive :include="tagsViewStore.cachedViews">
           <component v-if="!route.meta.link" :is="Component" :key="route.path"/>
         </keep-alive>
