@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiMetricCheckLogMapper">
+
+    <resultMap type="BiMetricCheckLog" id="BiMetricCheckLogResult">
+        <id     property="id"            column="id"/>
+        <result property="metricCode"    column="metric_code"/>
+        <result property="checkDate"     column="check_date"/>
+        <result property="deptId"        column="dept_id"/>
+        <result property="snapshotValue" column="snapshot_value"/>
+        <result property="realtimeValue" column="realtime_value"/>
+        <result property="diffValue"     column="diff_value"/>
+        <result property="checkStatus"   column="check_status"/>
+        <result property="createTime"    column="create_time"/>
+    </resultMap>
+
+    <insert id="insertBatch">
+        insert into bi_metric_check_log (metric_code, check_date, dept_id, snapshot_value, realtime_value, diff_value, check_status, create_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.metricCode}, #{item.checkDate}, #{item.deptId}, #{item.snapshotValue},
+             #{item.realtimeValue}, #{item.diffValue}, #{item.checkStatus}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <sql id="selectCheckLogVo">
+        select id, metric_code, check_date, dept_id, snapshot_value, realtime_value, diff_value, check_status, create_time
+        from bi_metric_check_log
+    </sql>
+
+    <select id="selectCheckLogList" parameterType="BiMetricCheckLog" resultMap="BiMetricCheckLogResult">
+        <include refid="selectCheckLogVo"/>
+        <where>
+            <if test="metricCode != null and metricCode != ''">and metric_code = #{metricCode}</if>
+            <if test="checkStatus != null and checkStatus != ''">and check_status = #{checkStatus}</if>
+        </where>
+        order by id desc
+    </select>
+
+</mapper>

@@ -45,6 +45,8 @@
             <div class="rd-item"><span class="rd-label">用户性别</span><div class="rd-value">{{ sexLabel }}</div></div>
             <div class="rd-item"><span class="rd-label">手机号码</span><div class="rd-value">{{ info.phonenumber || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">邮箱</span><div class="rd-value">{{ info.email || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">部门领导</span><div class="rd-value">{{ info.superiorLeaderName || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">分管领导</span><div class="rd-value">{{ info.chargeLeaderName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">用户状态</span><div class="rd-value">
               <el-tag size="small" :type="info.status === '0' ? 'success' : 'danger'">{{ info.status === '0' ? '正常' : '停用' }}</el-tag>
             </div></div>

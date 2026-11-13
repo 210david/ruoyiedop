@@ -80,7 +80,7 @@ public class SysUser extends BaseEntity
     /** 部门对象 */
     @Excels({
         @Excel(name = "部门名称", targetAttr = "deptName", type = Type.EXPORT),
-        @Excel(name = "部门负责人", targetAttr = "leader", type = Type.EXPORT)
+        @Excel(name = "部门领导", targetAttr = "leader", type = Type.EXPORT)
     })
     private SysDept dept;
 
@@ -96,8 +96,60 @@ public class SysUser extends BaseEntity
     /** 岗位名称（查询时拼接） */
     private String postName;
 
+    /** 部门领导（人员ID） */
+    private Long superiorLeaderId;
+
+    /** 分管领导（人员ID） */
+    private Long chargeLeaderId;
+
+    /** 部门领导姓名（查询回显） */
+    private String superiorLeaderName;
+
+    /** 分管领导姓名（查询回显） */
+    private String chargeLeaderName;
+
     /** 角色ID */
     private Long roleId;
+
+    public Long getSuperiorLeaderId()
+    {
+        return superiorLeaderId;
+    }
+
+    public void setSuperiorLeaderId(Long superiorLeaderId)
+    {
+        this.superiorLeaderId = superiorLeaderId;
+    }
+
+    public Long getChargeLeaderId()
+    {
+        return chargeLeaderId;
+    }
+
+    public void setChargeLeaderId(Long chargeLeaderId)
+    {
+        this.chargeLeaderId = chargeLeaderId;
+    }
+
+    public String getSuperiorLeaderName()
+    {
+        return superiorLeaderName;
+    }
+
+    public void setSuperiorLeaderName(String superiorLeaderName)
+    {
+        this.superiorLeaderName = superiorLeaderName;
+    }
+
+    public String getChargeLeaderName()
+    {
+        return chargeLeaderName;
+    }
+
+    public void setChargeLeaderName(String chargeLeaderName)
+    {
+        this.chargeLeaderName = chargeLeaderName;
+    }
 
     public SysUser()
     {

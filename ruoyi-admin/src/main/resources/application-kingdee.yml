@@ -1,0 +1,33 @@
+# ================================================================
+# 金蝶云星辰对接配置
+# 文档：https://open.jdy.com/#/files/api/detail?index=3&categrayId=3cc8ee9a663e11eda5c84b5d383a2b93&id=adfe4a24712711eda0b307c6992ee459
+# 前置：必须在 open.jdy.com 创建应用并完成账套授权
+# ================================================================
+
+kingdee:
+  # 是否启用金蝶对接（false 时整个模块不加载，Controller/Service 均不注册）
+  enabled: false
+
+  # API 根地址（星辰标准版/专业版/旗舰版均为该地址，不要修改）
+  base-url: http://api.kingdee.com/jdy/v2
+
+  # ============ 以下四值从金蝶开放平台「创建应用」→「实时接收授权」中获取 ============
+
+  # 应用ID（clientId）
+  client-id: your_client_id_here
+
+  # 授权Key（app_key），用于获取 app-token
+  app-key: your_app_key_here
+
+  # 授权密钥（app_secret），用于 HMAC-SHA256 签名 + 获取 app-token
+  # 敏感字段，生产环境请通过环境变量注入：KINGDEE_APP_SECRET
+  app-secret: ${KINGDEE_APP_SECRET:your_app_secret_here}
+
+  # 账套所属 IDC 域名（授权返回的 domain 字段，如 https://tf.jdy.com/ 或 https://tf2.jdy.com/）
+  router-addr: https://tf.jdy.com/
+
+  # HTTP 超时（毫秒）
+  timeout: 30000
+
+  # 失败重试次数（不含首次调用）
+  retry-times: 2

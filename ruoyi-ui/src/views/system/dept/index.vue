@@ -182,6 +182,16 @@
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
+                        <el-form-item label="部门简称" prop="deptShortName">
+                           <el-input v-model="form.deptShortName" placeholder="请输入部门简称" maxlength="50" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
+                        <el-form-item label="部门编码" prop="deptCode">
+                           <el-input v-model="form.deptCode" placeholder="请输入部门编码" maxlength="50" />
+                        </el-form-item>
+                     </el-col>
+                     <el-col :span="12">
                         <el-form-item label="显示排序" prop="orderNum">
                            <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
                         </el-form-item>
@@ -198,14 +208,18 @@
                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                         </svg>
                      </span>
-                     联系信息
+                     归属信息
+                  </div>
+                  <div class="rd-card-actions">
+                     <el-button type="primary" plain size="small" icon="Refresh" :disabled="!form.deptId"
+                        @click="handleSyncToUsers" v-hasPermi="['system:dept:edit']">同步到人员</el-button>
                   </div>
                </div>
                <div class="rd-card-body">
                   <el-row :gutter="16">
                      <el-col :span="12">
-                        <el-form-item label="负责人" prop="leader">
-                           <el-input v-model="form.leader" readonly placeholder="请选择负责人" style="width: 100%" @click="onLeaderFieldClick">
+                        <el-form-item label="部门领导" prop="leader">
+                           <el-input v-model="form.leader" readonly placeholder="请选择部门领导" style="width: 100%" @click="onLeaderFieldClick">
                               <template #append>
                                  <el-button v-if="form.leader" icon="CircleClose" @click="onLeaderFieldClick" />
                                  <el-button v-else icon="Search" @click="onLeaderFieldClick" />
@@ -214,13 +228,18 @@
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
-                        <el-form-item label="联系电话" prop="phone">
-                           <el-input v-model="form.phone" placeholder="请输入联系电话" maxlength="11" />
+                        <el-form-item label="分管领导" prop="chargeLeaderId">
+                           <el-input v-model="form.chargeLeaderName" readonly placeholder="请选择分管领导" style="width: 100%" @click="onChargeLeaderFieldClick">
+                              <template #append>
+                                 <el-button v-if="form.chargeLeaderName" icon="CircleClose" @click="onChargeLeaderFieldClick" />
+                                 <el-button v-else icon="Search" @click="onChargeLeaderFieldClick" />
+                              </template>
+                           </el-input>
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
-                        <el-form-item label="邮箱" prop="email">
-                           <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+                        <el-form-item label="在职人数" prop="staffCount">
+                           <el-input-number v-model="form.staffCount" controls-position="right" :min="0" disabled placeholder="保存后自动统计" style="width: 100%" />
                         </el-form-item>
                      </el-col>
                      <el-col :span="12">
@@ -232,6 +251,9 @@
                         </el-form-item>
                      </el-col>
                   </el-row>
+                  <div class="sync-tip">
+                     <span>设置后可一键将「部门领导」「分管领导」同步给本部门所有人员，免去逐个设置</span>
+                  </div>
                </div>
             </section>
          </el-form>
@@ -243,15 +265,17 @@
          </template>
       </el-dialog>
 
-      <!-- 负责人选择弹窗 -->
-      <user-picker ref="userPickerRef" title="选择部门负责人" @confirm="onUserPickerConfirm" />
+      <!-- 部门领导选择弹窗 -->
+      <user-picker ref="userPickerRef" title="选择部门领导" @confirm="onUserPickerConfirm" />
+      <!-- 分管领导选择弹窗 -->
+      <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
    </div>
 </template>
 
 <script setup name="Dept">
 import TreePanel from "@/components/TreePanel"
 import UserPicker from "@/components/UserPicker"
-import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild } from "@/api/system/dept"
+import { listDept, getDept, delDept, addDept, updateDept, updateDeptSort, listDeptExcludeChild, syncDeptLeaders } from "@/api/system/dept"
 import { deptTreeSelect } from "@/api/system/user"
 import { Search, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -290,9 +314,7 @@ const data = reactive({
   rules: {
     parentId: [{ required: true, message: "上级部门不能为空", trigger: "blur" }],
     deptName: [{ required: true, message: "部门名称不能为空", trigger: "blur" }],
-    orderNum: [{ required: true, message: "显示排序不能为空", trigger: "blur" }],
-    email: [{ type: "email", message: "请输入正确的邮箱地址", trigger: ["blur", "change"] }],
-    phone: [{ pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/, message: "请输入正确的手机号码", trigger: "blur" }]
+    orderNum: [{ required: true, message: "显示排序不能为空", trigger: "blur" }]
   },
 })
 
@@ -361,26 +383,26 @@ function reset() {
     deptId: undefined,
     parentId: undefined,
     deptName: undefined,
+    deptShortName: undefined,
+    deptCode: undefined,
     orderNum: 0,
     leader: undefined,
     leaderId: undefined,
-    phone: undefined,
-    email: undefined,
+    chargeLeaderId: undefined,
+    chargeLeaderName: undefined,
+    staffCount: undefined,
     status: "0"
   }
   proxy.resetForm("deptRef")
 }
 
-/** ===== 负责人弹框选择 ===== */
+/** ===== 部门领导弹框选择 ===== */
 function openUserPicker() {
   proxy.$refs.userPickerRef.open(form.value.leaderId)
 }
 function onUserPickerConfirm(user) {
   form.value.leaderId = user.userId
   form.value.leader = user.nickName
-  if (user.phonenumber) {
-    form.value.phone = user.phonenumber
-  }
 }
 function clearLeader() {
   form.value.leaderId = undefined
@@ -392,6 +414,26 @@ function onLeaderFieldClick(e) {
     return
   }
   openUserPicker()
+}
+
+/** ===== 分管领导弹框选择 ===== */
+function openChargeLeaderPicker() {
+  proxy.$refs.chargeLeaderPickerRef.open(form.value.chargeLeaderId)
+}
+function onChargeLeaderPickerConfirm(user) {
+  form.value.chargeLeaderId = user.userId
+  form.value.chargeLeaderName = user.nickName
+}
+function clearChargeLeader() {
+  form.value.chargeLeaderId = undefined
+  form.value.chargeLeaderName = undefined
+}
+function onChargeLeaderFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.chargeLeaderName) { clearChargeLeader(); } else { openChargeLeaderPicker(); }
+    return
+  }
+  openChargeLeaderPicker()
 }
 
 /** 搜索按钮操作 */
@@ -467,6 +509,27 @@ function submitForm() {
       }
     }
   })
+}
+
+/** 同步部门领导、分管领导到本部门人员 */
+function handleSyncToUsers() {
+  if (!form.value.deptId) {
+    proxy.$modal.msgWarning("请先保存部门")
+    return
+  }
+  if (!form.value.leaderId && !form.value.chargeLeaderId) {
+    proxy.$modal.msgWarning("请先设置部门领导或分管领导")
+    return
+  }
+  proxy.$modal.confirm('确认将「部门领导」「分管领导」同步到本部门所有人员吗？').then(() => {
+    // 先保存当前表单，确保同步的是最新的领导设置
+    return updateDept(form.value)
+  }).then(() => {
+    return syncDeptLeaders(form.value.deptId)
+  }).then(response => {
+    proxy.$modal.msgSuccess("同步成功，共更新 " + (response.data || 0) + " 人")
+    getList()
+  }).catch(() => {})
 }
 
 /** 递归记录原始排序 */
@@ -589,6 +652,9 @@ onMounted(() => {
 .sys-dept-page .app-table :deep(.el-table__row:hover > td) { background:#fafbff !important; }
 .sys-dept-page .app-table :deep(.el-table__inner-wrapper::before) { display:none; }
 .sys-dept-page .app-table :deep(.el-table__border-left-patch) { display:none; }
+
+/* ===== 同步到人员提示 ===== */
+.sync-tip { margin-top: 2px; padding: 8px 12px; font-size: 13px; color: #64748b; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 6px; }
 
 /* ===== Responsive ===== */
 @media (max-width:1100px) { .sys-dept-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }

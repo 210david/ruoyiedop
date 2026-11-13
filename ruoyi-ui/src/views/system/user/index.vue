@@ -193,6 +193,28 @@
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="部门领导" prop="superiorLeaderId">
+                  <el-input v-model="form.superiorLeaderName" readonly placeholder="请选择部门领导" style="width: 100%" @click="onSuperiorLeaderFieldClick">
+                    <template #append>
+                      <el-button v-if="form.superiorLeaderName" icon="CircleClose" @click="onSuperiorLeaderFieldClick" />
+                      <el-button v-else icon="Search" @click="onSuperiorLeaderFieldClick" />
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="分管领导" prop="chargeLeaderId">
+                  <el-input v-model="form.chargeLeaderName" readonly placeholder="请选择分管领导" style="width: 100%" @click="onChargeLeaderFieldClick">
+                    <template #append>
+                      <el-button v-if="form.chargeLeaderName" icon="CircleClose" @click="onChargeLeaderFieldClick" />
+                      <el-button v-else icon="Search" @click="onChargeLeaderFieldClick" />
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-row :gutter="16" v-if="form.userId == undefined">
               <el-col :span="12">
                 <el-form-item label="用户名称" prop="userName">
@@ -279,6 +301,10 @@
 
     <!-- 部门选择弹窗 -->
     <dept-picker ref="deptPickerRef" title="选择归属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+    <!-- 部门领导选择弹窗 -->
+    <user-picker ref="superiorLeaderPickerRef" title="选择部门领导" @confirm="onSuperiorLeaderPickerConfirm" />
+    <!-- 分管领导选择弹窗 -->
+    <user-picker ref="chargeLeaderPickerRef" title="选择分管领导" @confirm="onChargeLeaderPickerConfirm" />
     <!-- 岗位选择弹窗（多选） -->
     <position-picker ref="positionPickerRef" :multiple="true" title="选择岗位" @confirm="onPositionPickerConfirm" />
     <!-- 角色选择弹窗（多选） -->
@@ -295,6 +321,7 @@
 import TreePanel from "@/components/TreePanel"
 import ExcelImportDialog from "@/components/ExcelImportDialog"
 import DeptPicker from "@/components/DeptPicker"
+import UserPicker from "@/components/UserPicker"
 import PositionPicker from "@/components/PositionPicker"
 import RolePicker from "@/components/RolePicker"
 import UserViewDrawer from "./view"
@@ -403,6 +430,46 @@ function onDeptFieldClick(e) {
     return
   }
   openDeptPicker()
+}
+
+/** ===== 部门领导弹框选择 ===== */
+function openSuperiorLeaderPicker() {
+  proxy.$refs.superiorLeaderPickerRef.open(form.value.superiorLeaderId)
+}
+function onSuperiorLeaderPickerConfirm(user) {
+  form.value.superiorLeaderId = user.userId
+  form.value.superiorLeaderName = user.nickName
+}
+function clearSuperiorLeader() {
+  form.value.superiorLeaderId = undefined
+  form.value.superiorLeaderName = undefined
+}
+function onSuperiorLeaderFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.superiorLeaderName) { clearSuperiorLeader(); } else { openSuperiorLeaderPicker(); }
+    return
+  }
+  openSuperiorLeaderPicker()
+}
+
+/** ===== 分管领导弹框选择 ===== */
+function openChargeLeaderPicker() {
+  proxy.$refs.chargeLeaderPickerRef.open(form.value.chargeLeaderId)
+}
+function onChargeLeaderPickerConfirm(user) {
+  form.value.chargeLeaderId = user.userId
+  form.value.chargeLeaderName = user.nickName
+}
+function clearChargeLeader() {
+  form.value.chargeLeaderId = undefined
+  form.value.chargeLeaderName = undefined
+}
+function onChargeLeaderFieldClick(e) {
+  if (e && e.target && e.target.closest && e.target.closest('.el-input-group__append')) {
+    if (form.value.chargeLeaderName) { clearChargeLeader(); } else { openChargeLeaderPicker(); }
+    return
+  }
+  openChargeLeaderPicker()
 }
 
 /** ===== 岗位弹框选择（多选） ===== */
@@ -597,6 +664,10 @@ function reset() {
     sex: undefined,
     status: "0",
     remark: undefined,
+    superiorLeaderId: undefined,
+    superiorLeaderName: undefined,
+    chargeLeaderId: undefined,
+    chargeLeaderName: undefined,
     postIds: [],
     roleIds: []
   }

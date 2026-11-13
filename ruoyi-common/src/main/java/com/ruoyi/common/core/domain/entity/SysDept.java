@@ -34,14 +34,26 @@ public class SysDept extends BaseEntity
     /** 显示顺序 */
     private Integer orderNum;
 
-    /** 负责人 */
+    /** 部门领导（姓名） */
     private String leader;
 
-    /** 联系电话 */
-    private String phone;
+    /** 部门领导（人员ID） */
+    private Long leaderId;
 
-    /** 邮箱 */
-    private String email;
+    /** 部门简称 */
+    private String deptShortName;
+
+    /** 部门编码 */
+    private String deptCode;
+
+    /** 分管领导（人员ID） */
+    private Long chargeLeaderId;
+
+    /** 在职人员数量 */
+    private Integer staffCount;
+
+    /** 分管领导姓名（查询回显） */
+    private String chargeLeaderName;
 
     /** 部门状态:0正常,1停用 */
     private String status;
@@ -118,27 +130,64 @@ public class SysDept extends BaseEntity
         this.leader = leader;
     }
 
-    @Size(min = 0, max = 11, message = "联系电话长度不能超过11个字符")
-    public String getPhone()
+    public Long getLeaderId()
     {
-        return phone;
+        return leaderId;
     }
 
-    public void setPhone(String phone)
+    public void setLeaderId(Long leaderId)
     {
-        this.phone = phone;
+        this.leaderId = leaderId;
     }
 
-    @Email(message = "邮箱格式不正确")
-    @Size(min = 0, max = 50, message = "邮箱长度不能超过50个字符")
-    public String getEmail()
+    public String getDeptShortName()
     {
-        return email;
+        return deptShortName;
     }
 
-    public void setEmail(String email)
+    public void setDeptShortName(String deptShortName)
     {
-        this.email = email;
+        this.deptShortName = deptShortName;
+    }
+
+    public String getDeptCode()
+    {
+        return deptCode;
+    }
+
+    public void setDeptCode(String deptCode)
+    {
+        this.deptCode = deptCode;
+    }
+
+    public Long getChargeLeaderId()
+    {
+        return chargeLeaderId;
+    }
+
+    public void setChargeLeaderId(Long chargeLeaderId)
+    {
+        this.chargeLeaderId = chargeLeaderId;
+    }
+
+    public Integer getStaffCount()
+    {
+        return staffCount;
+    }
+
+    public void setStaffCount(Integer staffCount)
+    {
+        this.staffCount = staffCount;
+    }
+
+    public String getChargeLeaderName()
+    {
+        return chargeLeaderName;
+    }
+
+    public void setChargeLeaderName(String chargeLeaderName)
+    {
+        this.chargeLeaderName = chargeLeaderName;
     }
 
     public String getStatus()
@@ -190,8 +239,11 @@ public class SysDept extends BaseEntity
             .append("deptName", getDeptName())
             .append("orderNum", getOrderNum())
             .append("leader", getLeader())
-            .append("phone", getPhone())
-            .append("email", getEmail())
+            .append("leaderId", getLeaderId())
+            .append("deptShortName", getDeptShortName())
+            .append("deptCode", getDeptCode())
+            .append("chargeLeaderId", getChargeLeaderId())
+            .append("staffCount", getStaffCount())
             .append("status", getStatus())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())

@@ -126,6 +126,18 @@ public class SysDeptController extends BaseController
     }
 
     /**
+     * 将部门的部门领导、分管领导同步到该部门人员
+     */
+    @PreAuthorize("@ss.hasPermi('system:dept:edit')")
+    @Log(title = "部门管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/syncLeaderToUsers/{deptId}")
+    public AjaxResult syncLeaderToUsers(@PathVariable Long deptId)
+    {
+        deptService.checkDeptDataScope(deptId);
+        return success(deptService.syncLeaderToUsers(deptId));
+    }
+
+    /**
      * 删除部门
      */
     @PreAuthorize("@ss.hasPermi('system:dept:remove')")

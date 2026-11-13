@@ -59,3 +59,11 @@ export function delDept(deptId) {
     method: 'delete'
   })
 }
+
+// 同步部门领导、分管领导到本部门人员
+export function syncDeptLeaders(deptId) {
+  return request({
+    url: '/system/dept/syncLeaderToUsers/' + deptId,
+    method: 'post'
+  })
+}

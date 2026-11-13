@@ -73,6 +73,17 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult importAttendance(List<HrAttendanceImportDTO> importList, Boolean updateSupport, String operName)
     {
+        return importAttendance(importList, updateSupport, operName, "0", "考勤机导入");
+    }
+
+    /**
+     * 考勤原始数据导入（可指定打卡来源与备注）
+     * 核心逻辑同上，clockSource / sourceRemark 区分数据来源（考勤机、钉钉等）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AjaxResult importAttendance(List<HrAttendanceImportDTO> importList, Boolean updateSupport, String operName, String clockSource, String sourceRemark)
+    {
         if (StringUtils.isNull(importList) || importList.isEmpty())
         {
             return AjaxResult.error("导入考勤数据不能为空！");
@@ -131,11 +142,39 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                     throw new RuntimeException("工号 " + employeeNo + " 未找到对应员工档案");
                 }
 
-                // 3. 按打卡时间排序，取最早和最晚
+                // 3. 按打卡时间排序，取最早和最晚（作为数据源未提供类型时的推断依据）
                 rows.sort(Comparator.comparing(HrAttendanceImportDTO::getClockTime));
                 Date earliestClock = rows.get(0).getClockTime();
                 Date latestClock = rows.get(rows.size() - 1).getClockTime();
                 String recordDateStr = dateFormat.format(earliestClock);
+
+                // 3.1 精确落位：数据源（钉钉/企业微信）明确给出上下班类型时按类型取，不再靠时间推断
+                //     仅当本组存在 ON_DUTY/OFF_DUTY 记录时才走精确模式；全为外出打卡或未提供类型时回退到最早/最晚推断
+                Date punchIn = null;
+                Date punchOut = null;
+                boolean exactPunch = false;
+                for (HrAttendanceImportDTO row : rows)
+                {
+                    String punchType = row.getPunchType();
+                    if (HrAttendanceImportDTO.PUNCH_ON_DUTY.equalsIgnoreCase(punchType))
+                    {
+                        exactPunch = true;
+                        if (punchIn == null || row.getClockTime().before(punchIn))
+                        {
+                            punchIn = row.getClockTime();
+                        }
+                    }
+                    else if (HrAttendanceImportDTO.PUNCH_OFF_DUTY.equalsIgnoreCase(punchType))
+                    {
+                        exactPunch = true;
+                        if (punchOut == null || row.getClockTime().after(punchOut))
+                        {
+                            punchOut = row.getClockTime();
+                        }
+                    }
+                }
+                Date clockInValue = exactPunch ? punchIn : earliestClock;
+                Date clockOutValue = exactPunch ? punchOut : latestClock;
 
                 // 4. 自动匹配排班班次（提前到判重之前，确保更新和新增都能用）
                 HrSchedule schedule = hrScheduleMapper.selectByEmployeeNoAndDate(employeeNo, recordDateStr);
@@ -146,10 +185,11 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                 {
                     if (updateSupport)
                     {
-                        existing.setClockIn(earliestClock);
-                        existing.setClockOut(latestClock);
-                        existing.setClockInSource("0");
-                        existing.setClockOutSource("0");
+                        existing.setClockIn(clockInValue);
+                        existing.setClockOut(clockOutValue);
+                        // 来源仅在对应打卡时间存在时标记，避免"时间为空却标注来源"的脏数据
+                        existing.setClockInSource(clockInValue != null ? clockSource : "0");
+                        existing.setClockOutSource(clockOutValue != null ? clockSource : "0");
                         // 重新匹配班次
                         if (schedule != null)
                         {
@@ -165,8 +205,8 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                                 existing.setShiftName(defaultShift.getShiftName());
                             }
                         }
-                        // 重新计算考勤状态
-                        computeAttendanceResult(existing);
+                        // 重新计算考勤状态（精确落位时不做上下班推断）
+                        computeAttendanceResult(existing, exactPunch);
                         existing.setUpdateBy(operName);
                         hrAttendanceRecordMapper.updateHrAttendanceRecord(existing);
                         successNum++;
@@ -200,10 +240,10 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                 record.setEmployeeName(employee.getEmployeeName());
                 record.setEmployeeNo(employeeNo);
                 record.setOrgId(employee.getOrgId());
-                record.setClockIn(earliestClock);
-                record.setClockOut(latestClock);
-                record.setClockInSource("0");
-                record.setClockOutSource("0");
+                record.setClockIn(clockInValue);
+                record.setClockOut(clockOutValue);
+                record.setClockInSource(clockInValue != null ? clockSource : "0");
+                record.setClockOutSource(clockOutValue != null ? clockSource : "0");
                 record.setAttendanceStatus("0");
                 record.setLateMinutes(0);
                 record.setEarlyMinutes(0);
@@ -211,7 +251,7 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                 record.setNightShift(0);
                 record.setDelFlag("0");
                 record.setCreateBy(operName);
-                record.setRemark("考勤机导入");
+                record.setRemark(sourceRemark);
 
                 if (schedule != null)
                 {
@@ -229,7 +269,7 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
                 }
 
                 // 7. 根据班次标准时间计算考勤状态、迟到/早退分钟
-                computeAttendanceResult(record);
+                computeAttendanceResult(record, exactPunch);
 
                 hrAttendanceRecordMapper.insertHrAttendanceRecord(record);
                 successNum++;
@@ -303,6 +343,19 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
 
     private void computeAttendanceResult(HrAttendanceRecord record)
     {
+        computeAttendanceResult(record, false);
+    }
+
+    /**
+     * 计算考勤状态与迟到/早退分钟
+     *
+     * @param record     考勤记录
+     * @param exactPunch 是否已由数据源明确上下班类型（钉钉/企业微信）。
+     *                   true 表示 clockIn/clockOut 已按类型精确落位，不再按班次中点推断上下班归属；
+     *                   false 表示沿用"最早为上班、最晚为下班"的推断逻辑（考勤机 Excel 导入、手工录入）
+     */
+    private void computeAttendanceResult(HrAttendanceRecord record, boolean exactPunch)
+    {
         if (record == null || record.getShiftId() == null)
         {
             return;
@@ -341,7 +394,7 @@ public class HrAttendanceRecordServiceImpl implements IHrAttendanceRecordService
             || (clockIn != null && clockOut == null)
             || (clockIn == null && clockOut != null);
 
-        if (isSinglePunch)
+        if (isSinglePunch && !exactPunch)
         {
             // 只有一次打卡：取非空的那个时间来判断是上班还是下班
             Date singlePunch = clockIn != null ? clockIn : clockOut;

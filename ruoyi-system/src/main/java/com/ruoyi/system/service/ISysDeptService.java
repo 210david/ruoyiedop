@@ -123,6 +123,14 @@ public interface ISysDeptService
     public void updateDeptSort(String[] deptIds, String[] orderNums);
 
     /**
+     * 将部门的部门领导、分管领导同步到该部门人员
+     *
+     * @param deptId 部门ID
+     * @return 更新人数
+     */
+    public int syncLeaderToUsers(Long deptId);
+
+    /**
      * 删除部门管理信息
      * 
      * @param deptId 部门ID

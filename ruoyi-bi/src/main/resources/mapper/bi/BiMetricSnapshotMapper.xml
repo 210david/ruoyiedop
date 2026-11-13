@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiMetricSnapshotMapper">
+
+    <resultMap type="BiMetricSnapshot" id="BiMetricSnapshotResult">
+        <id     property="id"           column="id"/>
+        <result property="metricCode"   column="metric_code"/>
+        <result property="metricDate"   column="metric_date"/>
+        <result property="deptId"       column="dept_id"/>
+        <result property="metricValue"  column="metric_value"/>
+        <result property="unit"         column="unit"/>
+        <result property="dataFlag"     column="data_flag"/>
+        <result property="snapshotTime" column="snapshot_time"/>
+    </resultMap>
+
+    <delete id="deleteByMetricDate">
+        delete from bi_metric_snapshot where metric_date = #{metricDate}
+    </delete>
+
+    <insert id="insertBatch">
+        insert into bi_metric_snapshot (metric_code, metric_date, dept_id, metric_value, unit, data_flag, snapshot_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.metricCode}, #{item.metricDate}, #{item.deptId}, #{item.metricValue},
+             #{item.unit}, #{item.dataFlag}, #{item.snapshotTime})
+        </foreach>
+    </insert>
+
+    <select id="selectListByDate" resultMap="BiMetricSnapshotResult">
+        select id, metric_code, metric_date, dept_id, metric_value, unit, data_flag, snapshot_time
+        from bi_metric_snapshot
+        where metric_date = #{metricDate}
+    </select>
+
+    <select id="selectLatestMetricDate" resultType="java.util.Date">
+        select max(metric_date) from bi_metric_snapshot
+    </select>
+
+    <select id="selectTrendList" resultMap="BiMetricSnapshotResult">
+        select id, metric_code, metric_date, dept_id, metric_value, unit, data_flag, snapshot_time
+        from bi_metric_snapshot
+        where
+        <if test="deptIds == null">dept_id = 0</if>
+        <if test="deptIds != null">
+            dept_id in
+            <foreach collection="deptIds" item="did" open="(" separator="," close=")">#{did}</foreach>
+        </if>
+          and metric_date &gt;= #{startDate}
+          and metric_date &lt;= #{endDate}
+        order by metric_date, metric_code
+    </select>
+
+    <select id="selectByUnique" resultMap="BiMetricSnapshotResult">
+        select id, metric_code, metric_date, dept_id, metric_value, unit, data_flag, snapshot_time
+        from bi_metric_snapshot
+        where metric_code = #{metricCode} and metric_date = #{metricDate}
+        <if test="deptId != null">and dept_id = #{deptId}</if>
+        <if test="deptId == null">and dept_id = 0</if>
+        limit 1
+    </select>
+
+</mapper>
