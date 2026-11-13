@@ -141,16 +141,16 @@
             <div class="rd-card-body" v-show="!collapsedCards.c0">
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="姓名" prop="workerName">
-                  <el-input v-model="form.workerName" placeholder="可直接输入姓名（外部聘用人员）或点击选择" style="width: 100%" @input="onWorkerNameInput">
-                    <template #append><el-button icon="Search" @click="openEmployeePicker" /></template>
-                    <template #suffix><el-icon v-if="form.workerName" class="clear-icon" @click.stop="clearEmployee"><CircleClose /></el-icon></template>
+                  <el-input v-model="form.workerName" :readonly="!!form.userId" placeholder="选择人员或直接输入外部人员姓名" style="width: 100%" @input="onWorkerNameInput">
+                    <template #append><el-button icon="Search" @click="openUserPicker" /></template>
+                    <template #suffix><el-icon v-if="form.userId" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon></template>
                   </el-input>
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="选择人员后自动带出，外部人员可手动输入" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="工号" prop="workerNo"><el-input v-model="form.workerNo" placeholder="请输入工号（外部人员可手动输入）" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
-                  <el-input v-model="form.deptName" readonly placeholder="选择人员后自动带出" disabled />
+                  <el-input v-model="form.deptName" placeholder="选择人员后自动回填" :disabled="!!form.userId" />
                 </el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="岗位" prop="position"><el-input v-model="form.position" placeholder="选择人员后自动带出，可修改" /></el-form-item></el-col>
               </el-row>
@@ -231,13 +231,13 @@
     </el-dialog>
 
     <!-- 员工选择弹窗 -->
-    <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
+    <user-picker ref="userPickerRef" title="选择人员" @confirm="onUserPickerConfirm" />
   </div>
 </template>
 
 <script setup name="SafetyWorker">
 import { listWorker, getWorker, addWorker, updateWorker, delWorker } from '@/api/safety/worker'
-import EmployeePicker from '@/components/EmployeePicker/index.vue'
+import UserPicker from '@/components/UserPicker/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { Search, Filter, RefreshLeft, CircleClose, ArrowDown } from '@element-plus/icons-vue'
@@ -294,7 +294,7 @@ const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, workerName: undefined, position: undefined, jobType: undefined, workerNo: undefined, status: undefined, deptName: undefined, phone: undefined, params: {} },
   rules: {
     workerName: [{ required: true, message: '请输入或选择人员', trigger: 'change' }],
-    deptId: [{ validator: (rule, value, callback) => { (form.value.employeeId && !value) ? callback(new Error('所属部门不能为空')) : callback() }, trigger: 'change' }],
+    deptId: [{ validator: (rule, value, callback) => { (form.value.userId && !value) ? callback(new Error('所属部门不能为空')) : callback() }, trigger: 'change' }],
     position: [{ required: true, message: '岗位不能为空', trigger: 'blur' }],
     phone: [
       { required: true, message: '联系电话不能为空', trigger: 'blur' },
@@ -340,34 +340,29 @@ function handleDelete(row) { const workerIds = row.workerId || ids.value; proxy.
 function handleExport() { proxy.download('safety/worker/export', proxy.withExportIds({ ...queryParams.value }, ids.value, 'workerId'), `worker_${new Date().getTime()}.xlsx`) }
 function cancel() { open.value = false; reset() }
 function reset() {
-  form.value = { workerId: undefined, employeeId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }
+  form.value = { workerId: undefined, userId: undefined, workerName: undefined, workerNo: undefined, deptId: undefined, deptName: undefined, position: undefined, phone: undefined, isSpecial: '1', jobType: undefined, certNo: undefined, certIssueDate: undefined, validTo: undefined, status: '0', remark: undefined }
   proxy.resetForm('workerRef')
 }
 /** 打开员工选择弹窗 */
-function openEmployeePicker() { proxy.$refs.employeePickerRef.open(form.value.employeeId) }
+function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.userId) }
 /** 手动输入姓名（外部聘用人员）：解除组织用户关联 */
 function onWorkerNameInput() {
-  if (form.value.employeeId) {
-    form.value.employeeId = undefined
-    if (form.value.workerNo) form.value.workerNo = undefined
+  if (form.value.userId) {
+    form.value.userId = undefined
     if (form.value.deptId) { form.value.deptId = undefined; form.value.deptName = undefined }
   }
 }
-/** 员工选择确认回调：自动带出工号、部门、岗位、联系电话 */
-function onEmployeePickerConfirm(emp) {
-  form.value.employeeId = emp.employeeId
-  form.value.workerName = emp.employeeName
-  form.value.workerNo = emp.employeeNo
-  form.value.deptId = emp.orgId
-  form.value.deptName = emp.orgName
-  form.value.position = emp.positionName || form.value.position
-  if (emp.phone) form.value.phone = emp.phone
+/** 组织用户选择确认回调（与培训证书、参训人员一致） */
+function onUserPickerConfirm(user) {
+  form.value.userId = user.userId
+  form.value.workerName = user.nickName
+  form.value.deptId = user.deptId
+  form.value.deptName = user.deptName || ''
 }
-/** 清除选择的人员 */
-function clearEmployee() {
-  form.value.employeeId = undefined
+/** 清除人员选择 */
+function clearUser() {
+  form.value.userId = undefined
   form.value.workerName = undefined
-  form.value.workerNo = undefined
   form.value.deptId = undefined
   form.value.deptName = undefined
 }
