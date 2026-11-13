@@ -40,7 +40,7 @@ UNION ALL
 SELECT '20261113 参训人员补列', COUNT(*), '=3'
   FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='biz_safety_training_attendee' AND column_name IN ('exam_time','sign_in_method','enterprise_id')
 UNION ALL
-SELECT '20261113 考试模块表数', COUNT(*), '=7'
+SELECT '20261113 考试模块表数', COUNT(*), '=8'
   FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'biz_safety_exam%'
 UNION ALL
 SELECT '20261113 考试菜单数', COUNT(*), '=25'
