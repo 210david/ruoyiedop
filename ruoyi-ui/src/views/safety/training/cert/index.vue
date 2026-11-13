@@ -161,8 +161,8 @@
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
                 <el-col :span="12">
-                  <el-form-item label="获证人员" prop="userId">
-                    <el-input v-model="form.userName" :readonly="!!form.userId" placeholder="选择人员或直接输入外部人员姓名" style="width: 100%" @click="openUserPicker">
+                  <el-form-item label="获证人员" prop="userName">
+                    <el-input v-model="form.userName" :readonly="!!form.userId" placeholder="可直接输入姓名（外部获证人员）或点击选择" style="width: 100%" @input="onUserNameInput">
                       <template #append><el-button icon="Search" @click="openUserPicker" /></template>
                       <template #suffix><el-icon v-if="form.userName" class="clear-icon" @click.stop="clearUser"><CircleClose /></el-icon></template>
                     </el-input>
@@ -318,7 +318,7 @@ const data = reactive({
     certNo: [{ required: true, message: '证书编号不能为空', trigger: 'blur' }],
     certName: [{ required: true, message: '证书名称不能为空', trigger: 'blur' }],
     certType: [{ required: true, message: '证书类型不能为空', trigger: 'change' }],
-    userId: [{ required: true, message: '获证人员不能为空', trigger: 'change' }],
+    userName: [{ required: true, message: '获证人员不能为空', trigger: 'change' }],
     issueDate: [{ required: true, message: '发证日期不能为空', trigger: 'change' }],
     expireDate: [{ required: true, message: '有效期至不能为空', trigger: 'change' }],
     issueOrg: [{ required: true, message: '发证机构不能为空', trigger: 'blur' }]
@@ -377,10 +377,12 @@ function reset() {
 
 /** 打开获证人员选择弹窗 */
 function openUserPicker() { proxy.$refs.userPickerRef.open(form.value.userId) }
-/** 获证人员选择确认回调 */
+/** 手动输入获证人员姓名（外部人员）：解除组织用户关联 */
+function onUserNameInput() { if (form.value.userId) { form.value.userId = undefined; form.value.deptId = undefined; form.value.deptName = undefined } }
+/** 手动输入获证人员姓名（外部人员）：解除组织用户关联 */
 function onUserPickerConfirm(user) { form.value.userId = user.userId; form.value.userName = user.nickName; form.value.deptId = user.deptId; form.value.deptName = user.deptName || '' }
 /** 清除获证人员 */
-function clearUser() { form.value.userId = undefined; form.value.deptId = undefined; form.value.deptName = undefined }
+function clearUser() { form.value.userId = undefined; form.value.userName = undefined; form.value.deptId = undefined; form.value.deptName = undefined }
 
 function certTypeLabel(type) { const item = safety_cert_type.value.find(d => d.value == type); return item ? item.label : '-' }
 
