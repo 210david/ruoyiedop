@@ -47,15 +47,15 @@
         </div>
       </div>
 
-      <!-- 右侧员工列表 -->
+      <!-- 右侧组织用户列表 -->
       <div class="picker-right">
         <!-- 搜索栏 -->
         <div class="employee-picker-search">
-          <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable size="small" style="width: 120px" @keyup.enter="handleQuery">
+          <el-input v-model="queryParams.userName" placeholder="账号" clearable size="small" style="width: 120px" @keyup.enter="handleQuery">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
-          <el-input v-model="queryParams.employeeName" placeholder="姓名" clearable size="small" style="width: 130px; margin-left: 8px" @keyup.enter="handleQuery" />
-          <el-input v-if="!multiple" v-model="queryParams.phone" placeholder="电话" clearable size="small" style="width: 110px; margin-left: 8px" @keyup.enter="handleQuery" />
+          <el-input v-model="queryParams.nickName" placeholder="姓名" clearable size="small" style="width: 130px; margin-left: 8px" @keyup.enter="handleQuery" />
+          <el-input v-if="!multiple" v-model="queryParams.phonenumber" placeholder="手机号" clearable size="small" style="width: 110px; margin-left: 8px" @keyup.enter="handleQuery" />
           <el-button type="primary" plain icon="Search" size="small" style="margin-left: 8px" @click="handleQuery">查询</el-button>
           <el-button icon="RefreshLeft" size="small" @click="resetQuery">重置</el-button>
           <div class="picker-right-info" v-if="multiple && selectedRows.length > 0">
@@ -72,7 +72,7 @@
           </div>
         </div>
 
-        <!-- 员工表格 -->
+        <!-- 人员表格 -->
         <div class="employee-picker-table">
           <el-table
             ref="tableRef"
@@ -93,14 +93,15 @@
             </el-table-column>
             <!-- 多选模式 -->
             <el-table-column v-if="multiple" type="selection" width="45" align="center" :selectable="canSelect" />
-            <el-table-column label="工号" prop="employeeNo" width="110" show-overflow-tooltip />
+            <el-table-column label="账号" prop="employeeNo" width="110" show-overflow-tooltip />
             <el-table-column label="姓名" prop="employeeName" width="100" show-overflow-tooltip />
           <el-table-column label="部门" prop="orgName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="岗位" prop="positionName" width="110" show-overflow-tooltip />
-          <el-table-column v-if="!multiple" label="电话" prop="phone" width="110" show-overflow-tooltip />
+          <el-table-column label="岗位" prop="positionName" min-width="110" show-overflow-tooltip />
+          <el-table-column v-if="!multiple" label="手机号" prop="phone" width="110" show-overflow-tooltip />
             <el-table-column label="状态" prop="employeeStatus" width="80" align="center">
               <template #default="{ row }">
-                <dict-tag :options="hr_employee_status" :value="row.employeeStatus" />
+                <el-tag v-if="row.employeeStatus === '0'" type="success" size="small">正常</el-tag>
+                <el-tag v-else type="info" size="small">停用</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -127,19 +128,28 @@
 </template>
 
 <script setup>
-import { listHrEmployee } from '@/api/hr/hrEmployee'
-import { deptTreeSelect } from '@/api/system/user'
+/**
+ * 人员选择弹窗（数据源：组织用户 sys_user）
+ *
+ * 说明：本组件历史上从 HR 员工档案（/hr/employee/list）取数，
+ * 现已统一改为组织用户（/system/user/list），与安全模块 UserPicker 保持一致。
+ * 为兼容 22 个页面已有的调用代码（employee-picker / onXxxConfirm），对外仍输出
+ * employeeId/employeeName/employeeNo/orgId 等字段形状，字段映射：
+ *   employeeId   <- sys_user.user_id
+ *   employeeNo   <- sys_user.user_name（账号，作为工号展示）
+ *   employeeName <- sys_user.nick_name
+ *   orgId/orgName <- sys_dept.dept_id/dept_name
+ *   positionName <- 用户岗位（postName）
+ */
+import { listUser, deptTreeSelect } from '@/api/system/user'
 import { Search, OfficeBuilding, Folder, Document } from '@element-plus/icons-vue'
-
-const { proxy } = getCurrentInstance()
-const { hr_employee_status } = proxy.useDict('hr_employee_status')
 
 const props = defineProps({
   title: {
     type: String,
     default: '选择人员'
   },
-  /** 是否只显示在职/试用人员（默认 true，排除离职、退休） */
+  /** 是否只显示正常状态用户（默认 true，排除停用） */
   onlyActive: {
     type: Boolean,
     default: true
@@ -183,16 +193,18 @@ const confirmDisabled = computed(() => {
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
-  employeeNo: undefined,
-  employeeName: undefined,
-  phone: undefined
+  userName: undefined,
+  nickName: undefined,
+  phonenumber: undefined,
+  status: undefined,
+  deptId: undefined
 })
 
 /** 弹窗打开时初始化 */
 function onOpen() {
-  queryParams.employeeNo = undefined
-  queryParams.employeeName = undefined
-  queryParams.phone = undefined
+  queryParams.userName = undefined
+  queryParams.nickName = undefined
+  queryParams.phonenumber = undefined
   queryParams.pageNum = 1
   selectedDeptId.value = undefined
   deptKeyword.value = ''
@@ -234,18 +246,18 @@ function onDeptClick(data) {
   getList()
 }
 
-/** 加载员工档案列表 */
+/** 加载组织用户列表 */
 function getList() {
   loading.value = true
   const params = { ...queryParams }
   if (props.onlyActive) {
-    params.params = { activeOnly: true }
+    params.status = '0'
   }
   if (selectedDeptId.value) {
-    params.orgId = selectedDeptId.value
+    params.deptId = selectedDeptId.value
   }
-  listHrEmployee(params).then(res => {
-    list.value = res.rows
+  listUser(params).then(res => {
+    list.value = (res.rows || []).map(toEmployeeShape)
     total.value = res.total
     loading.value = false
     if (props.multiple && pendingIds.value.length > 0) {
@@ -268,6 +280,24 @@ function getList() {
   })
 }
 
+/** sys_user 行 -> 兼容旧字段形状 */
+function toEmployeeShape(u) {
+  return {
+    employeeId: u.userId,
+    employeeNo: u.userName,
+    employeeName: u.nickName,
+    idCard: undefined,
+    gender: u.sex,
+    phone: u.phonenumber,
+    email: u.email,
+    orgId: u.dept ? u.dept.deptId : u.deptId,
+    orgName: u.dept ? u.dept.deptName : u.deptName,
+    positionId: undefined,
+    positionName: u.postName,
+    employeeStatus: u.status
+  }
+}
+
 /** 查询 */
 function handleQuery() {
   queryParams.pageNum = 1
@@ -276,9 +306,9 @@ function handleQuery() {
 
 /** 重置 */
 function resetQuery() {
-  queryParams.employeeNo = undefined
-  queryParams.employeeName = undefined
-  queryParams.phone = undefined
+  queryParams.userName = undefined
+  queryParams.nickName = undefined
+  queryParams.phonenumber = undefined
   selectedDeptId.value = undefined
   if (deptTreeRef.value) {
     deptTreeRef.value.setCurrentKey(null)
@@ -342,38 +372,11 @@ function canSelect() {
 function handleConfirm() {
   if (props.multiple) {
     if (selectedRows.value.length === 0) return
-    emit('confirm', selectedRows.value.map(row => ({
-      employeeId: row.employeeId,
-      employeeNo: row.employeeNo,
-      employeeName: row.employeeName,
-      idCard: row.idCard,
-      gender: row.gender,
-      phone: row.phone,
-      email: row.email,
-      orgId: row.orgId,
-      orgName: row.orgName,
-      positionId: row.positionId,
-      positionName: row.positionName,
-      employeeStatus: row.employeeStatus
-    })))
+    emit('confirm', selectedRows.value)
     visible.value = false
   } else {
     if (!selectedId.value) return
-    const row = selectedRow.value
-    emit('confirm', {
-      employeeId: row.employeeId,
-      employeeNo: row.employeeNo,
-      employeeName: row.employeeName,
-      idCard: row.idCard,
-      gender: row.gender,
-      phone: row.phone,
-      email: row.email,
-      orgId: row.orgId,
-      orgName: row.orgName,
-      positionId: row.positionId,
-      positionName: row.positionName,
-      employeeStatus: row.employeeStatus
-    })
+    emit('confirm', selectedRow.value)
     visible.value = false
   }
 }
@@ -501,64 +504,37 @@ defineExpose({ open })
   }
 }
 
-/* ===== 右侧员工列表 ===== */
+/* ===== 右侧列表 ===== */
 .picker-right {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  overflow: hidden;
 }
 
 .employee-picker-search {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
-  gap: 4px;
+}
+
+.employee-picker-selected {
+  margin-bottom: 6px;
+}
+
+.employee-picker-table {
+  flex: 1;
+  overflow: hidden;
+}
+
+.employee-picker-pager {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
 
 .picker-right-info {
   margin-left: auto;
-  display: flex;
-  align-items: center;
-}
-
-.employee-picker-selected {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-
-  .selected-tags {
-    display: flex;
-    flex-wrap: wrap;
-    max-height: 80px;
-    overflow-y: auto;
-  }
-}
-
-.employee-picker-table {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  overflow: hidden;
-
-  :deep(.el-table__row) {
-    cursor: pointer;
-
-    &:hover > td {
-      background: #f0f7ff;
-    }
-  }
-
-  :deep(.el-table__row.is-current > td) {
-    background: #e6f0fd;
-  }
-}
-
-.employee-picker-pager {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
 }
 </style>
