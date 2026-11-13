@@ -1039,7 +1039,7 @@ WHERE NOT EXISTS (SELECT 1 FROM biz_safety_exam_question WHERE content = '员工
 -- 用法：mysql -uroot -p ruoyi_lyjs < seed_national_risk_points.sql
 -- =============================================================
 
-USE ruoyi_lyjs;
+-- （已移除硬编码 USE ruoyi_lyjs，库名由执行脚本的 -D 参数指定）
 
 -- 先清之前那 6 条空 engineering_category 的脏数据
 DELETE FROM biz_safety_risk_point WHERE engineering_category IS NULL OR engineering_category = '';
