@@ -31,6 +31,8 @@ public class KdInventoryController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(KdInventory query)
     {
+        // 分类过滤需在分页前展开（展开过程会查询类别表，避免占用 PageHelper 分页参数）
+        inventoryService.expandCategoryIds(query);
         startPage();
         List<KdInventory> list = inventoryService.selectList(query);
         return getDataTable(list);

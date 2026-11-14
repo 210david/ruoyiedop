@@ -26,13 +26,15 @@
 
     <select id="selectList" parameterType="com.ruoyi.kingdee.domain.KdInventory" resultMap="KdInventoryResult">
         SELECT id, material_id, material_number, material_name, spec_model, stock_id, stock_name,
-               unit_name, qty, valid_qty, available_out_qty, category_id, category_name, image_url, sync_time
+               unit_name, qty, valid_qty, available_out_qty, category_id, category_name, category_sort,
+               root_category_id, root_category_name, root_category_sort, image_url, sync_time
         FROM kd_inventory
         <where>
             <if test="materialNumber != null and materialNumber != ''">AND material_number LIKE CONCAT('%', #{materialNumber}, '%')</if>
             <if test="materialName != null and materialName != ''">AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
-            <if test="categoryId != null and categoryId != ''">
-                AND (category_id = #{categoryId} OR root_category_id = #{categoryId})
+            <if test="categoryIds != null and categoryIds.size() > 0">
+                AND category_id IN
+                <foreach collection="categoryIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
             </if>
             <if test="params.beginBillDate != null and params.endBillDate != null">
                 AND sync_time BETWEEN #{params.beginBillDate} AND #{params.endBillDate}
@@ -78,15 +80,6 @@
 
     <select id="selectDistinctCategories" resultType="java.lang.String">
         SELECT DISTINCT category_id FROM kd_inventory WHERE category_id IS NOT NULL AND category_id != ''
-    </select>
-
-    <select id="selectCategoryList" resultType="java.util.LinkedHashMap">
-        SELECT root_category_id AS rootId, root_category_name AS rootName, MIN(root_category_sort) AS rootSort,
-               category_id AS childId, category_name AS childName, MIN(category_sort) AS childSort
-        FROM kd_inventory
-        WHERE category_id IS NOT NULL AND category_id != ''
-        GROUP BY root_category_id, root_category_name, category_id, category_name
-        ORDER BY MIN(root_category_sort), MIN(category_sort), category_name
     </select>
 
 </mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kingdee.mapper.KdCategoryMapper">
+
+    <resultMap id="KdCategoryResult" type="com.ruoyi.kingdee.domain.KdCategory">
+        <id property="id" column="id"/>
+        <result property="number" column="number"/>
+        <result property="name" column="name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="level" column="level"/>
+        <result property="sort" column="sort"/>
+    </resultMap>
+
+    <delete id="deleteAll">
+        DELETE FROM kd_category
+    </delete>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO kd_category (id, number, name, parent_id, level, sort)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.id}, #{it.number}, #{it.name}, #{it.parentId}, #{it.level}, #{it.sort})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            number = VALUES(number),
+            name = VALUES(name),
+            parent_id = VALUES(parent_id),
+            level = VALUES(level),
+            sort = VALUES(sort)
+    </insert>
+
+    <select id="selectAllOrdered" resultMap="KdCategoryResult">
+        SELECT id, number, name, parent_id, level, sort
+        FROM kd_category
+        ORDER BY sort, name
+    </select>
+
+</mapper>

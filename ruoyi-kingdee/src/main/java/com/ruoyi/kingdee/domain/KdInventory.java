@@ -31,6 +31,8 @@ public class KdInventory extends BaseEntity
     private String rootCategoryId;
     private String rootCategoryName;
     private Integer rootCategorySort;
+    /** 分类筛选：分类及其下级分类 id 集合（非表字段） */
+    private java.util.List<String> categoryIds;
     private String imageUrl;
     private Date syncTime;
 
@@ -68,6 +70,8 @@ public class KdInventory extends BaseEntity
     public void setRootCategoryName(String rootCategoryName) { this.rootCategoryName = rootCategoryName; }
     public Integer getRootCategorySort() { return rootCategorySort; }
     public void setRootCategorySort(Integer rootCategorySort) { this.rootCategorySort = rootCategorySort; }
+    public java.util.List<String> getCategoryIds() { return categoryIds; }
+    public void setCategoryIds(java.util.List<String> categoryIds) { this.categoryIds = categoryIds; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public Date getSyncTime() { return syncTime; }

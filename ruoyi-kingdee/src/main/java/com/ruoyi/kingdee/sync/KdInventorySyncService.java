@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.kingdee.adapter.KingdeeHttpClient;
+import com.ruoyi.kingdee.domain.KdCategory;
 import com.ruoyi.kingdee.domain.KdInventory;
 import com.ruoyi.kingdee.service.KdInventoryService;
 
@@ -40,6 +41,7 @@ public class KdInventorySyncService
 
     @Autowired private KingdeeHttpClient kingdeeClient;
     @Autowired private KdInventoryService inventoryService;
+    @Autowired private com.ruoyi.kingdee.mapper.KdCategoryMapper categoryMapper;
 
     private boolean sampleLogged = false;
 
@@ -56,6 +58,7 @@ public class KdInventorySyncService
             // 商品类别展示顺序（金蝶商品类别树顺序）
             CategoryIndex catIndex = loadCategoryIndex();
             log.info("金蝶库存同步 商品类别顺序加载完成: {} 条", catIndex.order.size());
+            saveCategories(catIndex);
 
             // 2. 拉取库存（接口按「商品+仓库+库位」返回，需合并到商品+仓库）
             Map<String, KdInventory> merged = new LinkedHashMap<>();
@@ -266,6 +269,20 @@ public class KdInventorySyncService
         return index;
     }
 
+    /**
+     * 全量保存商品类别，供库存分类树按多级结构展示
+     */
+    private void saveCategories(CategoryIndex catIndex)
+    {
+        if (catIndex.categories.isEmpty()) return;
+        categoryMapper.deleteAll();
+        for (int i = 0; i < catIndex.categories.size(); i += 500)
+        {
+            categoryMapper.batchInsert(catIndex.categories.subList(i, Math.min(i + 500, catIndex.categories.size())));
+        }
+        log.info("金蝶商品类别已保存: {} 条", catIndex.categories.size());
+    }
+
     private void fillCategoryOrder(String id, int depth, Map<String, List<String>> childrenOf,
                                    Map<String, Map<String, Object>> byId, CategoryIndex index, int[] seq)
     {
@@ -278,6 +295,16 @@ public class KdInventorySyncService
             if (number != null && !number.isEmpty()) index.order.putIfAbsent(number, order);
             String name = str(g.get("name"));
             if (name != null && !name.isEmpty()) index.order.putIfAbsent(name, order);
+
+            KdCategory c = new KdCategory();
+            c.setId(id);
+            c.setNumber(number);
+            c.setName(name);
+            String pid = index.parentOf.get(id);
+            c.setParentId(pid == null || pid.isEmpty() ? null : pid);
+            c.setLevel(CategoryIndex.levelOf(g));
+            c.setSort(order);
+            index.categories.add(c);
         }
         if (depth > 20) return;
         List<String> children = childrenOf.get(id);
@@ -296,19 +323,17 @@ public class KdInventorySyncService
         final Map<String, Integer> order = new HashMap<>();
         final Map<String, Map<String, Object>> byId = new HashMap<>();
         final Map<String, String> parentOf = new HashMap<>();
+        final List<KdCategory> categories = new ArrayList<>();
 
-        /** 解析物料的二级类别与一级类别（与金蝶两级分类一致） */
+        /** 解析物料所属的末级类别与一级类别 */
         void resolve(KdInventory o)
         {
             Map<String, Object> node = o.getCategoryId() == null ? null : byId.get(o.getCategoryId());
             Map<String, Object> root = node;
-            Map<String, Object> second = null;
             Map<String, Object> cur = node;
             int guard = 0;
             while (cur != null && guard++ < 20)
             {
-                int level = levelOf(cur);
-                if (level == 2) second = cur;
                 String pid = parentOf.get(str(cur.get("id")));
                 Map<String, Object> parent = (pid == null || pid.isEmpty()) ? null : byId.get(pid);
                 if (parent == null)
@@ -318,11 +343,10 @@ public class KdInventorySyncService
                 }
                 cur = parent;
             }
-            Map<String, Object> display = second != null ? second : root;
-            if (display != null)
+            if (node != null)
             {
-                o.setCategoryId(str(display.get("id")));
-                o.setCategoryName(str(display.get("name")));
+                o.setCategoryId(str(node.get("id")));
+                o.setCategoryName(str(node.get("name")));
             }
             if (root != null)
             {
