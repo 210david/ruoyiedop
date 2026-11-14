@@ -96,6 +96,9 @@ public class SysUser extends BaseEntity
     /** 岗位名称（查询时拼接） */
     private String postName;
 
+    /** 工号（查询时联查 HR 员工档案 biz_hr_employee.employee_no，选人组件带出） */
+    private String employeeNo;
+
     /** 上级领导（人员ID） */
     private Long superiorLeaderId;
 
@@ -363,6 +366,16 @@ public class SysUser extends BaseEntity
     public void setPostName(String postName)
     {
         this.postName = postName;
+    }
+
+    public String getEmployeeNo()
+    {
+        return employeeNo;
+    }
+
+    public void setEmployeeNo(String employeeNo)
+    {
+        this.employeeNo = employeeNo;
     }
 
     public Long getRoleId()

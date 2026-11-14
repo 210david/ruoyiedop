@@ -358,6 +358,8 @@ function onUserPickerConfirm(user) {
   form.value.workerName = user.nickName
   form.value.deptId = user.deptId
   form.value.deptName = user.deptName || ''
+  // 工号：联查 HR 员工档案的真实工号；档案缺失时用登录账号兜底（可手动修改）
+  form.value.workerNo = user.employeeNo || user.userName || ''
 }
 /** 清除人员选择 */
 function clearUser() {
