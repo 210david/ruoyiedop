@@ -17,6 +17,9 @@
         <result property="categoryId" column="category_id"/>
         <result property="categoryName" column="category_name"/>
         <result property="categorySort" column="category_sort"/>
+        <result property="rootCategoryId" column="root_category_id"/>
+        <result property="rootCategoryName" column="root_category_name"/>
+        <result property="rootCategorySort" column="root_category_sort"/>
         <result property="imageUrl" column="image_url"/>
         <result property="syncTime" column="sync_time"/>
     </resultMap>
@@ -28,7 +31,9 @@
         <where>
             <if test="materialNumber != null and materialNumber != ''">AND material_number LIKE CONCAT('%', #{materialNumber}, '%')</if>
             <if test="materialName != null and materialName != ''">AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
-            <if test="categoryId != null and categoryId != ''">AND category_id = #{categoryId}</if>
+            <if test="categoryId != null and categoryId != ''">
+                AND (category_id = #{categoryId} OR root_category_id = #{categoryId})
+            </if>
             <if test="params.beginBillDate != null and params.endBillDate != null">
                 AND sync_time BETWEEN #{params.beginBillDate} AND #{params.endBillDate}
             </if>
@@ -39,12 +44,14 @@
     <insert id="batchUpsert" parameterType="java.util.List">
         INSERT INTO kd_inventory
             (material_id, material_number, material_name, spec_model, stock_id, stock_name,
-             unit_name, qty, valid_qty, available_out_qty, category_id, category_name, category_sort, image_url, sync_time)
+             unit_name, qty, valid_qty, available_out_qty, category_id, category_name, category_sort,
+             root_category_id, root_category_name, root_category_sort, image_url, sync_time)
         VALUES
         <foreach collection="list" item="it" separator=",">
             (#{it.materialId}, #{it.materialNumber}, #{it.materialName}, #{it.specModel},
              #{it.stockId}, #{it.stockName}, #{it.unitName}, #{it.qty}, #{it.validQty},
-             #{it.availableOutQty}, #{it.categoryId}, #{it.categoryName}, #{it.categorySort}, #{it.imageUrl}, #{it.syncTime})
+             #{it.availableOutQty}, #{it.categoryId}, #{it.categoryName}, #{it.categorySort},
+             #{it.rootCategoryId}, #{it.rootCategoryName}, #{it.rootCategorySort}, #{it.imageUrl}, #{it.syncTime})
         </foreach>
         ON DUPLICATE KEY UPDATE
             material_number = VALUES(material_number),
@@ -58,6 +65,9 @@
             category_id = VALUES(category_id),
             category_name = VALUES(category_name),
             category_sort = VALUES(category_sort),
+            root_category_id = VALUES(root_category_id),
+            root_category_name = VALUES(root_category_name),
+            root_category_sort = VALUES(root_category_sort),
             image_url = VALUES(image_url),
             sync_time = VALUES(sync_time)
     </insert>
@@ -70,12 +80,13 @@
         SELECT DISTINCT category_id FROM kd_inventory WHERE category_id IS NOT NULL AND category_id != ''
     </select>
 
-    <select id="selectCategoryList" resultMap="KdInventoryResult">
-        SELECT category_id, category_name, MIN(category_sort) AS category_sort
+    <select id="selectCategoryList" resultType="java.util.LinkedHashMap">
+        SELECT root_category_id AS rootId, root_category_name AS rootName, MIN(root_category_sort) AS rootSort,
+               category_id AS childId, category_name AS childName, MIN(category_sort) AS childSort
         FROM kd_inventory
         WHERE category_id IS NOT NULL AND category_id != ''
-        GROUP BY category_id, category_name
-        ORDER BY MIN(category_sort), category_name
+        GROUP BY root_category_id, root_category_name, category_id, category_name
+        ORDER BY MIN(root_category_sort), MIN(category_sort), category_name
     </select>
 
 </mapper>

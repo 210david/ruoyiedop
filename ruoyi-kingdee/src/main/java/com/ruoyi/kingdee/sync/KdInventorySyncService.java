@@ -54,8 +54,8 @@ public class KdInventorySyncService
             Map<String, Map<String, Object>> materialMap = fetchMaterialMap();
             log.info("金蝶库存同步 物料信息加载完成: {} 条", materialMap.size());
             // 商品类别展示顺序（金蝶商品类别树顺序）
-            Map<String, Integer> categoryOrder = loadCategoryOrder();
-            log.info("金蝶库存同步 商品类别顺序加载完成: {} 条", categoryOrder.size());
+            CategoryIndex catIndex = loadCategoryIndex();
+            log.info("金蝶库存同步 商品类别顺序加载完成: {} 条", catIndex.order.size());
 
             // 2. 拉取库存（接口按「商品+仓库+库位」返回，需合并到商品+仓库）
             Map<String, KdInventory> merged = new LinkedHashMap<>();
@@ -97,7 +97,7 @@ public class KdInventorySyncService
 
                 for (Map<String, Object> row : rows)
                 {
-                    KdInventory inv = toEntity(row, materialMap, categoryOrder);
+                    KdInventory inv = toEntity(row, materialMap, catIndex);
                     if (inv == null) continue;
                     rawRows++;
                     // 同一商品+仓库存在多个库位记录时按库位汇总，避免互相覆盖导致数量不一致
@@ -197,11 +197,11 @@ public class KdInventorySyncService
 
     /**
      * 拉取金蝶商品类别树，按金蝶展示顺序（父级在前、同级保持接口返回顺序）遍历，
-     * 生成 类别 id / number / name → 排序号，用于库存分类树与金蝶保持一致
+     * 生成类别排序号与父子关系，用于库存两级分类与金蝶保持一致
      */
-    private Map<String, Integer> loadCategoryOrder()
+    private CategoryIndex loadCategoryIndex()
     {
-        Map<String, Integer> order = new HashMap<>();
+        CategoryIndex index = new CategoryIndex();
         List<Map<String, Object>> all = new ArrayList<>();
         int page = 1, totalPage = 1;
         try
@@ -232,10 +232,10 @@ public class KdInventorySyncService
         catch (Exception e)
         {
             log.warn("拉取金蝶商品类别失败，库存分类将按名称排序: {}", e.getMessage());
-            return order;
+            return index;
         }
 
-        if (all.isEmpty()) return order;
+        if (all.isEmpty()) return index;
         log.info("金蝶商品类别样例: {}", all.subList(0, Math.min(3, all.size())));
 
         Map<String, String> parentOf = new HashMap<>();
@@ -246,8 +246,10 @@ public class KdInventorySyncService
             String id = str(g.get("id"));
             if (id == null) continue;
             byId.put(id, g);
+            index.byId.put(id, g);
             String pid = str(g.get("parent_id"));
             parentOf.put(id, pid == null ? "" : pid);
+            index.parentOf.put(id, pid == null ? "" : pid);
         }
         List<String> roots = new ArrayList<>();
         for (String id : byId.keySet())
@@ -259,35 +261,103 @@ public class KdInventorySyncService
         int[] seq = { 0 };
         for (String root : roots)
         {
-            fillCategoryOrder(root, 1, childrenOf, byId, order, seq);
+            fillCategoryOrder(root, 1, childrenOf, byId, index, seq);
         }
-        return order;
+        return index;
     }
 
     private void fillCategoryOrder(String id, int depth, Map<String, List<String>> childrenOf,
-                                   Map<String, Map<String, Object>> byId, Map<String, Integer> order, int[] seq)
+                                   Map<String, Map<String, Object>> byId, CategoryIndex index, int[] seq)
     {
         Map<String, Object> g = byId.get(id);
-        int index = seq[0]++;
+        int order = seq[0]++;
         if (g != null)
         {
-            order.put(id, index);
+            index.order.put(id, order);
             String number = str(g.get("number"));
-            if (number != null && !number.isEmpty()) order.putIfAbsent(number, index);
+            if (number != null && !number.isEmpty()) index.order.putIfAbsent(number, order);
             String name = str(g.get("name"));
-            if (name != null && !name.isEmpty()) order.putIfAbsent(name, index);
+            if (name != null && !name.isEmpty()) index.order.putIfAbsent(name, order);
         }
         if (depth > 20) return;
         List<String> children = childrenOf.get(id);
         if (children == null) return;
         for (String child : children)
         {
-            fillCategoryOrder(child, depth + 1, childrenOf, byId, order, seq);
+            fillCategoryOrder(child, depth + 1, childrenOf, byId, index, seq);
+        }
+    }
+
+    /**
+     * 金蝶商品类别索引：排序号 + 类别节点父子关系
+     */
+    private static class CategoryIndex
+    {
+        final Map<String, Integer> order = new HashMap<>();
+        final Map<String, Map<String, Object>> byId = new HashMap<>();
+        final Map<String, String> parentOf = new HashMap<>();
+
+        /** 解析物料的二级类别与一级类别（与金蝶两级分类一致） */
+        void resolve(KdInventory o)
+        {
+            Map<String, Object> node = o.getCategoryId() == null ? null : byId.get(o.getCategoryId());
+            Map<String, Object> root = node;
+            Map<String, Object> second = null;
+            Map<String, Object> cur = node;
+            int guard = 0;
+            while (cur != null && guard++ < 20)
+            {
+                int level = levelOf(cur);
+                if (level == 2) second = cur;
+                String pid = parentOf.get(str(cur.get("id")));
+                Map<String, Object> parent = (pid == null || pid.isEmpty()) ? null : byId.get(pid);
+                if (parent == null)
+                {
+                    root = cur;
+                    break;
+                }
+                cur = parent;
+            }
+            Map<String, Object> display = second != null ? second : root;
+            if (display != null)
+            {
+                o.setCategoryId(str(display.get("id")));
+                o.setCategoryName(str(display.get("name")));
+            }
+            if (root != null)
+            {
+                String rootId = str(root.get("id"));
+                o.setRootCategoryId(rootId);
+                o.setRootCategoryName(str(root.get("name")));
+                o.setRootCategorySort(orderOf(rootId));
+            }
+            else
+            {
+                // 未匹配到金蝶类别树时，退化为一级即自身
+                o.setRootCategoryId(o.getCategoryId());
+                o.setRootCategoryName(o.getCategoryName());
+                o.setRootCategorySort(Integer.MAX_VALUE);
+            }
+            o.setCategorySort(orderOf(o.getCategoryId()));
+        }
+
+        private Integer orderOf(String key)
+        {
+            if (key == null) return Integer.MAX_VALUE;
+            Integer v = order.get(key);
+            return v != null ? v : Integer.MAX_VALUE;
+        }
+
+        private static int levelOf(Map<String, Object> node)
+        {
+            Object lv = node.get("level");
+            if (lv instanceof Number) return ((Number) lv).intValue();
+            try { return Integer.parseInt(String.valueOf(lv)); } catch (Exception e) { return 1; }
         }
     }
 
     private KdInventory toEntity(Map<String, Object> row, Map<String, Map<String, Object>> materialMap,
-                                 Map<String, Integer> categoryOrder)
+                                 CategoryIndex catIndex)
     {
         String materialId = str(pick(row, "material_id", "materialid"));
         if (materialId == null) return null;
@@ -314,9 +384,7 @@ public class KdInventorySyncService
             o.setUnitName(str(pickAny(mat, "unit", "unit_name", "base_unit_name")));
             o.setCategoryId(str(pickAny(mat, "parent_id", "group_id", "category_id", "material_group_id")));
             o.setCategoryName(str(pickAny(mat, "parent_name", "group_name", "category_name", "material_group_name")));
-            Integer sort = o.getCategoryId() == null ? null : categoryOrder.get(o.getCategoryId());
-            if (sort == null && o.getCategoryName() != null) sort = categoryOrder.get(o.getCategoryName());
-            o.setCategorySort(sort != null ? sort : Integer.MAX_VALUE);
+            catIndex.resolve(o);
             o.setImageUrl(str(pickAny(mat, "url", "image_url", "imageUrl", "picture_url")));
         }
 

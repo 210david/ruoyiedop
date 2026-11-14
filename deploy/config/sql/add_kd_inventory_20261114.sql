@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS `kd_inventory` (
   `category_id` varchar(64) DEFAULT NULL COMMENT '分类ID',
   `category_name` varchar(128) DEFAULT NULL COMMENT '分类名称',
   `category_sort` int DEFAULT NULL COMMENT '商品类别排序(金蝶)',
+  `root_category_id` varchar(64) DEFAULT NULL COMMENT '一级分类ID',
+  `root_category_name` varchar(128) DEFAULT NULL COMMENT '一级分类名称',
+  `root_category_sort` int DEFAULT NULL COMMENT '一级分类排序(金蝶)',
   `image_url` varchar(500) DEFAULT NULL COMMENT '商品图片地址',
   `sync_time` datetime DEFAULT NULL COMMENT '同步时间',
   PRIMARY KEY (`id`),
@@ -35,6 +38,21 @@ SET @ddl_cat_sort := IF(@has_cat_sort = 0,
 PREPARE stmt_cat_sort FROM @ddl_cat_sort;
 EXECUTE stmt_cat_sort;
 DEALLOCATE PREPARE stmt_cat_sort;
+
+-- 已存在表时补充一级分类列（金蝶两级分类）
+SET @has_root_cat := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'kd_inventory' AND column_name = 'root_category_id'
+);
+SET @ddl_root_cat := IF(@has_root_cat = 0,
+    'ALTER TABLE `kd_inventory`
+        ADD COLUMN `root_category_id` varchar(64) DEFAULT NULL COMMENT ''一级分类ID'' AFTER `category_sort`,
+        ADD COLUMN `root_category_name` varchar(128) DEFAULT NULL COMMENT ''一级分类名称'' AFTER `root_category_id`,
+        ADD COLUMN `root_category_sort` int DEFAULT NULL COMMENT ''一级分类排序(金蝶)'' AFTER `root_category_name`',
+    'SELECT ''kd_inventory.root_category_* 已存在，跳过'' AS msg');
+PREPARE stmt_root_cat FROM @ddl_root_cat;
+EXECUTE stmt_root_cat;
+DEALLOCATE PREPARE stmt_root_cat;
 
 -- 菜单
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
