@@ -172,6 +172,7 @@
           <el-table-column label="固定电话" prop="fixedPhone" key="fixedPhone" :width="colWidth('fixedPhone', 130)" resizable v-if="columns.fixedPhone.visible" />
           <el-table-column label="法人代表" prop="legalPerson" key="legalPerson" :width="colWidth('legalPerson', 100)" resizable v-if="columns.legalPerson.visible" />
           <el-table-column label="企业性质" prop="enterpriseNature" key="enterpriseNature" :min-width="colWidth('enterpriseNature', 100)" show-overflow-tooltip resizable align="center" v-if="columns.enterpriseNature.visible"><template #default="scope"><span class="badge amber">{{ enterpriseNatureLabel(scope.row.enterpriseNature) }}</span></template></el-table-column>
+          <el-table-column label="税率" prop="rate" key="rate" :width="colWidth('rate', 80)" resizable align="center" v-if="columns.rate.visible"><template #default="scope"><span>{{ scope.row.rate ? scope.row.rate + '%' : '-' }}</span></template></el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible"><template #default="scope"><span class="badge" :class="badgeClass(scope.row.status)"><span class="dot"></span>{{ statusLabel(scope.row.status) }}</span></template></el-table-column>
           <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 160)" resizable align="center" sortable="custom" v-if="columns.createTime.visible" />
           <el-table-column label="操作" width="140" align="center" fixed="right" class-name="col-action">
@@ -316,6 +317,9 @@
                 <el-col :span="12"><el-form-item label="税号" prop="taxNumber"><el-input v-model="form.taxNumber" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="税率" prop="rate"><el-input v-model="form.rate" placeholder="请输入税率，如 13" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="发票抬头" prop="invoiceTitle"><el-input v-model="form.invoiceTitle" placeholder="请输入" /></el-form-item></el-col>
                 <el-col :span="12"><el-form-item label="发票电话" prop="invoicePhone"><el-input v-model="form.invoicePhone" placeholder="请输入" /></el-form-item></el-col>
               </el-row>
@@ -426,6 +430,7 @@
               <div class="rd-item"><span class="rd-label">开户支行</span><div class="rd-value">{{ viewData.bankBranch || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">银行账号</span><div class="rd-value">{{ viewData.bankAccount || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">税号</span><div class="rd-value">{{ viewData.taxNumber || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">税率</span><div class="rd-value">{{ viewData.rate ? viewData.rate + '%' : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">发票抬头</span><div class="rd-value">{{ viewData.invoiceTitle || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">发票电话</span><div class="rd-value">{{ viewData.invoicePhone || '-' }}</div></div>
               <div class="rd-item rd-item--full"><span class="rd-label">发票地址</span><div class="rd-value">{{ viewData.invoiceAddress || '-' }}</div></div>
@@ -507,6 +512,7 @@ const defaultColumns = {
   fixedPhone: { label: '固定电话', visible: true },
   legalPerson: { label: '法人代表', visible: true },
   enterpriseNature: { label: '企业性质', visible: true },
+  rate: { label: '税率', visible: true },
   status: { label: '状态', visible: true },
   createTime: { label: '创建时间', visible: true }
 }
@@ -560,7 +566,7 @@ function statusLabel(status) {
 }
 function supplierTypeLabel(type) {
   const item = wms_supplier_type.value.find(d => d.value == type)
-  return item ? item.label : '-'
+  return item ? item.label : (type || '-')
 }
 function supplierLevelLabel(level) {
   const item = wms_supplier_level.value.find(d => d.value == level)
@@ -604,6 +610,7 @@ const importColumnLabels = {
   establishedDate: '成立日期',
   bankName: '开户银行',
   bankAccount: '银行账号',
+  rate: '税率',
   taxNumber: '税号',
   invoiceTitle: '发票抬头',
   paymentMethod: '付款方式',
@@ -776,6 +783,7 @@ function reset() {
     bankName: undefined,
     bankBranch: undefined,
     bankAccount: undefined,
+    rate: undefined,
     taxNumber: undefined,
     invoiceTitle: undefined,
     invoiceAddress: undefined,

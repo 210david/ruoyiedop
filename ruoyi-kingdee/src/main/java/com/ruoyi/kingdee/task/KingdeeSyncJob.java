@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 
 import com.ruoyi.kingdee.config.KingdeeConfigResolver;
 import com.ruoyi.kingdee.sync.CustomerSyncService;
+import com.ruoyi.kingdee.sync.KdInventorySyncService;
+import com.ruoyi.kingdee.sync.KdPurInStockSyncService;
+import com.ruoyi.kingdee.sync.KdSalOutboundSyncService;
 import com.ruoyi.kingdee.sync.MaterialSyncService;
 import com.ruoyi.kingdee.sync.SupplierSyncService;
 import com.ruoyi.kingdee.sync.SyncResult;
@@ -42,6 +45,15 @@ public class KingdeeSyncJob
     @Autowired
     private SupplierSyncService supplierSync;
 
+    @Autowired
+    private KdSalOutboundSyncService salOutboundSync;
+
+    @Autowired
+    private KdPurInStockSyncService purInStockSync;
+
+    @Autowired
+    private KdInventorySyncService inventorySync;
+
     /**
      * 执行所有已启用模块的同步
      */
@@ -67,6 +79,15 @@ public class KingdeeSyncJob
         try { all.put("supplier", supplierSync.syncAll()); }
         catch (Exception e) { log.error("[金蝶定时任务] 供应商同步异常: {}", e.getMessage()); }
 
+        try { all.put("salOutbound", salOutboundSync.syncAll()); }
+        catch (Exception e) { log.error("[金蝶定时任务] 销售出库单同步异常: {}", e.getMessage()); }
+
+        try { all.put("purInStock", purInStockSync.syncAll()); }
+        catch (Exception e) { log.error("[金蝶定时任务] 采购入库单同步异常: {}", e.getMessage()); }
+
+        try { all.put("inventory", inventorySync.syncAll()); }
+        catch (Exception e) { log.error("[金蝶定时任务] 库存同步异常: {}", e.getMessage()); }
+
         long cost = System.currentTimeMillis() - start;
         log.info("[金蝶定时任务] === 完成  总耗时 {} ms  统计={}", cost, all);
     }
@@ -77,4 +98,10 @@ public class KingdeeSyncJob
     public void runMaterial() { if (resolver.isEnabled()) materialSync.syncAll(); }
     /** 仅同步供应商 */
     public void runSupplier() { if (resolver.isEnabled()) supplierSync.syncAll(); }
+    /** 仅同步销售出库单 */
+    public void runSalOutbound() { if (resolver.isEnabled()) salOutboundSync.syncAll(); }
+    /** 仅同步采购入库单 */
+    public void runPurInStock() { if (resolver.isEnabled()) purInStockSync.syncAll(); }
+    /** 仅同步库存 */
+    public void runInventory() { if (resolver.isEnabled()) inventorySync.syncAll(); }
 }

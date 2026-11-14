@@ -79,6 +79,12 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
     }
 
     @Override
+    public int migrateLegacyMaterialType()
+    {
+        return wmsMaterialMapper.migrateLegacyMaterialType();
+    }
+
+    @Override
     public int updateMaterial(WmsMaterial material)
     {
         // 校验安全库存上限不能小于下限
@@ -236,7 +242,7 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
         item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
         item.put("unit", dictText(row.getUnit(), UNIT_REVERSE));
-        item.put("materialType", dictText(row.getMaterialType(), MATERIAL_TYPE_REVERSE));
+        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
         item.put("isBatchManage", dictText(row.getIsBatchManage(), YES_NO_REVERSE));
         item.put("isExpiryManage", dictText(row.getIsExpiryManage(), YES_NO_REVERSE));
         item.put("shelfLifeDays", row.getShelfLifeDays() != null ? row.getShelfLifeDays() : "");
@@ -256,7 +262,7 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         item.put("materialName", row.getMaterialName() != null ? row.getMaterialName() : "");
         item.put("specModel", row.getSpecModel() != null ? row.getSpecModel() : "");
         item.put("unit", dictText(row.getUnit(), UNIT_REVERSE));
-        item.put("materialType", dictText(row.getMaterialType(), MATERIAL_TYPE_REVERSE));
+        item.put("materialType", row.getMaterialType() != null ? row.getMaterialType() : "");
         item.put("isBatchManage", dictText(row.getIsBatchManage(), YES_NO_REVERSE));
         item.put("isExpiryManage", dictText(row.getIsExpiryManage(), YES_NO_REVERSE));
         item.put("shelfLifeDays", row.getShelfLifeDays() != null ? row.getShelfLifeDays() : "");
@@ -326,24 +332,6 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         return null;
     }
 
-    /** 物料类型 文字→数字 映射表 */
-    private static final Map<String, String> MATERIAL_TYPE_MAP = new HashMap<>();
-    /** 物料类型 数字→文字 映射表（用于导入结果展示） */
-    private static final Map<String, String> MATERIAL_TYPE_REVERSE = new HashMap<>();
-    static {
-        MATERIAL_TYPE_MAP.put("原材料", "0");
-        MATERIAL_TYPE_MAP.put("半成品", "1");
-        MATERIAL_TYPE_MAP.put("成品", "2");
-        MATERIAL_TYPE_MAP.put("辅料", "3");
-        MATERIAL_TYPE_MAP.put("服务", "4");
-        MATERIAL_TYPE_MAP.put("工程", "5");
-        MATERIAL_TYPE_REVERSE.put("0", "原材料");
-        MATERIAL_TYPE_REVERSE.put("1", "半成品");
-        MATERIAL_TYPE_REVERSE.put("2", "成品");
-        MATERIAL_TYPE_REVERSE.put("3", "辅料");
-        MATERIAL_TYPE_REVERSE.put("4", "服务");
-        MATERIAL_TYPE_REVERSE.put("5", "工程");
-    }
     /** 计量单位 文字→数字 映射表 */
     private static final Map<String, String> UNIT_MAP = new HashMap<>();
     /** 计量单位 数字→文字 映射表（用于导入结果展示） */
@@ -394,27 +382,13 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
      */
     private void validateDictFields(WmsMaterial row)
     {
-        // 物料类型校验并转换
-        String materialType = row.getMaterialType();
-        if (StringUtils.isNotEmpty(materialType))
-        {
-            String code = MATERIAL_TYPE_MAP.get(materialType.trim());
-            if (code == null)
-            {
-                throw new RuntimeException("物料类型值不合法，请填写文字：原材料、半成品、成品、辅料、服务、工程（或留空）");
-            }
-            row.setMaterialType(code);
-        }
-        // 计量单位校验并转换
+        // 物料类型直接使用金蝶商品类别名称，不做编码转换
+        // 计量单位转换：命中内置单位则转字典值，未命中保留原始单位名称（支持金蝶单位，如 瓶/盒/桶）
         String unit = row.getUnit();
         if (StringUtils.isNotEmpty(unit))
         {
             String code = UNIT_MAP.get(unit.trim());
-            if (code == null)
-            {
-                throw new RuntimeException("计量单位值不合法，请填写文字：个、件、箱、kg、吨、米（或留空）");
-            }
-            row.setUnit(code);
+            row.setUnit(code != null ? code : unit.trim());
         }
         // 效期管理校验并转换
         String isExpiryManage = row.getIsExpiryManage();
@@ -491,13 +465,14 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         }
         if ("1".equals(material.getIsExpiryManage()))
         {
+            // 未填写保质期天数时默认 180 天，未填写临期预警时默认 7 天
             if (material.getShelfLifeDays() == null)
             {
-                throw new ServiceException("效期管理为「是」时，保质期天数不能为空");
+                material.setShelfLifeDays(180);
             }
             if (material.getExpiryAlertDays() == null)
             {
-                throw new ServiceException("效期管理为「是」时，临期预警天数不能为空");
+                material.setExpiryAlertDays(7);
             }
             if (material.getExpiryAlertDays() > material.getShelfLifeDays())
             {

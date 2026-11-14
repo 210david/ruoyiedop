@@ -189,13 +189,13 @@ public class PdmProductServiceImpl implements IPdmProductService
         {
             throw new ServiceException("请选择产品对应的物料");
         }
-        // 产品档案仅允许挂接成品类型物料（material_type='2'）
+        // 产品档案仅允许挂接成品类型物料（旧编码 '2' 或金蝶类别名称「成品」）
         String materialType = productMapper.selectMaterialType(product.getMaterialId());
         if (materialType == null)
         {
             throw new ServiceException("所选物料不存在或已删除，请重新选择");
         }
-        if (!"2".equals(materialType))
+        if (!"2".equals(materialType) && !"成品".equals(materialType))
         {
             throw new ServiceException("产品档案仅可挂接物料类型为「成品」的物料，请重新选择");
         }

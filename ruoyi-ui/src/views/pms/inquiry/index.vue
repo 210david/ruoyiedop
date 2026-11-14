@@ -616,14 +616,14 @@ const computedEstimateAmount = computed(() => {
 const allowedMaterialTypes = computed(() => {
   const purchaseType = form.value.purchaseType;
   if (purchaseType === '1') {
-    // 服务：仅服务类物料（materialType='4'）
-    return ['4'];
+    // 服务：服务类物料（旧编码 4 / 金蝶类别 服务、劳务商品）
+    return ['4', '服务', '劳务商品'];
   } else if (purchaseType === '2') {
-    // 工程：仅工程类物料（materialType='5'）
-    return ['5'];
+    // 工程：工程类物料（旧编码 5 / 金蝶类别 工程）
+    return ['5', '工程'];
   } else {
-    // 物资：原材料/半成品/成品/辅料（0/1/2/3）
-    return ['0', '1', '2', '3'];
+    // 物资：原材料/半成品/成品/辅料（兼容旧编码与金蝶类别名称）
+    return ['0', '1', '2', '3', '原材料', '原蜜', '饮品原料', '糯米', '蜂蜜', '半成品', '成品', '辅料', '包装材料'];
   }
 });
 

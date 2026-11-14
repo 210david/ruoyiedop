@@ -22,4 +22,7 @@ public interface WmsMaterialMapper
 
     public int deleteMaterialByIds(Long[] materialIds);
 
+    /** 存量物料类型：旧编码(0-5) 转为名称 */
+    public int migrateLegacyMaterialType();
+
 }

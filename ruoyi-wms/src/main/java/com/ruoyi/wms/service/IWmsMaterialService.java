@@ -13,7 +13,8 @@ public interface IWmsMaterialService
     public int updateMaterial(WmsMaterial material);
     public int deleteMaterialByIds(Long[] materialIds);
     public boolean checkMaterialCodeUnique(WmsMaterial material);
-
+    /** 存量物料类型：旧编码(0-5) 转为名称 */
+    public int migrateLegacyMaterialType();
     /**
      * 导入物料数据
      *

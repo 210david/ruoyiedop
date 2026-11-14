@@ -640,7 +640,7 @@ function renderCustType(data) {
 function renderCustTypeTrend(data) {
   if (!custTypeTrendChart.value) return
   const typeOrder = ['1', '2', '3']
-  const typeNames = { '1': '企业客户', '2': '经销商', '3': '个人客户' }
+  const typeNames = { '1': '直营客户', '2': '经销商', '3': '个人客户', '4': '代理商', '5': '其他' }
   const typeColors = { '1': '#409eff', '2': '#e6a23c', '3': '#67c23a' }
   const rows = data || []
   const months = [...new Set(rows.map(d => d.date))].sort()

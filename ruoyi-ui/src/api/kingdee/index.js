@@ -27,6 +27,18 @@ export function syncSupplier() {
   return request({ url: '/kingdee/sync/supplier', method: 'post', timeout: 120000 })
 }
 
+export function syncSalOutbound() {
+  return request({ url: '/kingdee/sync/sal-outbound', method: 'post', timeout: 300000 })
+}
+
+export function syncPurInStock() {
+  return request({ url: '/kingdee/sync/pur-in-stock', method: 'post', timeout: 300000 })
+}
+
+export function syncInventory() {
+  return request({ url: '/kingdee/sync/inventory', method: 'post', timeout: 300000 })
+}
+
 export function syncAll() {
   return request({ url: '/kingdee/sync/all', method: 'post', timeout: 180000 })
 }

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kingdee.mapper.KdInventoryMapper">
+
+    <resultMap id="KdInventoryResult" type="com.ruoyi.kingdee.domain.KdInventory">
+        <id property="id" column="id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialNumber" column="material_number"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specModel" column="spec_model"/>
+        <result property="stockId" column="stock_id"/>
+        <result property="stockName" column="stock_name"/>
+        <result property="unitName" column="unit_name"/>
+        <result property="qty" column="qty"/>
+        <result property="validQty" column="valid_qty"/>
+        <result property="availableOutQty" column="available_out_qty"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="syncTime" column="sync_time"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="com.ruoyi.kingdee.domain.KdInventory" resultMap="KdInventoryResult">
+        SELECT id, material_id, material_number, material_name, spec_model, stock_id, stock_name,
+               unit_name, qty, valid_qty, available_out_qty, category_id, category_name, image_url, sync_time
+        FROM kd_inventory
+        <where>
+            <if test="materialNumber != null and materialNumber != ''">AND material_number LIKE CONCAT('%', #{materialNumber}, '%')</if>
+            <if test="materialName != null and materialName != ''">AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="categoryId != null and categoryId != ''">AND category_id = #{categoryId}</if>
+            <if test="params.beginBillDate != null and params.endBillDate != null">
+                AND sync_time BETWEEN #{params.beginBillDate} AND #{params.endBillDate}
+            </if>
+        </where>
+        ORDER BY material_number, stock_name
+    </select>
+
+    <insert id="batchUpsert" parameterType="java.util.List">
+        INSERT INTO kd_inventory
+            (material_id, material_number, material_name, spec_model, stock_id, stock_name,
+             unit_name, qty, valid_qty, available_out_qty, category_id, category_name, image_url, sync_time)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.materialId}, #{it.materialNumber}, #{it.materialName}, #{it.specModel},
+             #{it.stockId}, #{it.stockName}, #{it.unitName}, #{it.qty}, #{it.validQty},
+             #{it.availableOutQty}, #{it.categoryId}, #{it.categoryName}, #{it.imageUrl}, #{it.syncTime})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            material_number = VALUES(material_number),
+            material_name = VALUES(material_name),
+            spec_model = VALUES(spec_model),
+            stock_name = VALUES(stock_name),
+            unit_name = VALUES(unit_name),
+            qty = VALUES(qty),
+            valid_qty = VALUES(valid_qty),
+            available_out_qty = VALUES(available_out_qty),
+            category_id = VALUES(category_id),
+            category_name = VALUES(category_name),
+            image_url = VALUES(image_url),
+            sync_time = VALUES(sync_time)
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM kd_inventory
+    </delete>
+
+    <select id="selectDistinctCategories" resultType="java.lang.String">
+        SELECT DISTINCT category_id FROM kd_inventory WHERE category_id IS NOT NULL AND category_id != ''
+    </select>
+
+    <select id="selectCategoryList" resultMap="KdInventoryResult">
+        SELECT DISTINCT category_id, category_name
+        FROM kd_inventory
+        WHERE category_id IS NOT NULL AND category_id != ''
+        ORDER BY category_name
+    </select>
+
+</mapper>

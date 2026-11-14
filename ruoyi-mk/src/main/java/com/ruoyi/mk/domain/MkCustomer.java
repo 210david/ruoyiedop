@@ -13,12 +13,16 @@ import com.ruoyi.common.core.domain.BaseEntity;
  */
 public class MkCustomer extends BaseEntity
 {
-    /** 客户类型：企业客户 */
+    /** 客户类型：直营客户 */
     public static final String TYPE_ENTERPRISE = "1";
     /** 客户类型：经销商 */
     public static final String TYPE_DEALER = "2";
     /** 客户类型：个人客户 */
     public static final String TYPE_PERSONAL = "3";
+    /** 客户类型：代理商 */
+    public static final String TYPE_AGENT = "4";
+    /** 客户类型：其他 */
+    public static final String TYPE_OTHER = "5";
 
     private static final long serialVersionUID = 1L;
 
@@ -33,7 +37,7 @@ public class MkCustomer extends BaseEntity
     @Excel(name = "客户名称")
     private String customerName;
 
-    /** 客户类型（1企业客户 2经销商 3个人客户） */
+    /** 客户类型（1直营客户 2经销商 3个人客户 4代理商 5其他） */
     @Excel(name = "客户类型", dictType = "mk_customer_type")
     private String customerType;
 

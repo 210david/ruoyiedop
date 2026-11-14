@@ -282,7 +282,7 @@
     <!-- 物料选择器 -->
     <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
     <!-- 产品选择器（仅半成品和成品） -->
-    <material-picker ref="productPickerRef" title="选择产品" :material-types="['1','2']" @confirm="onProductPickerConfirm" />
+    <material-picker ref="productPickerRef" title="选择产品" :material-types="['1', '2', '半成品', '成品']" @confirm="onProductPickerConfirm" />
 
     <!-- 业务操作说明 -->
     <el-dialog v-model="showStatusHelp" title="BOM管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog status-help-dialog">

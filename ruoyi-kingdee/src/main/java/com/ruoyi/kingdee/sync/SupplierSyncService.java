@@ -38,12 +38,14 @@ public class SupplierSyncService
             Map<String, String> params = new HashMap<>();
             params.put("page", String.valueOf(page));
             params.put("pagesize", String.valueOf(pageSize));
+            params.put("enable", "-1");
 
             String raw;
             try { raw = kingdeeClient.getWithRetry(SUPPLIER_PATH, params); }
             catch (Exception e) { result.addSkipReason("拉取失败: " + e.getMessage()); break; }
 
             List<Map<String, Object>> rows;
+            int totalPage = 1;
             try
             {
                 Map<String, Object> resp = objectMapper.readValue(raw, new TypeReference<Map<String, Object>>() {});
@@ -59,12 +61,16 @@ public class SupplierSyncService
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> list = (List<Map<String, Object>>) data.get("rows");
                 rows = list;
-                Object totalPage = data.get("total_page");
-                boolean lastPage = (totalPage instanceof Number && page >= ((Number) totalPage).intValue());
-                if (rows == null || rows.isEmpty() || lastPage) break;
+                Object tp = data.get("total_page");
+                Object total = data.get("total");
+                totalPage = (tp instanceof Number) ? ((Number) tp).intValue() : 1;
+                log.info("金蝶供应商第{}页: rows={}, total={}, total_page={}", page, rows == null ? 0 : rows.size(), total, totalPage);
             }
             catch (Exception e) { break; }
 
+            if (rows == null || rows.isEmpty()) break;
+
+            // 先处理当前页数据，再判断是否最后一页（修复：最后一页数据不再丢失）
             for (Map<String, Object> kd : rows)
             {
                 try { syncOne(kd, result); }
@@ -74,6 +80,8 @@ public class SupplierSyncService
                     result.addSkipReason(str(kd.get("number")) + ": " + e.getMessage());
                 }
             }
+
+            if (page >= totalPage) break;
             page++;
         }
 
@@ -84,10 +92,16 @@ public class SupplierSyncService
 
     private void syncOne(Map<String, Object> kd, SyncResult result)
     {
-        String kdNumber = str(kd.get("number"));
-        String kdName   = str(kd.get("name"));
-        String kdEnable = str(kd.get("enable"));
-        String kdRemark = str(kd.get("remark"));
+        String kdNumber   = str(kd.get("number"));
+        String kdName     = str(kd.get("name"));
+        String kdEnable   = str(kd.get("enable"));
+        String kdRemark   = str(kd.get("remark"));
+        String kdGroup    = str(kd.get("group_name"));        // 供应商分类 → 供应商类型
+        String kdBank     = str(kd.get("bank"));              // 开户银行
+        String kdBankAddr = str(kd.get("account_open_addr")); // 开户地址 → 开户行/支行
+        String kdInvoice  = str(kd.get("invoice_name"));      // 发票名称 → 发票抬头
+        String kdTaxNo    = str(kd.get("taxpayer_no"));       // 纳税人识别号 → 税号
+        String kdRate     = str(kd.get("rate"));              // 税率
 
         if (kdNumber == null || kdNumber.isEmpty()) throw new IllegalArgumentException("金蝶供应商编号为空");
 
@@ -98,7 +112,13 @@ public class SupplierSyncService
         if (existed != null)
         {
             existed.setSupplierName(kdName);
-            existed.setStatus("1".equals(kdEnable) ? "0" : "1");
+            existed.setSupplierType(kdGroup);
+            existed.setBankName(kdBank);
+            existed.setBankBranch(kdBankAddr);
+            existed.setInvoiceTitle(kdInvoice);
+            existed.setTaxNumber(kdTaxNo);
+            existed.setRate(kdRate);
+            existed.setStatus(isDisabled(kdEnable) ? "1" : "0");
             existed.setRemark(kdRemark);
             supplierService.updateSupplier(existed);
             result.incUpdated();
@@ -110,7 +130,13 @@ public class SupplierSyncService
             s.setSupplierCode(kdNumber);
             s.setSupplierName(kdName);
             s.setSupplierShortName(kdName);
-            s.setStatus("1".equals(kdEnable) ? "0" : "1");
+            s.setSupplierType(kdGroup);
+            s.setBankName(kdBank);
+            s.setBankBranch(kdBankAddr);
+            s.setInvoiceTitle(kdInvoice);
+            s.setTaxNumber(kdTaxNo);
+            s.setRate(kdRate);
+            s.setStatus(isDisabled(kdEnable) ? "1" : "0");
             s.setRemark(kdRemark);
             s.setDelFlag("0");
             supplierService.insertSupplier(s);
@@ -121,4 +147,14 @@ public class SupplierSyncService
     }
 
     private static String str(Object o) { return o == null ? null : String.valueOf(o); }
+
+    /**
+     * 判断金蝶返回的 enable 值是否表示"停用"。
+     * 金蝶供应商/客户/物料列表接口通常只返回启用的数据，且不返回 enable 字段（null），
+     * 因此只有明确为 "0" 或 "false" 时才视为停用，其余情况（含 null）默认启用。
+     */
+    private static boolean isDisabled(String enable)
+    {
+        return "0".equals(enable) || "false".equalsIgnoreCase(enable);
+    }
 }

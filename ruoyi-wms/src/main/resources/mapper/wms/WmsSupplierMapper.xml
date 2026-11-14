@@ -27,6 +27,7 @@
         <result property="bankBranch"          column="bank_branch"/>
         <result property="bankAccount"         column="bank_account"/>
         <result property="taxNumber"           column="tax_number"/>
+        <result property="rate"                column="rate"/>
         <result property="invoiceTitle"        column="invoice_title"/>
         <result property="invoiceAddress"      column="invoice_address"/>
         <result property="invoicePhone"        column="invoice_phone"/>
@@ -51,7 +52,7 @@
         SELECT supplier_id, supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level,
                unified_credit_code, contact_person, contact_phone, fixed_phone, email, fax, website, postcode, address,
                legal_person, registered_capital, enterprise_nature, business_scope, established_date,
-               bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
+               bank_name, bank_branch, bank_account, tax_number, rate, invoice_title, invoice_address, invoice_phone,
                payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
                cooperation_date, qualification_status, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM wms_supplier
@@ -88,14 +89,14 @@
             supplier_code, supplier_name, supplier_short_name, supplier_type, supplier_level, unified_credit_code,
             contact_person, contact_phone, fixed_phone, email, fax, website, postcode, address,
             legal_person, registered_capital, enterprise_nature, business_scope, established_date,
-            bank_name, bank_branch, bank_account, tax_number, invoice_title, invoice_address, invoice_phone,
+            bank_name, bank_branch, bank_account, tax_number, rate, invoice_title, invoice_address, invoice_phone,
             payment_method, payment_days, settlement_type, currency, delivery_cycle, min_order_amount,
             cooperation_date, qualification_status, status, del_flag, create_by, create_time, remark
         ) VALUES (
             #{supplierCode}, #{supplierName}, #{supplierShortName}, #{supplierType}, #{supplierLevel}, #{unifiedCreditCode},
             #{contactPerson}, #{contactPhone}, #{fixedPhone}, #{email}, #{fax}, #{website}, #{postcode}, #{address},
             #{legalPerson}, #{registeredCapital}, #{enterpriseNature}, #{businessScope}, #{establishedDate},
-            #{bankName}, #{bankBranch}, #{bankAccount}, #{taxNumber}, #{invoiceTitle}, #{invoiceAddress}, #{invoicePhone},
+            #{bankName}, #{bankBranch}, #{bankAccount}, #{taxNumber}, #{rate}, #{invoiceTitle}, #{invoiceAddress}, #{invoicePhone},
             #{paymentMethod}, #{paymentDays}, #{settlementType}, #{currency}, #{deliveryCycle}, #{minOrderAmount},
             #{cooperationDate}, #{qualificationStatus}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
@@ -127,6 +128,7 @@
             <if test="bankBranch != null">bank_branch = #{bankBranch},</if>
             <if test="bankAccount != null">bank_account = #{bankAccount},</if>
             <if test="taxNumber != null">tax_number = #{taxNumber},</if>
+            <if test="rate != null">rate = #{rate},</if>
             <if test="invoiceTitle != null">invoice_title = #{invoiceTitle},</if>
             <if test="invoiceAddress != null">invoice_address = #{invoiceAddress},</if>
             <if test="invoicePhone != null">invoice_phone = #{invoicePhone},</if>

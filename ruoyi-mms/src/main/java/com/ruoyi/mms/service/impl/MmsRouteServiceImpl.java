@@ -314,7 +314,9 @@ public class MmsRouteServiceImpl implements IMmsRouteService
             return;
         }
         String materialType = routeMapper.selectMaterialTypeById(route.getProductId());
-        if (materialType != null && !"1".equals(materialType) && !"2".equals(materialType))
+        // 兼容旧编码(1/2) 与金蝶类别名称（半成品/成品）
+        if (materialType != null && !"1".equals(materialType) && !"2".equals(materialType)
+                && !"半成品".equals(materialType) && !"成品".equals(materialType))
         {
             throw new ServiceException("工艺路线仅支持半成品或成品，原材料[" + route.getProductCode() + "]不需要工艺加工，请重新选择产品");
         }

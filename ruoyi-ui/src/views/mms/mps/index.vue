@@ -377,7 +377,7 @@
     </el-dialog>
 
     <!-- ===== 物料选择器（仅半成品和成品） ===== -->
-    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1','2']" @confirm="onMaterialPickerConfirm" />
+    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1', '2', '半成品', '成品']" @confirm="onMaterialPickerConfirm" />
 
     <!-- ===== 业务操作说明对话框 ===== -->
     <el-dialog v-model="showStatusHelp" title="主生产计划业务操作说明" width="820px" append-to-body>

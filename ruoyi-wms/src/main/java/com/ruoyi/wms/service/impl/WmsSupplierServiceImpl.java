@@ -193,6 +193,7 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
         item.put("establishedDate", row.getEstablishedDate() != null ? row.getEstablishedDate().toString() : "");
         item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
         item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("rate", row.getRate() != null ? row.getRate() : "");
         item.put("taxNumber", row.getTaxNumber() != null ? row.getTaxNumber() : "");
         item.put("invoiceTitle", row.getInvoiceTitle() != null ? row.getInvoiceTitle() : "");
         item.put("paymentMethod", dictText(row.getPaymentMethod(), "0=现结,1=月结,2=预付"));
@@ -229,6 +230,7 @@ public class WmsSupplierServiceImpl implements IWmsSupplierService
         item.put("establishedDate", row.getEstablishedDate() != null ? row.getEstablishedDate().toString() : "");
         item.put("bankName", row.getBankName() != null ? row.getBankName() : "");
         item.put("bankAccount", row.getBankAccount() != null ? row.getBankAccount() : "");
+        item.put("rate", row.getRate() != null ? row.getRate() : "");
         item.put("taxNumber", row.getTaxNumber() != null ? row.getTaxNumber() : "");
         item.put("invoiceTitle", row.getInvoiceTitle() != null ? row.getInvoiceTitle() : "");
         item.put("paymentMethod", dictText(row.getPaymentMethod(), "0=现结,1=月结,2=预付"));

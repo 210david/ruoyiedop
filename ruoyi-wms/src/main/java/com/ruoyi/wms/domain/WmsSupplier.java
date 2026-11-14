@@ -106,6 +106,10 @@ public class WmsSupplier extends BaseEntity
     @Excel(name = "税号")
     private String taxNumber;
 
+    /** 税率 */
+    @Excel(name = "税率")
+    private String rate;
+
     /** 发票抬头 */
     @Excel(name = "发票抬头")
     private String invoiceTitle;
@@ -204,6 +208,8 @@ public class WmsSupplier extends BaseEntity
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
     public String getTaxNumber() { return taxNumber; }
     public void setTaxNumber(String taxNumber) { this.taxNumber = taxNumber; }
+    public String getRate() { return rate; }
+    public void setRate(String rate) { this.rate = rate; }
     public String getInvoiceTitle() { return invoiceTitle; }
     public void setInvoiceTitle(String invoiceTitle) { this.invoiceTitle = invoiceTitle; }
     public String getInvoiceAddress() { return invoiceAddress; }

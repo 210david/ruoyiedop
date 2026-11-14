@@ -88,6 +88,15 @@
         WHERE material_id = #{materialId}
     </update>
 
+    <!-- 存量物料类型：旧编码(0-5) → 名称（物料类型改为以金蝶商品类别名称为准） -->
+    <update id="migrateLegacyMaterialType">
+        UPDATE wms_material SET material_type = CASE material_type
+            WHEN '0' THEN '原材料' WHEN '1' THEN '半成品' WHEN '2' THEN '成品'
+            WHEN '3' THEN '辅料' WHEN '4' THEN '服务' WHEN '5' THEN '工程'
+            ELSE material_type END
+        WHERE del_flag = '0' AND material_type IN ('0','1','2','3','4','5')
+    </update>
+
     <delete id="deleteMaterialByIds" parameterType="Long">
         UPDATE wms_material SET del_flag = '2' WHERE material_id IN
         <foreach item="materialId" collection="array" open="(" separator="," close=")">#{materialId}</foreach>

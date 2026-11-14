@@ -24,6 +24,9 @@ import com.ruoyi.kingdee.adapter.AppSecretRefresher;
 import com.ruoyi.kingdee.adapter.KingdeeHttpClient;
 import com.ruoyi.kingdee.config.KingdeeConfigResolver;
 import com.ruoyi.kingdee.sync.CustomerSyncService;
+import com.ruoyi.kingdee.sync.KdInventorySyncService;
+import com.ruoyi.kingdee.sync.KdPurInStockSyncService;
+import com.ruoyi.kingdee.sync.KdSalOutboundSyncService;
 import com.ruoyi.kingdee.sync.MaterialSyncService;
 import com.ruoyi.kingdee.sync.SupplierSyncService;
 import com.ruoyi.kingdee.sync.SyncResult;
@@ -43,6 +46,9 @@ public class KingdeeSyncController extends BaseController
     @Autowired private CustomerSyncService customerSyncService;
     @Autowired private MaterialSyncService materialSyncService;
     @Autowired private SupplierSyncService supplierSyncService;
+    @Autowired private KdSalOutboundSyncService salOutboundSyncService;
+    @Autowired private KdPurInStockSyncService purInStockSyncService;
+    @Autowired private KdInventorySyncService inventorySyncService;
 
     // ==================== 配置管理 ====================
 
@@ -150,6 +156,51 @@ public class KingdeeSyncController extends BaseController
         return ajax;
     }
 
+    @Log(title = "金蝶销售出库单同步", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('kingdee:sync:saloutbound')")
+    @PostMapping("/sync/sal-outbound")
+    public AjaxResult syncSalOutbound()
+    {
+        if (!resolver.isEnabled()) return AjaxResult.error("金蝶对接未启用");
+        SyncResult r = salOutboundSyncService.syncAll();
+        AjaxResult ajax = AjaxResult.success("销售出库单同步完成");
+        ajax.put("statistics", r.getStatistics());
+        ajax.put("elapsedMs", r.getElapsedMs());
+        ajax.put("samples", r.getSamples());
+        ajax.put("skipReasons", r.getSkipReasons());
+        return ajax;
+    }
+
+    @Log(title = "金蝶采购入库单同步", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('kingdee:sync:purinstock')")
+    @PostMapping("/sync/pur-in-stock")
+    public AjaxResult syncPurInStock()
+    {
+        if (!resolver.isEnabled()) return AjaxResult.error("金蝶对接未启用");
+        SyncResult r = purInStockSyncService.syncAll();
+        AjaxResult ajax = AjaxResult.success("采购入库单同步完成");
+        ajax.put("statistics", r.getStatistics());
+        ajax.put("elapsedMs", r.getElapsedMs());
+        ajax.put("samples", r.getSamples());
+        ajax.put("skipReasons", r.getSkipReasons());
+        return ajax;
+    }
+
+    @Log(title = "金蝶库存同步", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('kingdee:sync:inventory')")
+    @PostMapping("/sync/inventory")
+    public AjaxResult syncInventory()
+    {
+        if (!resolver.isEnabled()) return AjaxResult.error("金蝶对接未启用");
+        SyncResult r = inventorySyncService.syncAll();
+        AjaxResult ajax = AjaxResult.success("库存同步完成");
+        ajax.put("statistics", r.getStatistics());
+        ajax.put("elapsedMs", r.getElapsedMs());
+        ajax.put("samples", r.getSamples());
+        ajax.put("skipReasons", r.getSkipReasons());
+        return ajax;
+    }
+
     @Log(title = "金蝶全模块同步", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('kingdee:sync:all')")
     @PostMapping("/sync/all")
@@ -160,6 +211,9 @@ public class KingdeeSyncController extends BaseController
         try { all.put("customer",  customerSyncService.syncAll()); }  catch (Exception e) { log.error("客户同步异常", e); }
         try { all.put("material",  materialSyncService.syncAll()); }  catch (Exception e) { log.error("物料同步异常", e); }
         try { all.put("supplier", supplierSyncService.syncAll()); } catch (Exception e) { log.error("供应商同步异常", e); }
+        try { all.put("salOutbound", salOutboundSyncService.syncAll()); } catch (Exception e) { log.error("销售出库单同步异常", e); }
+        try { all.put("purInStock", purInStockSyncService.syncAll()); } catch (Exception e) { log.error("采购入库单同步异常", e); }
+        try { all.put("inventory", inventorySyncService.syncAll()); } catch (Exception e) { log.error("库存同步异常", e); }
         AjaxResult ajax = AjaxResult.success("全模块同步完成");
         ajax.put("modules", all);
         return ajax;
