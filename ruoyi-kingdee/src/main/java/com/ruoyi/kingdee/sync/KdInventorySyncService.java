@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,8 +52,9 @@ public class KdInventorySyncService
             Map<String, Map<String, Object>> materialMap = fetchMaterialMap();
             log.info("金蝶库存同步 物料信息加载完成: {} 条", materialMap.size());
 
-            // 2. 拉取库存
-            List<KdInventory> all = new ArrayList<>();
+            // 2. 拉取库存（接口按「商品+仓库+库位」返回，需合并到商品+仓库）
+            Map<String, KdInventory> merged = new LinkedHashMap<>();
+            int rawRows = 0;
             int page = 1;
             while (true)
             {
@@ -91,7 +93,21 @@ public class KdInventorySyncService
                 for (Map<String, Object> row : rows)
                 {
                     KdInventory inv = toEntity(row, materialMap);
-                    if (inv != null) all.add(inv);
+                    if (inv == null) continue;
+                    rawRows++;
+                    // 同一商品+仓库存在多个库位记录时按库位汇总，避免互相覆盖导致数量不一致
+                    String key = inv.getMaterialId() + "|" + (inv.getStockId() == null ? "" : inv.getStockId());
+                    KdInventory exist = merged.get(key);
+                    if (exist == null)
+                    {
+                        merged.put(key, inv);
+                    }
+                    else
+                    {
+                        exist.setQty(add(exist.getQty(), inv.getQty()));
+                        exist.setValidQty(add(exist.getValidQty(), inv.getValidQty()));
+                        exist.setAvailableOutQty(add(exist.getAvailableOutQty(), inv.getAvailableOutQty()));
+                    }
                 }
 
                 Object totalPage = data.get("total_page");
@@ -100,7 +116,17 @@ public class KdInventorySyncService
                 page++;
             }
 
-            // 3. 全量替换写入
+            // 3. 剔除库存为 0 的记录（与金蝶「库存查询」页面口径一致），全量替换写入
+            List<KdInventory> all = new ArrayList<>();
+            for (KdInventory inv : merged.values())
+            {
+                if (inv.getQty() != null && inv.getQty().compareTo(BigDecimal.ZERO) != 0)
+                {
+                    all.add(inv);
+                }
+            }
+            log.info("金蝶库存同步 接口原始行 {}，商品+仓库合并后 {}，剔除零库存 {}，入库 {}",
+                    rawRows, merged.size(), merged.size() - all.size(), all.size());
             if (!all.isEmpty())
             {
                 inventoryService.deleteAll();
@@ -201,6 +227,7 @@ public class KdInventorySyncService
     // ===== 辅助方法 =====
     private static String str(Object o) { return o == null ? null : String.valueOf(o); }
     private static BigDecimal dec(Object o) { if (o == null) return null; try { return new BigDecimal(String.valueOf(o)); } catch (Exception e) { return null; } }
+    private static BigDecimal add(BigDecimal a, BigDecimal b) { if (a == null) return b; if (b == null) return a; return a.add(b); }
     private static Integer asInt(Object o) { if (o == null) return null; try { return Integer.valueOf(String.valueOf(o)); } catch (Exception e) { return null; } }
     @SuppressWarnings("unchecked")
     private static Map<String, Object> asMap(Object o) { return o instanceof Map ? (Map<String, Object>) o : null; }
