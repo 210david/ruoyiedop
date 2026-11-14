@@ -25,6 +25,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateTime"    column="update_time"     />
         <result property="remark"        column="remark"          />
         <result property="postName"      column="post_name"       />
+        <result property="employeeNo"    column="employee_no"     />
         <result property="superiorLeaderId"   column="superior_leader_id"   />
         <result property="superiorLeaderName" column="superior_leader_name" />
         <result property="chargeLeaderId"     column="charge_leader_id"     />
@@ -66,7 +67,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <select id="selectUserList" parameterType="SysUser" resultMap="SysUserResult">
 		select u.user_id, u.dept_id, u.nick_name, u.user_name, u.email, u.avatar, u.phonenumber, u.sex, u.status, u.del_flag, u.login_ip, u.login_date, u.create_by, u.create_time, u.remark, u.superior_leader_id, u.charge_leader_id, d.dept_name, d.leader,
-		(select GROUP_CONCAT(p.post_name) from sys_user_post up left join sys_post p on up.post_id = p.post_id where up.user_id = u.user_id) as post_name
+		(select GROUP_CONCAT(p.post_name) from sys_user_post up left join sys_post p on up.post_id = p.post_id where up.user_id = u.user_id) as post_name,
+		(select e2.employee_no from biz_hr_employee e2 where e2.user_id = u.user_id and (e2.del_flag is null or e2.del_flag = '0') order by e2.employee_id limit 1) as employee_no
 		from sys_user u
 		left join sys_dept d on u.dept_id = d.dept_id
 		where u.del_flag = '0'

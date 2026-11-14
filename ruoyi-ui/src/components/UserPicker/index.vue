@@ -88,6 +88,9 @@
             </template>
           </el-table-column>
           <el-table-column label="姓名" prop="nickName" min-width="90" show-overflow-tooltip />
+          <el-table-column label="工号" prop="employeeNo" min-width="90" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.employeeNo || '-' }}</template>
+          </el-table-column>
           <el-table-column label="岗位" prop="postName" min-width="110" show-overflow-tooltip>
             <template #default="scope">{{ scope.row.postName || '-' }}</template>
           </el-table-column>
@@ -341,6 +344,7 @@ function handleConfirm() {
         userId: u.userId,
         nickName: u.nickName,
         userName: u.userName,
+        employeeNo: u.employeeNo,
         postName: u.postName,
         deptId: u.dept ? u.dept.deptId : undefined,
         deptName: u.dept ? u.dept.deptName : undefined,
@@ -358,6 +362,7 @@ function handleConfirm() {
       userId: user.userId,
       nickName: user.nickName,
       userName: user.userName,
+      employeeNo: user.employeeNo,
       postName: user.postName,
       deptId: user.dept ? user.dept.deptId : undefined,
       deptName: user.dept ? user.dept.deptName : undefined,

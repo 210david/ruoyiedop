@@ -287,7 +287,7 @@ function getList() {
 function toEmployeeShape(u) {
   return {
     employeeId: u.userId,
-    employeeNo: u.userName,
+    employeeNo: u.employeeNo || u.userName,
     employeeName: u.nickName,
     idCard: undefined,
     gender: u.sex,
