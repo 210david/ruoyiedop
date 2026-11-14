@@ -15,4 +15,6 @@ public interface KdInventoryMapper
     int deleteAll();
 
     List<String> selectDistinctCategories();
+
+    List<java.util.Map<String, Object>> selectCategoryPairs();
 }

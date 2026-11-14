@@ -82,4 +82,11 @@
         SELECT DISTINCT category_id FROM kd_inventory WHERE category_id IS NOT NULL AND category_id != ''
     </select>
 
+    <select id="selectCategoryPairs" resultType="java.util.Map">
+        SELECT category_id AS categoryId, MAX(category_name) AS categoryName
+        FROM kd_inventory
+        WHERE category_id IS NOT NULL AND category_id != ''
+        GROUP BY category_id
+    </select>
+
 </mapper>
