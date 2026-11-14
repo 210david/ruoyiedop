@@ -1,6 +1,9 @@
--- 金蝶库存查询表
-DROP TABLE IF EXISTS `kd_inventory`;
-CREATE TABLE `kd_inventory` (
+-- ============================================================
+-- 金蝶库存查询表 + 菜单
+-- 日期：2026-11-14
+-- 幂等：建表 IF NOT EXISTS、菜单/授权判重，可重复执行
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `kd_inventory` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `material_id` varchar(64) DEFAULT NULL COMMENT '金蝶商品ID',
   `material_number` varchar(64) DEFAULT NULL COMMENT '商品编号',
@@ -22,20 +25,23 @@ CREATE TABLE `kd_inventory` (
 
 -- 菜单
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES (9063140, '金蝶库存查询', 9063000, 5, 'inventory', 'kingdee/inventory/index', 1, 0, 'C', '0', '0', 'kingdee:inventory:list', 'shopping', 'admin', sysdate(), '金蝶库存查询');
+SELECT 9063140, '金蝶库存查询', 9063000, 5, 'inventory', 'kingdee/inventory/index', 1, 0, 'C', '0', '0', 'kingdee:inventory:list', 'shopping', 'admin', sysdate(), '金蝶库存查询'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063140);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES (9063141, '库存查询', 9063140, 1, '', '', 1, 0, 'F', '0', '0', 'kingdee:inventory:list', '#', 'admin', sysdate(), '');
+SELECT 9063141, '库存查询', 9063140, 1, '', '', 1, 0, 'F', '0', '0', 'kingdee:inventory:list', '#', 'admin', sysdate(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063141);
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES (9063142, '同步金蝶', 9063140, 2, '', '', 1, 0, 'F', '0', '0', 'kingdee:inventory:sync', '#', 'admin', sysdate(), '');
+SELECT 9063142, '同步金蝶', 9063140, 2, '', '', 1, 0, 'F', '0', '0', 'kingdee:inventory:sync', '#', 'admin', sysdate(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063142);
 
 -- 集成页同步按钮菜单
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-VALUES (9063143, '库存同步', 9063000, 6, '', '', 1, 0, 'F', '0', '0', 'kingdee:sync:inventory', '#', 'admin', sysdate(), '');
+SELECT 9063143, '库存同步', 9063000, 6, '', '', 1, 0, 'F', '0', '0', 'kingdee:sync:inventory', '#', 'admin', sysdate(), ''
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 9063143);
 
 -- 分配给admin角色
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 9063140);
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 9063141);
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 9063142);
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 9063143);
+INSERT INTO sys_role_menu (role_id, menu_id)
+SELECT 1, t.menu_id FROM (SELECT 9063140 AS menu_id UNION ALL SELECT 9063141 UNION ALL SELECT 9063142 UNION ALL SELECT 9063143) t
+WHERE NOT EXISTS (SELECT 1 FROM sys_role_menu rm WHERE rm.role_id = 1 AND rm.menu_id = t.menu_id);
