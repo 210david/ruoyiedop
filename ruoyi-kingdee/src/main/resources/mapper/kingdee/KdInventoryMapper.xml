@@ -16,6 +16,7 @@
         <result property="availableOutQty" column="available_out_qty"/>
         <result property="categoryId" column="category_id"/>
         <result property="categoryName" column="category_name"/>
+        <result property="categorySort" column="category_sort"/>
         <result property="imageUrl" column="image_url"/>
         <result property="syncTime" column="sync_time"/>
     </resultMap>
@@ -38,12 +39,12 @@
     <insert id="batchUpsert" parameterType="java.util.List">
         INSERT INTO kd_inventory
             (material_id, material_number, material_name, spec_model, stock_id, stock_name,
-             unit_name, qty, valid_qty, available_out_qty, category_id, category_name, image_url, sync_time)
+             unit_name, qty, valid_qty, available_out_qty, category_id, category_name, category_sort, image_url, sync_time)
         VALUES
         <foreach collection="list" item="it" separator=",">
             (#{it.materialId}, #{it.materialNumber}, #{it.materialName}, #{it.specModel},
              #{it.stockId}, #{it.stockName}, #{it.unitName}, #{it.qty}, #{it.validQty},
-             #{it.availableOutQty}, #{it.categoryId}, #{it.categoryName}, #{it.imageUrl}, #{it.syncTime})
+             #{it.availableOutQty}, #{it.categoryId}, #{it.categoryName}, #{it.categorySort}, #{it.imageUrl}, #{it.syncTime})
         </foreach>
         ON DUPLICATE KEY UPDATE
             material_number = VALUES(material_number),
@@ -56,6 +57,7 @@
             available_out_qty = VALUES(available_out_qty),
             category_id = VALUES(category_id),
             category_name = VALUES(category_name),
+            category_sort = VALUES(category_sort),
             image_url = VALUES(image_url),
             sync_time = VALUES(sync_time)
     </insert>
@@ -69,10 +71,11 @@
     </select>
 
     <select id="selectCategoryList" resultMap="KdInventoryResult">
-        SELECT DISTINCT category_id, category_name
+        SELECT category_id, category_name, MIN(category_sort) AS category_sort
         FROM kd_inventory
         WHERE category_id IS NOT NULL AND category_id != ''
-        ORDER BY category_name
+        GROUP BY category_id, category_name
+        ORDER BY MIN(category_sort), category_name
     </select>
 
 </mapper>

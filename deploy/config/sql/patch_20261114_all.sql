@@ -156,11 +156,24 @@ CREATE TABLE IF NOT EXISTS `kd_inventory` (
   `available_out_qty` decimal(18,4) DEFAULT NULL COMMENT '可出库数量',
   `category_id` varchar(64) DEFAULT NULL COMMENT '分类ID',
   `category_name` varchar(128) DEFAULT NULL COMMENT '分类名称',
+  `category_sort` int DEFAULT NULL COMMENT '商品类别排序(金蝶)',
   `image_url` varchar(500) DEFAULT NULL COMMENT '商品图片地址',
   `sync_time` datetime DEFAULT NULL COMMENT '同步时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_material_stock` (`material_id`, `stock_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='金蝶库存查询';
+
+-- 已存在表时补充商品类别排序列（金蝶商品类别展示顺序）
+SET @has_cat_sort := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'kd_inventory' AND column_name = 'category_sort'
+);
+SET @ddl_cat_sort := IF(@has_cat_sort = 0,
+    'ALTER TABLE `kd_inventory` ADD COLUMN `category_sort` int DEFAULT NULL COMMENT ''商品类别排序(金蝶)'' AFTER `category_name`',
+    'SELECT ''kd_inventory.category_sort 已存在，跳过'' AS msg');
+PREPARE stmt_cat_sort FROM @ddl_cat_sort;
+EXECUTE stmt_cat_sort;
+DEALLOCATE PREPARE stmt_cat_sort;
 
 -- 菜单
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
