@@ -68,7 +68,22 @@ public class KdInventoryService
     public List<Map<String, Object>> selectCategoryList()
     {
         List<KdCategory> cats = categoryMapper.selectAllOrdered();
-        if (cats.isEmpty()) return new ArrayList<>();
+        // 升级后尚未同步时类别表为空，退化为按库存已有分类平铺，避免分类树空白
+        if (cats.isEmpty())
+        {
+            List<Map<String, Object>> flat = new ArrayList<>();
+            for (Map<String, Object> row : inventoryMapper.selectCategoryPairs())
+            {
+                Map<String, Object> node = new LinkedHashMap<>();
+                Object id = row.get("categoryId");
+                Object name = row.get("categoryName");
+                node.put("categoryId", id);
+                node.put("categoryName", name == null ? id : name);
+                node.put("children", new ArrayList<Map<String, Object>>());
+                flat.add(node);
+            }
+            return flat;
+        }
         List<String> used = inventoryMapper.selectDistinctCategories();
         Map<String, KdCategory> byId = new HashMap<>();
         for (KdCategory c : cats) byId.put(c.getId(), c);
