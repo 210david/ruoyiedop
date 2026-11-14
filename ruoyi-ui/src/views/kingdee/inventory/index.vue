@@ -22,7 +22,6 @@
             :data="treeData"
             node-key="id"
             :props="{ label: 'label', children: 'children' }"
-            default-expand-all
             :expand-on-click-node="false"
             :filter-node-method="filterTreeNode"
             highlight-current
@@ -183,6 +182,12 @@ function loadTreeData() {
       count: null,
       children
     }]
+    // 数据是异步加载的，default-expand-all 不会对后到的数据生效；
+    // 默认只展开一级：展开根节点显示全部一级分类，下级由用户按需点开
+    nextTick(() => {
+      const root = treeRef.value?.store?.nodesMap?.['']
+      if (root) root.expanded = true
+    })
   }).catch(() => {})
 }
 
