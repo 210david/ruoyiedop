@@ -162,6 +162,39 @@ public class MkCustomerServiceImpl implements IMkCustomerService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncUpdateCustomer(MkCustomer customer)
+    {
+        MkCustomer old = mkCustomerMapper.selectCustomerById(customer.getCustomerId());
+        if (old == null)
+        {
+            throw new ServiceException("客户不存在或已删除");
+        }
+        // 金蝶同步：允许直接修改客户类型，不做类型变更校验
+        // 编辑表单回显的是脱敏手机号，含 * 表示未修改，沿用原值
+        if (StringUtils.isNotEmpty(customer.getContactPhone()) && customer.getContactPhone().contains("*"))
+        {
+            customer.setContactPhone(old.getContactPhone());
+        }
+        validateCustomerCommon(customer, old.getCustomerId());
+        // 个人客户手机号不允许被编辑清空（XML 无条件更新）
+        if (MkCustomer.TYPE_PERSONAL.equals(customer.getCustomerType()) && StringUtils.isEmpty(customer.getContactPhone()))
+        {
+            customer.setContactPhone(old.getContactPhone());
+        }
+        int rows = mkCustomerMapper.updateCustomer(customer);
+        if (customer.getTagIds() != null)
+        {
+            mkCustomerMapper.deleteCustomerTags(customer.getCustomerId());
+            if (customer.getTagIds().length > 0)
+            {
+                mkCustomerMapper.batchInsertCustomerTags(customer.getCustomerId(), customer.getTagIds());
+            }
+        }
+        return rows;
+    }
+
+    @Override
     public int deleteCustomerByIds(Long[] customerIds)
     {
         // 经销商存在下级时不允许删除，防止层级孤儿
@@ -592,7 +625,11 @@ public class MkCustomerServiceImpl implements IMkCustomerService
     private void validateCustomerCommon(MkCustomer customer, Long excludeId)
     {
         String type = customer.getCustomerType();
-        if (!MkCustomer.TYPE_ENTERPRISE.equals(type) && !MkCustomer.TYPE_DEALER.equals(type) && !MkCustomer.TYPE_PERSONAL.equals(type))
+        // 合法的客户类型（数字字典）：1直营客户 2经销商 3个人客户 4代理商 5其他
+        java.util.Set<String> validTypes = new java.util.HashSet<>(java.util.Arrays.asList(
+                MkCustomer.TYPE_ENTERPRISE, MkCustomer.TYPE_DEALER, MkCustomer.TYPE_PERSONAL,
+                "4", "5"));
+        if (type == null || !validTypes.contains(type))
         {
             throw new ServiceException("客户类型不合法");
         }

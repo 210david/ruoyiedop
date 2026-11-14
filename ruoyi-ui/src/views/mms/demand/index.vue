@@ -169,7 +169,7 @@
     </el-dialog>
 
     <!-- ===== 物料选择器（仅半成品和成品） ===== -->
-    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1','2']" @confirm="onMaterialPickerConfirm" />
+    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1', '2', '半成品', '成品']" @confirm="onMaterialPickerConfirm" />
     <!-- ===== 客户选择器 ===== -->
     <customer-picker ref="customerPickerRef" title="选择客户" @confirm="onCustomerPickerConfirm" />
 

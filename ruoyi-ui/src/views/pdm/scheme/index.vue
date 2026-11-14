@@ -351,7 +351,7 @@
     <!-- 产品档案选择器 -->
     <PdmProductPicker ref="productPickerRef" title="选择产品档案" @confirm="onProductConfirm" />
     <!-- 配方原料物料选择器（仅原材料） -->
-    <MaterialPicker ref="formulaPickerRef" title="选择原料物料（仅原材料）" :material-types="['0']" @confirm="onFormulaMaterialConfirm" />
+    <MaterialPicker ref="formulaPickerRef" title="选择原料物料（仅原材料）" :material-types="['0', '原材料', '原蜜', '饮品原料', '糯米', '蜂蜜']" @confirm="onFormulaMaterialConfirm" />
     <!-- 文件预览 -->
     <file-preview ref="filePreviewRef" />
     <!-- ===== 业务操作说明对话框 ===== -->

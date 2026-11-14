@@ -219,6 +219,42 @@
               </div>
               <el-icon class="sync-arrow"><CaretRight /></el-icon>
             </div>
+
+            <div class="sync-item" @click="handleSyncSalOutbound" :class="{ loading: syncingSalOutbound }">
+              <div class="sync-ic sale-ic">
+                <el-icon :size="24" v-if="!syncingSalOutbound"><Van /></el-icon>
+                <el-icon :size="24" v-else class="spin-icon"><Loading /></el-icon>
+              </div>
+              <div class="sync-info">
+                <div class="sync-name">销售出库单</div>
+                <div class="sync-desc">金蝶 scm/sal_out_bound → 销售出库单列表</div>
+              </div>
+              <el-icon class="sync-arrow"><CaretRight /></el-icon>
+            </div>
+
+            <div class="sync-item" @click="handleSyncPurInStock" :class="{ loading: syncingPurInStock }">
+              <div class="sync-ic pur-ic">
+                <el-icon :size="24" v-if="!syncingPurInStock"><Box /></el-icon>
+                <el-icon :size="24" v-else class="spin-icon"><Loading /></el-icon>
+              </div>
+              <div class="sync-info">
+                <div class="sync-name">采购入库单</div>
+                <div class="sync-desc">金蝶 scm/pur_in_stock → 采购入库单列表</div>
+              </div>
+              <el-icon class="sync-arrow"><CaretRight /></el-icon>
+            </div>
+
+            <div class="sync-item" @click="handleSyncInventory" :class="{ loading: syncingInventory }">
+              <div class="sync-ic inv-ic">
+                <img v-if="!syncingInventory" src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=warehouse%20inventory%20boxes%20minimal%20flat%20icon%20blue%20gradient&image_size=square" class="sync-img" />
+                <el-icon :size="24" v-else class="spin-icon"><Loading /></el-icon>
+              </div>
+              <div class="sync-info">
+                <div class="sync-name">库存查询</div>
+                <div class="sync-desc">金蝶 scm/inventory → 即时库存</div>
+              </div>
+              <el-icon class="sync-arrow"><CaretRight /></el-icon>
+            </div>
           </div>
 
           <!-- 上次同步结果 -->
@@ -302,7 +338,7 @@
 
 <script setup name="KingdeeConfig">
 import { getKingdeeConfig, updateKingdeeConfig, testKingdeeConfig,
-  syncCustomer, syncMaterial, syncSupplier, syncAll,
+  syncCustomer, syncMaterial, syncSupplier, syncSalOutbound, syncPurInStock, syncInventory, syncAll,
   refreshAppSecret, getAppSecretStatus } from '@/api/kingdee/index'
 
 const { proxy } = getCurrentInstance()
@@ -313,6 +349,9 @@ const testing = ref(false)
 const syncingCustomer = ref(false)
 const syncingMaterial = ref(false)
 const syncingSupplier = ref(false)
+const syncingSalOutbound = ref(false)
+const syncingPurInStock = ref(false)
+const syncingInventory = ref(false)
 const syncingAll = ref(false)
 const clientSecretConfigured = ref(false)
 const appSecretConfigured = ref(false)
@@ -553,6 +592,9 @@ function actionTag(action) {
 const handleSyncCustomer = () => doSync('客户', syncCustomer, syncingCustomer)
 const handleSyncMaterial = () => doSync('物料', syncMaterial, syncingMaterial)
 const handleSyncSupplier = () => doSync('供应商', syncSupplier, syncingSupplier)
+const handleSyncSalOutbound = () => doSync('销售出库单', syncSalOutbound, syncingSalOutbound)
+const handleSyncPurInStock = () => doSync('采购入库单', syncPurInStock, syncingPurInStock)
+const handleSyncInventory = () => doSync('库存查询', syncInventory, syncingInventory)
 
 function handleSyncAll() {
   syncingAll.value = true
@@ -584,7 +626,7 @@ function handleSyncAll() {
 }
 
 function labelOf(k) {
-  return { customer:'客户', material:'物料', supplier:'供应商' }[k] || k
+  return { customer:'客户', material:'物料', supplier:'供应商', salOutbound:'销售出库单', purInStock:'采购入库单', inventory:'库存查询' }[k] || k
 }
 
 function formatLatency(ms) {
@@ -641,6 +683,10 @@ loadConfig()
 .sync-ic.user-ic { background: linear-gradient(135deg,#409eff,#2b7de9); }
 .sync-ic.goods-ic { background: linear-gradient(135deg,#67c23a,#4cae20); }
 .sync-ic.supp-ic { background: linear-gradient(135deg,#e6a23c,#cf8e47); }
+.sync-ic.sale-ic { background: linear-gradient(135deg,#409eff,#2b7de9); }
+.sync-ic.pur-ic { background: linear-gradient(135deg,#67c23a,#4cae20); }
+.sync-ic.inv-ic { background: linear-gradient(135deg,#6366f1,#4f46e5); overflow: hidden; }
+.sync-ic .sync-img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: block; }
 .sync-ic.gray { background: linear-gradient(135deg,#b1b3b8,#909399); }
 .spin-icon { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

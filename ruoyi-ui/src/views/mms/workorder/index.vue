@@ -1084,7 +1084,7 @@
     </el-dialog>
 
     <!-- ===== 物料选择器（仅半成品和成品） ===== -->
-    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1','2']" @confirm="onMaterialPickerConfirm" />
+    <material-picker ref="materialPickerRef" title="选择产品物料" :material-types="['1', '2', '半成品', '成品']" @confirm="onMaterialPickerConfirm" />
 
     <!-- ===== BOM选择器弹窗 ===== -->
     <el-dialog v-model="bomPickerOpen" width="860px" append-to-body draggable class="rd-dialog">

@@ -448,7 +448,7 @@
       <template #footer><el-button @click="resourcePickerOpen = false">取 消</el-button><el-button type="primary" @click="confirmResourcePicker" :disabled="!resourcePickerSelectedId">确 定</el-button></template>
     </el-dialog>
     <!-- Product Picker -->
-    <material-picker ref="productPickerRef" title="选择产品" :material-types="['1','2']" @confirm="onProductPickerConfirm" />
+    <material-picker ref="productPickerRef" title="选择产品" :material-types="['1', '2', '半成品', '成品']" @confirm="onProductPickerConfirm" />
     <!-- 业务操作说明 -->
     <el-dialog v-model="showStatusHelp" title="工艺路线管理业务操作说明" width="820px" append-to-body draggable class="rd-dialog status-help-dialog">
       <div class="status-help-content">

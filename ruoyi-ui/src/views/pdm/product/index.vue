@@ -361,7 +361,7 @@
     </el-dialog>
 
     <!-- 物料选择器 -->
-    <MaterialPicker ref="materialPickerRef" title="选择产品物料（仅成品）" :material-types="['2']" @confirm="onMaterialConfirm" />
+    <MaterialPicker ref="materialPickerRef" title="选择产品物料（仅成品）" :material-types="['2', '成品']" @confirm="onMaterialConfirm" />
     <!-- 人员选择器 -->
     <UserPicker ref="userPickerRef" title="选择责任设计员" @confirm="onDesignerConfirm" />
     <!-- 文件预览 -->

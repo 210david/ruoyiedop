@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kingdee.mapper.KdPurInStockMapper">
+
+    <resultMap type="KdPurInStock" id="KdPurInStockResult">
+        <result property="id"            column="id"/>
+        <result property="kdBillId"      column="kd_bill_id"/>
+        <result property="kdEntryId"     column="kd_entry_id"/>
+        <result property="billDate"      column="bill_date"/>
+        <result property="billNo"        column="bill_no"/>
+        <result property="supplierName"  column="supplier_name"/>
+        <result property="purchaserName" column="purchaser_name"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="payStatus"     column="pay_status"/>
+        <result property="unpaidAmount"  column="unpaid_amount"/>
+        <result property="paidAmount"    column="paid_amount"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="unitName"      column="unit_name"/>
+        <result property="qty"           column="qty"/>
+        <result property="price"         column="price"/>
+        <result property="taxAmount"     column="tax_amount"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="returnQty"     column="return_qty"/>
+        <result property="syncTime"      column="sync_time"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateTime"    column="update_time"/>
+    </resultMap>
+
+    <sql id="selectKdPurInStockVo">
+        select id, kd_bill_id, kd_entry_id, bill_date, bill_no, supplier_name, purchaser_name,
+               dept_name, pay_status, unpaid_amount, paid_amount, material_name, warehouse_name,
+               unit_name, qty, price, tax_amount, total_amount, return_qty, sync_time,
+               create_time, update_time
+        from kd_pur_in_stock
+    </sql>
+
+    <select id="selectKdPurInStockList" parameterType="KdPurInStock" resultMap="KdPurInStockResult">
+        <include refid="selectKdPurInStockVo"/>
+        <where>
+            <if test="billNo != null and billNo != ''">and bill_no like concat('%', #{billNo}, '%')</if>
+            <if test="supplierName != null and supplierName != ''">and supplier_name like concat('%', #{supplierName}, '%')</if>
+            <if test="materialName != null and materialName != ''">and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="payStatus != null and payStatus != ''">and pay_status = #{payStatus}</if>
+            <if test="params.beginBillDate != null and params.beginBillDate != ''">and bill_date <![CDATA[>=]]> #{params.beginBillDate}</if>
+            <if test="params.endBillDate != null and params.endBillDate != ''">and bill_date <![CDATA[<=]]> #{params.endBillDate}</if>
+        </where>
+        order by bill_date desc, id desc
+    </select>
+
+    <insert id="batchUpsert" parameterType="java.util.List">
+        INSERT INTO kd_pur_in_stock
+            (kd_bill_id, kd_entry_id, bill_date, bill_no, supplier_name, purchaser_name,
+             dept_name, pay_status, unpaid_amount, paid_amount, material_name, warehouse_name,
+             unit_name, qty, price, tax_amount, total_amount, return_qty, sync_time)
+        VALUES
+        <foreach collection="list" item="o" separator=",">
+            (#{o.kdBillId}, #{o.kdEntryId}, #{o.billDate}, #{o.billNo}, #{o.supplierName}, #{o.purchaserName},
+             #{o.deptName}, #{o.payStatus}, #{o.unpaidAmount}, #{o.paidAmount}, #{o.materialName}, #{o.warehouseName},
+             #{o.unitName}, #{o.qty}, #{o.price}, #{o.taxAmount}, #{o.totalAmount}, #{o.returnQty}, #{o.syncTime})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            bill_date = VALUES(bill_date),
+            bill_no = VALUES(bill_no),
+            supplier_name = VALUES(supplier_name),
+            purchaser_name = VALUES(purchaser_name),
+            dept_name = VALUES(dept_name),
+            pay_status = VALUES(pay_status),
+            unpaid_amount = VALUES(unpaid_amount),
+            paid_amount = VALUES(paid_amount),
+            material_name = VALUES(material_name),
+            warehouse_name = VALUES(warehouse_name),
+            unit_name = VALUES(unit_name),
+            qty = VALUES(qty),
+            price = VALUES(price),
+            tax_amount = VALUES(tax_amount),
+            total_amount = VALUES(total_amount),
+            return_qty = VALUES(return_qty),
+            sync_time = VALUES(sync_time),
+            update_time = NOW()
+    </insert>
+
+    <delete id="deleteByBillIds" parameterType="java.util.List">
+        DELETE FROM kd_pur_in_stock WHERE kd_bill_id IN
+        <foreach collection="list" item="billId" open="(" separator="," close=")">
+            #{billId}
+        </foreach>
+    </delete>
+
+</mapper>

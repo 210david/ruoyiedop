@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.kingdee.mapper.KdSalOutboundMapper">
+
+    <resultMap type="KdSalOutbound" id="KdSalOutboundResult">
+        <result property="id"            column="id"/>
+        <result property="kdBillId"      column="kd_bill_id"/>
+        <result property="kdEntryId"     column="kd_entry_id"/>
+        <result property="billDate"      column="bill_date"/>
+        <result property="billNo"        column="bill_no"/>
+        <result property="customerName"  column="customer_name"/>
+        <result property="salesmanName"  column="salesman_name"/>
+        <result property="deptName"      column="dept_name"/>
+        <result property="receiptStatus" column="receipt_status"/>
+        <result property="unpaidAmount"  column="unpaid_amount"/>
+        <result property="paidAmount"    column="paid_amount"/>
+        <result property="materialName"  column="material_name"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="unitName"      column="unit_name"/>
+        <result property="qty"           column="qty"/>
+        <result property="price"         column="price"/>
+        <result property="taxAmount"     column="tax_amount"/>
+        <result property="totalAmount"   column="total_amount"/>
+        <result property="returnQty"     column="return_qty"/>
+        <result property="syncTime"      column="sync_time"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateTime"    column="update_time"/>
+    </resultMap>
+
+    <sql id="selectKdSalOutboundVo">
+        SELECT id, kd_bill_id, kd_entry_id, bill_date, bill_no, customer_name, salesman_name,
+               dept_name, receipt_status, unpaid_amount, paid_amount, material_name,
+               warehouse_name, unit_name, qty, price, tax_amount, total_amount, return_qty,
+               sync_time, create_time, update_time
+        FROM kd_sal_outbound
+    </sql>
+
+    <select id="selectKdSalOutboundList" parameterType="KdSalOutbound" resultMap="KdSalOutboundResult">
+        <include refid="selectKdSalOutboundVo"/>
+        <where>
+            <if test="billNo != null and billNo != ''"> AND bill_no LIKE CONCAT('%', #{billNo}, '%')</if>
+            <if test="customerName != null and customerName != ''"> AND customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="materialName != null and materialName != ''"> AND material_name LIKE CONCAT('%', #{materialName}, '%')</if>
+            <if test="salesmanName != null and salesmanName != ''"> AND salesman_name LIKE CONCAT('%', #{salesmanName}, '%')</if>
+            <if test="params.beginBillDate != null and params.beginBillDate != ''"> AND bill_date &gt;= #{params.beginBillDate}</if>
+            <if test="params.endBillDate != null and params.endBillDate != ''"> AND bill_date &lt;= #{params.endBillDate}</if>
+        </where>
+        ORDER BY bill_date DESC, bill_no DESC, id ASC
+    </select>
+
+    <insert id="batchUpsert" parameterType="java.util.List">
+        INSERT INTO kd_sal_outbound (kd_bill_id, kd_entry_id, bill_date, bill_no, customer_name,
+            salesman_name, dept_name, receipt_status, unpaid_amount, paid_amount, material_name,
+            warehouse_name, unit_name, qty, price, tax_amount, total_amount, return_qty,
+            sync_time, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.kdBillId}, #{it.kdEntryId}, #{it.billDate}, #{it.billNo}, #{it.customerName},
+             #{it.salesmanName}, #{it.deptName}, #{it.receiptStatus}, #{it.unpaidAmount}, #{it.paidAmount},
+             #{it.materialName}, #{it.warehouseName}, #{it.unitName}, #{it.qty}, #{it.price},
+             #{it.taxAmount}, #{it.totalAmount}, #{it.returnQty},
+             #{it.syncTime}, NOW(), NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            bill_date = VALUES(bill_date),
+            bill_no = VALUES(bill_no),
+            customer_name = VALUES(customer_name),
+            salesman_name = VALUES(salesman_name),
+            dept_name = VALUES(dept_name),
+            receipt_status = VALUES(receipt_status),
+            unpaid_amount = VALUES(unpaid_amount),
+            paid_amount = VALUES(paid_amount),
+            material_name = VALUES(material_name),
+            warehouse_name = VALUES(warehouse_name),
+            unit_name = VALUES(unit_name),
+            qty = VALUES(qty),
+            price = VALUES(price),
+            tax_amount = VALUES(tax_amount),
+            total_amount = VALUES(total_amount),
+            return_qty = VALUES(return_qty),
+            sync_time = VALUES(sync_time),
+            update_time = NOW()
+    </insert>
+
+    <delete id="deleteByBillIds" parameterType="java.util.List">
+        DELETE FROM kd_sal_outbound WHERE kd_bill_id IN
+        <foreach collection="list" item="billId" open="(" separator="," close=")">
+            #{billId}
+        </foreach>
+    </delete>
+
+</mapper>

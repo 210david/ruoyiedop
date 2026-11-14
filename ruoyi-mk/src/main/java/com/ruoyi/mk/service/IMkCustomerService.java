@@ -16,6 +16,9 @@ public interface IMkCustomerService
     public MkCustomer selectCustomerById(Long customerId);
     public int insertCustomer(MkCustomer customer);
     public int updateCustomer(MkCustomer customer);
+
+    /** 金蝶同步专用更新（允许直接修改客户类型） */
+    public int syncUpdateCustomer(MkCustomer customer);
     public int deleteCustomerByIds(Long[] customerIds);
 
     /** 查询公海客户列表 */

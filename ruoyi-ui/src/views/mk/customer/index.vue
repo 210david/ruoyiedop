@@ -168,7 +168,7 @@
           </el-table-column>
           <el-table-column label="客户类型" prop="customerType" key="customerType" :width="colWidth('customerType', 100)" resizable align="center" v-if="columns.customerType.visible">
             <template #default="scope">
-              <el-tag :type="customerTypeTagType(scope.row.customerType)" effect="light">{{ dictLabel(mk_customer_type, scope.row.customerType, '企业客户') }}</el-tag>
+              <el-tag :type="customerTypeTagType(scope.row.customerType)" effect="light">{{ dictLabel(mk_customer_type, scope.row.customerType, '其他') }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="客户标签" prop="tagNames" key="tagNames" :min-width="colWidth('tagNames', 150)" resizable show-overflow-tooltip v-if="columns.tagNames.visible">
@@ -1006,7 +1006,7 @@ const formRules = computed(() => {
   return base
 })
 
-/** 是否个人客户 */
+/** 是否个人客户（金蝶分类无此类型，保留逻辑供手动创建） */
 const isPersonal = computed(() => form.value.customerType === '3')
 /** 是否经销商 */
 const isDealer = computed(() => form.value.customerType === '2')
@@ -1238,7 +1238,7 @@ function submitChangeType() {
   })
 }
 /** 客户类型标签颜色 */
-function customerTypeTagType(val) { return { '1': '', '2': 'warning', '3': 'success' }[val] || 'info' }
+function customerTypeTagType(val) { return { '1':'', '2':'warning', '3':'success', '4':'', '5':'info' }[val] || 'info' }
 /** 通用字典label */
 function dictLabel(list, val, defaultText) { const arr = Array.isArray(list) ? list : (list && list.value) || []; const item = arr.find(d => d.value == val); return item ? item.label : (defaultText || '-') }
 

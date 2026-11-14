@@ -208,8 +208,8 @@
           <div class="rd-card-body" v-show="!collapsedCards.c3">
         <el-alert v-if="isServiceOrEngineering" type="info" :closable="false" show-icon style="margin-bottom: 16px">
           <template #title>
-            <span v-if="form.materialType === '4'">当前为「服务」类型物料，适用于IT运维、保洁服务、咨询服务等非物资类采购。「效期管理」和「库存控制」不适用于此类物料。</span>
-            <span v-else-if="form.materialType === '5'">当前为「工程」类型物料，适用于装修工程、安装工程、施工项目等。「效期管理」和「库存控制」不适用于此类物料。</span>
+            <span v-if="['4', '服务', '劳务商品'].includes(form.materialType)">当前为「服务」类型物料，适用于IT运维、保洁服务、咨询服务等非物资类采购。「效期管理」和「库存控制」不适用于此类物料。</span>
+            <span v-else-if="['5', '工程'].includes(form.materialType)">当前为「工程」类型物料，适用于装修工程、安装工程、施工项目等。「效期管理」和「库存控制」不适用于此类物料。</span>
           </template>
         </el-alert>
         <el-row :gutter="20">
@@ -548,6 +548,7 @@ const data = reactive({
   },
 rules: {
 materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
+    materialType: [{ required: true, message: '请选择物料类型', trigger: 'change' }],
     unit: [{ required: true, message: '计量单位不能为空', trigger: 'change' }],
     safetyStockMax: [{ validator: validateSafetyStockMax, trigger: 'blur' }]
   }
@@ -583,12 +584,12 @@ const activeFilterCount = computed(() => {
 
 /** 是否为服务或工程类型 */
 const isServiceOrEngineering = computed(() => {
-  return form.value.materialType === '4' || form.value.materialType === '5'
+  return ['4', '5', '服务', '劳务商品', '工程'].includes(form.value.materialType)
 })
 
 /** 查看详情-是否为服务或工程类型 */
 const isViewServiceOrEngineering = computed(() => {
-  return viewData.value.materialType === '4' || viewData.value.materialType === '5'
+  return ['4', '5', '服务', '劳务商品', '工程'].includes(viewData.value.materialType)
 })
 
 function getList() {
@@ -635,10 +636,10 @@ function reset() {
     materialId: undefined,
     materialCode: undefined,
     materialName: undefined,
-    materialType: '0',
+    materialType: undefined,
     specModel: undefined,
     unit: undefined,
-    shelfLifeDays: undefined,
+    shelfLifeDays: 30,
     expiryAlertDays: 7,
     isExpiryManage: '0',
     safetyStockMin: 0,

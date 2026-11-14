@@ -96,10 +96,11 @@ public class CustomerSyncService
 
     private void syncOne(Map<String, Object> kd, SyncResult result)
     {
-        String kdNumber = str(kd.get("number"));
-        String kdName   = str(kd.get("name"));
-        String kdEnable = str(kd.get("enable"));
-        String kdRemark = str(kd.get("remark"));
+        String kdNumber   = str(kd.get("number"));
+        String kdName     = str(kd.get("name"));
+        String kdEnable   = str(kd.get("enable"));
+        String kdRemark   = str(kd.get("remark"));
+        String kdGroup    = str(kd.get("group_name"));   // 金蝶客户分类（group_name），映射到 customer_type
 
         if (kdNumber == null || kdNumber.isEmpty())
         {
@@ -114,9 +115,10 @@ public class CustomerSyncService
         if (target != null)
         {
             target.setCustomerName(kdName);
-            target.setCustomerStatus("1".equals(kdEnable) ? "0" : "1");
+            target.setCustomerType(mapGroupToType(kdGroup));
+            target.setCustomerStatus(isDisabled(kdEnable) ? "1" : "0");
             target.setRemark(kdRemark);
-            customerService.updateCustomer(target);
+            customerService.syncUpdateCustomer(target);
             result.incUpdated();
             result.addSample(kdNumber, kdName, "更新", null);
         }
@@ -125,10 +127,10 @@ public class CustomerSyncService
             MkCustomer c = new MkCustomer();
             c.setCustomerNo(kdNumber);
             c.setCustomerName(kdName);
-            c.setCustomerType("1");
+            c.setCustomerType(mapGroupToType(kdGroup));
             c.setCustomerLevel("3");
             c.setCustomerSource("0");
-            c.setCustomerStatus("1".equals(kdEnable) ? "0" : "1");
+            c.setCustomerStatus(isDisabled(kdEnable) ? "1" : "0");
             c.setRemark(kdRemark);
             customerService.insertCustomer(c);
             result.incInserted();
@@ -138,4 +140,29 @@ public class CustomerSyncService
     }
 
     private static String str(Object o) { return o == null ? null : String.valueOf(o); }
+
+    /** 金蝶客户分类（group_name）映射到系统客户类型数字字典 */
+    private static String mapGroupToType(String groupName)
+    {
+        if (groupName == null || groupName.isEmpty())
+        {
+            return "5";
+        }
+        switch (groupName)
+        {
+            case "直营客户": return "1";
+            case "经销商":   return "2";
+            case "个人客户": return "3";
+            case "代理商":   return "4";
+            case "其他":
+            case "个性化定制":
+            default:         return "5";
+        }
+    }
+
+    /** 只有明确为 "0" 或 "false" 时才视为停用，其余情况（含 null）默认启用 */
+    private static boolean isDisabled(String enable)
+    {
+        return "0".equals(enable) || "false".equalsIgnoreCase(enable);
+    }
 }
