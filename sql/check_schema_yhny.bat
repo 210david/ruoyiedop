@@ -1,7 +1,9 @@
 @echo off
 rem ============================================================
 rem Read-only schema check: edop_yhny vs current code
-rem Script: check_schema_yhny.sql (TEMP table only, no data change)
+rem Script: check_schema_yhny.sql v2 (2026-11-14, INSERT-only expectation
+rem         list + Section C split, fixes ERROR 1137 and false positives)
+rem         (TEMP table only, no data change)
 rem Output: A) missing tables (informational)  B) missing columns
 rem         C) summary counts
 rem Date: 2026-11-14
