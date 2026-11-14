@@ -162,25 +162,20 @@ function getList() {
   })
 }
 
-/** 加载库存分类树（与金蝶一致的两级分类） */
+/** 加载库存分类树（与金蝶商品类别树一致的多级分类） */
 function loadTreeData() {
   listInventoryCategories().then(response => {
-    const cats = response.data || []
-    const children = cats.map(c => {
-      const sub = (c.children || []).map(s => ({
-        id: s.categoryId,
-        label: s.categoryName || s.categoryId,
-        parentId: c.categoryId,
-        count: null
-      }))
+    const mapNode = (node, parentId) => {
+      const subs = (node.children || []).map(c => mapNode(c, node.categoryId))
       return {
-        id: c.categoryId,
-        label: c.categoryName || c.categoryId,
-        parentId: 'root',
+        id: node.categoryId,
+        label: node.categoryName || node.categoryId,
+        parentId,
         count: null,
-        children: sub.length ? sub : undefined
+        children: subs.length ? subs : undefined
       }
-    })
+    }
+    const children = (response.data || []).map(c => mapNode(c, 'root'))
     treeData.value = [{
       id: '',
       label: '全部商品类目',

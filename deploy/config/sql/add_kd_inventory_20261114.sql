@@ -1,8 +1,18 @@
 -- ============================================================
--- 金蝶库存查询表 + 菜单
+-- 金蝶库存查询表 + 商品类别表 + 菜单
 -- 日期：2026-11-14
 -- 幂等：建表 IF NOT EXISTS、菜单/授权判重，可重复执行
 -- ============================================================
+CREATE TABLE IF NOT EXISTS `kd_category` (
+  `id` varchar(64) NOT NULL COMMENT '金蝶类别ID',
+  `number` varchar(64) DEFAULT NULL COMMENT '类别编码',
+  `name` varchar(128) DEFAULT NULL COMMENT '类别名称',
+  `parent_id` varchar(64) DEFAULT NULL COMMENT '上级类别ID',
+  `level` int DEFAULT NULL COMMENT '层级',
+  `sort` int DEFAULT NULL COMMENT '金蝶类别树顺序',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='金蝶商品类别';
+
 CREATE TABLE IF NOT EXISTS `kd_inventory` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `material_id` varchar(64) DEFAULT NULL COMMENT '金蝶商品ID',
