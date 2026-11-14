@@ -50,7 +50,10 @@
     <div class="surface">
       <!-- 工具栏 -->
       <div class="toolbar">
-        <div class="left"></div>
+        <div class="left">
+          <el-checkbox v-model="queryParams.onlyActive" @change="handleQuery">仅看当前版本</el-checkbox>
+          <span class="toolbar-tip">默认展示每个流程的全部历史版本，可在此把任意版本设为当前</span>
+        </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="flowable_definition_columns" />
         </div>
@@ -154,7 +157,8 @@ const xmlContent = ref('');
 const xmlModel = ref({});
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, modelName: undefined, modelKey: undefined, category: undefined },
+  // onlyActive=false：展示全部历史版本（后端默认会按流程 key 聚合，只留 1 条）
+  queryParams: { pageNum: 1, pageSize: 20, modelName: undefined, modelKey: undefined, category: undefined, onlyActive: false },
 });
 const { queryParams } = toRefs(data);
 
@@ -290,6 +294,12 @@ onActivated(() => {
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
+
+.toolbar-tip {
+  margin-left: 12px;
+  font-size: 12px;
+  color: var(--ink-400, #94a3b8);
+}
 
 .xml-view {
   background: var(--ink-900);

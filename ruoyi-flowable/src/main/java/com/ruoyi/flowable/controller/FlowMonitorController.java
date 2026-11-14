@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -113,6 +114,39 @@ public class FlowMonitorController extends BaseController
             @RequestParam(value = "comment", required = false) String comment)
     {
         return toAjax(flowProcessService.adminAssignTask(taskId, targetUserId, comment));
+    }
+
+    /**
+     * 流程复活：把已结束/已中断的流程重新拉起，并直接停在指定用户任务节点
+     *
+     * 已结束的流程没有运行实例，干预（跳节点）无对象可迁移，所以另设此接口：
+     * 还原历史变量 → 重新启动 → 搬到目标节点，业务数据仍用原来那一行（原单继续走）。
+     * 权限单独控制（flowable:monitor:revive），默认只授给超级管理员。
+     */
+    @Log(title = "流程监控", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:monitor:revive')")
+    @PutMapping("/revive/{instanceId}")
+    public AjaxResult revive(@PathVariable("instanceId") String instanceId,
+            @RequestParam("targetActivityId") String targetActivityId,
+            @RequestParam(value = "assigneeId", required = false) Long assigneeId,
+            @RequestParam(value = "comment", required = false) String comment)
+    {
+        java.util.Map<String, Object> data = flowProcessService.reviveInstance(instanceId, targetActivityId,
+                assigneeId, comment);
+        return AjaxResult.success("流程已复活至「" + data.get("targetActivityName") + "」", data);
+    }
+
+    /**
+     * 重新发起：以原流程的表单数据复制出一条新流程（新单、新流程编号，与原流程互不影响）
+     */
+    @Log(title = "流程监控", businessType = BusinessType.INSERT)
+    @PreAuthorize("@ss.hasPermi('flowable:monitor:restart')")
+    @PostMapping("/restart/{instanceId}")
+    public AjaxResult restart(@PathVariable("instanceId") String instanceId,
+            @RequestParam(value = "title", required = false) String title)
+    {
+        java.util.Map<String, Object> data = flowProcessService.restartInstance(instanceId, title);
+        return AjaxResult.success("已按原单据重新发起", data);
     }
 
     /**

@@ -76,6 +76,36 @@ public interface IFlowProcessService
     /** 管理员删除流程实例（运行中先终止，再连同历史数据一起删除） */
     public int deleteProcessInstance(String instanceId);
 
+    /**
+     * 流程复活（对标泛微「流程复活」）：把已结束/已中断的流程重新拉起，并直接停在指定用户任务节点。
+     *
+     * <p>Flowable 结束流程时会销毁 act_ru_* 运行实例，只剩历史数据，因此「干预（跳节点）」对
+     * 已结束流程无对象可迁移。这里的做法是：还原历史变量后重新启动一个运行实例，
+     * 再把执行流搬到目标节点，业务数据行仍然复用原来那一行（businessKey 不变），
+     * 旧实例的历史记录完整保留，可追溯「原单 → 复活」的链路。</p>
+     *
+     * @param instanceId       源流程实例ID（已结束）
+     * @param targetActivityId 复活后停留的目标节点ID（BPMN 用户任务 id）
+     * @param assigneeId       可选，复活后指定办理人（为空则由节点操作人配置自动派发）
+     * @param comment          复活原因（写入流转意见）
+     * @return 复活结果：instanceId（新实例）、sourceInstanceId、目标节点信息等
+     */
+    public java.util.Map<String, Object> reviveInstance(String instanceId, String targetActivityId, Long assigneeId,
+            String comment);
+
+    /**
+     * 重新发起（复制单据）：以原流程的表单数据为模板发起一条新流程，与原流程互不影响。
+     *
+     * <p>与「复活」的区别：复活是同一条业务数据继续走（复用原单），重新发起是新建一条业务数据
+     * （新单、新流程编号），适合原流程被驳回/撤销后需要重新报送的场景。</p>
+     *
+     * @param instanceId 源流程实例ID
+     * @param title      可选，新流程标题（默认「原标题（重新发起）」）
+     * @return 新实例信息：instanceId、title、processNo 等
+     */
+    public java.util.Map<String, Object> restartInstance(String instanceId, String title);
+
+
     /** 管理员改派当前节点办理人 */
     public int adminAssignTask(String taskId, Long targetUserId, String comment);
 

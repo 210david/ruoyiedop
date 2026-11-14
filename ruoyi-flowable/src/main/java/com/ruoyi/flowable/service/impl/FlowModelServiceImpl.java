@@ -61,10 +61,22 @@ public class FlowModelServiceImpl implements IFlowModelService
     @Autowired
     private FlowProcdefExtMapper flowProcdefExtMapper;
 
+    /** 版本解析：与发起路由保持同一口径（活动版本优先） */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
+
     @Autowired
     private org.flowable.engine.ProcessEngineConfiguration processEngineConfiguration;
 
-    /** 空模型 BPMN XML 模板（含 BPMNDiagram 图形段，避免 bpmn-js 报 no diagram to display） */
+    /**
+     * 空模型 BPMN XML 模板（含 BPMNDiagram 图形段，避免 bpmn-js 报 no diagram to display）。
+     *
+     * 新建即预置「开始 → 结束」一对事件并连好线：
+     *  - 只给开始节点的老模板，用户新建完发现只有起点，还得自己拖结束节点，流程也画不完整；
+     *  - 事件尺寸直接给 80x80（= 前端 WM_EVENT_SIZE / bpmnSizes.DEFAULT_EVENT_SIZE），
+     *    导入画布时 normalizeDiagramSizes 幂等、不再二次缩放，位置就是所见即所得；
+     *  - 中间留出横向空档（240 → 400），用户往流程线上插审批节点时不用先挪开两个事件。
+     */
     private static final String EMPTY_BPMN_TEMPLATE =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
         "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" " +
@@ -76,12 +88,21 @@ public class FlowModelServiceImpl implements IFlowModelService
         "targetNamespace=\"http://flowable.org/bpmn\">\n" +
         "  <process id=\"%s\" name=\"%s\" isExecutable=\"true\">\n" +
         "    <startEvent id=\"StartEvent_1\" name=\"开始\"/>\n" +
+        "    <endEvent id=\"EndEvent_1\" name=\"结束\"/>\n" +
+        "    <sequenceFlow id=\"Flow_1\" sourceRef=\"StartEvent_1\" targetRef=\"EndEvent_1\"/>\n" +
         "  </process>\n" +
         "  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n" +
         "    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"%s\">\n" +
         "      <bpmndi:BPMNShape id=\"StartEvent_1_di\" bpmnElement=\"StartEvent_1\">\n" +
-        "        <omgdc:Bounds x=\"173\" y=\"102\" width=\"36\" height=\"36\"/>\n" +
+        "        <omgdc:Bounds x=\"160\" y=\"102\" width=\"80\" height=\"80\"/>\n" +
         "      </bpmndi:BPMNShape>\n" +
+        "      <bpmndi:BPMNShape id=\"EndEvent_1_di\" bpmnElement=\"EndEvent_1\">\n" +
+        "        <omgdc:Bounds x=\"400\" y=\"102\" width=\"80\" height=\"80\"/>\n" +
+        "      </bpmndi:BPMNShape>\n" +
+        "      <bpmndi:BPMNEdge id=\"Flow_1_di\" bpmnElement=\"Flow_1\">\n" +
+        "        <omgdi:waypoint x=\"240\" y=\"142\"/>\n" +
+        "        <omgdi:waypoint x=\"400\" y=\"142\"/>\n" +
+        "      </bpmndi:BPMNEdge>\n" +
         "    </bpmndi:BPMNPlane>\n" +
         "  </bpmndi:BPMNDiagram>\n" +
         "</definitions>";
@@ -372,20 +393,23 @@ public class FlowModelServiceImpl implements IFlowModelService
         // replace 模式：覆盖当前版本——部署成功后停用该Key下所有旧版本定义并停用其活动标志，
         // 运行中实例继续按原版本走完，新发起实例落到新版本；新版本自动设为活动版本
         boolean active = Boolean.TRUE.equals(setActive) || "replace".equals(mode);
-        if ("replace".equals(mode))
+        List<ProcessDefinition> olds = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(model.getKey())
+                .orderByProcessDefinitionVersion().asc()
+                .list();
+        // 最高版本是刚部署的新版本，只处理其余旧版本
+        for (int i = 0; i < olds.size() - 1; i++)
         {
-            List<ProcessDefinition> olds = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionKey(model.getKey())
-                    .orderByProcessDefinitionVersion().asc()
-                    .list();
-            // 最高版本是刚部署的新版本，只停用其余旧版本
-            for (int i = 0; i < olds.size() - 1; i++)
+            ProcessDefinition old = olds.get(i);
+            if ("replace".equals(mode) && !old.isSuspended())
             {
-                ProcessDefinition old = olds.get(i);
-                if (!old.isSuspended())
-                {
-                    repositoryService.suspendProcessDefinitionById(old.getId());
-                }
+                repositoryService.suspendProcessDefinitionById(old.getId());
+            }
+            // 新版本要当活动版本时，旧版本的活动标志必须先清掉：
+            // 否则「新建版本 + 勾选设为活动版本」会让同一 Key 出现两个 active_flag='1'，
+            // 界面上显示两个「当前版本」，发起时到底用哪个也说不清
+            if (active)
+            {
                 clearActiveFlag(old.getId());
             }
         }
@@ -560,24 +584,11 @@ public class FlowModelServiceImpl implements IFlowModelService
      */
     private ProcessDefinition resolveDefinitionByKey(String processKey)
     {
-        // 取当前活动版本；无活动标志时回退到最高版本（与发起路由口径一致）
-        List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(processKey)
-                .orderByProcessDefinitionVersion().desc()
-                .list();
-        if (defs.isEmpty())
+        // 与 FlowDefinitionResolver 共用同一口径，避免预览版本与实际发起版本不一致
+        ProcessDefinition target = flowDefinitionResolver.resolve(processKey);
+        if (target == null)
         {
             throw new ServiceException("流程[" + processKey + "]尚未部署");
-        }
-        ProcessDefinition target = defs.get(0);
-        for (ProcessDefinition def : defs)
-        {
-            FlowProcdefExt ext = flowProcdefExtMapper.selectFlowProcdefExtByProcdefId(def.getId());
-            if (ext != null && "1".equals(ext.getActiveFlag()) && !def.isSuspended())
-            {
-                target = def;
-                break;
-            }
         }
         return target;
     }
@@ -889,7 +900,7 @@ public class FlowModelServiceImpl implements IFlowModelService
      * 背景：Flowable 不能把执行流停在开始事件上（跳过去会立刻沿出线继续往下走），
      * 所以「驳回 → 退回发起人」没有落点。这里在部署时补一个只做出线的用户任务（发起人节点）：
      * 没有入线 → 正常发起/流转永远不会经过它；退回时把执行流挪到它上面，
-     * 发起人就在待办里收到「提交申请」，改完表单提交后沿它的出线回到第一审批环节。
+     * 发起人就在待办里收到「重新提交」任务，改完表单提交后沿它的出线回到第一审批环节。
      *
      * 安全兜底：注入后的 XML 必须能被引擎解析，且原有节点/连线保持不变，
      * 任何异常都退回原始 XML，不影响正常部署。
@@ -939,12 +950,12 @@ public class FlowModelServiceImpl implements IFlowModelService
                 log.warn("注入发起人节点跳过：开始事件出线数={}（只支持单一出线）", outCount);
                 return bpmnBytes;
             }
-            // 发起人节点：名称沿用开始事件（如「提交申请」），表单属性一并带过去，
-            // 退回后发起人在办理页看到的还是发起时那张表单
+            // 发起人节点：名称固定为「重新提交」，不再沿用开始事件名 ——
+            // 开始事件通常叫「提交申请」，沿用会让流程图里出现两个同名节点，看着像多画了一个。
+            // 表单属性一并带过去，退回后发起人在办理页看到的还是发起时那张表单
             StringBuilder node = new StringBuilder();
             node.append("\n    <userTask id=\"").append(FlowReturnConstants.INITIATOR_NODE_ID).append("\" ");
-            String rawName = rawAttr(startAttrs, "name");
-            node.append(StringUtils.isNotEmpty(rawName) ? rawName : "name=\"提交申请\"");
+            node.append("name=\"").append(FlowReturnConstants.INITIATOR_NODE_NAME).append("\"");
             node.append(" flowable:").append(FlowReturnConstants.ATTR_INITIATOR_NODE).append("=\"true\"");
             appendRawAttr(startAttrs, "flowable:formKey", node);
             appendRawAttr(startAttrs, "flowable:nodeFormName", node);
@@ -994,26 +1005,29 @@ public class FlowModelServiceImpl implements IFlowModelService
             }
             double[] startBox = shapeBox(xml, startId);
             double[] targetBox = shapeBox(xml, firstTarget);
+            // 尺寸与设计器口径一致（处理节点 100x80）：原来写 100x60，画出来比相邻节点矮一截
+            double width = 100;
+            double height = 80;
+            // 与第一审批环节留 40px 垂直间距（height + 40），避免和它的连线糊在一起
+            double gap = 40;
             double x;
             double y;
             if (targetBox != null)
             {
-                // 放在第一审批环节上方，箭头指向第一审批环节：读起来就是「发起人节点也能流到这里」
+                // 放在第一审批环节正上方，箭头垂直指向它：读起来就是「发起人节点也能流到这里」
                 x = targetBox[0];
-                y = targetBox[1] - 110;
+                y = targetBox[1] - height - gap;
             }
             else if (startBox != null)
             {
                 x = startBox[0];
-                y = startBox[1] - 110;
+                y = startBox[1] - height - gap;
             }
             else
             {
                 x = 200;
                 y = 40;
             }
-            double width = 100;
-            double height = 60;
             // 图形元素前缀跟随文档已有声明：设计器（bpmn-js）导出为 dc/di，引擎内置模板为 omgdc/omgdi。
             // 写死前缀会导致注入后的 XML 解析失败，发起人节点因此被整体回退（退回发起人不可用）。
             String dcPrefix = namespacePrefix(xml, "dc");
@@ -1030,21 +1044,29 @@ public class FlowModelServiceImpl implements IFlowModelService
                     .append("\" width=\"").append(fmt(width)).append("\" height=\"").append(fmt(height))
                     .append("\"/></bpmndi:BPMNShape>");
             double[] endBox = targetBox != null ? targetBox : startBox;
+            // 连线走正交折线：先垂直落到中间高度，再横向对齐目标中心，最后垂直进入目标顶部。
+            // 原来只给首尾两点，目标与发起人节点宽度不同时会画成斜线，看着像随手连的。
+            double sx = x + width / 2;
+            double sy = y + height;
+            // 注意：shapeBox 的第 5 位已经是「左边界 + 半宽」= 中心 X，不能再除以 2，
+            // 否则连线会落到目标节点左上角而不是正上方（V7 部署后实测过）
+            double ex = endBox != null ? endBox[4] : sx;
+            double ey = endBox != null ? endBox[1] : sy + 40;
             StringBuilder edge = new StringBuilder();
             edge.append("\n      <bpmndi:BPMNEdge id=\"").append(flowId).append("_di\" bpmnElement=\"")
                     .append(flowId).append("\">")
-                    .append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(x + width / 2)).append("\" y=\"").append(fmt(y + height))
+                    .append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(sx)).append("\" y=\"").append(fmt(sy))
                     .append("\"/>");
-            if (endBox != null)
+            if (Math.abs(sx - ex) > 0.01d)
             {
-                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(endBox[0] + endBox[4] / 2)).append("\" y=\"")
-                        .append(fmt(endBox[1])).append("\"/>");
-            }
-            else
-            {
-                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(x + width / 2)).append("\" y=\"").append(fmt(y + height + 40))
+                double midY = (sy + ey) / 2;
+                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(sx)).append("\" y=\"").append(fmt(midY))
+                        .append("\"/>");
+                edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(ex)).append("\" y=\"").append(fmt(midY))
                         .append("\"/>");
             }
+            edge.append("<").append(diPrefix).append(":waypoint x=\"").append(fmt(ex)).append("\" y=\"").append(fmt(ey))
+                    .append("\"/>");
             edge.append("</bpmndi:BPMNEdge>");
             return xml.substring(0, planeEnd) + di + edge + xml.substring(planeEnd);
         }

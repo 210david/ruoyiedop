@@ -7,7 +7,8 @@
  */
 export const GRID_DEFAULT = { rows: 30, cols: 8, rowH: 30 }
 export const FONT_DEF = 'Microsoft YaHei'
-export const SIZE_DEF = 12
+/** 单元格默认字号：14 号（与运行态 el-input 的 14px 一致，设计态不会比填写框显得小） */
+export const SIZE_DEF = 14
 export const COLOR_DEF = '#333333'
 export const BORDER_DEF = { s: 1, c: '#dbe3ec' }
 
@@ -280,7 +281,50 @@ export function normalizeGrid(obj) {
     markArea(taken, r, c, rs, cs)
     g.cells.push(cell)
   }
+  completeBorderMirror(g)
   return g
+}
+
+/**
+ * 补齐共享边镜像（载入时执行一次）：
+ * 用户只给「有内容的那一片」画外框时，外框的外侧邻格没有对侧边框。
+ * collapse 表格里这种「单侧边框」在 125%/150% 显示缩放下会被浏览器画成 2 物理像素，
+ * 看起来比内部线（上下两侧都有边框）明显粗一档——就是"标题上面那条线莫名变粗"的原因。
+ * 这里把每条已画的边框同步镜像到相邻格的对侧边（必要时补一个空白邻格），
+ * 让所有线都变成双侧共享边，渲染粗细一致。
+ */
+export function completeBorderMirror(g) {
+  const OPP = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }
+  for (const cell of [...g.cells]) {
+    if (!cell || !cell.style || !cell.style.borders) continue
+    const rs = cell.rs || 1, cs = cell.cs || 1
+    for (const s of ['top', 'right', 'bottom', 'left']) {
+      const val = cell.style.borders[s]
+      if (!val || val.s === 0) continue
+      const horizontal = s === 'top' || s === 'bottom'
+      const count = horizontal ? cs : rs
+      for (let i = 0; i < count; i++) {
+        const nr = s === 'top' ? cell.r - 1 : s === 'bottom' ? cell.r + rs : cell.r + i
+        const nc = s === 'left' ? cell.c - 1 : s === 'right' ? cell.c + cs : cell.c + i
+        if (nr < 0 || nc < 0 || nr >= g.rows || nc >= g.cols) continue
+        let n = findAnchorCell(g, nr, nc)
+        if (!n) {
+          n = makeCell(nr, nc)
+          g.cells.push(n)
+        }
+        if (n === cell) continue
+        // 邻格沿边方向跨度更大（合并格）时不能只写重叠段，跳过；锚点侧靠加粗赢得裁决
+        const segStart = horizontal ? cell.c : cell.r
+        const segEnd = horizontal ? cell.c + cs - 1 : cell.r + rs - 1
+        const nStart = horizontal ? n.c : n.r
+        const nEnd = horizontal ? n.c + (n.cs || 1) - 1 : n.r + (n.rs || 1) - 1
+        if (nStart < segStart || nEnd > segEnd) continue
+        if (!n.style) n.style = hydrateStyle({})
+        if (!n.style.borders || typeof n.style.borders !== 'object') n.style.borders = {}
+        n.style.borders[OPP[s]] = { ...val }
+      }
+    }
+  }
 }
 
 /** 单元格样式 → 内联 CSS（设计态与运行态共用） */
@@ -298,7 +342,13 @@ export function cellCss(st, noGrid) {
   if (st.bg) o.background = st.bg
   o.textAlign = st.align || 'left'
   o.verticalAlign = st.valign || 'middle'
-  if (st.indent) o.textIndent = (st.indent * 8) + 'px'
+  // 缩进用内边距从对齐方向生效：居左/居中缩左边，居右缩右边。
+  // 不能用 text-indent——它对右对齐文本不产生位移，导致居右时缩进看起来没效果。
+  if (st.indent) {
+    const pad = (8 + st.indent * 8) + 'px'
+    if ((st.align || 'left') === 'right') o.paddingRight = pad
+    else o.paddingLeft = pad
+  }
   const B = st.borders || {}
   const wMap = { 1: '1px', 2: '2px', 3: '1px', 4: '1px', 5: '4px' }
   const sMap = { 1: 'solid', 2: 'solid', 3: 'dashed', 4: 'dotted', 5: 'double' }

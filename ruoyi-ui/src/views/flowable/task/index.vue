@@ -634,10 +634,59 @@ function handleView(row) {
   window.open(href, '_blank')
 }
 
+/** 跨标签页刷新：办理页在新标签页办理完成后写入该标记，本页监听到后自动刷新列表与角标 */
+const FLOW_TASK_CHANGED_KEY = 'flow:task:changed'
+
+/** 刷新列表 + 各页签数量 + 左侧流程树 */
+function reloadAll() {
+  getList()
+  loadCounts()
+  loadTree()
+}
+
+/** visibilitychange 与 storage 通知可能同时触发，短时间去重，避免重复请求 */
+let lastAutoRefreshAt = 0
+function autoRefresh() {
+  // 页面不可见时不发请求，切回本页时会由 visibilitychange 再刷新
+  if (document.hidden) return
+  const now = Date.now()
+  if (now - lastAutoRefreshAt < 500) return
+  lastAutoRefreshAt = now
+  reloadAll()
+}
+
+/** 其它标签页（办理页）写入标记 → 本页自动刷新 */
+function onStorageChange(e) {
+  if (e.key === FLOW_TASK_CHANGED_KEY) autoRefresh()
+}
+
+/** 切回本标签页时自动刷新（兜底：办理页直接关闭、或推送标记丢失的情况） */
+function onVisibilityChange() {
+  if (!document.hidden) autoRefresh()
+}
+
+/** 监听只在页面激活时绑定，离开（keep-alive 缓存）时解绑，避免在其它页面误触发刷新 */
+let autoRefreshBound = false
+function bindAutoRefresh() {
+  if (autoRefreshBound) return
+  autoRefreshBound = true
+  window.addEventListener('storage', onStorageChange)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+}
+function unbindAutoRefresh() {
+  if (!autoRefreshBound) return
+  autoRefreshBound = false
+  window.removeEventListener('storage', onStorageChange)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+}
+
 getList()
 loadCounts()
 loadTree()
-onActivated(() => { getList(); loadCounts(); loadTree() })
+onActivated(() => { getList(); loadCounts(); loadTree(); bindAutoRefresh() })
+onMounted(bindAutoRefresh)
+onDeactivated(unbindAutoRefresh)
+onUnmounted(unbindAutoRefresh)
 </script>
 
 <style lang="scss" scoped>

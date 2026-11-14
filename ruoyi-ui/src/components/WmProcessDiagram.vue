@@ -45,10 +45,10 @@ const props = defineProps({
   /** 是否显示图例（无状态数据时自动不显示） */
   legend: { type: Boolean, default: true },
   /**
-   * 自适应缩放的上限：默认 2（允许放大），小流程在大容器里也能铺满，
-   * 让图“占满可视区域”；传 1 则保持原始比例不放大。
+   * 自适应缩放的上限：默认 1（保持原始比例、不放大），
+   * 小流程在大容器里也按真实大小渲染，避免节点被撑得过大。
    */
-  maxScale: { type: Number, default: 2 },
+  maxScale: { type: Number, default: 1 },
   /**
    * 铺满容器：画布高度由外层容器决定（弹窗/全屏卡片场景），
    * 不再按内容收紧高度，否则小流程会在大容器里留出一大片空白。
@@ -87,6 +87,56 @@ function hasDiagramInfo(xml) {
   return /<bpmndi:BPMNDiagram[\s>]/.test(xml || '');
 }
 
+/** 技术发起人节点 → 原开始事件：退回仍走 applyNode，图上只显示开始节点 */
+let initiatorAliases = new Map();
+let visibleNodeInfo = {};
+
+/**
+ * 只读图隐藏部署时注入的「重新提交」技术节点及其出线。
+ * 该节点仅用于让 Flowable 把流程退回发起人，不属于用户设计的流程图。
+ */
+function prepareDiagramXml(xml) {
+  initiatorAliases = new Map();
+  if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') return xml;
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) return xml;
+    const elements = Array.from(doc.getElementsByTagName('*'));
+    const start = elements.find((el) => el.localName === 'startEvent' && el.getAttribute('id'));
+    if (!start) return xml;
+    const startId = start.getAttribute('id');
+    const hiddenIds = new Set();
+    elements.forEach((el) => {
+      if (el.localName !== 'userTask') return;
+      const flag = el.getAttribute('flowable:initiatorNode') || el.getAttribute('initiatorNode');
+      const id = el.getAttribute('id');
+      if (id && (flag === 'true' || flag === '1')) {
+        initiatorAliases.set(id, startId);
+        hiddenIds.add(id);
+      }
+    });
+    if (!hiddenIds.size) return xml;
+    elements.forEach((el) => {
+      if (el.localName === 'sequenceFlow' && hiddenIds.has(el.getAttribute('sourceRef'))) {
+        hiddenIds.add(el.getAttribute('id'));
+      }
+    });
+    elements.forEach((el) => {
+      if ((el.localName === 'BPMNShape' || el.localName === 'BPMNEdge') && hiddenIds.has(el.getAttribute('bpmnElement'))) {
+        el.parentNode.removeChild(el);
+      }
+    });
+    return new XMLSerializer().serializeToString(doc);
+  } catch (e) {
+    initiatorAliases = new Map();
+    return xml;
+  }
+}
+
+function displayNodeId(id) {
+  return initiatorAliases.get(id) || id;
+}
+
 async function ensureViewer() {
   if (viewer) return viewer;
   await import('bpmn-js/dist/assets/diagram-js.css');
@@ -119,7 +169,7 @@ function fitViewport() {
     if (!inner || !inner.width || !inner.height) return;
     // 留一点边距，避免图形贴边
     const pad = 0.92;
-    const limit = props.maxScale > 0 ? props.maxScale : 2;
+    const limit = props.maxScale > 0 ? props.maxScale : 1;
     const maxH = typeof props.height === 'number' ? props.height : parseFloat(props.height) || 460;
     // 画布高度：铺满模式跟容器走，其余用传入的 height（不再按内容收紧）
     const h = props.fill ? el.clientHeight || maxH : maxH;
@@ -136,7 +186,18 @@ function fitViewport() {
   }
 }
 
-/** 配色标记：开始绿圆 / 结束红终止 / 用户任务蓝卡 / 网关橙菱形 / 退回红线 */
+/**
+ * 是否为部署时注入的「发起人（重新提交）」节点。
+ * flowable:initiatorNode 不在 bpmn-moddle 描述符里，bo.get() 取不到，只能读 $attrs。
+ */
+function isInitiatorShape(el) {
+  const bo = el && el.businessObject;
+  if (!bo) return false;
+  const v = (bo.get && bo.get('flowable:initiatorNode')) || (bo.$attrs && bo.$attrs['flowable:initiatorNode']);
+  return v === true || v === 'true';
+}
+
+/** 配色标记：开始绿圆 / 结束红终止 / 发起人灰虚线卡 / 用户任务蓝卡 / 网关橙菱形 / 退回红线 */
 function markShapes() {
   try {
     const canvas = viewer.get('canvas');
@@ -144,6 +205,7 @@ function markShapes() {
     registry.getAll().forEach((el) => {
       if (el.type === 'bpmn:StartEvent') canvas.addMarker(el.id, 'wm-start');
       else if (el.type === 'bpmn:EndEvent') canvas.addMarker(el.id, 'wm-end');
+      else if (isInitiatorShape(el)) canvas.addMarker(el.id, 'wm-initiator');
       else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') canvas.addMarker(el.id, 'wm-task');
       else if (/Gateway$/.test(el.type || '')) canvas.addMarker(el.id, 'wm-gateway');
       else if (el.type === 'bpmn:SequenceFlow') {
@@ -163,12 +225,25 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
  * bpmn-js 对无事件类型的开始/结束事件只画一个空心圆，有 eventDefinition 时又画一套自己的图标
  * （字体图标缺字时会退化成空心方块），两种都不是后端图的样子，这里统一接管：
  * 先清掉事件圆框以外的内置子图形，再按图形尺寸补一个白色三角（开始）/ 白色方块（结束）。
+ *
+ * 节点名已经由 utils/bpmnSizes#normalizeEventLabelPositions 搬进圆内（与用户任务「名字写在框里」
+ * 同一观感），所以符号缩小并让到圆的左上角，位置对齐用户任务左上角的人像图标，
+ * 名称居中写在圆里，两者互不遮挡。
  */
 function decorateEvents() {
   if (!viewer) return;
   try {
     const canvas = viewer.get('canvas');
     const registry = viewer.get('elementRegistry');
+    // 圆内的节点名是独立的 label 元素，需要单独打标记才能切成白字（默认样式是圆下方的深灰字）
+    registry.getAll().forEach((el) => {
+      const target = el && el.labelTarget;
+      if (!target) return;
+      if (target.type !== 'bpmn:StartEvent' && target.type !== 'bpmn:EndEvent') return;
+      try {
+        canvas.addMarker(el.id, 'wm-event-label');
+      } catch (e) {}
+    });
     registry.getAll().forEach((el) => {
       if (el.type !== 'bpmn:StartEvent' && el.type !== 'bpmn:EndEvent') return;
       // canvas.getGraphics 返回外层 g.djs-element，可视图形在它内部的 g.djs-visual 里
@@ -186,15 +261,18 @@ function decorateEvents() {
       const r = Math.min(el.width, el.height) / 2;
       const cx = el.width / 2;
       const cy = el.height / 2;
+      // 符号缩小并放在圆圈左上角（对齐用户任务左上角的人像图标位置），名称居中写在圆里
+      const sx = cx - r * 0.45;
+      const sy = cy - r * 0.45;
       let symbol;
       if (el.type === 'bpmn:StartEvent') {
         symbol = document.createElementNS(SVG_NS, 'path');
-        symbol.setAttribute('d', 'M ' + (cx - r * 0.26) + ' ' + (cy - r * 0.42) + ' L ' + (cx + r * 0.46) + ' ' + cy + ' L ' + (cx - r * 0.26) + ' ' + (cy + r * 0.42) + ' Z');
+        symbol.setAttribute('d', 'M ' + (sx - r * 0.16) + ' ' + (sy - r * 0.2) + ' L ' + (sx + r * 0.22) + ' ' + sy + ' L ' + (sx - r * 0.16) + ' ' + (sy + r * 0.2) + ' Z');
       } else {
-        const half = r * 0.33;
+        const half = r * 0.13;
         symbol = document.createElementNS(SVG_NS, 'rect');
-        symbol.setAttribute('x', cx - half);
-        symbol.setAttribute('y', cy - half);
+        symbol.setAttribute('x', sx - half);
+        symbol.setAttribute('y', sy - half);
         symbol.setAttribute('width', half * 2);
         symbol.setAttribute('height', half * 2);
       }
@@ -214,10 +292,24 @@ function applyStatus() {
   try {
     const canvas = viewer.get('canvas');
     const registry = viewer.get('elementRegistry');
-    const done = new Set(props.doneIds || []);
-    const active = new Set(props.activeIds || []);
+    const done = new Set((props.doneIds || []).map(displayNodeId));
+    const active = new Set((props.activeIds || []).map(displayNodeId));
     const doneFlows = new Set(props.doneFlowIds || []);
     const statusMarkers = ['wm-done', 'wm-active', 'wm-pending', 'wm-flow-done', 'wm-flow-pending'];
+    // 事件名称已经画在圆里（独立 label 元素，不跟图形的 opacity 一起走），
+    // 未流转时得单独补一个淡出标记，否则白字会浮在淡化的圆上
+    const eventLabels = new Map();
+    registry.getAll().forEach((el) => {
+      const target = el && el.labelTarget;
+      if (!target) return;
+      if (target.type !== 'bpmn:StartEvent' && target.type !== 'bpmn:EndEvent') return;
+      try {
+        canvas.removeMarker(el.id, 'wm-label-pending');
+      } catch (e) {}
+      const arr = eventLabels.get(target.id) || [];
+      arr.push(el);
+      eventLabels.set(target.id, arr);
+    });
     registry.getAll().forEach((el) => {
       // 只处理 BPMN 元素：跳过画布根节点与标签
       if (!el || !el.type || el.type.indexOf('bpmn:') !== 0 || el.labelTarget) return;
@@ -243,7 +335,14 @@ function applyStatus() {
       if (el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration' || /Lane$/.test(el.type)) return;
       if (active.has(el.id)) canvas.addMarker(el.id, 'wm-active');
       else if (done.has(el.id)) canvas.addMarker(el.id, 'wm-done');
-      else canvas.addMarker(el.id, 'wm-pending');
+      else {
+        canvas.addMarker(el.id, 'wm-pending');
+        (eventLabels.get(el.id) || []).forEach((labelEl) => {
+          try {
+            canvas.addMarker(labelEl.id, 'wm-label-pending');
+          } catch (e) {}
+        });
+      }
     });
   } catch (e) {
     // 高亮失败不影响基础图渲染
@@ -288,17 +387,41 @@ function getOverlays() {
   }
 }
 
+function resolveVisibleNodeInfo() {
+  const resolved = {};
+  Object.entries(props.nodeInfo || {}).forEach(([id, source]) => {
+    const targetId = displayNodeId(id);
+    const node = source || {};
+    const target = resolved[targetId];
+    if (!target) {
+      resolved[targetId] = {
+        ...node,
+        nodeId: targetId,
+        done: [...(node.done || [])],
+        pending: [...(node.pending || [])],
+        viewed: [...(node.viewed || [])],
+      };
+      return;
+    }
+    // 开始事件自身的名称优先；技术节点的人员记录合并到开始节点展示
+    if (id === targetId && node.name) target.name = node.name;
+    ['done', 'pending', 'viewed'].forEach((key) => {
+      target[key] = [...(target[key] || []), ...(node[key] || [])];
+    });
+  });
+  return resolved;
+}
+
 function nodeOf(id) {
-  const all = props.nodeInfo || {};
-  return (id && all[id]) || null;
+  return (id && visibleNodeInfo[id]) || null;
 }
 
 function isActiveNode(id) {
-  return (props.activeIds || []).indexOf(id) >= 0;
+  return (props.activeIds || []).some((rawId) => displayNodeId(rawId) === id);
 }
 
 function isDoneNode(id) {
-  return (props.doneIds || []).indexOf(id) >= 0;
+  return (props.doneIds || []).some((rawId) => displayNodeId(rawId) === id);
 }
 
 /** 节点下方显示的审批人：当前节点显示待办人，已流转节点显示最后一次办理人；多人折叠成「张三 等3人」 */
@@ -418,9 +541,11 @@ function clearNodeOverlays() {
 /**
  * 把每个节点的人员标签贴到节点上（审批人直接显示在流程节点框里）。
  * - 用户任务：贴到框内底部，白色小字，与节点名形成「节点名 / 办理人」两行；
- * - 开始/结束事件：圆圈太小放不下多个字，仍贴在图形下方。
+ * - 开始/结束事件：与用户任务一致贴进圆内底部（名称居中、符号在左上角，底部留给办理人）；
+ * - 节点名过长（换两行占满高度）时才退化成贴在图形下方，避免文字叠在一起。
  */
 function applyNodeInfo() {
+  visibleNodeInfo = resolveVisibleNodeInfo();
   const overlays = getOverlays();
   if (!overlays) return;
   try {
@@ -442,7 +567,7 @@ function applyNodeInfo() {
       } catch (e) {}
     });
   } catch (e) {}
-  const info = props.nodeInfo || {};
+  const info = visibleNodeInfo;
   if (!props.showAssignees || !Object.keys(info).length) return;
   Object.keys(info).forEach((id) => {
     const el = registry.get(id);
@@ -453,7 +578,6 @@ function applyNodeInfo() {
     } catch (e) {}
     const text = assigneeText(node);
     if (!text) return;
-    const isEvent = el.type === 'bpmn:StartEvent' || el.type === 'bpmn:EndEvent';
     // 节点名太长（换两行）时框内底部放不下审批人 → 退化成贴在框下方，避免文字叠在一起
     let nameBottom = 0;
     try {
@@ -466,14 +590,15 @@ function applyNodeInfo() {
     } catch (e) {
       nameBottom = 0;
     }
-    const outside = isEvent || nameBottom > (el.height || 0) - 15;
+    const outside = nameBottom > (el.height || 0) - 15;
+    const isEvent = el.type === 'bpmn:StartEvent' || el.type === 'bpmn:EndEvent';
     const label = document.createElement('div');
     label.className = 'wm-node-assignee' + (isActiveNode(id) ? ' is-active' : '') + (outside ? ' is-outside' : '');
     label.setAttribute('data-element-id', id);
     label.setAttribute('title', (node.name ? node.name + '：' : '') + text);
     label.textContent = text;
-    // 框内标签宽度限制在节点宽度内，超出省略
-    label.style.maxWidth = Math.max(40, (el.width || 100) - 10) + 'px';
+    // 框内标签宽度限制在节点宽度内，超出省略（圆形事件再收紧一点，避免文字顶出圆弧）
+    label.style.maxWidth = Math.max(40, (el.width || 100) - (isEvent ? 24 : 10)) + 'px';
     const position = outside ? { top: (el.height || 0) + 2, left: (el.width || 0) / 2 } : { top: Math.max(0, (el.height || 0) - 17), left: (el.width || 0) / 2 };
     try {
       overlays.add(id, 'wm-assignee', { position, html: label });
@@ -601,7 +726,7 @@ async function render() {
     clearNodeOverlays();
     // 历史模型/脚本部署的图里，开始结束事件常是 bpmn-js 默认的 36x36（比 100x80 的处理节点小一圈），
     // 被压扁的处理节点还有 100x60 这类：都在这儿按设计器口径统一（事件 80x80、节点不低于 100x80）
-    await v.importXML(normalizeDiagramSizes(xml));
+    await v.importXML(normalizeDiagramSizes(prepareDiagramXml(xml)));
     state.value = 'ok';
     fitViewport();
     markShapes();
@@ -777,6 +902,9 @@ onBeforeUnmount(() => {
 .wm-diagram-canvas :deep(.wm-event-symbol) {
   fill: #fff !important;
   stroke: none !important;
+  /* 白三角/白方块只是圆圈里的装饰：不参与命中，点它等于点整个事件节点
+   * （与用户任务左上角的人像图标一致，不会变成「点小图标没反应」） */
+  pointer-events: none !important;
 }
 /* 用户任务：蓝色圆角卡片 + 白色粗体节点名 */
 .wm-diagram-canvas :deep(.wm-task.djs-shape .djs-visual rect) {
@@ -795,6 +923,40 @@ onBeforeUnmount(() => {
 }
 .wm-diagram-canvas :deep(.wm-task.djs-shape .djs-visual text.djs-label) {
   fill: #fff !important;
+}
+/* 开始/结束事件：名称已经搬进圆内（见 utils/bpmnSizes#normalizeEventLabelPositions），
+ * 与用户任务同款白字粗体；字号略收，保证 2~4 字在圆内不贴边 */
+.wm-diagram-canvas :deep(.wm-event-label .djs-visual text.djs-label),
+.wm-diagram-canvas :deep(.wm-event-label .djs-visual tspan) {
+  fill: #fff !important;
+  font-weight: 700 !important;
+}
+.wm-diagram-canvas :deep(.wm-event-label text.djs-label) {
+  font-size: 12px !important;
+}
+/* 未流转事件的圆会淡出，圆内的名称跟着一起淡出 */
+.wm-diagram-canvas :deep(.wm-label-pending .djs-visual) {
+  opacity: 0.42;
+}
+/* 发起人（重新提交）节点：灰白虚线卡片，正常流转不经过，只在驳回退回发起人时使用；
+ * 与蓝色审批卡片区分开，避免被当成多画出来的一个申请节点 */
+.wm-diagram-canvas :deep(.wm-initiator.djs-shape .djs-visual rect) {
+  fill: #f8fafc !important;
+  stroke: #94a3b8 !important;
+  stroke-width: 2 !important;
+  stroke-dasharray: 6 4 !important;
+}
+.wm-diagram-canvas :deep(.wm-initiator.djs-shape .djs-visual text.djs-label) {
+  fill: #475569 !important;
+}
+/* 退回发起人时它就是「当前停留节点」：底色是浅灰，沿用全局的白色当前节点文字会看不见，
+ * 这里覆盖成浅红底 + 深红字，边框仍交由 .wm-active 的红色粗框与光晕表现 */
+.wm-diagram-canvas :deep(.wm-initiator.wm-active.djs-shape .djs-visual rect) {
+  fill: #fff1f2 !important;
+}
+.wm-diagram-canvas :deep(.wm-initiator.wm-active.djs-shape .djs-visual text) {
+  fill: #b91c1c !important;
+  font-weight: 700;
 }
 /* 网关：橙色菱形 + 白色网关符号 */
 .wm-diagram-canvas :deep(.wm-gateway.djs-shape .djs-visual polygon) {
@@ -886,7 +1048,7 @@ onBeforeUnmount(() => {
 .wm-diagram-canvas :deep(.wm-node-assignee.is-active) {
   font-weight: 700;
 }
-/* 开始/结束事件：圆圈太小放不下字，标签贴在图形下方 */
+/* 节点名过长、框内放不下办理人时，标签退化成贴在图形下方 */
 .wm-diagram-canvas :deep(.wm-node-assignee.is-outside) {
   padding: 0 5px;
   border-radius: 8px;

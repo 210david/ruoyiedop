@@ -17,6 +17,9 @@ public class FlowInstance extends BaseEntity
     /** 流程实例ID */
     private String instanceId;
 
+    /** 流程编号（流程请求主键，短数字，对标泛微 requestid） */
+    private Long requestId;
+
     /** 流程定义ID */
     private String processDefinitionId;
 
@@ -72,6 +75,8 @@ public class FlowInstance extends BaseEntity
 
     public String getInstanceId() { return instanceId; }
     public void setInstanceId(String instanceId) { this.instanceId = instanceId; }
+    public Long getRequestId() { return requestId; }
+    public void setRequestId(Long requestId) { this.requestId = requestId; }
     public String getProcessDefinitionId() { return processDefinitionId; }
     public void setProcessDefinitionId(String processDefinitionId) { this.processDefinitionId = processDefinitionId; }
     public String getProcessDefinitionKey() { return processDefinitionKey; }

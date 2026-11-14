@@ -418,7 +418,7 @@ public class FlowTaskController extends BaseController
         // 打印抬头信息
         com.alibaba.fastjson2.JSONObject meta = new com.alibaba.fastjson2.JSONObject();
         meta.put("processName", pd == null ? "" : pd.getName());
-        meta.put("nodeName", task.getName());
+        meta.put("nodeName", displayNodeName(task));
         meta.put("taskId", taskId);
         meta.put("instanceId", task.getProcessInstanceId());
         try
@@ -443,6 +443,30 @@ public class FlowTaskController extends BaseController
         }
         data.put("meta", meta);
         return AjaxResult.success(data);
+    }
+
+    /**
+     * 节点显示名称：发起人（申请）节点统一显示开始节点名称，不向用户暴露「重新提交」技术节点
+     */
+    private String displayNodeName(Task task)
+    {
+        if (!com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID.equals(task.getTaskDefinitionKey()))
+        {
+            return task.getName();
+        }
+        BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+        if (model != null && model.getMainProcess() != null)
+        {
+            for (org.flowable.bpmn.model.StartEvent start
+                    : model.getMainProcess().findFlowElementsOfType(org.flowable.bpmn.model.StartEvent.class, true))
+            {
+                if (StringUtils.isNotEmpty(start.getName()))
+                {
+                    return start.getName();
+                }
+            }
+        }
+        return "开始";
     }
 
     /**

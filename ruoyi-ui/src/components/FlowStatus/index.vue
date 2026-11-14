@@ -120,7 +120,7 @@
           <el-table-column label="参与时间" width="172" align="center">
             <template #default="{ row }"><span class="fs-time">{{ row.createTime || '—' }}</span></template>
           </el-table-column>
-          <el-table-column label="耗时" width="128" align="center">
+          <el-table-column label="耗时" width="170" align="center">
             <template #default="{ row }">
               <span class="fs-time" :class="{ 'is-live': !row.endTime }">{{ row.costText }}</span>
             </template>
@@ -207,6 +207,21 @@ const currentNodes = computed(() => {
 /** 当前节点办理人（含候选池展开出来的每一位候选人） */
 const pendingRows = computed(() => rows.value.filter(t => stateOf(t) === 'pending'))
 
+/** 当前时间戳：驱动待办节点「已等待 X」刷新（有待办时每 30 秒走一次，无待办自动停表） */
+const nowTs = ref(Date.now())
+let ticker = null
+watch(() => pendingRows.value.length, n => {
+  if (n && !ticker) {
+    ticker = setInterval(() => { nowTs.value = Date.now() }, 30000)
+  } else if (!n && ticker) {
+    clearInterval(ticker)
+    ticker = null
+  }
+}, { immediate: true })
+onBeforeUnmount(() => {
+  if (ticker) clearInterval(ticker)
+})
+
 /** 当前节点里以候选人身份出现的办理人数（>0 时给出一句候选办理说明） */
 const candidatePendingCount = computed(() => pendingRows.value.filter(r => r.candidate).length)
 
@@ -263,28 +278,39 @@ function avatarChar(name) {
   return /[\u4e00-\u9fa5]/.test(s) ? s.slice(-1) : s.slice(0, 1).toUpperCase()
 }
 
-/** 耗时：分钟 → 「1天2小时 / 3小时20分钟 / 45分钟」 */
-function durationText(begin, end) {
-  if (!begin || !end) return ''
-  const start = new Date(String(begin).replace(/-/g, '/'))
-  const stop = new Date(String(end).replace(/-/g, '/'))
-  const ms = stop - start
-  if (isNaN(ms) || ms < 0) return ''
-  const mins = Math.floor(ms / 60000)
-  if (mins < 1) return '不足1分钟'
-  if (mins < 60) return mins + '分钟'
-  const days = Math.floor(mins / 1440)
-  const hours = Math.floor((mins % 1440) / 60)
-  const rest = mins % 60
-  if (days) return days + '天' + (hours ? hours + '小时' : '')
-  return hours + '小时' + (rest ? rest + '分钟' : '')
+/** 时间解析：兼容 Date 与「yyyy-MM-dd HH:mm:ss」字符串 */
+function parseTime(v) {
+  if (v instanceof Date) return v
+  return new Date(String(v).replace(/-/g, '/'))
 }
 
-/** 行耗时：待办理显示「进行中」；未办理（流程已被他人处理/撤销）与发起节点不计耗时 */
+/**
+ * 耗时：毫秒 → 「1天2小时20分钟 / 3小时20分钟 / 45分钟 / 36秒」
+ * 不足 1 分钟按秒展示，1 分钟以上四舍五入到分钟；天级同样保留小时与分钟，避免信息被吞掉
+ */
+function durationText(begin, end) {
+  if (!begin || !end) return ''
+  const ms = parseTime(end) - parseTime(begin)
+  if (isNaN(ms) || ms < 0) return ''
+  if (ms < 60000) {
+    const secs = Math.floor(ms / 1000)
+    return secs > 0 ? secs + '秒' : '不足1秒'
+  }
+  const totalMins = Math.round(ms / 60000)
+  const days = Math.floor(totalMins / 1440)
+  const hours = Math.floor((totalMins % 1440) / 60)
+  const rest = totalMins % 60
+  return (days ? days + '天' : '') + (hours ? hours + '小时' : '') + (rest ? rest + '分钟' : '')
+}
+
+/** 行耗时：待办理显示「已等待 X」；未办理（流程已被他人处理/撤销）、发起节点与「流程结束」伪记录不计耗时 */
 function costText(t) {
+  if (t.taskId === '__end__') return '—'
   if (t.outcome === 'start') return '—'
   if (stateOf(t) === 'undone') return '—'
-  if (!t.endTime) return '进行中'
+  if (!t.endTime) {
+    return t.createTime ? '已等待 ' + durationText(t.createTime, new Date(nowTs.value)) : '进行中'
+  }
   return durationText(t.createTime, t.endTime) || '—'
 }
 </script>

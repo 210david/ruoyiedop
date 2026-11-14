@@ -15,7 +15,7 @@
         <div class="hd-actions">
           <template v-for="m in menuList" :key="m">
             <el-button v-if="m === 'submit'" type="primary" icon="Check" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('approved')">同 意</el-button>
-            <el-button v-else-if="m === 'reject'" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">驳 回</el-button>
+            <el-button v-else-if="m === 'reject' && canReturn" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">驳 回</el-button>
             <el-button v-else-if="m === 'transfer'" icon="Switch" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('transfer')">转 办</el-button>
             <el-button v-else-if="m === 'addSign'" icon="EditPen" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('addSign')">加 签</el-button>
             <el-button v-else-if="m === 'cc'" icon="Promotion" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('cc')">抄 送</el-button>
@@ -30,7 +30,7 @@
         <button class="hd-tab" :class="{ 'is-active': activeTab === 'diagram' }" @click="switchTab('diagram')">流程图</button>
         <button class="hd-tab" :class="{ 'is-active': activeTab === 'status' }" @click="switchTab('status')">流程状态</button>
         <button class="hd-tab" :class="{ 'is-active': activeTab === 'resource' }" @click="switchTab('resource')">
-          相关资源<span class="hd-tab-badge" v-if="attachList.length">{{ attachList.length }}</span>
+          相关资源<span class="hd-tab-badge" v-if="resourceList.length">{{ resourceList.length }}</span>
         </button>
       </div>
     </div>
@@ -52,6 +52,7 @@
                   <el-col v-for="f in visibleFields" :key="f.field" :span="columnSpan(f)">
                     <el-form-item :label="f.label">
                       <dyn-field v-if="f._perm === 'edit'" :f="f" v-model="formData[f.field]" v-model:model-ids="formData[f.field + '__id']" />
+                      <FileUpload v-else-if="f.rtype === 'attach'" :model-value="formData[f.field]" disabled :limit="f.attachLimit || 5" />
                       <span v-else class="hd-ro">{{ displayValue(formData[f.field]) }}</span>
                     </el-form-item>
                   </el-col>
@@ -126,16 +127,15 @@
         <FlowStatus :tasks="historyTasks" :loading="historyLoading" />
       </div>
 
-      <!-- ===== 页签：相关资源（流程附件汇总） ===== -->
+      <!-- ===== 页签：相关资源（表单附件 + 各环节附件汇总，不再提供上传入口） ===== -->
       <div class="hd-pane" v-show="activeTab === 'resource'">
         <section class="rd-card">
           <div class="rd-card-header">
             <div class="rd-card-title"><span class="rd-card-icon">▣</span>相关资源</div>
-            <el-button v-if="showAttachMenu" type="primary" plain size="small" icon="Upload" v-hasPermi="['flowable:task:complete']" @click="openAttachDialog">上传附件</el-button>
           </div>
           <div class="rd-card-body" style="display: block">
             <div class="table-wrap">
-              <el-table :data="attachList" v-loading="attachLoading" border size="small" class="app-table">
+              <el-table :data="resourceList" v-loading="attachLoading" border size="small" class="app-table">
                 <el-table-column label="资源名称" min-width="240">
                   <template #default="{ row }">
                     <el-link type="primary" :href="fileHref(row.fileUrl)" target="_blank" :underline="false">
@@ -145,15 +145,20 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="taskName" label="上传环节" width="140" show-overflow-tooltip />
-                <el-table-column prop="uploaderName" label="上传人" width="120" />
-                <el-table-column prop="createTime" label="上传时间" width="170" align="center" />
+                <el-table-column label="上传人" width="120">
+                  <template #default="{ row }">{{ row.uploaderName || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="上传时间" width="170" align="center">
+                  <template #default="{ row }">{{ row.createTime || '-' }}</template>
+                </el-table-column>
                 <el-table-column label="操作" width="80" align="center">
                   <template #default="{ row }">
-                    <el-button link type="danger" icon="Delete" @click="removeAttach(row)">删除</el-button>
+                    <el-button v-if="row.attachId" link type="danger" icon="Delete" @click="removeAttach(row)">删除</el-button>
+                    <span v-else class="hd-attach-size">—</span>
                   </template>
                 </el-table-column>
                 <template #empty>
-                  <div class="rd-empty"><p class="rd-empty-text">暂无附件，可通过右上「上传附件」补充流程资料</p></div>
+                  <div class="rd-empty"><p class="rd-empty-text">暂无附件，表单上传的附件与各环节附件会汇总在此</p></div>
                 </template>
               </el-table>
             </div>
@@ -244,13 +249,15 @@ import { listOpinionPresets } from '@/api/flowable/opinionPreset';
 import { DynField } from './dyn-field';
 import { normalizeHandleField, handleDisplayValue } from './field-norm';
 import FormGridRender from '@/components/FormGridRender.vue';
+import FileUpload from '@/components/FileUpload/index.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
 import FlowOpinion from '@/components/FlowOpinion/index.vue';
 import FlowOpinionPreset from '@/components/FlowOpinionPreset/index.vue';
 import FlowPrintView from '@/components/FlowPrintView/index.vue';
 import UserPicker from '@/components/UserPicker/index.vue';
-import { parseLayout } from '@/views/flowable/form/designer/converters';
+import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
+import { collectFormAttachments } from '@/views/flowable/common/form-attachments';
 import { useRoute, useRouter } from 'vue-router';
 import { Document, UploadFilled, Setting } from '@element-plus/icons-vue';
 import { getToken } from '@/utils/auth';
@@ -325,6 +332,8 @@ const returnOpen = ref(false);
 const returnLoading = ref(false);
 const returnNodes = ref([]);
 const returnPicked = ref('');
+/** 当前环节之前是否还有可退回的环节：没有（如发起/申请节点）就不显示退回按钮 */
+const canReturn = ref(false);
 
 /** 表单字段（节点字段权限：edit 可编辑 / readonly 只读 / hidden 不渲染） */
 const formFields = ref([]);
@@ -332,7 +341,7 @@ const formData = ref({});
 
 /** 当前节点使用节点表单模板（字段编辑/只读由模板网格属性控制，实时生效） */
 const nodeFormMode = ref(false);
-const visibleFields = computed(() => formFields.value.filter((f) => f._perm !== 'hidden'));
+const visibleFields = computed(() => formFields.value.filter((f) => f._perm !== 'hidden' && !isFlowSysField(f.field)));
 const hasEditFields = computed(() => nodeFormMode.value || formFields.value.some((f) => f._perm === 'edit'));
 function displayValue(v) {
   return handleDisplayValue(v);
@@ -392,8 +401,6 @@ const formSignOpinionUsable = computed(() => {
  * - 其余情况默认显示（用户不用往表单里加字段也有意见框）。
  */
 const showCommentCard = computed(() => signOpinionEnabled.value && !formSignOpinionUsable.value);
-/** 附件上传入口：未配置时默认可用（相关资源页签） */
-const showAttachMenu = computed(() => !menuConfigured.value || opMenus.value.includes('attach'));
 
 /* ===== 人员选择（转办 / 加签 / 抄送） ===== */
 const userPickerRef = ref(null);
@@ -405,7 +412,12 @@ const userPickTitle = computed(() => {
 });
 
 /* ===== 流程附件（相关资源） ===== */
+/** 各环节上传并登记到流程实例的附件（含签字意见环节附件） */
 const attachList = ref([]);
+/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录） */
+const formAttachList = computed(() => collectFormAttachments(formFields.value, formData.value));
+/** 相关资源页签展示口径：表单附件 + 各环节附件 */
+const resourceList = computed(() => (attachList.value || []).concat(formAttachList.value));
 const attachLoading = ref(false);
 const attachOpen = ref(false);
 /** 抄送记录：审批意见区底部展示「抄送」 */
@@ -584,6 +596,21 @@ function submitApprove(outcome) {
 }
 
 /* ===== 驳回（退回）：列出当前环节之前走过的环节，选一个退回去 ===== */
+/** 只有存在「当前环节之前办理过」的环节时才显示退回按钮 */
+function refreshCanReturn() {
+  if (!task.value.taskId) {
+    canReturn.value = false;
+    return;
+  }
+  getReturnNodes(task.value.taskId)
+    .then((res) => {
+      canReturn.value = ((res && res.data) || []).length > 0;
+    })
+    .catch(() => {
+      canReturn.value = false;
+    });
+}
+
 /** 打开「退回」弹窗并加载可退回环节 */
 function openReturnDialog() {
   returnOpen.value = true;
@@ -889,8 +916,18 @@ async function doPrint() {
   }, 120);
 }
 
-/** 返回待办列表（操作完成后当前任务已不属于自己） */
+/** 通知待办列表页自动刷新：写入 localStorage，列表页通过 storage 事件跨标签页感知 */
+function notifyListRefresh() {
+  try {
+    localStorage.setItem('flow:task:changed', String(Date.now()));
+  } catch (e) {
+    /* 隐私模式等场景写入失败时，列表页仍有「切回标签页自动刷新」兜底 */
+  }
+}
+
+/** 返回待办列表（操作完成后当前任务已不属于自己；同时通知其它标签页的列表自动刷新） */
 function backToList() {
+  notifyListRefresh();
   if (window.history.length > 1) router.back();
   else router.push('/flow/todo');
 }
@@ -992,6 +1029,7 @@ function fileSizeText(size) {
 }
 
 loadTaskForm();
+refreshCanReturn();
 recordNodeViewed();
 loadHistory();
 loadAttach();

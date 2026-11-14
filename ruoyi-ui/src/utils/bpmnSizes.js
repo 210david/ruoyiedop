@@ -10,8 +10,10 @@
  *  1) 处理节点 height 抬到不低于 minHeight（默认 80），以垂直中心为基准上下对称撑开；
  *  2) 开始/结束事件放大到不小于 size（默认 80，与设计器 WM_EVENT_SIZE 一致），以中心为基准撑开，
  *     同时把进出该事件的连线端点按同一中心缩放映射到新边线，避免连线插进圆里；
- *     事件自带的标签（BPMNLabel Bounds）随圆下移，保持圆与标签的间距。
- * 处理节点只动高度（水平中心、宽度、节点内文字不动）；事件只动尺寸（圆心不动）。
+ *     事件自带的标签（BPMNLabel Bounds）随圆下移，保持圆与标签的间距；
+ *  3) 开始/结束事件的名称由「圆下方」搬到「圆内」（与处理节点「名称写在框里」同一观感），
+ *     短名称才搬，长名称仍留在圆下方，避免文字超出圆或被折行截断。
+ * 处理节点只动高度（水平中心、宽度、节点内文字不动）；事件只动尺寸（圆心不动）+ 标签位置。
  *
  * 两个函数都是幂等的：已经达标的节点原样返回。
  */
@@ -37,6 +39,12 @@ const TASK_TAGS = [
 
 /** 参与尺寸规范化的 BPMN 事件标签 */
 const EVENT_TAGS = ['startEvent', 'endEvent']
+
+/** 事件名称搬进圆内时，标签盒相对事件宽度左右内缩的像素 */
+const EVENT_LABEL_INSET = 10
+
+/** 事件名称搬进圆内时，标签顶边相对事件高度的比例（0.42 ≈ 单行文字垂直居中于圆心，左上角的白色符号不会压到文字） */
+const EVENT_LABEL_TOP_RATIO = 0.42
 
 const BPMN_PREFIX = '(?:(?:bpmn|bpmn2):)?'
 
@@ -76,6 +84,43 @@ function setAttrs(attrs, box) {
 /** XML 是否带图形段（没有 DI 时 bpmn-js 直接报错，规范化也无意义） */
 function hasDiagram(xml) {
   return /<(?:bpmndi:)?BPMNDiagram[\s>]/.test(xml)
+}
+
+/** 成对的事件标签节点（含 Bounds 子节点） */
+const LABEL_PAIR_RE = /(<((?:[\w.-]+:)?)BPMNLabel\b[^>]*>)([\s\S]*?)(<\/\2BPMNLabel>)/
+
+/** 空的事件标签节点 <bpmndi:BPMNLabel /> */
+const LABEL_SELF_RE = /<((?:[\w.-]+:)?)BPMNLabel\b[^>]*\/>/
+
+/**
+ * 估算标签文字宽度（用于判断事件名称能否一行写进圆内）。
+ * 与 bpmn-js 外部标签的字号同量级：CJK 全角按 12px、其余按 6.5px，宁可估宽一点。
+ *
+ * @param {string} text 标签文字
+ * @returns {number} 估算宽度（px）
+ */
+function estimateLabelWidth(text) {
+  const s = String(text || '')
+  let width = 0
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i)
+    // CJK 统一表意文字、假名、全角符号等按全角字宽计算
+    width += code > 0x2e7f ? 12 : 6.5
+  }
+  return width
+}
+
+/** 收集「有名称」的开始/结束事件 id → name（无名事件不画标签，无需处理） */
+function collectEventNames(xml) {
+  const names = new Map()
+  let m
+  EVENT_TAG_RE.lastIndex = 0
+  while ((m = EVENT_TAG_RE.exec(xml))) {
+    const id = readAttr(m[2], 'id')
+    const name = readAttr(m[2], 'name')
+    if (id && name) names.set(id, name)
+  }
+  return names
 }
 
 /** 收集指定标签的元素 id（walk 一遍开标签，属性顺序无关） */
@@ -220,17 +265,79 @@ export function normalizeEventShapeSizes(xml, size = DEFAULT_EVENT_SIZE) {
 }
 
 /**
- * 流程图统一尺寸口径：先放大开始/结束事件，再撑高被压扁的处理节点。
+ * 把开始/结束事件的名称从「圆下方」搬到「圆内」。
+ *
+ * 为什么改 DI 而不是在渲染层挪标签：bpmn-js 的外部标签位置只认 BPMNLabel 的 Bounds
+ * （x/width 决定水平中心、y 决定文字顶边），改完随 XML 一起保存，
+ * 只读流程图和设计器画布看到的是同一份坐标，不用各写一套偏移逻辑。
+ *
+ * 只处理能一行放得进圆内的短名称（开始/结束多是 2~4 字）：
+ * 长名称保持 bpmn-js 默认的圆下方位置，避免文字超出圆、或被折行后压到圆边上。
+ *
+ * @param {string} xml BPMN 2.0 XML 文本
+ * @param {{ inset?: number, topRatio?: number }} [options]
+ * @returns {string} 处理后的 XML；入参非字符串时原样返回
+ */
+export function normalizeEventLabelPositions(xml, options) {
+  if (!xml || typeof xml !== 'string') return xml
+  if (!hasDiagram(xml)) return xml
+
+  const opts = options || {}
+  const inset = opts.inset != null ? opts.inset : EVENT_LABEL_INSET
+  const topRatio = opts.topRatio != null ? opts.topRatio : EVENT_LABEL_TOP_RATIO
+  const names = collectEventNames(xml)
+  if (!names.size) return xml
+
+  return xml.replace(SHAPE_BLOCK_RE, (block, id) => {
+    const name = names.get(id)
+    if (!name) return block
+
+    const shapeOpen = /^<((?:[\w.-]+:)?)BPMNShape\b/.exec(block)
+    const shapeBounds = /<((?:[\w.-]+:)?)Bounds\b([^>]*?)\/>/.exec(block)
+    if (!shapeOpen || !shapeBounds) return block
+
+    const x = parseFloat(readAttr(shapeBounds[2], 'x'))
+    const y = parseFloat(readAttr(shapeBounds[2], 'y'))
+    const w = parseFloat(readAttr(shapeBounds[2], 'width'))
+    const h = parseFloat(readAttr(shapeBounds[2], 'height'))
+    if (!isFinite(x) || !isFinite(y) || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return block
+
+    // 只搬「一行放得进圆里」的名称：圆内可用宽度 = 事件宽度 - 左右内缩
+    if (estimateLabelWidth(name) > w - inset * 2) return block
+
+    const labelW = Math.max(60, round1(w - inset * 2))
+    const labelH = Math.max(14, round1(h * 0.28))
+    const labelX = round1(x + w / 2 - labelW / 2)
+    const labelY = round1(y + h * topRatio)
+    const boundsXml =
+      '<' + shapeBounds[1] + 'Bounds' + setAttrs('', { x: labelX, y: labelY, width: labelW, height: labelH }) + '/>'
+
+    // 1) 已有配套标签（含 Bounds）→ 只换里面的 Bounds，其余属性（如 labelStyle）原样保留
+    if (LABEL_PAIR_RE.test(block)) {
+      return block.replace(LABEL_PAIR_RE, (whole, open, prefix, inner, close) => open + boundsXml + close)
+    }
+    // 2) 空标签 <bpmndi:BPMNLabel /> → 补上 Bounds
+    if (LABEL_SELF_RE.test(block)) {
+      return block.replace(LABEL_SELF_RE, (whole, prefix) => '<' + prefix + 'BPMNLabel>' + boundsXml + '</' + prefix + 'BPMNLabel>')
+    }
+    // 3) 完全没有标签节点 → 在 </…BPMNShape> 前插入一个
+    return block.replace(/(<\/(?:[\w.-]+:)?BPMNShape>\s*)$/, (close) => '<' + shapeOpen[1] + 'BPMNLabel>' + boundsXml + '</' + shapeOpen[1] + 'BPMNLabel>' + close)
+  })
+}
+
+/**
+ * 流程图统一尺寸口径：先放大开始/结束事件，再撑高被压扁的处理节点，最后把事件名称搬进圆内。
  * 只读流程图（WmProcessDiagram）与设计器画布都走这一个入口，保证「看」和「编辑」是同一张图。
  *
  * @param {string} xml BPMN 2.0 XML 文本
- * @param {{ eventSize?: number, minTaskHeight?: number }} [options]
+ * @param {{ eventSize?: number, minTaskHeight?: number, eventLabel?: { inset?: number, topRatio?: number } }} [options]
  * @returns {string} 处理后的 XML
  */
 export function normalizeDiagramSizes(xml, options) {
   const opts = options || {}
   const withEvents = normalizeEventShapeSizes(xml, opts.eventSize || DEFAULT_EVENT_SIZE)
-  return normalizeTaskShapeHeights(withEvents, opts.minTaskHeight || DEFAULT_MIN_HEIGHT)
+  const withHeights = normalizeTaskShapeHeights(withEvents, opts.minTaskHeight || DEFAULT_MIN_HEIGHT)
+  return normalizeEventLabelPositions(withHeights, opts.eventLabel)
 }
 
 export default normalizeDiagramSizes

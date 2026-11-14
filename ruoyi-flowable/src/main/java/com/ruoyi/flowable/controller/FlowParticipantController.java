@@ -31,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.flowable.service.FlowDefinitionResolver;
 import com.ruoyi.flowable.service.FlowParticipantResolver;
 
 /**
@@ -54,6 +56,10 @@ public class FlowParticipantController extends BaseController
     @Autowired
     private RepositoryService repositoryService;
 
+    /** 版本解析：预览必须与实际发起用同一个版本，否则会预览错人 */
+    @Autowired
+    private FlowDefinitionResolver flowDefinitionResolver;
+
     @Autowired
     private FlowParticipantResolver flowParticipantResolver;
 
@@ -73,8 +79,15 @@ public class FlowParticipantController extends BaseController
     public AjaxResult next(@PathVariable("processKey") String processKey,
             @RequestBody(required = false) Map<String, Object> body)
     {
-        ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(processKey).latestVersion().singleResult();
+        ProcessDefinition definition;
+        try
+        {
+            definition = flowDefinitionResolver.requireLaunchable(processKey);
+        }
+        catch (ServiceException e)
+        {
+            return AjaxResult.error(e.getMessage());
+        }
         if (definition == null)
         {
             return AjaxResult.error("流程尚未部署：「" + processKey + "」");

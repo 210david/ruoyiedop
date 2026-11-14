@@ -25,6 +25,16 @@ export function recallMonitorProcess(instanceId, reason) {
   return request({ url: '/flowable/monitor/recall/' + instanceId, method: 'put', params: { reason } })
 }
 
+/** 流程复活：把已结束/已中断的流程重新拉起并停在指定节点（同一张单据继续流转） */
+export function reviveMonitorProcess(instanceId, params) {
+  return request({ url: '/flowable/monitor/revive/' + instanceId, method: 'put', params })
+}
+
+/** 重新发起：以原流程的表单数据复制一条新流程 */
+export function restartMonitorProcess(instanceId, title) {
+  return request({ url: '/flowable/monitor/restart/' + instanceId, method: 'post', params: { title } })
+}
+
 /** 改派当前节点办理人 */
 export function assignMonitorTask(taskId, targetUserId, comment) {
   return request({ url: '/flowable/monitor/assign/' + taskId, method: 'put', params: { targetUserId, comment } })

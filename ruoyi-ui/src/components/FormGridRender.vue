@@ -8,7 +8,7 @@
       <tbody>
         <tr v-for="(row, r) in rowViews" :key="r" :style="{ height: gridView.rowHeights[r] + 'px' }">
           <template v-for="(e, ci) in row" :key="r + '-' + ci">
-            <td v-if="e.kind !== 'skip'" :rowspan="e.rs || 1" :colspan="e.cs || 1" class="fgr-cell" :class="e.cell ? 't-' + e.cell.type : ''" :style="cellStyle(e.cell && e.cell.style)">
+            <td v-if="e.kind !== 'skip'" :rowspan="e.rs || 1" :colspan="e.cs || 1" class="fgr-cell" :class="[e.cell ? 't-' + e.cell.type : '', { 't-label': isLabelCell(e) }]" :style="cellStyle(e.cell && e.cell.style)">
               <template v-if="e.cell">
                 <div v-if="e.cell.type === 'title'" class="fgr-title">{{ e.cell.text || '' }}</div>
                 <div v-else-if="e.cell.type === 'note'" class="fgr-note">{{ e.cell.text || '' }}</div>
@@ -43,7 +43,14 @@
                   </template>
                   <!-- 详情页 / 预览：只读回显——纯文本，不画输入框边框/底色，也不挂控件图标 -->
                   <template v-else>
-                    <span class="val" :class="[{ ph: displayValue(e.cell.field, e.cell.style) === null }, 'attr-' + cellAttr(e.cell)]">
+                    <!-- 附件字段：沿用标准附件控件（禁用态），可预览、可下载，不能露出 /profile 路径 -->
+                    <grid-control
+                      v-if="isAttach(e.cell.field) && hasValue(e.cell.field)"
+                      :f="fieldDef(e.cell.field)"
+                      :model-value="values?.[e.cell.field]"
+                      disabled
+                    />
+                    <span v-else class="val" :class="[{ ph: displayValue(e.cell.field, e.cell.style) === null }, 'attr-' + cellAttr(e.cell)]">
                       <span class="val-text">{{ displayValue(e.cell.field, e.cell.style) || '' }}</span>
                     </span>
                     <!-- 只读回显不带必填星号：必填是填写期的约束，查看态显示星号只会让人误以为还要填 -->
@@ -87,9 +94,15 @@
                               @update:extra-value="(v) => (row[col.field + '__extra'] = v)"
                             />
                           </template>
-                          <template v-else
-                            ><span class="val-text">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span></template
-                          >
+                          <template v-else>
+                            <grid-control
+                              v-if="isAttach(col.field) && row[col.field]"
+                              :f="fieldDefOfTable(col.field, e.cell.detail && e.cell.detail.table) || fieldDef(col.field)"
+                              :model-value="row[col.field]"
+                              disabled
+                            />
+                            <span v-else class="val-text">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span>
+                          </template>
                         </td>
                         <td v-if="editable && values && (!e.cell.detail.props || e.cell.detail.props.allowDelete)" style="text-align: center">
                           <el-button
@@ -151,6 +164,10 @@ import { applyFieldDefaults, currentUserCtx, syncPersonDept } from '@/views/flow
 import { buildRowsView, cellCss, colWStyle } from '@/views/flowable/form/designer/useGridMatrix.js';
 // 渲染态不显示编辑网格默认线框，只显示用户绘制的边框
 const cellStyle = (st) => cellCss(st, true);
+/** 标签格：设计器「插入标签」创建的文本格（labelField 标记），运行态沿用设计器的默认浅蓝底 */
+function isLabelCell(e) {
+  return !!(e && e.cell && e.cell.type === 'text' && e.cell.text && e.cell.labelField);
+}
 
 const props = defineProps({
   grid: { type: Object, default: null },
@@ -196,6 +213,11 @@ function fieldPlaceholder(field) {
   const f = field && fieldMap.value[field];
   return (f && f.placeholder) || '';
 }
+/** 附件类字段是否已有值（只读态决定渲染附件控件还是空值占位） */
+function hasValue(field) {
+  const v = props.values ? props.values[field] : undefined;
+  return !!(v && String(v).trim());
+}
 function displayValue(field, style) {
   const f = (field && fieldMap.value[field]) || { field };
   const v = props.values ? props.values[field] : undefined;
@@ -215,46 +237,11 @@ function displayValue(field, style) {
 }
 
 /**
- * 系统字段补齐：节点表单存的是「表单布局的裁剪快照」，表单后续新增的系统字段（如流程编号）
- * 不会出现在快照里，导致发起页/详情页看不到。这里在渲染前把快照缺失的系统字段补到空白格，
- * 只补框架自带的系统字段，用户业务字段的节点裁剪意图不受影响。
+ * 只渲染布局里实际放置的单元格。
+ * 系统字段（标题/流程编号/紧急程度/签字意见/打印次数/流程状态）不再自动补到空白格：
+ * 管理员在页面设计里主动放上去才会显示，避免用户没添加也被默认带出。
  */
-const SYS_FILL_ORDER = ['title', 'processNo', 'urgency', 'signOpinion', 'printCount', 'procStatus'];
-const gridView = computed(() => {
-  const g = props.grid;
-  if (!g || !Array.isArray(g.cells)) return g;
-  const has = new Set(g.cells.filter((c) => c && c.field).map((c) => c.field));
-  const miss = SYS_FILL_ORDER.filter((f) => fieldMap.value[f] && !has.has(f));
-  if (!miss.length) return g;
-  const rows = Number(g.rows) || 0;
-  const cols = Number(g.cols) || 1;
-  const cells = g.cells.map((c) => ({ ...c }));
-  // 已被占用的格（含合并区），空文本格视为可占用
-  const busy = new Set();
-  for (const c of cells) {
-    if (!c) continue;
-    const filled = c.field || c.type === 'detail' || c.type === 'image' || (typeof c.text === 'string' && !!c.text.trim());
-    if (!filled) continue;
-    for (let i = 0; i < (c.rs || 1); i++) for (let j = 0; j < (c.cs || 1); j++) busy.add(c.r + i + '_' + (c.c + j));
-  }
-  for (const f of miss) {
-    let done = false;
-    // 找「标签 + 控件」两个相邻空格，保持与设计器里加字段同样的呈现
-    for (let r = 0; r < rows && !done; r++) {
-      for (let c = 0; c + 1 < cols && !done; c++) {
-        const k1 = r + '_' + c;
-        const k2 = r + '_' + (c + 1);
-        if (busy.has(k1) || busy.has(k2)) continue;
-        cells.push({ r, c, rs: 1, cs: 1, type: 'text', text: fieldLabel(f) });
-        cells.push({ r, c: c + 1, rs: 1, cs: 1, type: 'field', field: f });
-        busy.add(k1);
-        busy.add(k2);
-        done = true;
-      }
-    }
-  }
-  return { ...g, cells };
-});
+const gridView = computed(() => props.grid);
 
 const rowViews = computed(() => {
   if (!gridView.value) return [];
@@ -558,6 +545,10 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
 .fgr-cell.t-title {
   text-align: center;
 }
+/* 标签格默认浅蓝底：与设计器 .wm-cell.t-text 保持一致；用户自定义背景（cellCss 内联）优先 */
+.fgr-cell.t-label {
+  background: #dbe9f6;
+}
 /* 下划线/删除线：textDecoration 由 cellCss 设置在 td 上，块级/弹性子元素需显式继承才能渲染 */
 .fgr-cell .fgr-title,
 .fgr-cell .fgr-note,
@@ -722,6 +713,11 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
 }
 .fgr-field > .fgr-fi {
   width: 100%;
+}
+/* 只读附件控件：与字段值区同宽，文件列表不溢出单元格 */
+.fgr-field > :deep(.upload-file) {
+  flex: 1;
+  min-width: 0;
 }
 .fgr-detail {
   color: #64748b;

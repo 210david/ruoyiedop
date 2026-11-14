@@ -62,8 +62,8 @@
             <el-select :model-value="cell?.style.font ?? 'Microsoft YaHei'" size="small" style="width:140px" @update:model-value="v => setStyle('font', v)">
               <el-option v-for="f in fonts" :key="f" :label="fontCn(f)" :value="f" />
             </el-select>
-            <el-select :model-value="cell?.style.fontSize ?? 12" size="small" style="width:76px" @update:model-value="v => setStyle('fontSize', Number(v))">
-              <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24]" :key="s" :label="s" :value="s" />
+            <el-select :model-value="cell?.style.fontSize ?? SIZE_DEF" size="small" style="width:76px" @update:model-value="v => setStyle('fontSize', Number(v))">
+              <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72]" :key="s" :label="s" :value="s" />
             </el-select>
           </div>
         </div>
@@ -131,6 +131,7 @@
 import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import BorderPresetIcon from './BorderPresetIcon.vue'
+import { SIZE_DEF } from './useGridMatrix.js'
 
 const props = defineProps({ open: Boolean, cell: { type: Object, default: null } })
 defineEmits(['update:open'])

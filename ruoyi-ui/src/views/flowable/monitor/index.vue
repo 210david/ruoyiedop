@@ -97,8 +97,16 @@
             <div class="field" v-show="showAdvanced">
               <label>流程编号</label>
               <div class="control">
-                <el-input v-model="queryParams.instanceId" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                <el-input v-model="queryParams.processNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><CollectionTag /></el-icon></template>
+                </el-input>
+              </div>
+            </div>
+            <div class="field" v-show="showAdvanced">
+              <label>流程请求ID</label>
+              <div class="control">
+                <el-input v-model="queryParams.requestId" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <template #prefix><el-icon><Tickets /></el-icon></template>
                 </el-input>
               </div>
             </div>
@@ -168,15 +176,20 @@
                   <span class="badge" :class="statusBadge(scope.row)"><span class="dot"></span>{{ statusLabel(scope.row) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column v-if="columns.instanceId.visible" label="流程编号" prop="instanceId" key="instanceId" :min-width="colWidth('instanceId', 180)" show-overflow-tooltip>
-                <template #default="scope"><span class="col-mono">{{ scope.row.instanceId || '-' }}</span></template>
+              <el-table-column v-if="columns.processNo.visible" label="流程编号" prop="processNo" key="processNo" :min-width="colWidth('processNo', 150)" show-overflow-tooltip>
+                <template #default="scope"><span class="col-mono">{{ scope.row.processNo || '-' }}</span></template>
               </el-table-column>
-              <el-table-column label="操作" width="210" align="center" fixed="right" class-name="col-action">
+              <el-table-column v-if="columns.requestId.visible" label="流程请求ID" prop="requestId" key="requestId" :width="colWidth('requestId', 110)" align="center" show-overflow-tooltip>
+                <template #default="scope"><span class="col-mono">{{ scope.row.requestId || '-' }}</span></template>
+              </el-table-column>
+              <el-table-column label="操作" width="290" align="center" fixed="right" class-name="col-action">
                 <template #default="scope">
                   <div class="action-btn-row">
                     <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
                     <el-button v-if="scope.row.status === 'running'" link type="warning" icon="Position"
                       v-hasPermi="['flowable:monitor:intervene']" @click="openIntervene(scope.row)">干预</el-button>
+                    <el-button v-if="scope.row.status !== 'running'" link type="success" icon="RefreshRight"
+                      v-hasPermi="['flowable:monitor:restart']" @click="confirmRestart(scope.row)">重新发起</el-button>
                     <el-dropdown trigger="click" @command="cmd => handleCommand(cmd, scope.row)">
                       <el-button link type="primary" icon="MoreFilled">更多</el-button>
                       <template #dropdown>
@@ -189,6 +202,8 @@
                             v-hasPermi="['flowable:monitor:end']">强制结束</el-dropdown-item>
                           <el-dropdown-item v-if="scope.row.status === 'running'" command="cancel"
                             v-hasPermi="['flowable:monitor:end']">撤销流程</el-dropdown-item>
+                          <el-dropdown-item v-if="scope.row.status !== 'running'" command="revive" divided
+                            v-hasPermi="['flowable:monitor:revive']">流程复活</el-dropdown-item>
                           <el-dropdown-item command="remove" divided
                             v-hasPermi="['flowable:monitor:remove']">删除流程</el-dropdown-item>
                         </el-dropdown-menu>
@@ -208,15 +223,15 @@
       </div>
     </div>
 
-    <!-- ===== 流程干预弹窗：强制跳转到指定节点 ===== -->
-    <el-dialog v-model="intervene.open" title="流程干预" width="660px" append-to-body class="rd-dialog" :close-on-click-modal="false">
+    <!-- ===== 流程干预 / 流程复活弹窗：跳到指定节点（运行中=干预，已结束=复活） ===== -->
+    <el-dialog v-model="intervene.open" :title="isReviveMode ? '流程复活' : '流程干预'" width="660px" append-to-body class="rd-dialog" :close-on-click-modal="false">
       <div class="monitor-info" v-loading="intervene.loading">
         <div class="info-row"><span class="label">流程标题</span><span class="value strong">{{ intervene.title || '-' }}</span></div>
         <div class="info-row"><span class="label">流程名称</span><span class="value">{{ intervene.processName || '-' }}</span></div>
         <div class="info-row">
           <span class="label">当前节点</span>
           <span class="value">
-            <span v-if="!intervene.currentNames.length" class="muted">流程已结束</span>
+            <span v-if="!intervene.currentNames.length" class="muted">{{ isReviveMode ? '流程已结束（复活后重新生成待办）' : '流程已结束' }}</span>
             <span v-for="(n, i) in intervene.currentNames" :key="i" class="badge blue"><span class="dot"></span>{{ n }}</span>
           </span>
         </div>
@@ -231,7 +246,7 @@
       </div>
       <el-form label-width="92px" class="monitor-form">
         <el-form-item label="目标节点" required>
-          <el-select v-model="intervene.form.targetActivityId" placeholder="请选择要强制跳转到的节点" filterable style="width:100%">
+          <el-select v-model="intervene.form.targetActivityId" :placeholder="isReviveMode ? '请选择复活后停留的节点' : '请选择要强制跳转到的节点'" filterable style="width:100%">
             <el-option v-for="n in intervene.nodes" :key="n.id" :label="n.name" :value="n.id">
               <span>{{ n.name }}</span>
               <span class="opt-tags">
@@ -249,17 +264,23 @@
           </el-input>
           <div class="form-tip">仅对普通审批节点生效；会签/串签节点由配置的集合自动派发。</div>
         </el-form-item>
-        <el-form-item label="干预意见">
-          <el-input v-model="intervene.form.comment" type="textarea" :rows="3" placeholder="填写干预原因，将写入流程流转意见" />
+        <el-form-item :label="isReviveMode ? '复活原因' : '干预意见'">
+          <el-input v-model="intervene.form.comment" type="textarea" :rows="3"
+            :placeholder="isReviveMode ? '填写复活原因，将写入流程流转意见' : '填写干预原因，将写入流程流转意见'" />
         </el-form-item>
       </el-form>
       <div class="monitor-warn">
         <el-icon><WarningFilled /></el-icon>
-        干预会跳过中间审批节点，被跳过的环节不会再生成待办；操作会记录到流程流转意见与系统操作日志。
+        <template v-if="isReviveMode">
+          复活会以原单据新建一个运行实例并停在所选节点，业务数据与流程编号不变，原实例历史保留可追溯；被跳过的节点不会生成待办。若流程中有自动执行的服务节点/通知，复活时会再次触发。
+        </template>
+        <template v-else>
+          干预会跳过中间审批节点，被跳过的环节不会再生成待办；操作会记录到流程流转意见与系统操作日志。
+        </template>
       </div>
       <template #footer>
         <el-button size="small" @click="intervene.open = false">取 消</el-button>
-        <el-button size="small" type="warning" :loading="intervene.submitting" @click="submitIntervene">确认干预</el-button>
+        <el-button size="small" type="warning" :loading="intervene.submitting" @click="submitIntervene">{{ isReviveMode ? '确认复活' : '确认干预' }}</el-button>
       </template>
     </el-dialog>
 
@@ -302,7 +323,8 @@
 <script setup name="FlowMonitor">
 import {
   listMonitorProcess, countMonitorProcess, getMonitorNodes,
-  interveneProcess, recallMonitorProcess, assignMonitorTask, endMonitorProcess, deleteMonitorProcess
+  interveneProcess, recallMonitorProcess, assignMonitorTask, endMonitorProcess, deleteMonitorProcess,
+  reviveMonitorProcess, restartMonitorProcess
 } from '@/api/flowable/monitor'
 import { getProcessTree } from '@/api/flowable/flow'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -326,7 +348,7 @@ const dateRange = ref([])
 const data = reactive({
   queryParams: {
     pageNum: 1, pageSize: 10, title: undefined, processDefinitionName: undefined,
-    startUserName: undefined, currentActivityName: undefined, instanceId: undefined,
+    startUserName: undefined, currentActivityName: undefined, processNo: undefined, requestId: undefined,
     processDefinitionKey: undefined, status: undefined
   }
 })
@@ -391,7 +413,8 @@ const defaultColumns = {
   startTime: { label: '创建时间', visible: true },
   currentActivityName: { label: '当前节点', visible: true },
   status: { label: '状态', visible: true },
-  instanceId: { label: '流程编号', visible: true }
+  processNo: { label: '流程编号', visible: true },
+  requestId: { label: '流程请求ID', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -415,7 +438,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.processDefinitionName) count++
   if (queryParams.value.startUserName) count++
   if (queryParams.value.currentActivityName) count++
-  if (queryParams.value.instanceId) count++
+  if (queryParams.value.processNo) count++
+  if (queryParams.value.requestId) count++
   if (queryParams.value.status) count++
   if (dateRange.value && dateRange.value.length === 2) count++
   return count
@@ -448,7 +472,8 @@ function resetQuery() {
   queryParams.value.processDefinitionName = undefined
   queryParams.value.startUserName = undefined
   queryParams.value.currentActivityName = undefined
-  queryParams.value.instanceId = undefined
+  queryParams.value.processNo = undefined
+  queryParams.value.requestId = undefined
   queryParams.value.processDefinitionKey = undefined
   queryParams.value.status = undefined
   dateRange.value = []
@@ -500,16 +525,19 @@ function onUserPicked(users) {
   }
 }
 
-// ===== 流程干预 =====
+// ===== 流程干预 / 流程复活（同一个弹窗，mode 区分） =====
 const intervene = reactive({
+  mode: 'intervene',
   open: false, loading: false, submitting: false,
   instanceId: '', title: '', processName: '',
   currentNames: [], currentTasks: [], nodes: [],
   form: { targetActivityId: '', assigneeId: null, assigneeName: '', comment: '' }
 })
+const isReviveMode = computed(() => intervene.mode === 'revive')
 
-function openIntervene(row) {
+function openIntervene(row, mode = 'intervene') {
   intervene.open = true
+  intervene.mode = mode
   intervene.loading = true
   intervene.submitting = false
   intervene.instanceId = row.instanceId
@@ -532,26 +560,57 @@ function openIntervene(row) {
 
 function submitIntervene() {
   const f = intervene.form
+  const revive = isReviveMode.value
   if (!f.targetActivityId) {
     proxy.$modal.msgWarning('请选择目标节点')
     return
   }
   const target = intervene.nodes.find(n => n.id === f.targetActivityId)
   const targetName = target ? target.name : f.targetActivityId
-  proxy.$modal.confirm('确认把流程强制干预到「' + targetName + '」？跳过的中间节点不会再生成待办。').then(() => {
+  const tip = revive
+    ? '确认复活流程「' + intervene.title + '」并停留在「' + targetName + '」？将以原单据新建运行实例，原实例历史保留可追溯。'
+    : '确认把流程强制干预到「' + targetName + '」？跳过的中间节点不会再生成待办。'
+  proxy.$modal.confirm(tip).then(() => {
     intervene.submitting = true
-    return interveneProcess(intervene.instanceId, {
+    const params = {
       targetActivityId: f.targetActivityId,
       assigneeId: f.assigneeId || undefined,
       comment: f.comment || undefined
-    })
-  }).then(() => {
-    proxy.$modal.msgSuccess('流程已干预至「' + targetName + '」')
+    }
+    return revive ? reviveMonitorProcess(intervene.instanceId, params) : interveneProcess(intervene.instanceId, params)
+  }).then(res => {
+    const d = (res && res.data) || {}
+    if (revive) {
+      proxy.$modal.msgSuccess('流程已复活至「' + (d.targetActivityName || targetName) + '」')
+    } else {
+      proxy.$modal.msgSuccess('流程已干预至「' + targetName + '」')
+    }
     intervene.open = false
     refreshAll()
   }).catch(e => {
-    if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('干预失败：' + (e?.message || e))
+    if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError((revive ? '复活失败：' : '干预失败：') + (e?.message || e))
   }).finally(() => { intervene.submitting = false })
+}
+
+/** 重新发起：复制原单据的表单数据新建一条流程（新单、新流程编号） */
+function confirmRestart(row) {
+  proxy.$confirm('将以原单据的表单数据发起一条新流程（新单、新流程编号），与原流程互不影响。', '重新发起', {
+    confirmButtonText: '下一步', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    return proxy.$prompt('请输入新流程标题', '重新发起', {
+      confirmButtonText: '确认发起', cancelButtonText: '取消',
+      inputValue: (row.title || '流程') + '（重新发起）',
+      inputValidator: v => (v && v.trim().length > 0) || '请输入新流程标题'
+    })
+  }).then(({ value }) => {
+    return restartMonitorProcess(row.instanceId, value.trim())
+  }).then(res => {
+    const d = (res && res.data) || {}
+    proxy.$modal.msgSuccess('已重新发起：' + (d.title || '') + (d.processNo ? '（编号 ' + d.processNo + '）' : ''))
+    refreshAll()
+  }).catch(e => {
+    if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('重新发起失败：' + (e?.message || e))
+  })
 }
 
 // ===== 改派办理人 =====
@@ -603,6 +662,7 @@ function handleCommand(cmd, row) {
   else if (cmd === 'assign') openAssign(row)
   else if (cmd === 'end') confirmEnd(row, 'end')
   else if (cmd === 'cancel') confirmEnd(row, 'cancel')
+  else if (cmd === 'revive') openIntervene(row, 'revive')
   else if (cmd === 'remove') confirmRemove(row)
 }
 
@@ -660,10 +720,58 @@ function confirmRemove(row) {
   })
 }
 
+/** 跨标签页刷新：办理页/详情页在其它标签页处理完流程后写入该标记，本页监听到后自动刷新 */
+const FLOW_TASK_CHANGED_KEY = 'flow:task:changed'
+
+/** 刷新列表 + 状态页签数量 + 左侧流程树 */
+function reloadAll() {
+  refreshAll()
+  loadTree()
+}
+
+/** visibilitychange 与 storage 通知可能同时触发，短时间去重，避免重复请求 */
+let lastAutoRefreshAt = 0
+function autoRefresh() {
+  // 页面不可见时不发请求，切回本页时会由 visibilitychange 再刷新
+  if (document.hidden) return
+  const now = Date.now()
+  if (now - lastAutoRefreshAt < 500) return
+  lastAutoRefreshAt = now
+  reloadAll()
+}
+
+/** 其它标签页写入标记 → 本页自动刷新 */
+function onStorageChange(e) {
+  if (e.key === FLOW_TASK_CHANGED_KEY) autoRefresh()
+}
+
+/** 切回本标签页时自动刷新（兜底：其它页面直接关闭、或推送标记丢失的情况） */
+function onVisibilityChange() {
+  if (!document.hidden) autoRefresh()
+}
+
+/** 监听只在页面激活时绑定，离开（keep-alive 缓存）时解绑，避免在其它页面误触发刷新 */
+let autoRefreshBound = false
+function bindAutoRefresh() {
+  if (autoRefreshBound) return
+  autoRefreshBound = true
+  window.addEventListener('storage', onStorageChange)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+}
+function unbindAutoRefresh() {
+  if (!autoRefreshBound) return
+  autoRefreshBound = false
+  window.removeEventListener('storage', onStorageChange)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+}
+
 getList()
 loadStatusCounts()
 loadTree()
-onActivated(() => { refreshAll(); loadTree() })
+onActivated(() => { refreshAll(); loadTree(); bindAutoRefresh() })
+onMounted(bindAutoRefresh)
+onDeactivated(unbindAutoRefresh)
+onUnmounted(unbindAutoRefresh)
 </script>
 
 <style lang="scss" scoped>

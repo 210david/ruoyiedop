@@ -128,7 +128,8 @@ export default defineComponent({
         })
         case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis, inlineTip: true, reqStar: props.required })
         case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder, disabled: dis })
-        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', placeholder: f.placeholder || '请输入', disabled: dis })
+        // 数字框默认居中（el-input-number 自带样式），这里跟随单元格对齐方式，未设置时居左
+        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', align: (props.styleObj && props.styleObj.align) || 'left', placeholder: f.placeholder || '请输入', disabled: dis })
         case 'date': return isTime
           ? h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择时间', style: 'width:100%', disabled: dis })
           : h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: dateVf, placeholder: f.placeholder || '选择日期', style: 'width:100%', disabled: dis })

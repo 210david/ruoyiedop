@@ -201,17 +201,23 @@
           <FlowStatus :tasks="launchStatusTasks" />
         </div>
 
-        <!-- 页签：相关资源 -->
+        <!-- 页签：相关资源（发起前汇总表单里已上传的附件；关联流程等其他资源后续再扩展） -->
         <div class="launch-pane" v-show="launchTab === 'resource'">
           <section class="launch-card">
-            <div class="launch-card-head"><span class="lc-icon">⊞</span>相关资源</div>
+            <div class="launch-card-head">
+              <span class="lc-icon">⊞</span>相关资源
+              <span class="resource-count" v-if="launchResources.length">共 {{ launchResources.length }} 个附件</span>
+            </div>
             <div class="launch-card-body">
-              <el-table :data="launchResources" border size="small">
-                <el-table-column label="资源名称" prop="name" min-width="220" show-overflow-tooltip />
-                <el-table-column label="类型" prop="type" width="140" align="center" />
-                <el-table-column label="说明" prop="desc" min-width="220" show-overflow-tooltip />
+              <el-table :data="launchResources" border size="small" :empty-text="boundForm ? '流程表单中尚未上传附件' : '该流程未绑定表单，暂无附件资源'">
+                <el-table-column label="资源名称" min-width="280" show-overflow-tooltip>
+                  <template #default="scope">
+                    <a class="resource-link" :href="fileHref(scope.row.url)" target="_blank" rel="noopener">{{ scope.row.name }}</a>
+                  </template>
+                </el-table-column>
+                <el-table-column label="创建人" prop="uploader" width="140" align="center" />
+                <el-table-column label="创建时间" prop="createTime" width="180" align="center" />
               </el-table>
-              <div class="resource-empty">发起后，流程中上传的附件与关联单据将在此汇总展示</div>
             </div>
           </section>
         </div>
@@ -309,12 +315,14 @@ import { listDefinition } from '@/api/flowable/flow';
 import { formByProcess, launch } from '@/api/flowable/form';
 import { getDraft, listDraft, saveDraft as saveDraftApi, delDraft } from '@/api/flowable/draft';
 import request from '@/utils/request';
+import { parseTime } from '@/utils/ruoyi';
+import { getToken } from '@/utils/auth';
 import useUserStore from '@/store/modules/user';
 import { Search, Promotion, ArrowRight, Files, CircleCheck } from '@element-plus/icons-vue';
 import FormGridRender from '@/components/FormGridRender.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
-import { parseLayout } from '@/views/flowable/form/designer/converters';
+import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
 import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
 import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults';
 import { useRoute, useRouter } from 'vue-router';
@@ -369,8 +377,48 @@ const launchStatusTasks = computed(() => [
     comment: '',
   },
 ]);
-/** 相关资源：发起阶段主要为关联表单与流程定义信息 */
-const launchResources = ref([]);
+/** 附件上传时间：表单只存文件地址，前端按「本次填写首次出现」记录，用于相关资源列表展示 */
+const resourceFileTimes = reactive({});
+/**
+ * 相关资源：发起前只汇总流程表单（主表 + 明细表）里已上传的附件，
+ * 与泛微一致展示「资源名称 / 创建人 / 创建时间」；关联流程等资源后续再扩展。
+ */
+const launchResources = computed(() => {
+  const rows = [];
+  const attachFields = (boundForm.value?.fields || []).filter((f) => f.rtype === 'attach');
+  if (!attachFields.length) return rows;
+  const detailData = collectDetailData();
+  const pushFiles = (value) => {
+    String(value == null ? '' : value)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .forEach((url) => {
+        rows.push({
+          url,
+          name: fileNameOf(url),
+          uploader: userStore.nickName || userStore.name || '',
+          createTime: resourceFileTimes[url] || '',
+        });
+      });
+  };
+  attachFields.forEach((f) => {
+    if (!f.table || f.table === 'main') pushFiles(dynData.value[f.field]);
+    else (detailData[f.table] || []).forEach((row) => pushFiles(row[f.field]));
+  });
+  return rows;
+});
+// 记录附件首次出现时间：上传/回填后即写入，供「创建时间」列展示（接口无该字段，只能前端记录）
+watch(
+  launchResources,
+  (rows) => {
+    const now = parseTime(new Date());
+    rows.forEach((r) => {
+      if (!resourceFileTimes[r.url]) resourceFileTimes[r.url] = now;
+    });
+  },
+  { immediate: true },
+);
 /** 表单布局解析：mode grid → FormGridRender 网格渲染；section → 分组渲染 */
 const layoutParsed = ref({ mode: 'section', sections: [], grid: null });
 const layoutMode = computed(() => layoutParsed.value.mode);
@@ -441,24 +489,16 @@ function loadPreviewDiagram() {
     });
 }
 
-/** 相关资源：发起阶段展示关联表单与流程定义基础信息 */
-function buildLaunchResources() {
-  const rows = [];
-  if (boundForm.value) {
-    rows.push({
-      name: boundForm.value.formName || '流程表单',
-      type: '关联表单',
-      desc: boundForm.value.tableName ? '数据表：' + boundForm.value.tableName : '发起时渲染填写',
-    });
-  }
-  if (current.value.modelName) {
-    rows.push({
-      name: current.value.modelName,
-      type: '流程定义',
-      desc: '流程Key：' + (current.value.modelKey || '-') + '，版本 V' + (current.value.version || '-'),
-    });
-  }
-  launchResources.value = rows;
+/** 附件地址 → 展示用文件名（地址可能带目录前缀） */
+function fileNameOf(url) {
+  const s = String(url || '');
+  const i = s.lastIndexOf('/');
+  return i > -1 ? s.slice(i + 1) : s;
+}
+/** 附件访问地址（<a> 无法携带 Authorization，通过 token 参数访问） */
+function fileHref(url) {
+  if (!url) return '#';
+  return import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken();
 }
 
 /**
@@ -722,6 +762,7 @@ async function prepareLaunch(d) {
   current.value = d;
   dynData.value = {};
   boundForm.value = null;
+  Object.keys(resourceFileTimes).forEach((k) => delete resourceFileTimes[k]);
   launchTab.value = 'form';
   try {
     const res = await formByProcess(d.modelKey);
@@ -754,7 +795,6 @@ async function prepareLaunch(d) {
   // 新建流程必须是全空表单。
   loadUsers();
   loadPreviewDiagram();
-  buildLaunchResources();
   open.value = true;
 }
 
@@ -783,7 +823,7 @@ const renderGroups = computed(() => {
   for (const sec of layout.sections) {
     const cells = (sec.rows || [])
       .flat()
-      .filter((c) => c && ((c.field && byField[c.field]) || c.note || c.detailTable))
+      .filter((c) => c && ((c.field && byField[c.field] && !isFlowSysField(c.field)) || c.note || c.detailTable))
       .map((c) => {
         if (c.detailTable) {
           detailUsed.add(c.detailTable);
@@ -795,8 +835,8 @@ const renderGroups = computed(() => {
       });
     if (cells.length) groups.push({ title: sec.title || '', cells });
   }
-  // 未布局字段回退区：仅主表字段（明细字段由明细表块承载）
-  const rest = all.filter((f) => !used.has(f.field) && (!f.table || f.table === 'main'));
+  // 未布局字段回退区：仅主表业务字段（明细字段由明细表块承载；系统字段需管理员主动放置才显示）
+  const rest = all.filter((f) => !used.has(f.field) && (!f.table || f.table === 'main') && !isFlowSysField(f.field));
   if (rest.length) groups.push({ title: layout.sections.length ? '其他信息' : '', cells: rest.map((f) => ({ key: f.field, f, span: 24, style: {} })) });
   // 布局中未出现但字段里存在的明细表：追加默认明细表块，避免明细字段丢失
   for (const dt of new Set(all.filter((f) => f.table && f.table !== 'main').map((f) => f.table))) {
@@ -1868,11 +1908,18 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
   min-height: 360px;
 }
 
-.resource-empty {
-  margin-top: 10px;
-  text-align: center;
+.resource-count {
+  margin-left: auto;
   color: var(--ink-400, #94a3b8);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
+}
+.resource-link {
+  color: var(--brand-600, #4f46e5);
+  text-decoration: none;
+}
+.resource-link:hover {
+  text-decoration: underline;
 }
 
 /* ===== 提交审批弹窗：后续任务（下一步审批人） ===== */

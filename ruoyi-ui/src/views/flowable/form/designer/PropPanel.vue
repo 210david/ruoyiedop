@@ -83,7 +83,7 @@
               <el-option v-for="f in fonts" :key="f" :label="f === 'Microsoft YaHei' ? '微软雅黑' : f" :value="f" />
             </el-select>
             <el-select v-model="sizeModel" size="small" style="width:70px" @change="v => $emit('set', { k: 'fontSize', v: Number(v) })">
-              <el-option v-for="s in [10, 11, 12, 14, 16, 18, 20, 24]" :key="s" :label="s" :value="s" />
+              <el-option v-for="s in [10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72]" :key="s" :label="s" :value="s" />
             </el-select>
           </div>
         </div>
@@ -128,6 +128,7 @@
 import { computed, ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { browseLabel, browseForceMultiple } from '@/components/FormBrowse/sources.js'
+import { SIZE_DEF } from './useGridMatrix.js'
 
 const props = defineProps({
   formName: String,
@@ -172,7 +173,7 @@ const typeModel = computed({
 })
 const textModel = computed({ get: () => (props.activeCell ? props.activeCell.text || '' : ''), set: () => {} })
 const fontModel = computed({ get: () => (props.activeCell ? (props.activeCell.style.font || 'Microsoft YaHei') : 'Microsoft YaHei'), set: () => {} })
-const sizeModel = computed({ get: () => (props.activeCell ? (props.activeCell.style.fontSize || 12) : 12), set: () => {} })
+const sizeModel = computed({ get: () => (props.activeCell ? (props.activeCell.style.fontSize || SIZE_DEF) : SIZE_DEF), set: () => {} })
 const alignModel = computed({ get: () => (props.activeCell ? (props.activeCell.style.align || 'left') : 'left'), set: () => {} })
 const valignModel = computed({ get: () => (props.activeCell ? (props.activeCell.style.valign || 'middle') : 'middle'), set: () => {} })
 

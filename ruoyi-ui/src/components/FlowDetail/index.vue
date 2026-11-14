@@ -18,7 +18,7 @@
         <span class="rd-detail-header-title">流程详情</span>
         <div class="rd-detail-header-sub" v-if="detailData.processDefinitionName">
           <div class="rd-detail-header-divider"></div>
-          <span class="rd-detail-header-no">{{ detailData.processDefinitionName }}（{{ detailData.instanceId }}）</span>
+          <span class="rd-detail-header-no">{{ detailData.processDefinitionName }}（{{ detailData.requestId || detailData.instanceId }}）</span>
         </div>
         <slot name="header-extra"></slot>
         <!-- 独立详情页：弹窗自带头部是唯一出口，关闭按钮放这里，不再另占一条底部操作条 -->
@@ -46,7 +46,15 @@
               <div class="rd-grid">
                 <div class="rd-item" v-for="f in grp.fields" :key="f.field" :style="f._span === 24 ? '' : ''">
                   <span class="rd-label">{{ f.label }}</span>
-                  <div class="rd-value">{{ formatValue(f, detailData.variables?.[f.field]) }}</div>
+                  <div class="rd-value">
+                    <FileUpload
+                      v-if="isAttachField(f) && detailData.variables?.[f.field]"
+                      :model-value="detailData.variables[f.field]"
+                      disabled
+                      :limit="f.attachLimit || 5"
+                    />
+                    <template v-else>{{ formatValue(f, detailData.variables?.[f.field]) }}</template>
+                  </div>
                 </div>
               </div>
             </template>
@@ -98,10 +106,10 @@
       <section class="rd-card">
         <div class="rd-card-header">
           <div class="rd-card-title"><span class="rd-card-icon">▤</span>相关资源</div>
-          <span class="resource-count" v-if="attachList.length">共 {{ attachList.length }} 个附件</span>
+          <span class="resource-count" v-if="resourceList.length">共 {{ resourceList.length }} 个附件</span>
         </div>
         <div class="rd-card-body" style="display: block">
-          <el-table :data="attachList" border size="small" empty-text="流程过程中未上传附件">
+          <el-table :data="resourceList" border size="small" empty-text="尚无附件（表单附件与各环节附件会汇总在此）">
             <el-table-column label="附件名称" min-width="240">
               <template #default="scope">
                 <a class="resource-link" :href="fileHref(scope.row.fileUrl)" target="_blank" rel="noopener">{{ scope.row.fileName || '附件' }}</a>
@@ -131,13 +139,16 @@
 <script setup name="FlowDetail">
 import request from '@/utils/request';
 import FormGridRender from '@/components/FormGridRender.vue';
+import FileUpload from '@/components/FileUpload/index.vue';
+import { rtypeOf } from '@/components/FormGridControl.js';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
 import FlowOpinion from '@/components/FlowOpinion/index.vue';
 import { listFlowAttach } from '@/api/flowable/attach';
 import { listCcByInstance } from '@/api/flowable/cc';
+import { collectFormAttachments } from '@/views/flowable/common/form-attachments';
 import { getToken } from '@/utils/auth';
-import { parseLayout } from '@/views/flowable/form/designer/converters';
+import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -166,12 +177,22 @@ const formLayout = ref({ sections: [] });
 /** 网格布局（mode=grid 时走 FormGridRender 只读回显） */
 const gridLayout = ref(null);
 
+/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录） */
+const formAttachList = computed(() => collectFormAttachments(formFields.value, detailData.value.variables));
+/** 相关资源页签展示口径：表单附件 + 各环节附件 */
+const resourceList = computed(() => (attachList.value || []).concat(formAttachList.value));
+
+/** 是否附件类字段（非网格回退渲染时决定用附件控件还是文本） */
+function isAttachField(f) {
+  return !!f && rtypeOf(f) === 'attach';
+}
+
 /** 表单展示分组：按 layoutJson 分组；无布局时整体单组展示 */
 const formGroups = computed(() => {
   const all = formFields.value;
   if (!all.length) return [];
   const sections = formLayout.value.sections || [];
-  if (!sections.length) return [{ title: '', fields: all }];
+  if (!sections.length) return [{ title: '', fields: all.filter((f) => !isFlowSysField(f.field)) }];
   const byField = {};
   all.forEach((f) => {
     byField[f.field] = f;
@@ -181,14 +202,14 @@ const formGroups = computed(() => {
   for (const sec of sections) {
     const fields = (sec.rows || [])
       .flat()
-      .filter((c) => c && c.field && byField[c.field])
+      .filter((c) => c && c.field && byField[c.field] && !isFlowSysField(c.field))
       .map((c) => {
         used.add(c.field);
         return byField[c.field];
       });
     if (fields.length) groups.push({ title: sec.title || '', fields });
   }
-  const rest = all.filter((f) => !used.has(f.field));
+  const rest = all.filter((f) => !used.has(f.field) && !isFlowSysField(f.field));
   if (rest.length) groups.push({ title: sections.length ? '其他信息' : '', fields: rest });
   return groups;
 });

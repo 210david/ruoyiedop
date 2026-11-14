@@ -3,7 +3,8 @@
  *
  * 设计器里给字段配「默认值」方式，发起页打开表单时自动带出，用户可再改。
  * 字段定义上的三个键：
- *   defaultMode   none（默认，不配置）| currentUser | currentDept | currentDate
+ *   defaultMode   none（默认，不配置）| fixedValue（固定值，日期/文本等直接指定）
+ *                 | currentUser | currentDept | currentDate
  *                 | currentDatetime | fixedPick（指定人员/部门/物料…，弹框里选一条）
  *                 | fieldValue | fieldUserDept
  *   defaultField  fieldValue / fieldUserDept 时的源字段名（同一张表内的字段）
@@ -29,6 +30,7 @@ export const DEFAULT_MODE_LABELS = {
   currentDept: '当前用户所属部门',
   currentDate: '当天日期',
   currentDatetime: '当前时间',
+  fixedValue: '固定值',
   fixedPick: '指定值',
   fieldValue: '取表单字段',
   fieldUserDept: '随人员字段带出部门'
@@ -83,29 +85,33 @@ export function defaultModesOf(f) {
     if (type === 'dept') return ['currentDept', 'fixedPick', 'fieldUserDept'];
     return ['fixedPick'];
   }
-  if (f.form === 'date') return ['currentDate', 'fieldValue'];
-  if (f.form === 'datetime') return ['currentDatetime', 'fieldValue'];
-  // 文本 / 数字 / 选项类：用来引用别的字段（选项类的固定默认值走「配置」弹窗）
-  return ['fieldValue'];
+  if (f.form === 'date') return ['currentDate', 'fixedValue', 'fieldValue'];
+  if (f.form === 'datetime') return ['currentDatetime', 'fixedValue', 'fieldValue'];
+  // 选项类固定默认值走「配置」弹窗，附件不提供固定值
+  if (['select', 'radio', 'checkbox', 'attach'].includes(f.form)) return ['fieldValue'];
+  // 文本 / 数字：固定值或引用别的字段
+  return ['fieldValue', 'fixedValue'];
 }
 
 /**
  * 源字段候选：只在同一张表内取值（主表取主表、明细取同明细表），
- * 「随人员字段带出部门」只能选人员浏览字段，「取表单字段」不列附件与浏览按钮。
+ * 「随人员字段带出部门」只能选人员浏览字段，「取表单字段」不列附件与浏览按钮；
+ * 日期/日期时间字段只列同类型的日期字段（如结束日期默认取开始日期），避免把文本/选项抄进日期框。
  * 注：不同表允许有同名字段（如主表与明细都有 bm），所以表名优先用 selfTable 传入，
  * 只给 selfField 时再回退按名字猜（同名时会猜不准）。
  */
 export function sourceFieldOptions(fields, mode, selfField, selfTable) {
-  let table = tableOf({ table: selfTable });
-  if (!selfTable) {
-    const self = (fields || []).find((x) => x && x.field === selfField);
-    table = tableOf(self);
-  }
-  const list = (fields || []).filter((x) => x.field && x.field !== selfField && tableOf(x) === table);
+  const table = tableOf({ table: selfTable });
+  const self = (fields || []).find((x) => x && x.field === selfField && (!selfTable || tableOf(x) === table));
+  const list = (fields || []).filter((x) => x.field && x.field !== selfField && tableOf(x) === (selfTable ? table : tableOf(self)));
   if (mode === 'fieldUserDept') {
     return list.filter((x) => x.form === 'browse' && (x.browseType || 'user') === 'user');
   }
-  return list.filter((x) => x.form !== 'attach' && x.form !== 'browse');
+  const src = list.filter((x) => x.form !== 'attach' && x.form !== 'browse');
+  if (mode === 'fieldValue' && self && (self.form === 'date' || self.form === 'datetime')) {
+    return src.filter((x) => x.form === 'date' || x.form === 'datetime');
+  }
+  return src;
 }
 
 /** 字段列表里的默认值摘要（空串表示未配置） */
@@ -118,6 +124,9 @@ export function defaultSummary(f) {
   const label = defaultModeLabel(f, mode);
   if (mode === 'fixedPick') {
     return isEmptyValue(f.defaultValue) ? label : `${label}：${f.defaultValue}`;
+  }
+  if (mode === 'fixedValue') {
+    return isEmptyValue(f.defaultValue) ? label : `${label}：${Array.isArray(f.defaultValue) ? f.defaultValue.join('、') : f.defaultValue}`;
   }
   if (mode === 'fieldValue' || mode === 'fieldUserDept') {
     return `${label}（${f.defaultField || '未选字段'}）`;
@@ -203,7 +212,13 @@ export function applyFieldDefaults(fields, values, ctx) {
         values[f.field] = dateTimeText();
       } else if (mode === 'fieldValue') {
         const src = f.defaultField;
-        if (src && !isEmptyValue(values[src])) values[f.field] = values[src];
+        if (src && !isEmptyValue(values[src])) {
+          let v = values[src];
+          // 日期框只留日期部分，日期时间框补全时分秒，避免控件解析失败显示空白
+          if (f.form === 'date') v = String(v).slice(0, 10);
+          else if (f.form === 'datetime' && String(v).length === 10) v = v + ' 00:00:00';
+          values[f.field] = v;
+        }
       }
     }
   });

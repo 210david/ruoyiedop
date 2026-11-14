@@ -5,8 +5,8 @@
       <el-select :model-value="styleObj?.font ?? 'Microsoft YaHei'" size="small" @update:model-value="v => emitSet('font', v)" :disabled="!hasSel" style="width:100px">
         <el-option v-for="f in fonts" :key="f" :label="fontCn(f)" :value="f" />
       </el-select>
-      <el-select :model-value="styleObj?.fontSize ?? 12" size="small" @update:model-value="v => emitSet('fontSize', Number(v))" :disabled="!hasSel" style="width:56px">
-        <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24]" :key="s" :label="s" :value="s" />
+      <el-select :model-value="styleObj?.fontSize ?? SIZE_DEF" size="small" @update:model-value="v => emitSet('fontSize', Number(v))" :disabled="!hasSel" style="width:56px">
+        <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72]" :key="s" :label="s" :value="s" />
       </el-select>
       <button class="wm-btn b" :class="{ on: styleObj?.bold }" :disabled="!hasSel" @click="$emit('toggle', 'bold')" title="加粗"><b>B</b></button>
       <button class="wm-btn i" :class="{ on: styleObj?.italic }" :disabled="!hasSel" @click="$emit('toggle', 'italic')" title="斜体"><i>I</i></button>
@@ -72,6 +72,7 @@
 import { ref } from 'vue'
 import WmIcon from './WmIcon.vue'
 import BorderPresetIcon from './BorderPresetIcon.vue'
+import { SIZE_DEF } from './useGridMatrix.js'
 
 defineProps({
   hasSel: Boolean,

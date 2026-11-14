@@ -58,6 +58,10 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Autowired
     private FlowProcessNoService processNoService;
 
+    /** 流程定义版本解析：活动版本优先，避免「设为活动版本」在发起时被忽略 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
+
     /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
     @Override
@@ -606,8 +610,8 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Transactional
     public String launch(String definitionKey, Long formId, Map<String, Object> variables, Long approverUserId, String title)
     {
-        org.flowable.engine.repository.ProcessDefinition definition = repositoryService
-                .createProcessDefinitionQuery().processDefinitionKey(definitionKey).latestVersion().singleResult();
+        org.flowable.engine.repository.ProcessDefinition definition = flowDefinitionResolver
+                .requireLaunchable(definitionKey);
         if (definition == null)
         {
             throw new ServiceException("流程未部署或不存在：" + definitionKey);

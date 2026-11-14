@@ -164,7 +164,7 @@
   </el-dialog>
 
   <!-- 批量添加字段弹窗 -->
-  <el-dialog v-model="batchOpen" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+  <el-dialog v-model="batchOpen" width="1118px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
     <template #header>
       <div class="rd-detail-header">
         <div class="rd-detail-header-icon">
@@ -281,11 +281,13 @@
           <el-select v-model="dft.src" placeholder="请选择来源字段" filterable style="width:100%">
             <el-option v-for="f in dftSources" :key="f.field" :label="(f.label || f.field) + '（' + f.field + '）'" :value="f.field" />
           </el-select>
-          <div class="form-tip" v-if="!dftSources.length">同一张表里没有可用字段：人员带出部门需要先有一个「人员」浏览字段</div>
+          <div class="form-tip" v-if="!dftSources.length">{{ dftSrcTip }}</div>
         </el-form-item>
         <el-form-item v-if="dftCanFixed" label="固定值">
-          <el-input v-model="dft.fixed" placeholder="留空表示不填" maxlength="200" />
-          <div class="form-tip">固定值优先：打开表单时先填固定值，为空再按取值方式</div>
+          <el-date-picker v-if="dftField && dftField.form === 'date'" v-model="dft.fixed" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" placeholder="选择日期" clearable style="width:100%" />
+          <el-date-picker v-else-if="dftField && dftField.form === 'datetime'" v-model="dft.fixed" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" clearable style="width:100%" />
+          <el-input v-else v-model="dft.fixed" placeholder="留空表示不填" maxlength="200" />
+          <div class="form-tip">打开表单时直接填入该固定值（用户仍可修改）</div>
         </el-form-item>
         <div v-if="dftField && isSelForm(dftField.form)" class="form-tip" style="padding-left:96px">选项字段的固定默认值请在「格式/配置 → 配置」弹窗里勾选</div>
       </el-form>
@@ -418,7 +420,9 @@ const SYSTEM_FIELDS = [
   { field: 'urgency',      label: '紧急程度', form: 'radio',  dtype: 'text',   length: 20,   scale: 2, table: 'main', order: -3, sysField: true,
     options: '1:普通,2:紧急,3:特急', selectOptions: [ { label: '普通', value: '1' }, { label: '紧急', value: '2' }, { label: '特急', value: '3' } ], defaultValue: '1' },
   { field: 'signOpinion',  label: '签字意见', form: 'textarea', dtype: 'text', length: SIGN_OPINION_LENGTH, scale: 2, table: 'main', order: -2, sysField: true, rows: 3 },
-  { field: 'printCount',   label: '打印次数', form: 'number', dtype: 'int',    length: 11,   scale: 0, table: 'main', order: -1, sysField: true }
+  { field: 'printCount',   label: '打印次数', form: 'number', dtype: 'int',    length: 11,   scale: 0, table: 'main', order: -1, sysField: true },
+  { field: 'procStatus',   label: '流程状态', form: 'select', dtype: 'text',   length: 20,   scale: 2, table: 'main', order: 0,  sysField: true, defaultValue: '1',
+    selectOptions: [ { label: '进行中', value: '1' }, { label: '已完成', value: '2' }, { label: '已撤销', value: '3' } ] }
 ]
 
 const formDetail = ref({})
@@ -454,9 +458,9 @@ const fieldRules = {
 
 const mainTableName = computed(() => formDetail.value.formKey ? 'flow_data_' + formDetail.value.formKey : 'flow_data_{表单Key}')
 
-/** 编辑表格可见字段：系统内置字段（标题/紧急程度/签字意见/打印次数）默认新增但不在字段编辑列表中展示，
+/** 编辑表格可见字段：系统内置字段（标题/流程编号/紧急程度/签字意见/打印次数/流程状态）默认新增但不在字段编辑列表中展示，
     数据仍完整保留在 fields 中（发起页/详情渲染需要），仅列表隐藏 */
-const HIDDEN_SYS_FIELDS = new Set(['title', 'processNo', 'urgency', 'signOpinion', 'printCount'])
+const HIDDEN_SYS_FIELDS = new Set(['title', 'processNo', 'urgency', 'signOpinion', 'printCount', 'procStatus'])
 const activeFields = computed(() => fields.value.filter(f =>
   (f.table || 'main') === activeTableTab.value && !HIDDEN_SYS_FIELDS.has(f.field)))
 
@@ -727,28 +731,44 @@ const dftModes = computed(() => defaultModesOf(dftField.value))
 /** 「指定人员 / 指定部门 / …」：用该字段自己的浏览选择器选一条固定值 */
 const dftNeedsPick = computed(() => dft.mode === 'fixedPick')
 const dftPickField = computed(() => ({ form: 'browse', browseType: (dftField.value && dftField.value.browseType) || 'user', browseMultiple: false }))
-/** 来源字段候选：同一张表内，人员带出部门只列人员浏览字段 */
+/** 来源字段候选：同一张表内，人员带出部门只列人员浏览字段，日期字段只列日期字段 */
 const dftSources = computed(() => sourceFieldOptions(fields.value, dft.mode, dftField.value && dftField.value.field, dftField.value && dftField.value.table))
-const dftNeedsSrc = computed(() => dft.mode === 'fieldValue' || dft.mode === 'fieldUserDept')
-const dftCanFixed = computed(() => {
+/** 来源字段为空时的提示：日期字段与人员带部门的原因不同 */
+const dftSrcTip = computed(() => {
   const f = dftField.value
-  return !!f && !isSelForm(f.form) && f.form !== 'attach' && f.form !== 'browse'
+  if (dft.mode === 'fieldValue' && f && (f.form === 'date' || f.form === 'datetime')) {
+    return '同一张表里没有其他日期字段可取值'
+  }
+  return '同一张表里没有可用字段：人员带出部门需要先有一个「人员」浏览字段'
 })
+const dftNeedsSrc = computed(() => dft.mode === 'fieldValue' || dft.mode === 'fieldUserDept')
+/** 该字段是否支持「固定值」方式（选项类走选项配置，附件/浏览按钮不适用） */
+function canFixedForm(f) {
+  return !!f && !isSelForm(f.form) && f.form !== 'attach' && f.form !== 'browse'
+}
+const dftCanFixed = computed(() => canFixedForm(dftField.value) && dft.mode === 'fixedValue')
 const dftModeTip = computed(() => {
   switch (dft.mode) {
     case 'currentUser': return '打开表单时自动填当前登录人（名称 + ID 一起写入）'
     case 'currentDept': return '打开表单时自动填当前登录人所属部门'
     case 'currentDate': return '打开表单时填当天日期'
     case 'currentDatetime': return '打开表单时填当前时间（含时分秒）'
+    case 'fixedValue': return dftField.value && (dftField.value.form === 'date' || dftField.value.form === 'datetime')
+      ? '打开表单时直接填这里选定的日期'
+      : '打开表单时直接填这里设定的值'
     case 'fixedPick': return '打开表单时自动填这里选中的那条记录（人员/部门等直接选，不用抄别的字段）'
-    case 'fieldValue': return '跟着表单里另一个字段的值走，打开表单时取一次'
+    case 'fieldValue': return dftField.value && (dftField.value.form === 'date' || dftField.value.form === 'datetime')
+      ? '打开表单时取同表另一个日期字段的值（如结束日期默认取开始日期）'
+      : '跟着表单里另一个字段的值走，打开表单时取一次'
     case 'fieldUserDept': return '人员字段选了人，部门自动跟着变；人员清空时部门一起清空'
     default: return '不设置则打开表单时留空'
   }
 })
 function openDefaultConfig(row) {
   dftField.value = row
-  const mode = row.defaultMode && row.defaultMode !== 'none' ? row.defaultMode : ''
+  let mode = row.defaultMode && row.defaultMode !== 'none' ? row.defaultMode : ''
+  // 历史数据：只配了固定值没配方式，按「固定值」方式回显
+  if (!mode && canFixedForm(row) && !isEmptyValue(row.defaultValue)) mode = 'fixedValue'
   dft.mode = mode
   dft.src = row.defaultField || ''
   dft.fixed = isEmptyValue(row.defaultValue) ? '' : Array.isArray(row.defaultValue) ? row.defaultValue.join('、') : String(row.defaultValue)
@@ -765,6 +785,8 @@ function onDftModeChange() {
     dft.pickId = ''
     dft.pickExtra = null
   }
+  // 切到当天日期/当前时间时清掉固定值，避免旧值继续生效
+  if (dft.mode === 'currentDate' || dft.mode === 'currentDatetime') dft.fixed = ''
   if (!dftNeedsSrc.value) dft.src = ''
   else if (!dft.src && dftSources.value.length === 1) dft.src = dftSources.value[0].field
 }

@@ -45,10 +45,12 @@ public class FlowableEngineConfig
             // ${participantCollection.collectionFor('节点ID', execution)} 在引擎求值时回调解析器，
             // 不再依赖 ACTIVITY/SEQUENCEFLOW 事件的执行时序
             // 抄送监听器：任务到达 / 办理完成时按节点 flowable:ccConfig 生成「待阅」记录
+            // 流程请求登记监听器：实例创建时分配短数字流程编号（对标泛微 requestid）
             configuration.setEventListeners(Arrays.asList(
                     new com.ruoyi.flowable.listener.OperatorGroupTaskListener(),
                     new com.ruoyi.flowable.listener.ParticipantResolveListener(),
-                    new com.ruoyi.flowable.listener.FlowCcListener()));
+                    new com.ruoyi.flowable.listener.FlowCcListener(),
+                    new com.ruoyi.flowable.listener.FlowRequestRegisterListener()));
         };
     }
 }

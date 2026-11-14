@@ -8,7 +8,7 @@ package com.ruoyi.flowable.config;
  * <li>驳回 = 退回到前面已经走过的某个节点，而不是继续往下走；</li>
  * <li>被退回的任务落在目标节点办理人的待办里，并在待办「退回」页签单独归类；</li>
  * <li>Flowable 无法把执行流停在「开始事件」上，所以发起人需要接收退回时，
- *     部署时会额外注入一个只有出线、没有入线的「提交申请」用户任务（发起人节点），
+ *     部署时会额外注入一个只有出线、没有入线的「重新提交」用户任务（发起人节点），
  *     正常发起流程不会经过它，只有退回时才跳转过来。</li>
  * </ul>
  *
@@ -18,6 +18,17 @@ public class FlowReturnConstants
 {
     /** 发起人（申请）节点的固定节点ID：部署时注入，正常流转不经过 */
     public static final String INITIATOR_NODE_ID = "applyNode";
+
+    /**
+     * 发起人（申请）节点的名称。
+     *
+     * 不再沿用开始事件名：开始事件通常就叫「提交申请」，沿用会让流程图里出现两个同名节点，
+     * 看上去像是多画了一个。
+     * 取四字「重新提交」而非「发起人（重新提交）」：处理节点标准尺寸 100x80，
+     * 9 个字会被折成两行且第二行只剩一个「）」，反而难看；四字一行放得下，
+     * 退回后发起人在待办里看到「重新提交」也知道该干什么。
+     */
+    public static final String INITIATOR_NODE_NAME = "重新提交";
 
     /** 用户任务扩展属性：true 表示该节点是发起人（申请）节点 */
     public static final String ATTR_INITIATOR_NODE = "initiatorNode";

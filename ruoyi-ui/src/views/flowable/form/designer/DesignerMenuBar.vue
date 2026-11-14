@@ -35,6 +35,7 @@ const emit = defineEmits(['cmd', 'help', 'save', 'toggle-preview'])
 const active = ref('format')
 const menus = computed(() => [
   { key: 'template', label: '模板', items: [
+    { cmd: 'tmp_std', label: '套用样式模板：标准申请单（请假表单）' },
     { cmd: 'tmp_fee', label: '套用样式模板：费用报销式' },
     { cmd: 'tmp_apply', label: '套用样式模板：申请单式' },
     { cmd: 'tmp_fields', label: '从字段一键初始化' },

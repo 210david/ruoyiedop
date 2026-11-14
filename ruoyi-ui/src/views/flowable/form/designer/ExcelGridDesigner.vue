@@ -90,10 +90,10 @@
     <el-drawer v-model="helpOpen" title="Excel 网格设计器 · 操作说明" size="430px" append-to-body>
       <div class="wm-help-list">
         <div><b>选择</b>：单击选格；Shift+单击扩展选区；按住拖动框选；点击行号/列标选中整行/整列；Ctrl+点击 追加/移除选区（单元格、行号、列标均支持；多选后加粗、清除、删行列等批量生效）</div>
-        <div><b>复制/粘贴</b>：选中区域后 Ctrl+C 复制整块（含样式/合并/字段绑定），选目标位置 Ctrl+V 粘贴覆盖；Ctrl+Z 撤销 / Ctrl+Y 重做</div>
+        <div><b>复制/剪切/粘贴</b>：选中区域（含 Ctrl+点击 多选，如标签格+字段格）后，Ctrl+C 复制仅复制格式（不含字段绑定/文本，避免同一字段被添加两次），Ctrl+X 剪切连同字段绑定/内容/格式整块移走；选目标位置 Ctrl+V 粘贴；Ctrl+Z 撤销 / Ctrl+Y 重做</div>
         <div><b>格式化</b>：顶部工具条设置字体/字号/颜色/对齐/边框，作用于选中格</div>
         <div><b>合并/拆分</b>：选中区域后点工具条"合/拆"</div>
-        <div><b>格式刷</b>：选中样式格（可多格/整行/整列）→ 点“刷” → 框选目标区松开，按源选区逐格对应的方式平铺应用；单击一次生效后自动退出</div>
+        <div><b>格式刷</b>：选中样式格（可多格/整行/整列）→ 点“刷” → 框选目标区松开，按源选区逐格对应的方式平铺应用（合并格连同合并结构一起复制）；单击一次生效后自动退出</div>
         <div><b>双击</b>：标题/文本/说明格原地编辑；字段格打开绑定选择</div>
         <div><b>标签/字段</b>：完全独立添加；拖入字段只放字段控件，需要标签时单独拖入标签</div>
         <div><b>行高列宽</b>：拖动行号下缘/列标右缘调整</div>
@@ -204,7 +204,8 @@ import PropPanel from './PropPanel.vue'
 import FormGridRender from '@/components/FormGridRender.vue'
 import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults'
 import './designer.scss'
-import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, GRID_DEFAULT, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
+import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
+import { stdFormGrid } from './converters.js'
 
 const props = defineProps({
   modelValue: { type: Object, default: null },
@@ -278,19 +279,7 @@ function validatePreview() {
   })
 }
 
-/** 按画布可视高度自动补行：网格始终填满画布区，表下不留空白 */
-function fillRows() {
-  const g = grid.value
-  const wrap = canvasWrapRef.value
-  if (!g || !wrap || preview.value) return
-  const need = Math.ceil((wrap.clientHeight - 8) / (GRID_DEFAULT.rowH || 30))
-  if (need > g.rows) {
-    g.rows = need
-    while (g.rowHeights.length < need) g.rowHeights.push(30)
-  }
-}
-watch([() => props.fullscreen, () => props.active, preview], () => nextTick(fillRows))
-watch(grid, () => nextTick(fillRows))
+// 不再按画布高度自动补行：行数由用户/布局决定，否则用户删掉的空白行会在重开时被自动加回来（看起来像没保存）
 let dragging = false
 
 const rect = computed(() => {
@@ -845,15 +834,28 @@ function togglePainter() {
   // 套用时目标区按源块尺寸平铺，逐个位置对应，而不是整块都刷第一个格的样式。
   const h = t.r2 - t.r1 + 1, w = t.c2 - t.c1 + 1
   const matrix = []
+  // 合并结构：记录源选区内每个合并格锚点的相对位置与跨度，应用时在目标区对应位置同样合并
+  const merges = []
+  const seenAnchor = new Set()
   for (let r = 0; r < h; r++) {
     const row = []
     for (let c = 0; c < w; c++) {
       const cell = findAnchorCell(grid.value, t.r1 + r, t.c1 + c)
       row.push(cell && cell.style ? JSON.parse(JSON.stringify(cell.style)) : {})
+      if (cell && !seenAnchor.has(cell.id) && ((cell.rs || 1) > 1 || (cell.cs || 1) > 1)) {
+        seenAnchor.add(cell.id)
+        merges.push({
+          dr: cell.r - t.r1,
+          dc: cell.c - t.c1,
+          rs: cell.rs || 1,
+          cs: cell.cs || 1,
+          style: JSON.parse(JSON.stringify(cell.style || {}))
+        })
+      }
     }
     matrix.push(row)
   }
-  painterStyle.value = { h, w, matrix }
+  painterStyle.value = { h, w, matrix, merges }
   selRange.value = null // 吸取后清空选区，进入目标框选态（按钮保持高亮直到应用）
   selRanges.value = [] // Ctrl 追加的旧选区一并清空，否则应用时会误刷到旧选区
   ElMessage.success(h > 1 || w > 1
@@ -870,67 +872,131 @@ function applyPainterTo(r, c) {
   pushUndo()
   const seen = new Set()
   let applied = 0
-  for (const t of ranges) for (let rr = t.r1; rr <= t.r2; rr++) for (let cc = t.c1; cc <= t.c2; cc++) {
-    const s = src.matrix[(rr - t.r1) % src.h][(cc - t.c1) % src.w] || {}
-    let cell = findAnchorCell(g, rr, cc)
-    // 空白区域/未建格的合并区域没有宿主单元格：先创建承载格，否则格式刷点击后无任何反应
-    if (!cell) {
-      cell = makeCell(rr, cc)
-      g.cells.push(cell)
+  for (const t of ranges) {
+    for (let rr = t.r1; rr <= t.r2; rr++) for (let cc = t.c1; cc <= t.c2; cc++) {
+      const s = src.matrix[(rr - t.r1) % src.h][(cc - t.c1) % src.w] || {}
+      let cell = findAnchorCell(g, rr, cc)
+      // 空白区域/未建格的合并区域没有宿主单元格：先创建承载格，否则格式刷点击后无任何反应
+      if (!cell) {
+        cell = makeCell(rr, cc)
+        g.cells.push(cell)
+      }
+      if (seen.has(cell.id)) continue
+      seen.add(cell.id)
+      // 先清除旧格式镜像到邻格的边框，否则源块该位置是“无边框”时目标会残留黑线
+      clearMirrorBorders(cell)
+      cell.style = hydrateStyle(JSON.parse(JSON.stringify(s)))
+      mirrorBorders(cell)
+      applied++
     }
-    if (seen.has(cell.id)) continue
-    seen.add(cell.id)
-    // 先清除旧格式镜像到邻格的边框，否则源块该位置是“无边框”时目标会残留黑线
-    clearMirrorBorders(cell)
-    cell.style = hydrateStyle(JSON.parse(JSON.stringify(s)))
-    mirrorBorders(cell)
-    applied++
+    // 合并结构跟随格式刷：源块里的合并格在目标块对应位置同样合并（按源块尺寸平铺）
+    if (src.merges && src.merges.length) {
+      const mergeAt = new Map()
+      src.merges.forEach(m => mergeAt.set(m.dr + ',' + m.dc, m))
+      const covered = new Set()
+      for (let rr = t.r1; rr <= t.r2; rr++) for (let cc = t.c1; cc <= t.c2; cc++) {
+        const m = mergeAt.get(((rr - t.r1) % src.h) + ',' + ((cc - t.c1) % src.w))
+        if (!m || covered.has(rr + ',' + cc)) continue
+        const r2 = Math.min(rr + m.rs - 1, g.rows - 1)
+        const c2 = Math.min(cc + m.cs - 1, g.cols - 1)
+        if (r2 <= rr && c2 <= cc) continue
+        if (!canMergeRange(g, rr, cc, r2, c2)) continue
+        const carrier = mergeRange(g, rr, cc, r2, c2)
+        if (!carrier) continue
+        // 合并后承载格可能换成了别的格，样式统一以源合并格为准
+        clearMirrorBorders(carrier)
+        carrier.style = hydrateStyle(JSON.parse(JSON.stringify(m.style)))
+        mirrorBorders(carrier)
+        for (let r = rr; r <= r2; r++) for (let c = cc; c <= c2; c++) covered.add(r + ',' + c)
+      }
+    }
   }
   painterStyle.value = null
   if (applied) ElMessage.success('已应用格式（' + applied + ' 个单元格）')
 }
 
-// ---- 复制/粘贴（Ctrl+C / Ctrl+V：按主选区整块复制，粘贴到当前选区锚点，覆盖目标区） ----
+// ---- 复制/剪切/粘贴（Ctrl+C / Ctrl+X / Ctrl+V） ----
+// 复制：仅复制格式（样式），不复制字段绑定/文本/合并，避免同一字段被添加两次产生冲突；
+// 剪切：连同字段绑定/内容/格式整块移走；粘贴均以当前选区锚点为目标，按全部选区（含 Ctrl 追加）的外接矩形取块。
 const clipboard = ref(null)
-function copySel() {
-  const t = rect.value
-  if (!t) { ElMessage.warning('请先选中要复制的单元格'); return }
+/** 生成剪贴板快照：多选时按外接矩形取值，仅收录落在选区内的锚点格（空位留空） */
+function buildClipboard() {
+  const ranges = allRanges.value
+  if (!ranges.length) return null
+  const r1 = Math.min(...ranges.map(t => t.r1)), c1 = Math.min(...ranges.map(t => t.c1))
+  const r2 = Math.max(...ranges.map(t => t.r2)), c2 = Math.max(...ranges.map(t => t.c2))
   const seen = new Set()
   const cells = []
-  const dr = -t.r1, dc = -t.c1
-  for (let r = t.r1; r <= t.r2; r++) for (let c = t.c1; c <= t.c2; c++) {
+  for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) {
+    if (!ranges.some(t => r >= t.r1 && r <= t.r2 && c >= t.c1 && c <= t.c2)) continue
     const cell = findAnchorCell(grid.value, r, c)
     if (!cell || seen.has(cell.id)) continue
     seen.add(cell.id)
     const snap = JSON.parse(JSON.stringify(cell))
-    snap.r = cell.r + dr; snap.c = cell.c + dc
+    snap.r = cell.r - r1; snap.c = cell.c - c1
     cells.push(snap)
   }
-  clipboard.value = { w: t.c2 - t.c1 + 1, h: t.r2 - t.r1 + 1, cells }
-  ElMessage.success(`已复制 ${t.r2 - t.r1 + 1} 行 × ${t.c2 - t.c1 + 1} 列，Ctrl+V 粘贴到目标位置`)
+  return { w: c2 - c1 + 1, h: r2 - r1 + 1, cells }
+}
+function copySel() {
+  const snap = buildClipboard()
+  if (!snap) { ElMessage.warning('请先选中要复制的单元格'); return }
+  clipboard.value = { ...snap, cut: false }
+  ElMessage.success(`已复制格式 ${snap.h} 行 × ${snap.w} 列（仅格式，字段/内容不复制），Ctrl+V 粘贴到目标位置`)
+}
+/** 剪切：先取快照，再清空源区（字段绑定/样式/合并随快照一起移走，Ctrl+Z 可撤销） */
+function cutSel() {
+  const snap = buildClipboard()
+  if (!snap) { ElMessage.warning('请先选中要剪切的单元格'); return }
+  clipboard.value = { ...snap, cut: true }
+  pushUndo()
+  // 锚点落在任一选区内的单元格整块移走（合并格避免留下残片）
+  const ranges = allRanges.value
+  grid.value.cells = grid.value.cells.filter(x => !ranges.some(t => x.r >= t.r1 && x.r <= t.r2 && x.c >= t.c1 && x.c <= t.c2))
+  ElMessage.success(`已剪切 ${snap.h} 行 × ${snap.w} 列，Ctrl+V 粘贴到目标位置`)
 }
 function pasteSel() {
   const t = rect.value
   if (!t) { ElMessage.warning('请先选中粘贴目标位置'); return }
-  if (!clipboard.value || !clipboard.value.cells.length) { ElMessage.warning('剪贴板为空，请先 Ctrl+C 复制'); return }
+  const clip = clipboard.value
+  if (!clip || !clip.cells.length) { ElMessage.warning('剪贴板为空，请先 Ctrl+C 复制或 Ctrl+X 剪切'); return }
   pushUndo()
   const g = grid.value
-  for (const src of clipboard.value.cells) {
-    const tr = Math.min(t.r1 + src.r, g.rows - 1)
-    const tc = Math.min(t.c1 + src.c, g.cols - 1)
-    const rs = Math.min(src.rs || 1, g.rows - tr)
-    const cs = Math.min(src.cs || 1, g.cols - tc)
-    // 覆盖目标区：移除目标 footprint 内的既有锚点格，再写入深拷贝（新 id）
-    for (const cell of [...g.cells]) {
-      if (cell.r + (cell.rs || 1) - 1 >= tr && cell.r <= tr + rs - 1 && cell.c + (cell.cs || 1) - 1 >= tc && cell.c <= tc + cs - 1) {
-        g.cells = g.cells.filter(x => x !== cell)
-      }
+  const r2 = Math.min(t.r1 + clip.h - 1, g.rows - 1)
+  const c2 = Math.min(t.c1 + clip.w - 1, g.cols - 1)
+  // 写入位置与跨度（越界裁剪）：合并源格的跨度可能超出复制块，覆盖范围按其实际 footprint 一并计算
+  const targets = clip.cells
+    .map(src => ({ src, tr: t.r1 + src.r, tc: t.c1 + src.c }))
+    .filter(x => x.tr <= r2 && x.tc <= c2)
+    .map(x => ({ ...x, rs: Math.min(x.src.rs || 1, g.rows - x.tr), cs: Math.min(x.src.cs || 1, g.cols - x.tc) }))
+  // 复制=仅粘贴格式：保留目标格原有内容与字段绑定，避免同一字段被重复添加
+  if (!clip.cut) {
+    let applied = 0
+    for (const x of targets) {
+      const style = hydrateStyle(JSON.parse(JSON.stringify(x.src.style)))
+      const cell = findAnchorCell(g, x.tr, x.tc)
+      if (cell) cell.style = style
+      else g.cells.push(makeCell(x.tr, x.tc, { style }))
+      applied++
     }
-    const clone = { ...JSON.parse(JSON.stringify(src)), id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), r: tr, c: tc, rs, cs }
+    selRange.value = expandSelRange(t.r1, t.c1, r2, c2)
+    selRanges.value = []
+    ElMessage.success(`已粘贴格式（${applied} 个单元格，内容与字段绑定保持不变）`)
+    return
+  }
+  // 剪切=连同字段绑定/内容移动：覆盖目标块（含源区空位）与写入 footprint 内的既有锚点格，再写入深拷贝（新 id）
+  g.cells = g.cells.filter(cell => {
+    const cr2 = cell.r + (cell.rs || 1) - 1, cc2 = cell.c + (cell.cs || 1) - 1
+    if (cell.r <= r2 && cr2 >= t.r1 && cell.c <= c2 && cc2 >= t.c1) return false
+    return !targets.some(x => cell.r <= x.tr + x.rs - 1 && cr2 >= x.tr && cell.c <= x.tc + x.cs - 1 && cc2 >= x.tc)
+  })
+  for (const x of targets) {
+    const clone = { ...JSON.parse(JSON.stringify(x.src)), id: 'p' + Date.now() + Math.random().toString(36).slice(2, 6), r: x.tr, c: x.tc, rs: x.rs, cs: x.cs }
     g.cells.push(clone)
   }
-  selRange.value = expandSelRange(t.r1, t.c1, Math.min(t.r1 + clipboard.value.h - 1, g.rows - 1), Math.min(t.c1 + clipboard.value.w - 1, g.cols - 1))
-  ElMessage.success('粘贴完成')
+  selRange.value = expandSelRange(t.r1, t.c1, r2, c2)
+  selRanges.value = []
+  ElMessage.success('粘贴完成（已移动）')
 }
 
 // ---- 插入图片（etype 6）：选图后写入锚点格，dataURL 存储 ----
@@ -1299,25 +1365,14 @@ function selTargets(kind) {
 function formTitle() { return (props.form && props.form.formName) || '表单标题' }
 function replaceGrid(g) { emit('update:modelValue', g); selRange.value = null }
 
-/** 样式模板：tmp_fields 从字段初始化；tmp_apply/tmp_fee 复刻参考图版式（标题+红说明+两栏字段[+明细区]） */
+/** 样式模板：tmp_std/tmp_fields 按标准申请单（请假表单）版式生成；tmp_apply/tmp_fee 复刻参考图版式（标题+红说明+两栏字段[+明细区]） */
 function applyTemplate(kind) {
   pushUndo()
-  const cols = 4
-  if (kind === 'tmp_fields') {
-    const cells = [makeCell(0, 0, { type: 'title', text: formTitle(), rs: 1, cs: cols, style: hydrateStyle({ bold: true, fontSize: 16, align: 'center' }) })]
-    let r = 1, c = 0
-    for (const f of (props.fields || [])) {
-      if (!f.field) continue
-      if (c + 2 > cols) { r++; c = 0 }
-      cells.push(makeCell(r, c, { type: 'text', text: f.label, style: hydrateStyle({ align: 'center' }) }))
-      cells.push(makeCell(r, c + 1, { type: 'field', field: f.field, labelLeft: true }))
-      c += 2
-    }
-    const g = createGrid(Math.max(r + 10, 25), cols)
-    g.cells = cells
-    replaceGrid(g)
+  if (kind === 'tmp_std' || kind === 'tmp_fields') {
+    replaceGrid(stdFormGrid(props.fields || [], formTitle()))
     return
   }
+  const cols = 4
   const cells = [
     makeCell(0, 0, { type: 'title', text: formTitle(), rs: 1, cs: cols, style: hydrateStyle({ bold: true, fontSize: 16, align: 'center' }) }),
     makeCell(1, 0, { type: 'note', text: kind === 'tmp_fee' ? '有报销明细的必须填写明细表' : '请如实填写以下内容', rs: 1, cs: cols, style: hydrateStyle({ color: '#e0342b', align: 'center', bg: '#fff7cc' }) })
@@ -1589,8 +1644,12 @@ function showFieldInfo() {
 // ---- 键盘 ----
 function onKeydown(e) {
   if (!props.active || preview.value) return
-  const tag = (e.target.tagName || '').toLowerCase()
-  if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return
+  const el = e.target
+  const tag = (el.tagName || '').toLowerCase()
+  // 字号/颜色等工具条控件选择后焦点会残留在其内部 input 上，此时撤销/重做仍需作用于画布；
+  // 仅真正的文本编辑（单元格编辑、属性面板输入框等）放行给原生输入撤销。
+  const fromWidget = !!(el.closest && el.closest('.el-select, .el-color-picker, .el-input-number'))
+  if ((tag === 'input' || tag === 'textarea' || el.isContentEditable) && !fromWidget) return
   if (e.key === 'Escape') { painterStyle.value = null; selRange.value = null; selRanges.value = []; return }
   if (e.key === 'Delete' || e.key === 'Backspace') { if (rect.value) { clearContent(); e.preventDefault() } }
   else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { if (undoStack.value.length) { undo(); e.preventDefault() } }
@@ -1600,6 +1659,7 @@ function onKeydown(e) {
     e.preventDefault()
   }
   else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && rect.value) { copySel(); e.preventDefault() }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x' && rect.value) { cutSel(); e.preventDefault() }
   else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && rect.value) { pasteSel(); e.preventDefault() }
 }
 function onWinMouseup() {
@@ -1609,7 +1669,6 @@ function onWinMouseup() {
 }
 /** 窗口失焦时复位拖拽状态：mouseup 在窗口外丢失时 dragging 残留，是偶发误扩选的根源之一 */
 function onWinBlur() { dragging = false; headerDrag.mode = null; dragStart = null }
-function onWinResize() { fillRows() }
 /** 点击菜单以外区域收起右键菜单（capture 阶段：单元格 mousedown 会 stop 冒泡） */
 function onDocMouseDown(e) {
   if (!ctx.show) return
@@ -1617,6 +1676,6 @@ function onDocMouseDown(e) {
   if (el && el.closest && el.closest('.wm-ctx')) return
   closeCtx()
 }
-onMounted(() => { window.addEventListener('keydown', onKeydown); window.addEventListener('mouseup', onWinMouseup); window.addEventListener('blur', onWinBlur); window.addEventListener('resize', onWinResize); document.addEventListener('mousedown', onDocMouseDown, true); nextTick(fillRows) })
-onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); window.removeEventListener('mouseup', onWinMouseup); window.removeEventListener('blur', onWinBlur); window.removeEventListener('resize', onWinResize); document.removeEventListener('mousedown', onDocMouseDown, true) })
+onMounted(() => { window.addEventListener('keydown', onKeydown); window.addEventListener('mouseup', onWinMouseup); window.addEventListener('blur', onWinBlur); document.addEventListener('mousedown', onDocMouseDown, true) })
+onBeforeUnmount(() => { window.removeEventListener('keydown', onKeydown); window.removeEventListener('mouseup', onWinMouseup); window.removeEventListener('blur', onWinBlur); document.removeEventListener('mousedown', onDocMouseDown, true) })
 </script>

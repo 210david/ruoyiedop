@@ -262,5 +262,10 @@ onBeforeUnmount(() => document.body.classList.remove('fp-printing'))
   body.fp-printing #flow-print-root .fp-head {
     break-inside: avoid;
   }
+
+  /* 附件字段只打印文件名，预览/下载等操作链接不进纸面 */
+  body.fp-printing #flow-print-root .ele-upload-list__item-content-action {
+    display: none !important;
+  }
 }
 </style>

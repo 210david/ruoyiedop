@@ -42,6 +42,7 @@
         </el-link>
         <div class="ele-upload-list__item-content-action">
           <el-link underline="never" @click="handlePreview(file)" type="success">&nbsp;预览</el-link>
+          <el-link underline="never" @click="handleDownload(file)" type="primary">&nbsp;下载</el-link>
           <el-link underline="never" @click="handleDelete(index)" type="danger" v-if="!disabled">&nbsp;删除</el-link>
         </div>
       </li>
@@ -262,6 +263,27 @@ function handleUploadSuccess(res, file) {
 // 预览文件
 function handlePreview(file) {
   proxy.$refs.filePreviewRef.open(file.url, getFileName(file.name))
+}
+
+// 下载文件（<a> 无法携带 Authorization，改为带 Token 的请求取 Blob 后触发下载）
+function handleDownload(file) {
+  const fileName = getFileName(file.name)
+  fetch(buildSecureUrl(file.url), { headers: { Authorization: 'Bearer ' + getToken() } })
+    .then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      return res.blob()
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(url), 200)
+    })
+    .catch(() => proxy.$modal.msgError('文件下载失败'))
 }
 
 // 删除文件

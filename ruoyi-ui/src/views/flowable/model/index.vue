@@ -243,6 +243,52 @@
       </template>
     </el-dialog>
 
+    <!-- ===== 版本清单弹框：版本多了标签行放不下时，从清单里挑 ===== -->
+    <el-dialog v-model="versionListOpen" width="780px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6h16M4 12h16M4 18h10" />
+            </svg>
+          </div>
+          <span class="rd-detail-header-title">版本清单</span>
+          <div class="rd-detail-header-sub">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">共 {{ designVersions.length }} 个版本</span>
+          </div>
+        </div>
+      </template>
+      <el-table :data="versionRowsDesc" border max-height="420" class="app-table" @row-dblclick="openVersionEditorFromList">
+        <el-table-column label="版本" width="110" align="center">
+          <template #default="scope">
+            <span class="col-strong">V{{ scope.row.version }}</span>
+            <span class="vt-badge" style="margin-left: 6px" v-if="scope.row.activeFlag === '1'">当前</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="scope">
+            <span class="badge" :class="scope.row.suspended ? 'gray' : 'green'"><span class="dot"></span>{{ scope.row.suspended ? '已挂起' : '已激活' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="版本备注" prop="remark" min-width="160" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.remark || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="部署时间" prop="deploymentTime" width="170" align="center" />
+        <el-table-column label="操作" width="230" align="center" class-name="col-action">
+          <template #default="scope">
+            <el-button link type="primary" icon="EditPen" @click="openVersionEditorFromList(scope.row)" v-hasPermi="['flowable:model:edit']">编辑</el-button>
+            <el-button link type="primary" icon="View" @click="openVersionViewFromList(scope.row)" v-hasPermi="['flowable:definition:query']">查看</el-button>
+            <el-button link type="primary" icon="RefreshLeft" @click="loadFromList(scope.row)" v-hasPermi="['flowable:model:edit']">载入</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <span class="form-tip" style="float: left; line-height: 32px">双击某行也可直接编辑该版本</span>
+        <el-button @click="versionListOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- ===== 版本管理编辑弹框（版本号/版本备注/设为活动版本） ===== -->
     <el-dialog v-model="versionOpen" width="480px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
       <template #header>
@@ -282,10 +328,43 @@
           <el-button v-else type="success" plain icon="VideoPlay" :loading="versionStateLoading" v-hasPermi="['flowable:model:edit']" @click="handleVersionSuspend(false)">激活该版本</el-button>
           <div class="form-tip" style="margin-top: 6px">挂起后该版本不可发起新流程，运行中实例不受影响</div>
         </el-form-item>
+        <el-form-item label="版本内容">
+          <el-button plain icon="View" @click="openVersionView" v-hasPermi="['flowable:definition:query']">查看节点/XML</el-button>
+          <el-button plain icon="RefreshLeft" @click="loadVersionIntoDesigner" v-hasPermi="['flowable:model:edit']">载入到设计器</el-button>
+          <div class="form-tip" style="margin-top: 6px">载入会把当前画布替换成该版本内容（不自动保存），确认后用右上「保存」写回草稿，再部署即成为新版本</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitVersionEdit">确 定</el-button>
         <el-button @click="versionOpen = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 历史版本内容查看（只读：节点清单 + BPMN XML） ===== -->
+    <el-dialog v-model="versionViewOpen" width="880px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <span class="rd-detail-header-title">版本 V{{ versionView.version }} 内容（只读）</span>
+        </div>
+      </template>
+      <el-tabs v-model="versionViewTab">
+        <el-tab-pane label="节点清单" name="nodes">
+          <el-table v-loading="versionViewLoading" :data="versionView.nodes" size="small" border max-height="420">
+            <el-table-column type="index" label="#" width="56" align="center" />
+            <el-table-column prop="name" label="节点名称" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="id" label="节点ID" min-width="170" show-overflow-tooltip>
+              <template #default="scope"><span class="col-mono">{{ scope.row.id }}</span></template>
+            </el-table-column>
+            <el-table-column prop="config" label="配置摘要" min-width="240" show-overflow-tooltip />
+          </el-table>
+          <div class="form-tip" v-if="!versionViewLoading && !versionView.nodes.length">该版本没有用户任务节点，或 XML 解析失败</div>
+        </el-tab-pane>
+        <el-tab-pane label="BPMN XML" name="xml">
+          <pre class="version-xml">{{ versionView.xml }}</pre>
+        </el-tab-pane>
+      </el-tabs>
+      <template #footer>
+        <el-button @click="versionViewOpen = false">关 闭</el-button>
       </template>
     </el-dialog>
 
@@ -307,14 +386,14 @@
           </div>
         </div>
       </template>
-      <!-- 版本标签行：V1/V2/... 点击弹出版本编辑（版本备注/设为活动版本） -->
+      <!-- 版本标签行：只展示最近若干个版本，更早的收进「版本清单」弹框，避免版本多了撑爆一行 -->
       <div class="version-tab-row" v-if="designVersions.length">
         <span class="version-row-label"
           ><el-icon><Clock /></el-icon> 版本管理</span
         >
         <span
           class="version-tab"
-          v-for="v in designVersions"
+          v-for="v in visibleVersionTabs"
           :key="v.modelId"
           :class="{ 'is-active': designVersionSelected && designVersionSelected.modelId === v.modelId }"
           @click="openVersionEditor(v)"
@@ -322,9 +401,11 @@
           V{{ v.version }}
           <span class="vt-badge" v-if="v.activeFlag === '1'">当前</span>
         </span>
+        <span v-if="hiddenVersionCount > 0" class="version-more" @click="versionListOpen = true">+{{ hiddenVersionCount }} 个早期版本</span>
+        <el-button v-if="designVersions.length" link type="primary" size="small" class="version-all-btn" @click="versionListOpen = true">版本清单</el-button>
         <span class="version-row-tip">点击版本号可编辑备注、设为活动版本</span>
       </div>
-      <el-tabs v-model="designTab" class="designer-tabs" @tab-change="onDesignTabChange">
+      <el-tabs v-model="designTab" class="designer-tabs" :class="{ 'flow-active': designTab === 'flow' }" @tab-change="onDesignTabChange">
         <!-- ===== 基本信息（流程基本信息） ===== -->
         <el-tab-pane label="基本信息" name="basic">
           <el-form label-width="110px" class="design-basic-form">
@@ -385,9 +466,27 @@
             </el-tab-pane>
           </el-tabs>
         </el-tab-pane>
-        <!-- ===== 流转设置：仅流程图（打开默认显示流程图，点「编 辑」进入流程图编辑页） ===== -->
+        <!-- ===== 流转设置：仅流程图（打开默认显示流程图，点「编辑流程图」进入流程图编辑页） ===== -->
         <el-tab-pane label="流转设置" name="flow">
           <div class="flow-tabbar">
+            <!-- 顶部工具条：左侧标题 + 画布信息，右侧画布动作与主操作。
+ 旧版是「编 辑」按钮绝对定位浮在画布右上角，页签横线到按钮之间留出一条没有任何内容的空白带，
+ 看上去像页面没渲染完；改成整条工具条后按钮有了归属，画布也有了明确的上边界。 -->
+            <div class="flow-toolbar">
+              <div class="ft-left">
+                <span class="glyph"></span>
+                <span class="ft-title">流程图</span>
+                <span class="ft-sub" v-if="flowEmpty">尚未绘制，点右侧按钮开始</span>
+                <template v-else>
+                  <span class="ft-count">共 {{ flowNodeCount }} 个节点</span>
+                  <span class="ft-sub">滚轮缩放 · 拖拽平移</span>
+                </template>
+              </div>
+              <div class="ft-right">
+                <el-button v-if="!flowEmpty" size="small" icon="Aim" @click="fitFlowCanvas">适应画布</el-button>
+                <el-button size="small" type="primary" icon="EditPen" @click="openGraphicEditor('graph')">{{ flowEmpty ? '开始绘制' : '编辑流程图' }}</el-button>
+              </div>
+            </div>
             <div class="designer-body">
               <div class="designer-canvas" ref="canvasRef" :class="{ 'canvas-hidden': flowEmpty }"></div>
               <!-- 空状态：模型尚无流程图时，画布中央给出引导与主操作，替代一片空网格 -->
@@ -408,9 +507,6 @@
                   <span><b>3</b> 设置办理人</span>
                 </div>
               </div>
-            </div>
-            <div v-if="!flowEmpty" class="flow-tab-actions">
-              <el-button size="small" type="primary" icon="EditPen" @click="openGraphicEditor('graph')">编 辑</el-button>
             </div>
           </div>
         </el-tab-pane>
@@ -433,118 +529,152 @@
               ><el-input-number v-model="designModel.orderNum" :min="0" :max="999" :controls="false" style="width: 160px" />
               <div class="form-tip">数字越小排序越靠前</div></el-form-item
             >
-            <!-- 流程编号规则（参照泛微）：编号由若干「段」自由拼装，发起时自动生成写入表单「流程编号」字段 -->
-            <el-divider content-position="left">流程编号规则</el-divider>
-            <el-form-item label="启用流程编号">
-              <el-switch v-model="designModel.processNoRule.enabled" />
-              <span class="form-tip" style="margin-left: 12px">
-                开启后发起流程自动生成单号，表单里放「流程编号」字段即可显示（字段本身只读）
-              </span>
-            </el-form-item>
-            <template v-if="designModel.processNoRule.enabled">
-              <el-form-item label="编号组成">
-                <div class="no-seg-editor">
-                  <div v-for="(s, i) in designModel.processNoRule.segments" :key="i" class="no-seg-row">
-                    <el-select v-model="s.type" style="width: 108px" @change="onSegTypeChange(s)">
-                      <el-option label="固定文本" value="text" />
-                      <el-option label="日期" value="date" />
-                      <el-option label="流水号" value="serial" />
-                      <el-option label="表单字段" value="field" />
-                    </el-select>
-                    <el-input v-if="s.type === 'text'" v-model="s.value" placeholder="如 HT" maxlength="12" style="width: 120px" />
-                    <el-select v-else-if="s.type === 'date'" v-model="s.format" style="width: 168px">
-                      <el-option label="年（yyyy）" value="yyyy" />
-                      <el-option label="年月（yyyyMM）" value="yyyyMM" />
-                      <el-option label="年月日（yyyyMMdd）" value="yyyyMMdd" />
-                      <el-option label="年月日时分秒" value="yyyyMMddHHmmss" />
-                      <el-option label="月日（MMdd）" value="MMdd" />
-                    </el-select>
-                    <template v-else-if="s.type === 'serial'">
-                      <span class="seg-lab">位数</span>
-                      <el-input-number v-model="s.len" :min="1" :max="12" :controls="false" style="width: 62px" />
-                      <span class="seg-lab">起始</span>
-                      <el-input-number v-model="s.start" :min="1" :max="999999999" :controls="false" style="width: 92px" />
-                      <span class="seg-lab">步长</span>
-                      <el-input-number v-model="s.step" :min="1" :max="1000" :controls="false" style="width: 62px" />
-                    </template>
-                    <el-select
-                      v-else
-                      v-model="s.field"
-                      filterable
-                      clearable
-                      placeholder="选择框字段"
-                      style="width: 168px"
-                      @focus="loadNoRuleFields(designModel.formId)"
-                      @change="onSegFieldChange(s)"
-                    >
-                      <el-option v-for="f in noRuleFieldOptions" :key="f.field" :label="f.label" :value="f.field" />
-                    </el-select>
-                    <!-- 选择框字段：每个选项值配一个代字，编号里用代字，没配的用原值 -->
-                    <div v-if="s.type === 'field' && s.field" class="no-code-box">
-                      <span class="seg-lab">代字</span>
-                      <div v-if="fieldOptions(s.field).length" class="no-code-list">
-                        <span v-for="o in fieldOptions(s.field)" :key="o.value" class="no-code-item">
-                          <span class="no-code-label" :title="o.value">{{ o.label }}</span>
-                          <el-input
-                            v-model="s.codes[o.value]"
-                            size="small"
-                            maxlength="12"
-                            placeholder="留空用原值"
-                            style="width: 104px"
-                          />
-                        </span>
-                      </div>
-                      <span v-else class="seg-lab">该选择框字段还没配选项</span>
-                    </div>
-                    <span class="seg-ops">
-                      <el-button link icon="Top" :disabled="i === 0" title="上移" @click="moveSeg(i, -1)" />
-                      <el-button link icon="Bottom" :disabled="i === designModel.processNoRule.segments.length - 1" title="下移" @click="moveSeg(i, 1)" />
-                      <el-button
-                        link
-                        type="danger"
-                        icon="Delete"
-                        :disabled="designModel.processNoRule.segments.length <= 1"
-                        title="删除该段"
-                        @click="designModel.processNoRule.segments.splice(i, 1)"
-                      />
-                    </span>
+            <!-- 流程编号规则（参照泛微）：段式编号的编辑器较长，收到「流程编号规则」弹框里，
+ 本页只留一行状态摘要 + 配置入口，避免高级设置页被编号配置撑成一整屏 -->
+            <el-form-item label="流程编号">
+              <div class="no-rule-row">
+                <div class="nr-main">
+                  <div class="nr-head">
+                    <span class="badge" :class="processNoRuleOn ? 'green' : 'gray'"><span class="dot"></span>{{ processNoRuleOn ? '已启用' : '未启用' }}</span>
+                    <span class="nr-segs">{{ processNoRuleOn ? noRuleSegmentsText : '发起流程时不生成流程编号' }}</span>
                   </div>
-                  <el-button size="small" plain icon="Plus" @click="addSeg">添加编号段</el-button>
-                  <div class="form-tip">
-                    段按先后顺序直接拼接，要分隔符就加一个内容为「-」的固定文本段；流水号段只认第一个；表单字段只列下拉框类字段
-                  </div>
-                  <!-- 实时预览：就在段编辑下面，改任意一段立刻能看到最终单号长什么样 -->
-                  <div class="no-preview-card">
-                    <span class="np-lab">编号预览</span>
-                    <span class="np-value">{{ noPreviewText || '—' }}</span>
-                    <span class="np-tip">{{ noPreviewTip }}</span>
-                    <el-button size="small" link icon="Refresh" @click="loadNoPreview(true)">刷新</el-button>
+                  <div class="nr-sub" v-if="processNoRuleOn">
+                    {{ noRuleResetLabel }} · {{ designModel.processNoRule.allowEdit ? '允许手工修改' : '不允许手工修改' }}
                   </div>
                 </div>
-              </el-form-item>
-              <el-form-item label="重置周期">
-                <el-select v-model="designModel.processNoRule.reset" style="width: 220px">
-                  <el-option label="不重置（按流程一直累计）" value="none" />
-                  <el-option label="每年重置" value="year" />
-                  <el-option label="每季度重置" value="quarter" />
-                  <el-option label="每月重置" value="month" />
-                  <el-option label="每日重置" value="day" />
-                </el-select>
-                <div class="form-tip">流水号进入新周期后从「起始编号」重新开始</div>
-              </el-form-item>
-              <el-form-item label="允许手工修改">
-                <el-switch v-model="designModel.processNoRule.allowEdit" />
-                <span class="form-tip" style="margin-left: 12px">开启后发起人可在发起页改编号；与已有单号重复时自动改回规则生成的号</span>
-              </el-form-item>
-            </template>
+                <el-button size="small" type="primary" plain icon="Setting" @click="openNoRuleDialog">配 置</el-button>
+              </div>
+              <div class="form-tip">编号由多个段拼装而成，发起流程时自动生成并写入表单「流程编号」字段</div>
+            </el-form-item>
           </el-form>
         </el-tab-pane>
       </el-tabs>
+
+      <!-- ===== 流程编号规则弹框：段式编号编辑器（组成/重置周期/手工修改/预览）集中在此设置 =====
+      取消即丢弃草稿，确定只写回设计器内存，仍需点右上「保存」落库 -->
+      <el-dialog
+        v-model="noRuleOpen"
+        title="流程编号规则"
+        width="780px"
+        style="max-width: calc(100vw - 40px)"
+        append-to-body
+        :close-on-click-modal="false"
+        destroy-on-close
+        class="no-rule-dialog"
+      >
+        <el-form label-width="110px" class="design-basic-form nr-dialog-form">
+          <el-form-item label="启用流程编号">
+            <el-switch v-model="noRuleDraft.enabled" />
+            <span class="form-tip" style="margin-left: 12px">开启后发起流程自动生成单号，表单里放「流程编号」字段即可显示（字段本身只读）</span>
+          </el-form-item>
+          <template v-if="noRuleDraft.enabled">
+            <el-form-item label="编号组成">
+              <div class="no-seg-editor">
+                <div v-for="(s, i) in noRuleDraft.segments" :key="i" class="no-seg-row">
+                  <el-select v-model="s.type" style="width: 108px" @change="onSegTypeChange(s)">
+                    <el-option label="固定文本" value="text" />
+                    <el-option label="日期" value="date" />
+                    <el-option label="流水号" value="serial" />
+                    <el-option label="表单字段" value="field" />
+                  </el-select>
+                  <el-input v-if="s.type === 'text'" v-model="s.value" placeholder="如 HT" maxlength="12" style="width: 120px" />
+                  <el-select v-else-if="s.type === 'date'" v-model="s.format" style="width: 168px">
+                    <el-option label="年（yyyy）" value="yyyy" />
+                    <el-option label="年月（yyyyMM）" value="yyyyMM" />
+                    <el-option label="年月日（yyyyMMdd）" value="yyyyMMdd" />
+                    <el-option label="年月日时分秒" value="yyyyMMddHHmmss" />
+                    <el-option label="月日（MMdd）" value="MMdd" />
+                  </el-select>
+                  <template v-else-if="s.type === 'serial'">
+                    <span class="seg-lab">位数</span>
+                    <el-input-number v-model="s.len" :min="1" :max="12" :controls="false" style="width: 62px" />
+                    <span class="seg-lab">起始</span>
+                    <el-input-number v-model="s.start" :min="1" :max="999999999" :controls="false" style="width: 92px" />
+                    <span class="seg-lab">步长</span>
+                    <el-input-number v-model="s.step" :min="1" :max="1000" :controls="false" style="width: 62px" />
+                  </template>
+                  <el-select
+                    v-else
+                    v-model="s.field"
+                    filterable
+                    clearable
+                    placeholder="选择框字段"
+                    style="width: 168px"
+                    @focus="loadNoRuleFields(designModel.formId)"
+                    @change="onSegFieldChange(s)"
+                  >
+                    <el-option v-for="f in noRuleFieldOptions" :key="f.field" :label="f.label" :value="f.field" />
+                  </el-select>
+                  <!-- 选择框字段：每个选项值配一个代字，编号里用代字，没配的用原值 -->
+                  <div v-if="s.type === 'field' && s.field" class="no-code-box">
+                    <span class="seg-lab">代字</span>
+                    <div v-if="fieldOptions(s.field).length" class="no-code-list">
+                      <span v-for="o in fieldOptions(s.field)" :key="o.value" class="no-code-item">
+                        <span class="no-code-label" :title="o.value">{{ o.label }}</span>
+                        <el-input v-model="s.codes[o.value]" size="small" maxlength="12" placeholder="留空用原值" style="width: 104px" />
+                      </span>
+                    </div>
+                    <span v-else class="seg-lab">该选择框字段还没配选项</span>
+                  </div>
+                  <span class="seg-ops">
+                    <el-button link icon="Top" :disabled="i === 0" title="上移" @click="moveSeg(i, -1)" />
+                    <el-button link icon="Bottom" :disabled="i === noRuleDraft.segments.length - 1" title="下移" @click="moveSeg(i, 1)" />
+                    <el-button
+                      link
+                      type="danger"
+                      icon="Delete"
+                      :disabled="noRuleDraft.segments.length <= 1"
+                      title="删除该段"
+                      @click="noRuleDraft.segments.splice(i, 1)"
+                    />
+                  </span>
+                </div>
+                <el-button size="small" plain icon="Plus" @click="addSeg">添加编号段</el-button>
+                <div class="form-tip">
+                  段按先后顺序直接拼接，要分隔符就加一个内容为「-」的固定文本段；流水号段只认第一个；表单字段只列下拉框类字段
+                </div>
+                <!-- 实时预览：就在段编辑下面，改任意一段立刻能看到最终单号长什么样 -->
+                <div class="no-preview-card">
+                  <span class="np-lab">编号预览</span>
+                  <span class="np-value">{{ noPreviewText || '—' }}</span>
+                  <span class="np-tip">{{ noPreviewTip }}</span>
+                  <el-button size="small" link icon="Refresh" @click="loadNoPreview(true)">刷新</el-button>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item label="重置周期">
+              <el-select v-model="noRuleDraft.reset" style="width: 220px">
+                <el-option label="不重置（按流程一直累计）" value="none" />
+                <el-option label="每年重置" value="year" />
+                <el-option label="每季度重置" value="quarter" />
+                <el-option label="每月重置" value="month" />
+                <el-option label="每日重置" value="day" />
+              </el-select>
+              <div class="form-tip">流水号进入新周期后从「起始编号」重新开始</div>
+            </el-form-item>
+            <el-form-item label="允许手工修改">
+              <el-switch v-model="noRuleDraft.allowEdit" />
+              <span class="form-tip" style="margin-left: 12px">开启后发起人可在发起页改编号；与已有单号重复时自动改回规则生成的号</span>
+            </el-form-item>
+          </template>
+        </el-form>
+        <template #footer>
+          <div class="nr-dialog-footer">
+            <span class="nr-footer-tip">确定后仍需点击设计器右上「保存」，规则才会写入流程配置</span>
+            <div class="nr-footer-btns">
+              <el-button @click="noRuleOpen = false">取 消</el-button>
+              <el-button type="primary" @click="confirmNoRule">确 定</el-button>
+            </div>
+          </div>
+        </template>
+      </el-dialog>
       <input ref="xmlFileRef" type="file" accept=".xml,.bpmn" style="display: none" @change="onXmlFileChange" />
     </el-dialog>
 
-    <!-- ===== 图形化编辑独立全屏弹窗（点"编辑"进入独立编辑页，关闭返回列表） ===== -->
-    <el-dialog v-model="graphicOpen" fullscreen append-to-body class="designer-dialog" :close-on-click-modal="false" destroy-on-close @opened="onGraphicOpened">
+    <!-- ===== 图形化编辑独立全屏弹窗（点"编辑"进入独立编辑页，关闭返回列表） =====
+     :show-close="false"：页头/画布工具条右侧已有「关闭」，右上角再挂一个 el-dialog 自带的 ×
+     就是两个含义相同的关闭入口，且 × 与深蓝页头贴在一起显得拥挤，故隐藏。 -->
+    <el-dialog v-model="graphicOpen" fullscreen append-to-body class="designer-dialog" :show-close="false" :close-on-click-modal="false" destroy-on-close @opened="onGraphicOpened">
       <template #header>
         <div class="designer-header">
           <div class="designer-title">
@@ -591,8 +721,14 @@
  画布容器仅在图形模式渲染；节点/出口模式不建实例、不做视口适配，
  从根本上避免零尺寸容器上 fit-viewport 算出非有限值（SVGMatrix scale 报错）。 -->
         <div v-if="graphicMode === 'graph'" class="graphic-pane">
-          <div class="palette-host" ref="paletteHostRef"></div>
+          <div class="palette-host" ref="paletteHostRef" v-show="!paletteCollapsed"></div>
           <div class="graphic-main">
+            <!-- 收起/展开左侧节点面板：悬浮在画布左边缘，收起后画布铺满便于查看完整流程图 -->
+            <button type="button" class="palette-toggle" :class="{ 'is-collapsed': paletteCollapsed }" @click="togglePalette"
+              :title="paletteCollapsed ? '展开节点面板' : '收起节点面板，查看完整流程图'">
+              <el-icon><ArrowLeft v-if="!paletteCollapsed" /><ArrowRight v-else /></el-icon>
+              <span>{{ paletteCollapsed ? '展开' : '收起' }}</span>
+            </button>
             <div class="designer-canvas" ref="graphicCanvasRef"></div>
             <div class="props-handle" v-if="selectedElement" @click="propsCollapsed = !propsCollapsed" :title="propsCollapsed ? '展开节点信息' : '收起节点信息'">
               <span>{{ propsCollapsed ? '‹' : '›' }}</span>
@@ -663,18 +799,103 @@
                     </el-form-item>
                   </template>
 
-                  <!-- 连线条件（网关分支） -->
-                  <template v-if="selectedElement.isSequenceFlow">
-                    <el-form-item label="分支条件">
-                      <el-input v-model="selectedElement.condition" type="textarea" :rows="2" placeholder="如：${days > 3}" @change="updateCondition" />
-                      <div class="props-tip">
-                        JUEL 表达式，引用发起流程时传入的变量。{{ selectedElement.sourceIsGateway ? '当前连线路径于网关出口，按顺序判断。' : '提示：仅排他/包容网关出口的连线条件生效。' }}
+                  <!-- 分支条件（网关出口）：选「字段 + 运算符 + 值」自动拼表达式，不再手写 JUEL -->
+                  <div v-if="selectedElement.isSequenceFlow" class="cond-section">
+                    <div class="cond-head">
+                      <span class="cond-head-title">分支条件</span>
+                      <el-switch v-model="condAdvanced" size="small" inline-prompt active-text="表达式" inactive-text="配置" @change="onCondModeChange" />
+                    </div>
+
+                    <template v-if="!condAdvanced">
+                      <div v-if="!condFieldOptions.length" class="props-tip">该流程未绑定表单字段，可切到「表达式」手写条件</div>
+                      <template v-else>
+                        <div v-for="(row, idx) in condRows" :key="idx" class="cond-row">
+                          <div class="cond-line">
+                            <el-select v-if="idx > 0" v-model="condJoin" size="small" class="cond-join" @change="syncCondition">
+                              <el-option label="并且" value="AND" />
+                              <el-option label="或者" value="OR" />
+                            </el-select>
+                            <span v-else class="cond-when">当</span>
+                            <el-select v-model="row.field" size="small" class="cond-field" filterable placeholder="选择字段" @change="onCondFieldChange(row)">
+                              <el-option v-for="f in condFieldOptions" :key="f.field" :label="f.label" :value="f.field">
+                                <span class="cond-opt-label">{{ f.label }}</span>
+                                <span class="cond-opt-field">{{ f.field }}</span>
+                              </el-option>
+                            </el-select>
+                            <el-button link type="danger" size="small" class="cond-del" :disabled="condRows.length <= 1" title="删除这条条件" @click="removeCondRow(idx)">
+                              <el-icon><Delete /></el-icon>
+                            </el-button>
+                          </div>
+                          <div class="cond-line">
+                            <el-select v-model="row.op" size="small" class="cond-op" @change="onCondOpChange(row)">
+                              <el-option v-for="o in condOpsFor(row)" :key="o.value" :label="o.label" :value="o.value" />
+                            </el-select>
+                            <span v-if="!condNeedsValue(row)" class="cond-novalue">无需填写比较值</span>
+                            <el-select
+                              v-else-if="condValueOptions(row).length"
+                              v-model="row.value"
+                              size="small"
+                              class="cond-value"
+                              filterable
+                              allow-create
+                              default-first-option
+                              :multiple="isMultiValueOp(row.op)"
+                              collapse-tags
+                              placeholder="选择值"
+                              @change="syncCondition"
+                            >
+                              <el-option v-for="o in condValueOptions(row)" :key="o.value" :label="o.label" :value="o.value" />
+                            </el-select>
+                            <el-date-picker
+                              v-else-if="condValueKind(row) === 'date'"
+                              v-model="row.value"
+                              size="small"
+                              class="cond-value"
+                              type="date"
+                              value-format="YYYY-MM-DD"
+                              placeholder="选择日期"
+                              @change="syncCondition"
+                            />
+                            <el-input-number
+                              v-else-if="condValueKind(row) === 'number'"
+                              v-model="row.value"
+                              size="small"
+                              class="cond-value"
+                              controls-position="right"
+                              placeholder="数值"
+                              @change="syncCondition"
+                            />
+                            <el-input
+                              v-else
+                              v-model="row.value"
+                              size="small"
+                              class="cond-value"
+                              :placeholder="isMultiValueOp(row.op) ? '多个值用逗号分隔' : '填写比较值'"
+                              @change="syncCondition"
+                            />
+                          </div>
+                        </div>
+                        <div class="cond-actions">
+                          <el-button link type="primary" size="small" @click="addCondRow">
+                            <el-icon><Plus /></el-icon> 添加条件
+                          </el-button>
+                          <el-button link size="small" :disabled="!condRows.some((r) => r.field)" @click="clearCondition">清空条件</el-button>
+                        </div>
+                      </template>
+                      <div class="cond-preview">
+                        <span class="cond-preview-label">表达式</span>
+                        <code>{{ condExpr || '未设置（这条出口无条件，按顺序兜底）' }}</code>
                       </div>
-                    </el-form-item>
-                    <el-form-item label=" ">
-                      <el-button size="small" @click="clearCondition">清除条件</el-button>
-                    </el-form-item>
-                  </template>
+                    </template>
+
+                    <template v-else>
+                      <el-input v-model="selectedElement.condition" type="textarea" :rows="3" placeholder="如：${days > 3}" @change="updateCondition" />
+                    </template>
+
+                    <div class="props-tip">
+                      {{ selectedElement.sourceIsGateway ? '当前连线位于网关出口，按出口顺序逐个判断，条件成立即走该分支。' : '提示：仅排他/包容网关出口的连线条件生效。' }}
+                    </div>
+                  </div>
                 </el-form>
               </template>
               <div class="props-help">
@@ -1243,18 +1464,49 @@
       </div>
       <el-table :data="exitRulesForm.rows" border size="small" max-height="300" class="field-table">
         <el-table-column type="index" label="序号" width="55" align="center" />
-        <el-table-column label="字段（流程变量）" min-width="150" align="center">
-          <template #default="scope"><el-input v-model="scope.row.field" placeholder="如：days" size="small" /></template>
-        </el-table-column>
-        <el-table-column label="运算符" width="130" align="center">
+        <el-table-column label="字段（表单字段/流程变量）" min-width="170" align="center">
           <template #default="scope">
-            <el-select v-model="scope.row.op" size="small" style="width: 100%">
-              <el-option v-for="o in RULE_OPS" :key="o.value" :label="o.label" :value="o.value" />
+            <el-select v-model="scope.row.field" placeholder="选择字段" size="small" filterable allow-create default-first-option style="width: 100%" @change="onRuleFieldChange(scope.row)">
+              <el-option v-for="f in condFieldOptions" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" />
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="值（逗号分隔多个值）" min-width="180" align="center">
-          <template #default="scope"><el-input v-model="scope.row.value" placeholder="如：3 / 张三,李四" size="small" /></template>
+        <el-table-column label="运算符" width="120" align="center">
+          <template #default="scope">
+            <el-select v-model="scope.row.op" size="small" style="width: 100%" @change="onRuleOpChange(scope.row)">
+              <el-option v-for="o in condOpsFor(scope.row)" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+          </template>
+        </el-table-column>
+        <el-table-column label="值" min-width="190" align="center">
+          <template #default="scope">
+            <span v-if="!condNeedsValue(scope.row)" class="cond-novalue">无需填写</span>
+            <el-select
+              v-else-if="condValueOptions(scope.row).length"
+              v-model="scope.row.value"
+              size="small"
+              style="width: 100%"
+              filterable
+              allow-create
+              default-first-option
+              :multiple="isMultiValueOp(scope.row.op)"
+              collapse-tags
+              placeholder="选择值"
+            >
+              <el-option v-for="o in condValueOptions(scope.row)" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+            <el-date-picker
+              v-else-if="condValueKind(scope.row) === 'date'"
+              v-model="scope.row.value"
+              size="small"
+              style="width: 100%"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="选择日期"
+            />
+            <el-input-number v-else-if="condValueKind(scope.row) === 'number'" v-model="scope.row.value" size="small" controls-position="right" placeholder="数值" />
+            <el-input v-else v-model="scope.row.value" :placeholder="isMultiValueOp(scope.row.op) ? '多个值用逗号分隔' : '填写比较值'" size="small" />
+          </template>
         </el-table-column>
         <el-table-column label="条件预览" min-width="180" align="center">
           <template #default="scope"
@@ -1497,7 +1749,7 @@
 </template>
 
 <script setup name="FlowModel">
-import { listModel, getModel, addModel, updateModel, delModel, deployModel, listDefinition, updateDefinitionRemark, setActiveDefinition, changeDefinitionState } from '@/api/flowable/flow';
+import { listModel, getModel, addModel, updateModel, delModel, deployModel, listDefinition, getDefinitionXml, updateDefinitionRemark, setActiveDefinition, changeDefinitionState } from '@/api/flowable/flow';
 import { allForms, getForm } from '@/api/flowable/form';
 import { listNodePrints, saveNodePrint, delNodePrint } from '@/api/flowable/nodePrint';
 import FormPicker from '@/components/FormPicker/index.vue';
@@ -1506,6 +1758,7 @@ import DeptPicker from '@/components/DeptPicker/index.vue';
 import RolePicker from '@/components/RolePicker/index.vue';
 import PositionPicker from '@/components/PositionPicker/index.vue';
 import request from '@/utils/request';
+import { isPrimaryButton, hasSecondaryModifier } from 'diagram-js/lib/util/Mouse';
 import { normalizeDiagramSizes, DEFAULT_EVENT_SIZE } from '@/utils/bpmnSizes';
 import { ElMessageBox } from 'element-plus';
 import { h, nextTick, ref, computed, watch, reactive, toRefs, onMounted, onBeforeUnmount } from 'vue';
@@ -1522,12 +1775,15 @@ import {
   Setting,
   Check,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   MoreFilled,
   QuestionFilled,
   Clock,
   User,
   EditPen,
   Plus,
+  Delete,
 } from '@element-plus/icons-vue';
 import Sortable from 'sortablejs';
 import { useColumnResize } from '@/composables/useColumnResize';
@@ -1536,6 +1792,7 @@ import FormFieldsEditor from '../form/components/FormFieldsEditor.vue';
 import ExcelGridDesigner from '../form/designer/ExcelGridDesigner.vue';
 import { parseLayout, fieldsToGrid, serializeLayout, isFlowSysField } from '../form/designer/converters.js';
 import { listNodeForms, saveNodeForm as saveNodeFormApi, delNodeForm } from '@/api/flowable/nodeForm';
+import { rtypeOf, optionListOf } from '@/components/FormGridControl';
 import { deployCheckModel } from '@/api/flowable/flow';
 import { useDetailCard } from '@/composables/useDetailCard';
 
@@ -1629,6 +1886,45 @@ function parseNoRule(raw) {
   if (o.sep) rule.segments = withSepSegments(rule.segments, o.sep);
   return rule;
 }
+/**
+ * 流程编号规则弹框：编辑器较长（编号段/重置周期/手工修改/预览），不再平铺在高级设置页。
+ * 弹框内编辑的是草稿 noRuleDraft，取消丢弃；确定才写回 designModel（仍需点右上「保存」落库）
+ */
+const NO_RESET_LABELS = { none: '不重置', year: '每年重置', quarter: '每季度重置', month: '每月重置', day: '每日重置' };
+const noRuleOpen = ref(false);
+const noRuleDraft = ref(defaultNoRule());
+const processNoRuleOn = computed(() => !!(designModel.value.processNoRule || {}).enabled);
+const noRuleResetLabel = computed(() => NO_RESET_LABELS[(designModel.value.processNoRule || {}).reset] || '不重置');
+/** 高级设置页的编号规则摘要：一眼看出「由哪些段拼成」 */
+const noRuleSegmentsText = computed(() => {
+  const segs = (designModel.value.processNoRule || {}).segments || [];
+  const parts = segs.map((s) => {
+    if (s.type === 'text') return s.value ? '「' + s.value + '」' : '空文本';
+    if (s.type === 'date') return '日期(' + (s.format || 'yyyyMMdd') + ')';
+    if (s.type === 'serial') return '流水号(' + (Number(s.len) || 4) + '位)';
+    return '字段(' + (s.field || '未选') + ')';
+  });
+  return parts.length ? parts.join(' + ') : '未配置编号段';
+});
+function openNoRuleDialog() {
+  // 深拷贝：弹框里改的只是草稿，取消不污染已保存的规则
+  noRuleDraft.value = JSON.parse(JSON.stringify(designModel.value.processNoRule || defaultNoRule()));
+  if (!Array.isArray(noRuleDraft.value.segments) || !noRuleDraft.value.segments.length)
+    noRuleDraft.value.segments = JSON.parse(JSON.stringify(defaultNoRule().segments));
+  // 预览状态重置：重新打开时算的是「当前草稿」的号，不复用上一次的结果
+  noPreviewText.value = '';
+  noPreviewTip.value = '';
+  noPreviewSeq.value = 0;
+  lastNoPreviewKey = '';
+  noRuleOpen.value = true;
+  loadNoRuleFields(designModel.value.formId);
+  if (noRuleDraft.value.enabled) loadNoPreview(true);
+}
+function confirmNoRule() {
+  designModel.value.processNoRule = JSON.parse(JSON.stringify(noRuleDraft.value));
+  noRuleOpen.value = false;
+  proxy.$modal.msgSuccess('编号规则已更新，点击右上「保存」后生效');
+}
 /** 表单字段段的可选字段（主表字段），打开下拉时按当前关联表单加载 */
 const noRuleFieldOptions = ref([]);
 function noRuleFieldLabel(field) {
@@ -1645,7 +1941,7 @@ async function loadNoRuleFields(formId) {
       (f) => f && f.field && f.form === 'select' && (!f.table || f.table === 'main'),
     );
     // 选项到位后补一次预览：算样例值时还没选项，字段段会先显示成 [字段名]
-    if (noPreviewText.value.includes('[')) {
+    if (noRuleOpen.value && noPreviewText.value.includes('[')) {
       lastNoPreviewKey = '';
       loadNoPreview(true);
     }
@@ -1733,12 +2029,12 @@ function guessNextSeq(r) {
   return s ? Math.max(1, Number(s.start) || 1) : 1;
 }
 const processNoDemo = computed(() => {
-  const r = designModel.value.processNoRule || defaultNoRule();
+  const r = noRuleDraft.value || defaultNoRule();
   return buildNoByRule(r, guessNextSeq(r));
 });
 async function loadNoPreview(force) {
   clearTimeout(noPreviewTimer);
-  const r = designModel.value.processNoRule;
+  const r = noRuleDraft.value;
   if (!r || !r.enabled) {
     lastNoPreviewKey = '';
     noPreviewText.value = '';
@@ -1783,18 +2079,18 @@ async function loadNoPreview(force) {
     // （规则没变就不重发，同一请求 1 秒内重复会被防重提交挡掉）
     if (noPreviewPending) {
       noPreviewPending = false;
-      if (JSON.stringify(designModel.value.processNoRule) !== key) loadNoPreview(true);
+      if (JSON.stringify(noRuleDraft.value) !== key) loadNoPreview(true);
     }
   }
 }
 function addSeg() {
-  const r = designModel.value.processNoRule;
+  const r = noRuleDraft.value;
   if (!r) return;
   if (!Array.isArray(r.segments)) r.segments = [];
   r.segments.push({ type: 'serial', len: 4, start: 1, step: 1 });
 }
 function moveSeg(i, delta) {
-  const a = (designModel.value.processNoRule || {}).segments;
+  const a = (noRuleDraft.value || {}).segments;
   if (!a) return;
   const j = i + delta;
   if (j < 0 || j >= a.length) return;
@@ -1814,11 +2110,11 @@ function onSegTypeChange(s) {
     loadNoRuleFields(designModel.value.formId);
   }
 }
-// 规则一改就重新预览（防抖 500ms），让「起始编号/位数/段顺序」立刻可见
+// 草稿一改就重新预览（防抖 200ms），让「起始编号/位数/段顺序」立刻可见；弹框关着不请求
 watch(
-  () => (designModel.value.processNoRule ? JSON.stringify(designModel.value.processNoRule) : ''),
+  () => (noRuleDraft.value ? JSON.stringify(noRuleDraft.value) : ''),
   () => {
-    if (designOpen.value && designModel.value.processNoRule && designModel.value.processNoRule.enabled) scheduleNoPreview();
+    if (noRuleOpen.value && noRuleDraft.value && noRuleDraft.value.enabled) scheduleNoPreview();
   },
 );
 const canvasRef = ref(null);
@@ -2148,14 +2444,24 @@ function WmPaletteProvider(palette, create, elementFactory, translate) {
   this._translate = translate;
   palette.registerProvider(this);
 }
+/**
+ * 开始/结束事件的默认名称：圆圈里直接写「开始 / 结束」，与用户任务「名称写在节点里」同一观感，
+ * 拖入即有名字，不用再到属性面板里补。
+ */
+const WM_EVENT_DEFAULT_NAME = { 'bpmn:StartEvent': '开始', 'bpmn:EndEvent': '结束' };
 WmPaletteProvider.$inject = ['palette', 'create', 'elementFactory', 'translate'];
 WmPaletteProvider.prototype.getPaletteEntries = function () {
   const create = this._create;
   const elementFactory = this._elementFactory;
   const translate = this._translate;
   function action(type, group, className, title, icon) {
+    const defaultName = WM_EVENT_DEFAULT_NAME[type];
     function createListener(event) {
       const shape = elementFactory.createShape({ type });
+      // 开始/结束事件带上默认名称，新建时就显示在圆圈里。
+      // 注意：elementFactory.createShape 只认 type 等结构属性，attrs 里的 name 会被丢掉，
+      // 必须在拖拽模板对象上直接写 businessObject.name，落下时才会连标签一起创建。
+      if (defaultName) shape.businessObject.name = translate(defaultName);
       create.start(event, shape);
     }
     // 参考节点面板：彩色图标在上、文字在下，便于一眼识别节点类型
@@ -2174,7 +2480,132 @@ WmPaletteProvider.prototype.getPaletteEntries = function () {
 /** 精简工具条模块（覆盖默认 palette） */
 const wmPaletteModule = { paletteProvider: ['type', WmPaletteProvider] };
 
+/**
+ * 节点快捷菜单（ContextPad）裁剪：
+ * bpmn-js 默认把全部 BPMN 入口都放出来（中间事件、文本注释、全量改类型），
+ * 与平台「只认开始/结束/审批/分支 4 类节点」的约定冲突，且默认「追加任务」建的是
+ * bpmn:Task（无办理人，引擎会直接走过），这里统一白名单化。
+ */
+function WmContextPadProvider(contextPad, create, elementFactory, autoPlace) {
+  this._create = create;
+  this._elementFactory = elementFactory;
+  this._autoPlace = autoPlace;
+  // 优先级取负，保证在 bpmn-js 默认 provider 之后执行，才能删改它给出的入口
+  contextPad.registerProvider(-1000, this);
+}
+WmContextPadProvider.$inject = ['contextPad', 'create', 'elementFactory', 'autoPlace'];
+WmContextPadProvider.prototype.getContextPadEntries = function (element) {
+  const create = this._create;
+  const elementFactory = this._elementFactory;
+  const autoPlace = this._autoPlace;
+  /** 追加审批节点（默认「追加任务」建的是 bpmn:Task，改成与左侧面板一致的 bpmn:UserTask） */
+  function appendUserTaskAction() {
+    function appendStart(event, source) {
+      const shape = elementFactory.createShape({ type: 'bpmn:UserTask' });
+      create.start(event, shape, { source });
+    }
+    return {
+      group: 'model',
+      className: 'bpmn-icon-task',
+      title: '追加审批节点',
+      action: {
+        dragstart: appendStart,
+        click: function (_, source) {
+          autoPlace.append(source, elementFactory.createShape({ type: 'bpmn:UserTask' }));
+        },
+      },
+    };
+  }
+  return function (entries) {
+    // 业务上不存在、且属性面板无法配置的入口：中间/边界事件、文本注释
+    delete entries['append.intermediate-event'];
+    delete entries['append.text-annotation'];
+    // 改类型统一走节点表格（带配置迁移与连线重建），避免这里打开全量 BPMN 类型菜单
+    delete entries['replace'];
+    if (entries['append.append-task']) {
+      entries['append.append-task'] = appendUserTaskAction();
+    }
+    return entries;
+  };
+};
+/** 节点快捷菜单模块 */
+const wmContextPadModule = { __init__: ['wmContextPad'], wmContextPad: ['type', WmContextPadProvider] };
+
+/**
+ * 只限制「节点名称」文字（label）的单独拖动，其余一切照常：
+ *   - 节点本身、连线本身（没有 labelTarget）：放行，由 diagram-js 的 Move 正常处理，
+ *     单点拖动与框选后整体拖动都依赖这条路径；
+ *   - 连线（出口线）名称：放行，位置需要人工微调（避开压线与分支名重叠）；
+ *   - 节点名称 / 事件名称（labelTarget 指向节点、事件）：拒绝单独拖动。
+ *
+ * 背景：画布上的节点名/事件名是画在图形内部的白色文字（markEventLabel / styleTaskName 写的内联样式），
+ * 而 diagram-js 把 label 当成普通 shape，允许单独拖走（Move 会把 label 塞进 shapes 里真正移动）；
+ * 白字一旦被拖到白色画布上就“看不见了”，用户会以为节点名丢了。
+ * 这里在 shape.move.start 阶段（优先级 2000，高于 Move 的 1500/1000 与 LabelSupport 的 1400）返回 false 拒绝，
+ * 只取消这一颗文字的拖动；节点名仍可双击改文字，也会随所属节点一起移动。
+ */
+function WmLabelLock(eventBus) {
+  eventBus.on('shape.move.start', 2000, (e) => {
+    const shape = e && e.shape;
+    if (!shape) return;
+    const host = shape.labelTarget;
+    // 不是标签（节点本身、连线本身）：交给 diagram-js 正常拖动，框选后整体拖动也走这里
+    if (!host) return undefined;
+    const isConnection = !!(host.waypoints || host.type === 'bpmn:SequenceFlow' || /Connection$/.test(host.type || ''));
+    // 连线名称放行，其余（节点/事件名称）一律拒绝拖动
+    return isConnection ? undefined : false;
+  });
+}
+WmLabelLock.$inject = ['eventBus'];
+/** 节点名称锁定模块 */
+const wmLabelLockModule = { __init__: ['wmLabelLock'], wmLabelLock: ['type', WmLabelLock] };
+
+/**
+ * 框选多选：画布空白处按住左键拖动 → 出现选框，框内节点/连线一起选中；
+ * 之后拖动任一选中节点即可整体移动（Move 模块本身支持多选拖拽）。
+ *
+ * bpmn-js 17 的 Modeler 没有挂载 lasso 工具，空白处左键拖动只会平移画布，
+ * 这里把 diagram-js 的 LassoTool 接到「空白处左键拖动」上（Shift+拖动保留 lassoTool 自带逻辑）。
+ */
+function WmBoxSelect(eventBus, canvas, lassoTool, selection) {
+  eventBus.on('element.mousedown', 1400, (event) => {
+    if (event.element !== canvas.getRootElement()) return;
+    if (!isPrimaryButton(event) || hasSecondaryModifier(event)) return;
+    lassoTool.activateLasso(event.originalEvent);
+    // 事件已处理，避免继续冒泡到 MoveCanvas 变成平移画布
+    return true;
+  });
+  // 框选结果去掉根元素与文字标签，避免出现「选中一段文字」的观感。
+  // lassoTool 自己在 lasso.end 上的优先级是 0，这里取负优先级保证在它写入选区之后再过滤
+  eventBus.on('lasso.end', -100, () => {
+    const all = selection.get();
+    const filtered = all.filter((el) => el !== canvas.getRootElement() && el.type !== 'label' && !el.labelTarget);
+    if (filtered.length !== all.length) selection.select(filtered);
+  });
+}
+WmBoxSelect.$inject = ['eventBus', 'canvas', 'lassoTool', 'selection'];
+/** 框选模块（依赖 diagram-js 的 lasso-tool） */
+const wmBoxSelectModule = { __init__: ['wmBoxSelect'], wmBoxSelect: ['type', WmBoxSelect] };
+
+/**
+ * 等「流转设置」页签的画布挂载完成（弹窗打开动画 / 页签首帧渲染时 canvasRef 可能还是空）。
+ * 最多等 1 秒，仍拿不到就交给调用方提示用户重开关联。
+ */
+async function waitForDesignerCanvas() {
+  for (let i = 0; i < 20; i++) {
+    if (canvasRef.value) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return !!canvasRef.value;
+}
+
 async function onDesignerOpened() {
+  // 弹窗刚打开时页签内容可能还没挂载，「流转设置」画布此刻可能为空：
+  // 把 null 当 container 传给 bpmn-js，整块画布会永久空白（之后切页签也补不回来），这里先等容器就绪
+  if (!(await waitForDesignerCanvas())) {
+    proxy.$modal.msgWarning('流程图画布未就绪，请关闭设计器后重新打开');
+    return;
+  }
   // 设计器必需样式：工具面板/连线菜单/字体图标
   await import('bpmn-js/dist/assets/diagram-js.css');
   await import('bpmn-js/dist/assets/bpmn-js.css');
@@ -2255,17 +2686,75 @@ function applyWmReturnRoutes(modeler) {
   } catch (e) {}
 }
 
-/** 单体节点视觉标记：开始=绿圆、结束=红色终止、用户任务=蓝色卡片、网关=橙色菱形 */
+/**
+ * 是否为部署时注入的「发起人（重新提交）」节点。
+ * flowable:initiatorNode 不在 bpmn-moddle 描述符里，bo.get() 取不到，只能读 $attrs。
+ */
+function isInitiatorNode(el) {
+  const bo = el && el.businessObject;
+  if (!bo) return false;
+  const v = (bo.get && bo.get('flowable:initiatorNode')) || (bo.$attrs && bo.$attrs['flowable:initiatorNode']);
+  return v === true || v === 'true';
+}
+
+/** 单体节点视觉标记：开始=绿圆、结束=红色终止、发起人=灰虚线卡、用户任务=蓝色卡片、网关=橙色菱形 */
 function markWmShape(el, modeler) {
   if (!el || !modeler) return;
   // 先着色再打标记：即使 canvas.addMarker 这类接口异常，也不影响节点视觉
   decorateWmShape(el, modeler);
   try {
     const canvas = modeler.get('canvas');
-    if (el.type === 'bpmn:StartEvent') canvas.addMarker(el.id, 'wm-start');
-    else if (el.type === 'bpmn:EndEvent') canvas.addMarker(el.id, 'wm-end');
+    if (el.type === 'bpmn:StartEvent') {
+      canvas.addMarker(el.id, 'wm-start');
+      markEventLabel(el, modeler);
+    } else if (el.type === 'bpmn:EndEvent') {
+      canvas.addMarker(el.id, 'wm-end');
+      markEventLabel(el, modeler);
+    } else if (isInitiatorNode(el)) canvas.addMarker(el.id, 'wm-initiator');
     else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') canvas.addMarker(el.id, 'wm-task');
     else if (isGatewayType(el.type)) canvas.addMarker(el.id, 'wm-gateway');
+  } catch (e) {}
+}
+
+/**
+ * 开始/结束事件的名称已经由 utils/bpmnSizes#normalizeEventLabelPositions 搬进圆内，
+ * 这里把标签切成与用户任务同款的白字粗体（默认是圆下方的深灰字），并打上标记供样式表命中。
+ */
+function markEventLabel(el, modeler) {
+  try {
+    const canvas = modeler.get('canvas');
+    const registry = modeler.get('elementRegistry');
+    registry.filter((lb) => lb.labelTarget === el).forEach((lb) => {
+      canvas.addMarker(lb.id, 'wm-event-label');
+      const graphics = registry.getGraphics(lb);
+      const visual = graphics && graphics.querySelector ? graphics.querySelector('.djs-visual') : null;
+      if (visual) styleTaskName(visual);
+    });
+  } catch (e) {}
+}
+
+/**
+ * 把开始/结束事件的名称挂到圆圈里（文字行垂直居中于圆心）。
+ * bpmn-js 默认把事件标签放在圆下方，新建、改名、换类型后都会重新落回下方；
+ * 导入的模型由 normalizeEventLabelPositions 在 XML 层处理，这里补齐「画布上新增/改动」的同一口径。
+ */
+function placeEventLabelInside(el, modeler) {
+  if (!modeler || !el) return;
+  if (el.type !== 'bpmn:StartEvent' && el.type !== 'bpmn:EndEvent') return;
+  try {
+    const registry = modeler.get('elementRegistry');
+    const modeling = modeler.get('modeling');
+    if (!modeling) return;
+    registry
+      .filter((lb) => lb.labelTarget === el)
+      .forEach((label) => {
+        if (!label.width || !label.height) return;
+        const dx = Math.round(el.x + (el.width - label.width) / 2 - label.x);
+        const dy = Math.round(el.y + el.height / 2 - label.height / 2 - label.y);
+        // 已在圆内（位置足够接近）就不动，避免 element.changed → 挪标签 → element.changed 死循环
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+        modeling.moveElements([label], { x: dx, y: dy });
+      });
   } catch (e) {}
 }
 
@@ -2314,8 +2803,9 @@ function decorateWmShape(el, modeler) {
     };
     if (el.type === 'bpmn:StartEvent') {
       paint(visual.querySelector('circle') || visual.querySelector('ellipse'), { fill: '#4caf50', stroke: '#43a047', 'stroke-width': '2' });
+      // 符号缩小放圆圈左上角（对齐用户任务左上角的人像图标），名称居中写在圆里（与任务节点同一观感）
       if (!visual.querySelector('.wm-deco')) {
-        add('path', { d: 'M' + w * 0.36 + ' ' + h * 0.3 + ' L' + w * 0.7 + ' ' + h * 0.5 + ' L' + w * 0.36 + ' ' + h * 0.7 + ' Z', fill: '#fff', stroke: 'none' });
+        add('path', { d: 'M' + w * 0.195 + ' ' + h * 0.175 + ' L' + w * 0.385 + ' ' + h * 0.275 + ' L' + w * 0.195 + ' ' + h * 0.375 + ' Z', fill: '#fff', stroke: 'none' });
       }
     } else if (el.type === 'bpmn:EndEvent') {
       paint(visual.querySelector('circle') || visual.querySelector('ellipse'), { fill: '#e74c3c', stroke: '#1f2937', 'stroke-width': '4' });
@@ -2324,8 +2814,22 @@ function decorateWmShape(el, modeler) {
         if (i > 0) c.setAttribute('display', 'none');
       });
       if (!visual.querySelector('.wm-deco')) {
-        add('rect', { x: w * 0.36, y: h * 0.36, width: w * 0.28, height: h * 0.28, fill: '#fff', stroke: 'none' });
+        add('rect', { x: w * 0.21, y: h * 0.21, width: w * 0.13, height: h * 0.13, fill: '#fff', stroke: 'none' });
       }
+    } else if (isInitiatorNode(el)) {
+      // 发起人（重新提交）节点：灰白虚线卡片。正常流转不经过它，只在驳回退回发起人时使用，
+      // 画成和审批节点一样的蓝色卡片会被误认为“多了一个申请节点”
+      paint(visual.querySelector('rect'), { fill: '#f8fafc', stroke: '#94a3b8', 'stroke-width': '2', 'stroke-dasharray': '6 4' });
+      // 没有办理人、也不是真审批环节，隐去默认人像图标，只留节点名
+      visual.querySelectorAll('path:not(.wm-deco)').forEach((p) => {
+        p.setAttribute('display', 'none');
+        p.style.display = 'none';
+      });
+      // 浅底上用深灰字（styleTaskName 的白色在灰底上看不清，所以不走 task 分支）
+      visual.querySelectorAll('text').forEach((t) => {
+        if (t.getAttribute('fill') !== '#475569') t.setAttribute('fill', '#475569');
+        if (t.style.fill !== '#475569') t.style.fill = '#475569';
+      });
     } else if (el.type === 'bpmn:UserTask' || el.type === 'bpmn:Task' || el.type === 'bpmn:ServiceTask') {
       paint(visual.querySelector('rect'), { fill: '#4a90e2', stroke: '#3a7fbf', 'stroke-width': '2' });
       // 隐去 bpmn-js 默认的黑色人像标识，改用面板同款白色人像（保留自己插入的装饰图元）
@@ -2469,6 +2973,8 @@ function loadSelectedElement(el) {
   if (isSequenceFlow && bo.conditionExpression) {
     condition = bo.conditionExpression.body || '';
   }
+  // 右面板分支条件：把已有表达式反解成「字段 + 运算符 + 值」的规则行
+  if (isSequenceFlow) initConditionBuilder(condition);
   selectedElement.value = {
     id: bo.id,
     name: bo.name || '',
@@ -2936,7 +3442,9 @@ function loadFormFieldOptions() {
         fields = JSON.parse((res.data || {}).fieldsJson || '[]');
       } catch (e) {}
       formFieldOptions.value = fields.map((f) => ({
-        label: f.label,
+        // 保留字段原始定义（form/dtype/selectOptions 等）：分支条件的值控件要按字段类型渲染
+        ...f,
+        label: f.label || f.field,
         field: f.field,
         // 浏览按钮字段带值类型（人员/部门），供运行时推导领导关系
         fieldType: f.form === 'browse' ? f.browseType || 'user' : 'auto',
@@ -3192,7 +3700,7 @@ function updateCondition() {
   const expr = (selectedElement.value.condition || '').trim();
   const m = currentModeling();
   if (expr) {
-    const moddle = bpmnModeler.get('moddle');
+    const moddle = currentModdle();
     const cond = moddle.create('bpmn:FormalExpression', { body: expr });
     m.updateProperties(selectedEl, { conditionExpression: cond });
   } else {
@@ -3201,6 +3709,9 @@ function updateCondition() {
 }
 
 function clearCondition() {
+  // 智能模式与表达式模式一并清空，规则行也要复位，否则面板上还留着旧条件
+  condRows.value = [{ field: '', op: 'eq', value: '' }];
+  condJoin.value = 'AND';
   selectedElement.value.condition = '';
   updateCondition();
 }
@@ -3227,13 +3738,31 @@ function deleteSelected() {
   modeling.removeElements(sel);
 }
 
-/** 保存前校验：用户任务办理人配置、结束节点存在性 */
-function validateDiagram() {
-  const root = bpmnModeler.get('canvas').getRootElement();
+/** 流程图允许出现的元素类型：左侧面板 6 类节点 + 连线 + 文本注释 */
+const SUPPORTED_DIAGRAM_TYPES = [
+  'bpmn:StartEvent',
+  'bpmn:EndEvent',
+  'bpmn:UserTask',
+  'bpmn:ExclusiveGateway',
+  'bpmn:ParallelGateway',
+  'bpmn:InclusiveGateway',
+  'bpmn:SequenceFlow',
+  'bpmn:TextAnnotation',
+];
+
+/** 保存前校验：用户任务办理人配置、结束节点存在性、不支持的节点类型 */
+function validateDiagram(modeler) {
+  const root = (modeler || bpmnModeler).get('canvas').getRootElement();
   const issues = [];
   let hasEnd = false;
   (root.children || []).forEach((c) => {
     if (c.type === 'bpmn:EndEvent') hasEnd = true;
+    // 通用任务/服务任务/中间事件/子流程等：属性面板无法配置，引擎里也不会生成人工待办
+    if (!SUPPORTED_DIAGRAM_TYPES.includes(c.type)) {
+      const typeName = NODE_TYPE_LABELS[c.type] || c.type.replace('bpmn:', '');
+      issues.push('「' + ((c.businessObject && c.businessObject.name) || c.id) + '」为不支持的节点类型（' + typeName + '），部署后可能被引擎直接跳过或执行报错');
+      return;
+    }
     if (c.type === 'bpmn:UserTask') {
       const bo = c.businessObject;
       const a = (bo.get && bo.get('flowable:assignee')) || '';
@@ -3252,6 +3781,33 @@ function validateDiagram() {
   });
   if (!hasEnd) issues.push('流程缺少结束节点');
   return issues;
+}
+
+/**
+ * 保存前校验提醒：有问题时弹窗列出，用户可「仍要保存」或「返回修改」。
+ * 返回 true 表示继续保存，false 表示用户选择返回修改。
+ */
+async function confirmDiagramIssues(issues) {
+  if (!issues.length) return true;
+  try {
+    await ElMessageBox.confirm(
+      () =>
+        h('div', null, [
+          h('p', { style: 'margin-bottom:8px;font-weight:600' }, '存在 ' + issues.length + ' 个问题：'),
+          h(
+            'ul',
+            { style: 'padding-left:18px;margin:0;color:#e6a23c' },
+            issues.map((t) => h('li', null, t)),
+          ),
+          h('p', { style: 'margin-top:10px;color:#909399;font-size:13px' }, '仍可保存，但该流程部署后可能无法正常发起。'),
+        ]),
+      '保存前校验提醒',
+      { confirmButtonText: '仍要保存', cancelButtonText: '返回修改', type: 'warning', draggable: true },
+    );
+    return true;
+  } catch (e) {
+    return false; // 用户选择返回修改
+  }
 }
 
 async function handleDesign(row) {
@@ -3273,13 +3829,54 @@ async function handleDesign(row) {
   selectedElement.value = null;
   designTab.value = 'flow';
   designOpen.value = true;
-  // 编号规则：先加载字段段候选（选项要用来算样例值），再取「真实下一号」预览
-  loadNoRuleFields(designModel.value.formId).then(() => nextTick(() => loadNoPreview()));
+  // 编号规则：字段段候选项要随表单预加载（弹框里选「表单字段」段才有下拉）；
+  // 「下一号」预览只在弹框打开时算，设计器打开时不再发无意义的预览请求
+  loadNoRuleFields(designModel.value.formId);
 }
 
 // ===== 版本管理（设计器内版本标签行 + 版本编辑弹框） =====
 const designVersions = ref([]);
 const designVersionSelected = ref(null);
+/** 版本清单弹框（版本多时从清单里选） */
+const versionListOpen = ref(false);
+/** 标签行最多直接展示的版本数，更早的折叠进清单 */
+const VERSION_TAB_LIMIT = 6;
+/** 版本倒序（新的在前），清单表与折叠计算共用 */
+const versionRowsDesc = computed(() => [...designVersions.value].sort((a, b) => (b.version || 0) - (a.version || 0)));
+/**
+ * 标签行展示哪些版本：最近 N 个 + 当前活动版本 + 当前选中的版本
+ * （后两个可能落在早期，需要单独补回来，否则「当前」标记和选中态会看不见）
+ */
+const visibleVersionTabs = computed(() => {
+  const all = versionRowsDesc.value;
+  if (all.length <= VERSION_TAB_LIMIT) return [...all].sort((a, b) => (a.version || 0) - (b.version || 0));
+  const picked = all.slice(0, VERSION_TAB_LIMIT);
+  const keep = (v) => v && !picked.some((p) => p.modelId === v.modelId) && picked.push(v);
+  keep(all.find((v) => v.activeFlag === '1'));
+  const selected = designVersionSelected.value;
+  keep(selected ? all.find((v) => v.modelId === selected.modelId) : null);
+  return picked.sort((a, b) => (a.version || 0) - (b.version || 0));
+});
+const hiddenVersionCount = computed(() => Math.max(0, designVersions.value.length - visibleVersionTabs.value.length));
+/** 清单里选中某版本（后续「查看/载入/编辑」都按 designVersionSelected 取数） */
+function pickVersion(row) {
+  designVersionSelected.value = row;
+  return row;
+}
+function openVersionEditorFromList(row) {
+  versionListOpen.value = false;
+  openVersionEditor(pickVersion(row));
+}
+function openVersionViewFromList(row) {
+  pickVersion(row);
+  versionListOpen.value = false;
+  openVersionView();
+}
+function loadFromList(row) {
+  pickVersion(row);
+  versionListOpen.value = false;
+  loadVersionIntoDesigner();
+}
 /** 表单管理二级页签：基本信息/编辑字段 */
 const formTab = ref('basic');
 /** 表单管理→编辑字段 的编辑器实例：顶部「保存」时顺带提交字段改动，避免字段编辑白改 */
@@ -4663,77 +5260,261 @@ const exitRulesOpen = ref(false);
 const exitRulesRow = ref(null);
 const exitRulesCopyFrom = ref('');
 const exitRulesForm = ref({ join: 'AND', rows: [] });
-const RULE_OPS = [
-  { value: 'eq', label: '等于 ==', expr: '{v} == {f}' },
-  { value: 'neq', label: '不等于 !=', expr: '{v} != {f}' },
-  { value: 'gt', label: '大于 >', expr: '{f} > {v}' },
-  { value: 'gte', label: '大于等于 >=', expr: '{f} >= {v}' },
-  { value: 'lt', label: '小于 <', expr: '{f} < {v}' },
-  { value: 'lte', label: '小于等于 <=', expr: '{f} <= {v}' },
-  { value: 'in', label: '属于（多值）', expr: null },
-  { value: 'notin', label: '不属于（多值）', expr: null },
+// ===== 分支条件：选字段 + 运算符 + 值 自动拼 JUEL，不再让人手写表达式 =====
+/** 运算符表（sym 为 JUEL 符号；空值判断不需要比较值） */
+const COND_OPS = [
+  { value: 'eq', label: '等于', sym: '==' },
+  { value: 'neq', label: '不等于', sym: '!=' },
+  { value: 'gt', label: '大于', sym: '>' },
+  { value: 'gte', label: '大于等于', sym: '>=' },
+  { value: 'lt', label: '小于', sym: '<' },
+  { value: 'lte', label: '小于等于', sym: '<=' },
+  { value: 'in', label: '属于（多值）', sym: '==' },
+  { value: 'notin', label: '不属于（多值）', sym: '!=' },
+  { value: 'empty', label: '为空', sym: '' },
+  { value: 'notempty', label: '不为空', sym: '' },
 ];
+/** 旧名字保留：出口条件弹窗仍按下拉引用 */
+const RULE_OPS = COND_OPS;
 
-/** 单条规则 → JUEL 片段 */
+/** 可作为条件字段的清单：主表单为主，叠加各节点表单里出现过的字段（去重） */
+const condFieldOptions = computed(() => {
+  const out = [];
+  const seen = new Set();
+  const push = (f) => {
+    if (!f || !f.field || seen.has(f.field)) return;
+    seen.add(f.field);
+    const rtype = f.rtype || rtypeOf(f);
+    out.push({ field: f.field, label: f.label || f.field, rtype, options: f.options && f.options.length ? f.options : optionListOf(f) });
+  };
+  (formFieldOptions.value || []).forEach(push);
+  Object.keys(nodeFormMap.value || {}).forEach((id) => {
+    const nf = nodeFormMap.value[id];
+    ((nf && nf.fields) || []).forEach(push);
+  });
+  return out;
+});
+
+function fieldMetaOf(field) {
+  if (!field) return null;
+  return condFieldOptions.value.find((f) => f.field === field) || null;
+}
+
+/** 字段的值类型：options（有选项）/ date / number / text */
+function condValueKind(row) {
+  const meta = fieldMetaOf(row && row.field);
+  if (!meta) return 'text';
+  if (meta.options && meta.options.length) return 'options';
+  const rt = meta.rtype || '';
+  if (rt === 'date' || rt === 'datetime') return 'date';
+  if (rt === 'number') return 'number';
+  return 'text';
+}
+function isMultiValueOp(op) {
+  return op === 'in' || op === 'notin';
+}
+/** 是否要填比较值（为空/不为空不用填） */
+function condNeedsValue(row) {
+  return !!row && row.op !== 'empty' && row.op !== 'notempty';
+}
+/** 可选值（下拉/单选框字段才能选具体值） */
+function condValueOptions(row) {
+  const meta = fieldMetaOf(row && row.field);
+  return meta && meta.options ? meta.options : [];
+}
+/** 当前字段能用哪些运算符：文本类只给等值/集合/空值，数字与日期再加大小比较 */
+function condOpsFor(row) {
+  const kind = condValueKind(row);
+  return COND_OPS.filter((o) => (['gt', 'gte', 'lt', 'lte'].includes(o.value) ? kind === 'number' || kind === 'date' : true));
+}
+
+/** 比较值 → JUEL 字面量：数字字段不加引号，其余（含选项值）统一按字符串加引号 */
+function condLiteral(field, raw) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return '';
+  const meta = fieldMetaOf(field);
+  const numeric = meta ? meta.rtype === 'number' : /^-?\d+(\.\d+)?$/.test(text);
+  if (numeric) return text;
+  return "'" + text.replace(/'/g, "''") + "'";
+}
+
+/** 单条规则 → JUEL 片段（裸片段，不含 ${}；JUEL 只允许整体一个 ${...}） */
 function ruleToExpr(r) {
   if (!r || !r.field) return '';
-  const f = '${' + r.field + '}';
-  const op = RULE_OPS.find((o) => o.value === r.op) || RULE_OPS[0];
-  const raw = (r.value || '').trim();
-  if (!raw) return '';
-  const isNum = /^-?\d+(\.\d+)?$/.test(raw);
-  if (op.value === 'in' || op.value === 'notin') {
-    const vals = raw
+  const field = r.field;
+  const op = r.op || 'eq';
+  if (op === 'empty') return 'empty ' + field;
+  if (op === 'notempty') return 'not empty ' + field;
+  const raw = Array.isArray(r.value) ? r.value.join(',') : r.value;
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return '';
+  const def = COND_OPS.find((o) => o.value === op);
+  if (!def || !def.sym) return '';
+  if (isMultiValueOp(op)) {
+    const vals = text
       .split(/[,，]/)
       .map((s) => s.trim())
       .filter(Boolean);
     if (!vals.length) return '';
-    const test = op.value === 'in' ? vals : undefined;
-    if (op.value === 'in') {
-      // 变量在值集合中：任一相等即通过
-      return vals.map((v) => (isNum || /^-?\d+$/.test(v) ? `${f} == ${v}` : `${f} == '${v}'`)).join(' || ');
-    }
-    return vals.map((v) => (isNum || /^-?\d+$/.test(v) ? `${f} != ${v}` : `${f} != '${v}'`)).join(' && ');
+    return '(' + vals.map((v) => field + ' ' + def.sym + ' ' + condLiteral(field, v)).join(op === 'in' ? ' || ' : ' && ') + ')';
   }
-  const val = isNum ? raw : `'${raw}'`;
-  // 大小比较类：比较值放右侧
-  if (['gt', 'gte', 'lt', 'lte'].includes(op.value)) return `${f} ${op.expr.split(' ')[1]} ${val}`;
-  return `${f} ${op.expr.split(' ')[1]} ${val}`;
+  return field + ' ' + def.sym + ' ' + condLiteral(field, text);
 }
 
-/** 多规则按 AND/OR 拼接为最终 JUEL 表达式 */
-const exitRulesExpr = computed(() => {
-  const parts = (exitRulesForm.value.rows || []).map(ruleToExpr).filter(Boolean);
+/** 多条规则 → 完整表达式：${a > 1 && b == 'x'} */
+function rulesToExpr(rows, join) {
+  const parts = (rows || []).map(ruleToExpr).filter(Boolean);
   if (!parts.length) return '';
-  if (parts.length === 1) return parts[0];
-  const join = exitRulesForm.value.join === 'OR' ? ' || ' : ' && ';
-  return parts.map((p) => (p.includes(' && ') || p.includes(' || ') ? `(${p})` : p)).join(join);
-});
+  let body = parts[0];
+  if (parts.length > 1) {
+    const joiner = join === 'OR' ? ' || ' : ' && ';
+    body = parts.map((p) => (/^\(.*\)$/.test(p) ? p : '(' + p + ')')).join(joiner);
+  }
+  return '${' + body + '}';
+}
+
+/** 把 "a == 1 || a == 2" 拆出来的多行合并回「属于（多值）」，避免来回切换后规则行变多 */
+function mergeInRows(rows, join) {
+  const out = [];
+  (rows || []).forEach((r) => {
+    const prev = out[out.length - 1];
+    const toArr = (v) => (Array.isArray(v) ? v.slice() : String(v == null ? '' : v).split(/[,，]/).filter(Boolean));
+    const canMerge =
+      prev &&
+      r.value !== '' &&
+      prev.field === r.field &&
+      ((join === 'OR' && (prev.op === 'eq' || prev.op === 'in') && r.op === 'eq') || (join === 'AND' && (prev.op === 'neq' || prev.op === 'notin') && r.op === 'neq'));
+    if (canMerge) {
+      prev.op = join === 'OR' ? 'in' : 'notin';
+      const merged = toArr(prev.value).concat(toArr(r.value));
+      prev.value = merged.filter((v, i) => merged.indexOf(v) === i);
+      return;
+    }
+    out.push({ ...r });
+  });
+  return out;
+}
+
+/** 表达式 → 规则行（兼容 ${a > 3}、旧写法 ${a} > 3、裸写法 a > 3） */
+function parseConditionRules(cond) {
+  const raw = String(cond || '').trim();
+  if (!raw) return { join: 'AND', rows: [] };
+  const body = raw.replace(/\$\{([^}]*)\}/g, '$1').trim();
+  const rows = [];
+  const opMap = { '==': 'eq', '!=': 'neq', '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte' };
+  const segRe = /(not\s+empty\s+\w+)|(empty\s+\w+)|(\w+\s*(?:==|!=|>=|<=|>|<)\s*(?:'[^']*'|"[^"]*"|-?\d+(?:\.\d+)?))/g;
+  let m;
+  while ((m = segRe.exec(body)) !== null) {
+    const seg = String(m[0] || '').trim();
+    const empty = /^(not\s+empty|empty)\s+(\w+)$/.exec(seg);
+    if (empty) {
+      rows.push({ field: empty[2], op: /^not/i.test(empty[1]) ? 'notempty' : 'empty', value: '' });
+      continue;
+    }
+    const cmp = /^(\w+)\s*(==|!=|>=|<=|>|<)\s*(.+)$/.exec(seg);
+    if (!cmp) continue;
+    rows.push({ field: cmp[1], op: opMap[cmp[2]] || 'eq', value: cmp[3].replace(/^['"]|['"]$/g, '') });
+  }
+  const join = body.includes('||') ? 'OR' : 'AND';
+  return { join, rows: mergeInRows(rows, join) };
+}
+
+/** 换字段/换运算符后校正：运算符不适用就回退等值，值类型跟着变 */
+function normalizeCondRow(row) {
+  if (!row) return;
+  if (!condOpsFor(row).some((o) => o.value === row.op)) row.op = 'eq';
+  if (!condNeedsValue(row)) return;
+  if (isMultiValueOp(row.op)) {
+    if (!Array.isArray(row.value)) {
+      row.value = String(row.value == null ? '' : row.value)
+        .split(/[,，]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+  } else {
+    if (Array.isArray(row.value)) row.value = row.value[0] || '';
+    const opts = condValueOptions(row);
+    if (opts.length && !String(row.value == null ? '' : row.value)) row.value = opts[0].value;
+    if (condValueKind(row) === 'number' && row.value !== '' && row.value !== null && row.value !== undefined) row.value = Number(row.value);
+  }
+}
+
+/** 出口条件弹窗的多规则 → 最终表达式 */
+const exitRulesExpr = computed(() => rulesToExpr(exitRulesForm.value.rows, exitRulesForm.value.join));
+
+/** 出口条件弹窗：字段/运算符切换后的校正 */
+function onRuleFieldChange(row) {
+  normalizeCondRow(row);
+}
+function onRuleOpChange(row) {
+  normalizeCondRow(row);
+}
+
+// ---- 画布右侧属性面板的分支条件（与出口条件弹窗同一套规则模型） ----
+const condAdvanced = ref(false);
+const condJoin = ref('AND');
+const condRows = ref([{ field: '', op: 'eq', value: '' }]);
+const condExpr = computed(() => rulesToExpr(condRows.value, condJoin.value));
+
+/** 选中连线时把已有表达式反解为规则行；解析不了则进「表达式」模式，避免智能模式改坏已有条件 */
+function initConditionBuilder(cond) {
+  const text = String(cond || '').trim();
+  const parsed = parseConditionRules(text);
+  condJoin.value = parsed.join;
+  condRows.value = parsed.rows.length ? parsed.rows : [{ field: '', op: 'eq', value: '' }];
+  condAdvanced.value = !parsed.rows.length && !!text;
+}
+function addCondRow() {
+  condRows.value.push({ field: '', op: 'eq', value: '' });
+}
+function removeCondRow(idx) {
+  if (condRows.value.length <= 1) return;
+  condRows.value.splice(idx, 1);
+  syncCondition();
+}
+function onCondFieldChange(row) {
+  normalizeCondRow(row);
+  syncCondition();
+}
+function onCondOpChange(row) {
+  normalizeCondRow(row);
+  syncCondition();
+}
+
+/** 智能模式改动 → 立即写回连线的 conditionExpression（落库仍由右上「保存」完成） */
+function syncCondition() {
+  if (!selectedElement.value || condAdvanced.value) return;
+  const expr = condExpr.value;
+  selectedElement.value.condition = expr;
+  updateCondition();
+}
+/** 智能配置 ↔ 表达式 切换 */
+function onCondModeChange(val) {
+  if (!selectedElement.value) return;
+  if (val) {
+    // 进表达式模式：把刚配的规则带过去，避免用户重写
+    selectedElement.value.condition = condExpr.value;
+    updateCondition();
+    return;
+  }
+  const cond = String(selectedElement.value.condition || '').trim();
+  const parsed = parseConditionRules(cond);
+  if (!parsed.rows.length && cond) {
+    proxy.$modal.msgWarning('该条件较复杂，无法自动拆成规则，请继续用「表达式」编辑');
+    condAdvanced.value = true;
+    return;
+  }
+  condJoin.value = parsed.join;
+  condRows.value = parsed.rows.length ? parsed.rows : [{ field: '', op: 'eq', value: '' }];
+}
 
 /** 打开条件规则弹窗：从现有 conditionExpression 反解（简单表达式拆分为单规则） */
 function openExitRules(row) {
   exitRulesRow.value = row;
   exitRulesCopyFrom.value = '';
-  const cond = (row.condition || '').trim();
-  if (!cond) {
-    exitRulesForm.value = { join: 'AND', rows: [{ field: '', op: 'eq', value: '' }] };
-  } else {
-    // 反解：提取 ${var} 与比较/属于结构；复杂表达式保留为只读单行
-    const rows = [];
-    const re = /\$\{(\w+)\}\s*(==|!=|>=|<=|>|<)\s*'([^']*)'|\$\{(\w+)\}\s*(==|!=|>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)/g;
-    let m;
-    while ((m = re.exec(cond)) !== null) {
-      const field = m[1] || m[4];
-      const opSym = m[2] || m[5];
-      const val = m[3] != null ? m[3] : m[6];
-      const opMap = { '==': 'eq', '!=': 'neq', '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte' };
-      rows.push({ field, op: opMap[opSym] || 'eq', value: val });
-    }
-    if (!rows.length) {
-      rows.push({ field: '', op: 'eq', value: '' });
-    }
-    exitRulesForm.value = { join: cond.includes('||') ? 'OR' : 'AND', rows };
-  }
+  loadFormFieldOptions();
+  const parsed = parseConditionRules(row && row.condition);
+  exitRulesForm.value = parsed.rows.length ? parsed : { join: 'AND', rows: [{ field: '', op: 'eq', value: '' }] };
   exitRulesOpen.value = true;
 }
 
@@ -4755,23 +5536,8 @@ function applyCopyExitRules() {
   proxy.$modal.msgSuccess('已复制「' + (src.name || src.id) + '」的规则，可继续调整后保存');
 }
 function openExitRulesInto(cond) {
-  const condTrim = (cond || '').trim();
-  if (!condTrim) {
-    exitRulesForm.value = { join: 'AND', rows: [{ field: '', op: 'eq', value: '' }] };
-    return;
-  }
-  const rows = [];
-  const re = /\$\{(\w+)\}\s*(==|!=|>=|<=|>|<)\s*'([^']*)'|\$\{(\w+)\}\s*(==|!=|>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)/g;
-  let m;
-  while ((m = re.exec(condTrim)) !== null) {
-    const field = m[1] || m[4];
-    const opSym = m[2] || m[5];
-    const val = m[3] != null ? m[3] : m[6];
-    const opMap = { '==': 'eq', '!=': 'neq', '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte' };
-    rows.push({ field, op: opMap[opSym] || 'eq', value: val });
-  }
-  if (!rows.length) rows.push({ field: '', op: 'eq', value: '' });
-  exitRulesForm.value = { join: condTrim.includes('||') ? 'OR' : 'AND', rows };
+  const parsed = parseConditionRules(cond);
+  exitRulesForm.value = parsed.rows.length ? parsed : { join: 'AND', rows: [{ field: '', op: 'eq', value: '' }] };
 }
 
 /** 保存：最终表达式写回出口条件（conditionExpression），同时刷新表格 */
@@ -5108,6 +5874,21 @@ const graphicCanvasRef = ref(null);
 const paletteHostRef = ref(null);
 // 节点信息面板：右侧弹出，可收缩（点节点自动展开，手柄 ‹/› 切换）
 const propsCollapsed = ref(false);
+// 左侧节点面板（palette）：可收起，收起后画布铺满便于查看完整流程图
+const paletteCollapsed = ref(false);
+/** 收起/展开左侧节点面板：容器宽度变化后通知 bpmn-js 重算画布尺寸并适配视口 */
+function togglePalette() {
+  paletteCollapsed.value = !paletteCollapsed.value;
+  nextTick(() => {
+    if (!graphicModeler) return;
+    try {
+      graphicModeler.get('canvas').resized();
+    } catch (e) {
+      /* 画布不可用时忽略 */
+    }
+    safeFitViewport(graphicModeler);
+  });
+}
 const graphicFileRef = ref(null);
 let graphicModeler = null;
 // 编辑弹窗：三个二级页签与节点/出口清单
@@ -5132,6 +5913,10 @@ function openGraphicEditor(mode) {
   const resolved = MODE_ALIAS[mode] || 'graph';
   graphicMode.value = resolved;
   graphicTab.value = resolved;
+  // 每次打开编辑页，左侧节点面板保持展开
+  paletteCollapsed.value = false;
+  // 分支条件要能选表单字段（画布右侧属性面板 / 出口条件弹窗都靠它）
+  loadFormFieldOptions();
   graphicOpen.value = true;
 }
 const graphicMode = ref('graph');
@@ -5163,11 +5948,12 @@ async function onGraphicOpened() {
   await import('bpmn-js/dist/assets/bpmn-js.css');
   await import('bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css');
   const { default: BpmnModeler } = await import('bpmn-js/lib/Modeler.js');
+  const { default: LassoToolModule } = await import('diagram-js/lib/features/lasso-tool');
   const { default: WmReturnLayouter, isReturnExit } = await import('./WmReturnLayouter.js');
   wmReturnExitChecker = isReturnExit;
   graphicModeler = new BpmnModeler({
     container: graphicCanvasRef.value,
-    additionalModules: [bpmnChineseTranslate, wmPaletteModule, { layouter: ['type', WmReturnLayouter] }],
+    additionalModules: [bpmnChineseTranslate, wmPaletteModule, wmContextPadModule, wmLabelLockModule, LassoToolModule, wmBoxSelectModule, { layouter: ['type', WmReturnLayouter] }],
   });
   // 选中事件 → 属性面板互通（独立实例的选中元素共享同一面板状态）
   const gEventBus = graphicModeler.get('eventBus');
@@ -5189,11 +5975,21 @@ async function onGraphicOpened() {
     setTimeout(() => {
       normalizeEventSize(e.element);
       normalizeNodeSize(e.element);
+      placeEventLabelInside(e.element, graphicModeler);
+      // 标签元素（xxx_label）可能比图形晚一帧才建出来，再补一次
+      setTimeout(() => placeEventLabelInside(e.element, graphicModeler), 60);
     }, 0);
   });
   gEventBus.on('element.changed', (e) => {
     markWmShape(e.element, graphicModeler);
     scheduleWmDecoSweep(graphicModeler);
+  });
+  // 撤销/重做：节点表、出口表、退回出口样式都要跟着回退，
+  // 否则画布上已经恢复的节点在右侧表格里还是「消失」状态（工具栏按钮与 Ctrl+Z 同一路径）
+  gEventBus.on('commandStack.changed', () => {
+    refreshGraphicData();
+    applyWmReturnRoutes(graphicModeler);
+    applyWmCanvasMarkers(graphicModeler);
   });
   // palette 迁移优先执行：无论后续 XML 加载成败，图元面板都必须落在左侧独立节点面板里，
   // 不能因为加载异常而残留在画布内
@@ -5266,8 +6062,18 @@ async function resolveGraphicXml() {
 function graphicCmd(cmd) {
   if (!graphicModeler) return;
   const stack = graphicModeler.get('commandStack');
-  if (cmd === 'undo') stack.undo();
-  else stack.redo();
+  try {
+    if (cmd === 'undo') {
+      // 空栈时 undo() 会抛错，先看 canUndo，撤销到底就静默忽略
+      if (typeof stack.canUndo === 'function' && !stack.canUndo()) return;
+      stack.undo();
+    } else {
+      if (typeof stack.canRedo === 'function' && !stack.canRedo()) return;
+      stack.redo();
+    }
+  } catch (e) {
+    return;
+  }
   syncGraphicZoomPct();
 }
 /** 当前缩放百分比（工具栏下拉展示用，随缩放/适配实时刷新） */
@@ -5312,8 +6118,8 @@ function onGraphicMoreCmd(cmd) {
 function openGraphicHelp() {
   ElMessageBox.alert(
     '<div style="line-height:2;font-size:13px">' +
-      '<b>画布操作</b>：从左侧节点面板拖拽节点到画布；选中节点/连线后右侧显示属性。<br/>' +
-      '<b>快捷键</b>：Ctrl+Z 撤销、Ctrl+Y 重做、Del 删除选中、Ctrl+滚轮 缩放画布。<br/>' +
+      '<b>画布操作</b>：从左侧节点面板拖拽节点到画布；空白处按住左键拖动可框选多个节点/连线，随后拖动任一选中节点即可整体移动；选中节点/连线后右侧显示属性。<br/>' +
+      '<b>快捷键</b>：Ctrl+Z 撤销、Ctrl+Y（或 Ctrl+Shift+Z）重做、Del 删除选中、Ctrl+滚轮 缩放画布。<br/>' +
       '<b>保存</b>：点顶部「保存」同步回流程设计器并持久化；「关闭」不保存未提交的改动。<br/>' +
       '<b>导入/导出</b>：顶部工具条按钮，用于备份或迁移 BPMN XML。</div>',
     '流程图编辑 · 使用说明',
@@ -5327,11 +6133,32 @@ function graphicDelete() {
   const sel = graphicModeler.get('selection').get();
   if (sel && sel.length) graphicModeler.get('modeling').removeElements(sel);
 }
-/** 键盘快捷键：Del 删除选中元素（输入框聚焦时不触发），与工具栏删除同一动作 */
+/**
+ * 键盘快捷键：Del 删除选中元素、Ctrl+Z 撤销、Ctrl+Y / Ctrl+Shift+Z 重做（输入框聚焦时不触发）。
+ *
+ * 撤销为什么不靠 bpmn-js 自带的 keyboard 模块：diagram-js 的 Keyboard 只在传入
+ * `config.keyboard.bindTo` 时才 bind DOM（见 diagram-js/features/keyboard/Keyboard.js#attach），
+ * 本项目没传，所以内置的 Ctrl+Z 绑定是「死」的（用说明里写了 Ctrl+Z，实测按了没反应）。
+ * 这里在自己的 keydown 里直接走 commandStack，与工具栏「撤销/重做」同一动作。
+ */
 function onGraphicKeydown(e) {
   if (!graphicOpen.value || !graphicModeler) return;
   const tag = ((e.target && e.target.tagName) || '').toUpperCase();
   if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+  const key = (e.key || '').toLowerCase();
+  const cmdKey = (e.ctrlKey || e.metaKey) && !e.altKey;
+  // Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
+  if (cmdKey && key === 'z') {
+    e.preventDefault();
+    graphicCmd(e.shiftKey ? 'redo' : 'undo');
+    return;
+  }
+  // Ctrl+Y 重做
+  if (cmdKey && key === 'y') {
+    e.preventDefault();
+    graphicCmd('redo');
+    return;
+  }
   if (e.key === 'Delete') {
     const sel = graphicModeler.get('selection').get();
     if (sel && sel.length) {
@@ -5362,6 +6189,8 @@ async function graphicSave() {
     normalizeAllNodeSizes();
     applyWmReturnRoutes(graphicModeler);
     const { xml } = await graphicModeler.saveXML({ format: true });
+    // 保存前校验（独立编辑页同样拦截不支持的节点类型 / 未配办理人 / 缺结束节点）
+    if (!(await confirmDiagramIssues(validateDiagram(graphicModeler)))) return;
     // 同步回设计器画布（主 modeler 重新导入同一份模型；导入后必须重贴同款配色，否则会退回黑白样式）
     await syncToDesignerCanvas(xml);
     await updateModel({
@@ -5430,6 +6259,11 @@ const designActiveVersion = computed(() => {
 });
 const versionOpen = ref(false);
 const versionEdit = ref({ version: null, remark: '', setActive: false, versionActive: false, suspended: false });
+/** 历史版本内容查看弹框（只读：节点清单 + BPMN XML） */
+const versionViewOpen = ref(false);
+const versionViewLoading = ref(false);
+const versionViewTab = ref('nodes');
+const versionView = ref({ version: null, xml: '', nodes: [] });
 
 /** 加载该模型全部已部署版本（供版本标签行展示） */
 function loadDesignVersions() {
@@ -5438,7 +6272,8 @@ function loadDesignVersions() {
     designVersions.value = [];
     return;
   }
-  listDefinition({ modelKey: key, pageNum: 1, pageSize: 50 })
+  // onlyActive=false：拉全该 Key 的历史版本（后端默认按 Key 聚合只留 1 条，会导致版本标签只剩一个）
+  listDefinition({ modelKey: key, pageNum: 1, pageSize: 100, onlyActive: false })
     .then((res) => {
       designVersions.value = res.rows || [];
     })
@@ -5479,6 +6314,87 @@ function submitVersionEdit() {
     })
     .catch((e) => {
       proxy.$modal.msgError('版本信息更新失败：' + (e?.message || e || '请稍后重试'));
+    });
+}
+
+/** 从 BPMN XML 解析用户任务节点（名称/ID/扩展配置摘要），供历史版本只读查看 */
+function parseVersionNodes(xml) {
+  if (!xml) return [];
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(xml, 'application/xml');
+  } catch (e) {
+    return [];
+  }
+  // localName 忽略命名空间前缀：同一份 BPMN 可能写成 bpmn:userTask / bpmn2:userTask / 默认命名空间的 userTask
+  return Array.from(doc.getElementsByTagName('*'))
+    .filter((el) => el.localName === 'userTask')
+    .map((el) => {
+      const ext = Array.from(el.children).find((n) => n.localName === 'extensionElements');
+      let config = '';
+      if (ext) {
+        config = Array.from(ext.getElementsByTagName('*'))
+          .filter((n) => n.children.length === 0 && (n.textContent || '').trim())
+          .map((n) => (n.getAttribute('name') ? n.getAttribute('name') + '=' : '') + (n.textContent || '').trim())
+          .join('; ');
+      }
+      return {
+        name: el.getAttribute('name') || el.getAttribute('id') || '未命名节点',
+        id: el.getAttribute('id') || '',
+        config: config || '—',
+      };
+    });
+}
+
+/** 查看历史版本内容（节点清单 + XML） */
+function openVersionView() {
+  const v = designVersionSelected.value;
+  if (!v) return;
+  versionViewLoading.value = true;
+  versionView.value = { version: v.version, xml: '', nodes: [] };
+  versionViewTab.value = 'nodes';
+  versionViewOpen.value = true;
+  getDefinitionXml(v.modelId)
+    .then((res) => {
+      const xml = res.data || '';
+      versionView.value = { version: v.version, xml, nodes: parseVersionNodes(xml) };
+    })
+    .catch((e) => proxy.$modal.msgError('读取版本内容失败：' + (e?.message || e)))
+    .finally(() => {
+      versionViewLoading.value = false;
+    });
+}
+
+/** 把历史版本 XML 载入当前画布（不自动保存，用户确认后手动「保存」） */
+function loadVersionIntoDesigner() {
+  const v = designVersionSelected.value;
+  if (!v) return;
+  proxy.$modal
+    .confirm('将把 V' + v.version + ' 的流程图载入当前设计器，当前画布内容会被替换且不会自动保存，确认继续？')
+    .then(() => getDefinitionXml(v.modelId))
+    .then(async (res) => {
+      const xml = (res.data || '').trim();
+      if (!xml) throw new Error('该版本没有可用的 BPMN XML');
+      if (!/<bpmndi:BPMNDiagram[\s>]/.test(xml)) throw new Error('该版本 XML 缺少图形段（DI），无法载入画布');
+      versionOpen.value = false;
+      designTab.value = 'flow';
+      await nextTick();
+      // 首次打开设计器时画布实例可能还没创建（页签懒渲染），这里补一次初始化，
+      // 否则 importXML 无处可导，用户会看到一个「提示成功但画布没变」的假成功
+      if (!bpmnModeler) {
+        await onDesignerOpened();
+      }
+      if (!bpmnModeler) throw new Error('设计器画布未就绪，请关闭设计器后重新打开再试');
+      await syncToDesignerCanvas(normalizeDiagramSizes(xml));
+      // 画布即权威：回读一次让节点数/空状态等派生信息跟手刷新
+      try {
+        const { xml: saved } = await bpmnModeler.saveXML({ format: true });
+        if (saved) designModel.value.bpmnXml = saved;
+      } catch (e) {}
+      proxy.$modal.msgSuccess('已载入 V' + v.version + ' 到设计器，确认无误后点右上「保存」');
+    })
+    .catch((e) => {
+      if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('载入失败：' + (e?.message || e));
     });
 }
 
@@ -5526,6 +6442,21 @@ const flowEmpty = computed(() => {
     /<(?:bpmn2?:)?(startEvent|endEvent|userTask|task|serviceTask|sendTask|receiveTask|manualTask|scriptTask|businessRuleTask|callActivity|subProcess|exclusiveGateway|parallelGateway|inclusiveGateway|eventBasedGateway|complexGateway|intermediateCatchEvent|intermediateThrowEvent|boundaryEvent)[\s>/]/i;
   return !nodeRe.test(xml);
 });
+/** 流转设置工具条：流程节点数（与 flowEmpty 同一套节点正则，只把 test 换成全局统计） */
+const flowNodeCount = computed(() => {
+  const xml = designModel.value && designModel.value.bpmnXml ? designModel.value.bpmnXml : '';
+  const nodeRe =
+    /<(?:bpmn2?:)?(?:startEvent|endEvent|userTask|task|serviceTask|sendTask|receiveTask|manualTask|scriptTask|businessRuleTask|callActivity|subProcess|exclusiveGateway|parallelGateway|inclusiveGateway|eventBasedGateway|complexGateway|intermediateCatchEvent|intermediateThrowEvent|boundaryEvent)[\s>/]/gi;
+  return (xml.match(nodeRe) || []).length;
+});
+/** 流转设置画布：滚轮缩放/拖拽平移之后一键回到「适应画布」 */
+function fitFlowCanvas() {
+  if (!bpmnModeler) return;
+  try {
+    bpmnModeler.get('canvas').zoom('fit-viewport', 'auto');
+    applyWmCanvasMarkers(bpmnModeler);
+  } catch (e) {}
+}
 /** 表单管理页签：当前关联表单详情（来自表单选项，兜底用模型详情字段） */
 const boundFormInfo = computed(() => {
   const fid = designModel.value.formId;
@@ -5572,27 +6503,7 @@ async function saveDesigner() {
     }
     const { xml } = await bpmnModeler.saveXML({ format: true });
     // 保存前校验
-    const issues = validateDiagram();
-    if (issues.length) {
-      try {
-        await ElMessageBox.confirm(
-          () =>
-            h('div', null, [
-              h('p', { style: 'margin-bottom:8px;font-weight:600' }, '存在 ' + issues.length + ' 个问题：'),
-              h(
-                'ul',
-                { style: 'padding-left:18px;margin:0;color:#e6a23c' },
-                issues.map((t) => h('li', null, t)),
-              ),
-              h('p', { style: 'margin-top:10px;color:#909399;font-size:13px' }, '仍可保存，但该流程部署后可能无法正常发起。'),
-            ]),
-          '保存前校验提醒',
-          { confirmButtonText: '仍要保存', cancelButtonText: '返回修改', type: 'warning', draggable: true },
-        );
-      } catch (e) {
-        return; // 用户选择返回修改
-      }
-    }
+    if (!(await confirmDiagramIssues(validateDiagram()))) return;
     await updateModel({
       modelId: designModel.value.modelId,
       modelName: designModel.value.modelName,
@@ -6018,6 +6929,62 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .design-basic-form {
   max-width: 660px;
 }
+/* 高级设置页的流程编号摘要行：状态 + 段结构 + 配置入口，详细配置收在弹框里 */
+.no-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafbfe;
+}
+.no-rule-row .nr-main {
+  flex: 1;
+  min-width: 0;
+}
+.no-rule-row .nr-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.no-rule-row .nr-segs {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #1d4ed8;
+  word-break: break-all;
+}
+.no-rule-row > .el-button {
+  flex: none;
+}
+.no-rule-row .nr-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+/* 弹框内解除设计页 660px 的窄栏限制，段编辑器才排得开 */
+.nr-dialog-form.design-basic-form {
+  max-width: none;
+}
+.nr-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.nr-dialog-footer .nr-footer-tip {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: left;
+}
+.nr-dialog-footer .nr-footer-btns {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
 
 /* 流程编号示例预览：等宽字体，一眼看出拼出来的单号 */
 .no-preview {
@@ -6157,7 +7124,8 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   color: #1d4ed8;
   font-weight: 600;
 }
-.version-tab .vt-badge {
+.version-tab .vt-badge,
+.vt-badge {
   background: #10b981;
   color: #fff;
   font-size: 10px;
@@ -6168,6 +7136,25 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   font-size: 12px;
   color: #94a3b8;
   margin-left: 4px;
+}
+/* 版本多了折叠入口：与标签同视觉，但用虚线区分「不是某个版本」 */
+.version-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border: 1px dashed #94a3b8;
+  border-radius: 14px;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.version-more:hover {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+.version-all-btn {
+  margin-left: 2px;
 }
 
 /* 表单管理二级页签：基本信息/编辑字段 */
@@ -6212,10 +7199,60 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
 }
 .graphic-main .designer-canvas {
   flex: 1;
   min-width: 0;
+}
+/* 左侧节点面板收起/展开：画布左边缘悬浮胶囊按钮（左右箭头 + 文案，收起后提示展开） */
+.palette-toggle {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 30px;
+  padding: 0 10px 0 7px;
+  border: 1px solid #cfe0f5;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.14);
+  color: #3b82f6;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 0.84, 0.44, 1);
+  .el-icon {
+    font-size: 14px;
+    font-weight: 700;
+  }
+}
+.palette-toggle:hover {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.22);
+  transform: translateY(-50%) scale(1.04);
+}
+.palette-toggle:active {
+  transform: translateY(-50%) scale(0.98);
+}
+/* 收起状态：按钮贴住画布左边缘，突出「展开」 */
+.palette-toggle.is-collapsed {
+  left: 12px;
+  color: #fff;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.35);
+}
+.palette-toggle.is-collapsed:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
 }
 .props-handle {
   width: 16px;
@@ -6241,6 +7278,111 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .graphic-main .designer-props {
   width: 320px;
   flex: none;
+}
+/* ===== 分支条件：选字段/运算符/值 配置区（属性面板与出口条件弹窗共用） ===== */
+.cond-section {
+  margin: 6px 0 12px;
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+.cond-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cond-head-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.cond-row {
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+}
+.cond-row + .cond-row {
+  margin-top: 8px;
+}
+.cond-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cond-line + .cond-line {
+  margin-top: 6px;
+}
+.cond-when {
+  flex: none;
+  width: 32px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+.cond-join {
+  flex: none;
+  width: 64px;
+}
+.cond-field {
+  flex: 1;
+  min-width: 0;
+}
+.cond-del {
+  flex: none;
+  padding: 0 2px;
+}
+.cond-op {
+  flex: none;
+  width: 108px;
+}
+.cond-value {
+  flex: 1;
+  min-width: 0;
+}
+.cond-novalue {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.cond-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.cond-preview {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px dashed #bfdbfe;
+  border-radius: 6px;
+  background: #fff;
+}
+.cond-preview-label {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: #64748b;
+}
+.cond-preview code {
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: #2563eb;
+  word-break: break-all;
+}
+.cond-opt-label {
+  float: left;
+}
+.cond-opt-field {
+  float: right;
+  margin-left: 12px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 /* 顶部模式徽标：打开编辑页后一眼看出当前在编辑哪一类 */
 .mode-badge {
@@ -6351,17 +7493,101 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   font-size: 11px;
   font-weight: 700;
 }
-/* 流转设置：仅流程图，右侧「编辑」绝对定位锚定页签头（top:0 + 同高 + 垂直居中） */
+/* ===== 流转设置：顶部工具条 + 自适应画布 =====
+ 高度不再用 calc(100vh - 140px) 估算：实测（窗口 738px 高）画布底部到 777px，
+ 而弹窗体底部只有 746px，多出的 31px 被 overflow 裁掉。
+ 现在由 .designer-tabs.flow-active 参与弹窗体的纵向 flex 分配，高度精确等于剩余空间。 */
 .flow-tabbar {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
-.flow-tabbar .flow-tab-actions {
-  position: absolute;
-  right: 8px;
-  top: 0;
+.flow-toolbar {
+  flex: none;
   height: 36px;
   display: flex;
   align-items: center;
+  gap: 10px;
+  padding: 0 10px 0 12px;
+  background: #f8fafc;
+  border: 1px solid #e8eef7;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+.flow-toolbar .ft-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.flow-toolbar .ft-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+.flow-toolbar .ft-count {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #eff6ff;
+  font-size: 12px;
+  color: #2563eb;
+  white-space: nowrap;
+}
+.flow-toolbar .ft-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 窄窗口（分屏/小屏）优先保证标题与按钮完整，操作提示让位，避免被压成半截省略号 */
+@media (max-width: 1200px) {
+  .flow-toolbar .ft-sub {
+    display: none;
+  }
+}
+.flow-toolbar .ft-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flow-toolbar .ft-right .el-button + .el-button {
+  margin-left: 0;
+}
+.flow-tabbar > .designer-body {
+  position: relative;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+/* 流转设置激活时，把 el-tabs 与内容区接入弹窗体的纵向 flex，画布高度精确吃满剩余空间 */
+.designer-tabs.flow-active {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.designer-tabs.flow-active :deep(.el-tabs__content) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.designer-tabs.flow-active :deep(.el-tab-pane) {
+  height: 100%;
+}
+/* 收紧页签横线到工具条之间的距离（原来 15px 页签外边距 + 14px 内容内边距 = 29px 空白带） */
+.designer-tabs.flow-active :deep(.el-tabs__header) {
+  margin-bottom: 10px;
+}
+.designer-tabs.flow-active :deep(.el-tab-pane) {
+  padding-top: 8px;
 }
 /* 单一模式容器：直接撑满 graphic-body（不再有二级 el-tabs 包裹层） */
 .graphic-pane,
@@ -6603,6 +7829,19 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .designer-canvas :deep(.wm-task.djs-shape:hover .djs-visual rect) {
   fill: #3b82f6;
 }
+/* 发起人（重新提交）节点：灰白虚线卡片（正常流转不经过，只在驳回退回发起人时使用） */
+.designer-canvas :deep(.wm-initiator.djs-shape .djs-visual rect) {
+  fill: #f8fafc;
+  stroke: #94a3b8;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+.designer-canvas :deep(.wm-initiator.djs-shape:hover .djs-visual rect) {
+  fill: #eef2f7;
+}
+.designer-canvas :deep(.wm-initiator.djs-shape .djs-visual text) {
+  fill: #475569;
+}
 /* 网关：橙色菱形 + 白色网关符号（互斥 ✕ / 并行 ＋ / 相容 ○） */
 .designer-canvas :deep(.wm-gateway.djs-shape .djs-visual polygon) {
   fill: #f0a63c;
@@ -6624,6 +7863,22 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 /* 装饰图元不参与鼠标命中，避免影响节点拖拽/选中 */
 .designer-canvas :deep(.wm-deco) {
   pointer-events: none;
+}
+/* 开始/结束事件的名字是 bpmn-js 的「外部标签」，是一个独立的 label 元素；
+ * 用户任务的名字画在矩形内部、和节点同属一个元素（点哪都选整块卡片）。
+ * 事件名被搬进圆圈后，点名字会单独选中这段文字（画面上弹出一个套在圆圈里的小方框），
+ * 与「图标里的小标识是整个节点的一部分」的观感不一致。
+ * 这里让事件名整体不吃鼠标事件（含内部 djs-hit），命中穿透到下层的事件图形：
+ * 点名字 / 点左上角的小三角（小方块）都选中整个开始（结束）节点，与用户任务完全一致；
+ * 改名不受影响 —— bpmn-js 双击图形本身就会激活它自己的 label 编辑器。 */
+.designer-canvas :deep(.wm-event-label),
+.designer-canvas :deep(.wm-event-label *) {
+  pointer-events: none !important;
+}
+/* 开始/结束事件的名称已搬进圆内（utils/bpmnSizes#normalizeEventLabelPositions 改写 BPMNLabel 坐标），
+ * 与用户任务同款白字粗体（颜色由 markEventLabel 写内联样式），字号略收避免贴边 */
+.designer-canvas :deep(.wm-event-label text.djs-label) {
+  font-size: 12px !important;
 }
 /* 出口拖动排序手柄（十字箭头，cursor:move） */
 .drag-handle {
@@ -6722,5 +7977,20 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .designer-dialog .graphic-main .designer-canvas {
   height: 100%;
   min-height: 0;
+}
+/* 历史版本只读 XML 预览 */
+.version-xml {
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--ink-900, #0f172a);
+  color: #cbd5e1;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

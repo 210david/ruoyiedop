@@ -39,8 +39,6 @@ import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
 import com.ruoyi.flowable.domain.dto.FlowStartDTO;
-import com.ruoyi.flowable.domain.FlowProcdefExt;
-import com.ruoyi.flowable.mapper.FlowProcdefExtMapper;
 import com.ruoyi.flowable.service.IFlowProcessService;
 
 /**
@@ -68,6 +66,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     /** 管理员干预（节点跳转）的批注前缀 */
     private static final String ADMIN_INTERVENE_PREFIX = "【intervene】";
 
+    /** 管理员复活已结束流程的批注前缀（复活 = 重建运行实例并停在指定节点） */
+    private static final String ADMIN_REVIVE_PREFIX = "【revive】";
+
     @Autowired
     private RuntimeService runtimeService;
 
@@ -87,9 +88,6 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     private com.ruoyi.flowable.mapper.FlowLeaveMapper flowLeaveMapper;
 
     @Autowired
-    private FlowProcdefExtMapper flowProcdefExtMapper;
-
-    @Autowired
     private com.ruoyi.system.service.ISysUserService sysUserService;
 
     @Autowired
@@ -98,9 +96,17 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Autowired
     private com.ruoyi.flowable.service.IFlowFormService flowFormService;
 
+    /** 流程定义版本解析（活动版本优先） */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
+
     /** 流程图「已查看人员」记录（泛微式：谁打开过该节点但还没办理） */
     @Autowired
     private com.ruoyi.flowable.service.FlowNodeViewService flowNodeViewService;
+
+    /** 流程请求登记（流程实例 -> 短数字流程编号） */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowRequestService flowRequestService;
 
     /** 审批意见类型标识 */
 
@@ -108,29 +114,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Transactional
     public String startProcess(FlowStartDTO dto)
     {
-        // 发起路由：优先取活动版本（用户指定的当前启用版本），未设置或已挂起时回退"启用中的最新版本"
-        ProcessDefinition definition = null;
-        List<FlowProcdefExt> extList = flowProcdefExtMapper.selectFlowProcdefExtByProcKey(dto.getProcessDefinitionKey());
-        FlowProcdefExt activeExt = (extList == null) ? null
-                : extList.stream().filter(e -> "1".equals(e.getActiveFlag())).findFirst().orElse(null);
-        if (activeExt != null && "1".equals(activeExt.getActiveFlag()))
-        {
-            ProcessDefinition activeDef = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(activeExt.getProcdefId()).singleResult();
-            if (activeDef != null && !activeDef.isSuspended())
-            {
-                definition = activeDef;
-            }
-        }
-        if (definition == null)
-        {
-            definition = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionKey(dto.getProcessDefinitionKey())
-                    .orderByProcessDefinitionVersion().desc()
-                    .list().stream()
-                    .filter(d -> !d.isSuspended())
-                    .findFirst().orElse(null);
-        }
+        // 发起路由：优先取活动版本（用户指定的当前启用版本），由 FlowDefinitionResolver 统一口径
+        ProcessDefinition definition = flowDefinitionResolver.requireLaunchable(dto.getProcessDefinitionKey());
         if (definition == null)
         {
             throw new ServiceException("流程定义不存在、未部署或所有版本均已停用：" + dto.getProcessDefinitionKey());
@@ -160,6 +145,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         HistoricProcessInstanceQuery hisQuery = historyService.createHistoricProcessInstanceQuery()
                 .startedBy(String.valueOf(userId))
                 .orderByProcessInstanceStartTime().desc();
+        if (query.getRequestId() != null)
+        {
+            // 流程编号（短数字）反查引擎实例ID，未登记时按数字实例ID兜底
+            String requestInstanceId = flowRequestService.instanceIdOf(query.getRequestId());
+            hisQuery.processInstanceId(StringUtils.isNotEmpty(requestInstanceId)
+                    ? requestInstanceId : String.valueOf(query.getRequestId()));
+        }
         if (StringUtils.isNotEmpty(query.getProcessDefinitionName()))
         {
             hisQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
@@ -206,6 +198,11 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         if (StringUtils.isNotEmpty(query.getTitle())
                 && (fi.getTitle() == null || !fi.getTitle().contains(query.getTitle())))
+        {
+            return false;
+        }
+        if (StringUtils.isNotEmpty(query.getProcessNo())
+                && (fi.getProcessNo() == null || !fi.getProcessNo().contains(query.getProcessNo())))
         {
             return false;
         }
@@ -268,6 +265,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         if (StringUtils.isNotEmpty(query.getInstanceId()))
         {
             hisQuery.processInstanceId(query.getInstanceId());
+        }
+        if (query.getRequestId() != null)
+        {
+            // 流程编号（短数字）反查引擎实例ID，未登记时按数字实例ID兜底
+            String requestInstanceId = flowRequestService.instanceIdOf(query.getRequestId());
+            hisQuery.processInstanceId(StringUtils.isNotEmpty(requestInstanceId)
+                    ? requestInstanceId : String.valueOf(query.getRequestId()));
         }
         if ("running".equals(query.getStatus()))
         {
@@ -340,6 +344,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         if (StringUtils.isNotEmpty(query.getInstanceId()))
         {
             hisQuery.processInstanceId(query.getInstanceId());
+        }
+        if (query.getRequestId() != null)
+        {
+            // 流程编号（短数字）反查引擎实例ID，未登记时按数字实例ID兜底
+            String requestInstanceId = flowRequestService.instanceIdOf(query.getRequestId());
+            hisQuery.processInstanceId(StringUtils.isNotEmpty(requestInstanceId)
+                    ? requestInstanceId : String.valueOf(query.getRequestId()));
         }
         if ("running".equals(query.getStatus()))
         {
@@ -428,7 +439,7 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 Map<String, Object> m = new java.util.LinkedHashMap<>();
                 m.put("taskId", task.getId());
-                m.put("taskName", task.getName());
+                m.put("taskName", taskDisplayName(task.getProcessDefinitionId(), task.getTaskDefinitionKey(), task.getName()));
                 m.put("taskDefinitionKey", task.getTaskDefinitionKey());
                 m.put("assignee", task.getAssignee());
                 m.put("assigneeName", StringUtils.isEmpty(task.getAssignee()) ? null
@@ -1440,14 +1451,21 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             throw new ServiceException("退回目标环节不存在或不是用户任务环节");
         }
         UserTask targetTask = (UserTask) targetEl;
-        // 安全校验：只允许退回「已经走过的环节」或「发起人（申请）节点」，防止前端乱传节点ID
+        // 安全校验：只允许退回「当前环节之前已经走过的环节」或「发起人（申请）节点」，防止前端乱传节点ID
+        java.util.Set<String> upstream = upstreamActivityIds(model, task.getTaskDefinitionKey());
+        if (!upstream.contains(targetId))
+        {
+            throw new ServiceException("只能退回到当前环节之前已经办理过的环节");
+        }
         boolean initiatorNode = isInitiatorNode(targetTask);
         if (!initiatorNode && !isVisitedUserTask(instanceId, targetId))
         {
             throw new ServiceException("只能退回到已经流转过的环节");
         }
-        String targetName = StringUtils.isNotEmpty(targetTask.getName()) ? targetTask.getName() : targetId;
-        String fromName = StringUtils.isNotEmpty(task.getName()) ? task.getName() : task.getTaskDefinitionKey();
+        String targetName = initiatorNode ? startEventDisplayName(model)
+                : StringUtils.isNotEmpty(targetTask.getName()) ? targetTask.getName() : targetId;
+        String fromName = taskDisplayName(task.getProcessDefinitionId(), task.getTaskDefinitionKey(),
+                StringUtils.isNotEmpty(task.getName()) ? task.getName() : task.getTaskDefinitionKey());
         String userId = String.valueOf(SecurityUtils.getUserId());
         String userName = resolveUserNickname(userId);
         String opinion = dto.getComment() == null ? "" : dto.getComment();
@@ -1528,13 +1546,16 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         String instanceId = task.getProcessInstanceId();
         String currentKey = task.getTaskDefinitionKey();
-        // 1) 发起人（申请）节点：部署时注入的「提交申请」节点，正常发起不经过，只作为退回目标
+        // 只允许退回到当前环节的上游（之前流经的环节），不允许往后面的节点退
+        java.util.Set<String> upstream = upstreamActivityIds(model, currentKey);
+        // 1) 发起人（申请）节点：部署时注入的「发起人（重新提交）」节点，正常发起不经过，只作为退回目标
         UserTask initiatorNode = findInitiatorNode(model);
-        if (initiatorNode != null && !initiatorNode.getId().equals(currentKey))
+        if (initiatorNode != null && !initiatorNode.getId().equals(currentKey)
+                && upstream.contains(initiatorNode.getId()))
         {
             Map<String, Object> m = new java.util.LinkedHashMap<>();
             m.put("id", initiatorNode.getId());
-            m.put("name", StringUtils.isNotEmpty(initiatorNode.getName()) ? initiatorNode.getName() : "提交申请");
+            m.put("name", startEventDisplayName(model));
             m.put("type", FlowReturnConstants.NODE_TYPE_INITIATOR);
             m.put("lastHandler", resolveUserNickname(getInstanceStartUser(instanceId)));
             nodes.add(m);
@@ -1552,7 +1573,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             for (HistoricActivityInstance act : acts)
             {
                 String id = act.getActivityId();
-                if (StringUtils.isEmpty(id) || id.equals(currentKey) || visited.containsKey(id))
+                if (StringUtils.isEmpty(id) || id.equals(currentKey) || visited.containsKey(id)
+                        || !upstream.contains(id))
+                {
+                    continue;
+                }
+                // 发起人节点已作为「开始」单独放在首位，历史里不要再重复出一条「重新提交」
+                if (FlowReturnConstants.INITIATOR_NODE_ID.equals(id))
                 {
                     continue;
                 }
@@ -1575,6 +1602,69 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         nodes.addAll(visited.values());
         return nodes;
+    }
+
+    /** 计算当前节点的所有上游节点ID（沿连线向前回溯），用于保证「只能往前面退」 */
+    private java.util.Set<String> upstreamActivityIds(BpmnModel model, String currentKey)
+    {
+        java.util.Set<String> result = new java.util.HashSet<>();
+        FlowElement current = model.getFlowElement(currentKey);
+        if (!(current instanceof org.flowable.bpmn.model.FlowNode))
+        {
+            return result;
+        }
+        java.util.Deque<String> stack = new java.util.ArrayDeque<>();
+        for (org.flowable.bpmn.model.SequenceFlow sf
+                : ((org.flowable.bpmn.model.FlowNode) current).getIncomingFlows())
+        {
+            stack.push(sf.getSourceRef());
+        }
+        while (!stack.isEmpty())
+        {
+            String id = stack.pop();
+            if (StringUtils.isEmpty(id) || !result.add(id))
+            {
+                continue;
+            }
+            FlowElement element = model.getFlowElement(id);
+            if (element instanceof org.flowable.bpmn.model.FlowNode)
+            {
+                for (org.flowable.bpmn.model.SequenceFlow sf
+                        : ((org.flowable.bpmn.model.FlowNode) element).getIncomingFlows())
+                {
+                    stack.push(sf.getSourceRef());
+                }
+            }
+        }
+        return result;
+    }
+
+    /** 退回选项对用户显示原开始事件名称，不暴露内部的「重新提交」技术节点 */
+    private String startEventDisplayName(BpmnModel model)
+    {
+        if (model.getMainProcess() != null)
+        {
+            for (org.flowable.bpmn.model.StartEvent start
+                    : model.getMainProcess().findFlowElementsOfType(org.flowable.bpmn.model.StartEvent.class, true))
+            {
+                if (StringUtils.isNotEmpty(start.getName()))
+                {
+                    return start.getName();
+                }
+            }
+        }
+        return "开始";
+    }
+
+    /** 任务显示名称：发起人（申请）节点统一显示开始节点名称，不向用户暴露「重新提交」技术节点 */
+    private String taskDisplayName(String processDefinitionId, String taskDefinitionKey, String rawName)
+    {
+        if (!FlowReturnConstants.INITIATOR_NODE_ID.equals(taskDefinitionKey))
+        {
+            return rawName;
+        }
+        BpmnModel model = repositoryService.getBpmnModel(processDefinitionId);
+        return model == null ? rawName : startEventDisplayName(model);
     }
 
     /** 查找发起人（申请）节点：部署时注入、带 initiatorNode 扩展属性的用户任务 */
@@ -1781,7 +1871,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             FlowTask start = new FlowTask();
             start.setTaskId("__start__");
-            start.setTaskName("发起");
+            // 与退回后的发起人节点保持一致，统一显示开始节点的名称
+            BpmnModel startModel = repositoryService.getBpmnModel(hpi.getProcessDefinitionId());
+            start.setTaskName(startModel == null ? "开始" : startEventDisplayName(startModel));
             start.setInstanceId(instanceId);
             start.setCreateTime(hpi.getStartTime());
             start.setEndTime(hpi.getStartTime());
@@ -2084,7 +2176,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 continue;
             }
-            Map<String, Object> node = nodeEntry(nodes, nodeId, task.getName());
+            Map<String, Object> node = nodeEntry(nodes, nodeId,
+                    taskDisplayName(task.getProcessDefinitionId(), nodeId, task.getName()));
             String assignee = task.getAssignee();
             if (task.getEndTime() != null)
             {
@@ -2319,6 +2412,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     {
         FlowInstance fi = new FlowInstance();
         fi.setInstanceId(hpi.getId());
+        // 流程编号：短数字请求ID（对标泛微 requestid），未登记时即时补登记，避免列表出现长UUID
+        Long requestId = flowRequestService.requestIdOf(hpi.getId());
+        if (requestId == null)
+        {
+            requestId = flowRequestService.register(hpi.getId(), hpi.getProcessDefinitionKey(), hpi.getBusinessKey());
+        }
+        fi.setRequestId(requestId);
         fi.setProcessDefinitionId(hpi.getProcessDefinitionId());
         fi.setProcessDefinitionKey(hpi.getProcessDefinitionKey());
         fi.setProcessDefinitionName(hpi.getProcessDefinitionName());
@@ -2350,7 +2450,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     .processInstanceId(hpi.getId()).unfinished().list();
             if (!active.isEmpty())
             {
-                fi.setCurrentActivityName(active.get(0).getActivityName());
+                HistoricActivityInstance current = active.get(0);
+                fi.setCurrentActivityName(taskDisplayName(hpi.getProcessDefinitionId(),
+                        current.getActivityId(), current.getActivityName()));
             }
         }
         else if (StringUtils.isNotEmpty(hpi.getDeleteReason()))
@@ -2393,7 +2495,7 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     {
         FlowTask ft = new FlowTask();
         ft.setTaskId(task.getId());
-        ft.setTaskName(task.getName());
+        ft.setTaskName(taskDisplayName(task.getProcessDefinitionId(), task.getTaskDefinitionKey(), task.getName()));
         ft.setTaskDefinitionKey(task.getTaskDefinitionKey());
         ft.setInstanceId(task.getProcessInstanceId());
         ft.setProcessDefinitionId(task.getProcessDefinitionId());
@@ -2415,7 +2517,7 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     {
         FlowTask ft = new FlowTask();
         ft.setTaskId(task.getId());
-        ft.setTaskName(task.getName());
+        ft.setTaskName(taskDisplayName(task.getProcessDefinitionId(), task.getTaskDefinitionKey(), task.getName()));
         ft.setTaskDefinitionKey(task.getTaskDefinitionKey());
         ft.setInstanceId(task.getProcessInstanceId());
         ft.setProcessDefinitionId(task.getProcessDefinitionId());
@@ -2479,7 +2581,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     .processInstanceId(hpi.getId()).unfinished().list();
             if (!active.isEmpty())
             {
-                ft.setCurrentTaskName(active.get(0).getActivityName());
+                HistoricActivityInstance current = active.get(0);
+                ft.setCurrentTaskName(taskDisplayName(hpi.getProcessDefinitionId(),
+                        current.getActivityId(), current.getActivityName()));
             }
         }
         else if (StringUtils.isNotEmpty(hpi.getDeleteReason()))
@@ -2605,5 +2709,402 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         tree.addAll(byCategory.values());
         return tree;
+    }
+
+    // ==================== 已结束流程的后续处理：复活 / 重新发起 ====================
+
+    /**
+     * 复活已结束/已中断的流程并停在指定节点。
+     *
+     * <p>为什么不能沿用「干预」：Flowable 流程结束时 act_ru_execution/act_ru_task 被清空，
+     * changeActivityState 没有可迁移的执行对象。因此这里按「还原变量 → 重新启动 → 搬迁到目标节点」
+     * 三步走，businessKey 保持原值，业务表那一条数据继续沿用（原流程编号不变），
+     * 旧实例的历史记录不动，便于追溯。</p>
+     */
+    @Override
+    @Transactional
+    public Map<String, Object> reviveInstance(String instanceId, String targetActivityId, Long assigneeId,
+            String comment)
+    {
+        if (StringUtils.isEmpty(instanceId) || StringUtils.isEmpty(targetActivityId))
+        {
+            throw new ServiceException("流程实例与目标节点不能为空");
+        }
+        if (runtimeService.createProcessInstanceQuery().processInstanceId(instanceId).singleResult() != null)
+        {
+            throw new ServiceException("流程仍在运行中，请使用「干预」跳转节点");
+        }
+        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(instanceId).singleResult();
+        if (hpi == null)
+        {
+            throw new ServiceException("流程实例不存在");
+        }
+        ProcessDefinition definition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionId(hpi.getProcessDefinitionId()).singleResult();
+        if (definition == null)
+        {
+            throw new ServiceException("流程定义不存在或已删除，无法复活");
+        }
+        if (definition.isSuspended())
+        {
+            throw new ServiceException("流程定义「" + definition.getName() + "」已挂起，请先激活后再复活");
+        }
+        BpmnModel model = repositoryService.getBpmnModel(definition.getId());
+        FlowElement target = model == null ? null : model.getFlowElement(targetActivityId);
+        if (!(target instanceof UserTask))
+        {
+            throw new ServiceException("目标节点不是用户任务节点，无法复活");
+        }
+        String targetName = StringUtils.isNotEmpty(target.getName()) ? target.getName() : targetActivityId;
+
+        // 还原历史变量：业务字段、审批过程中产生的变量都带回来，避免复活后表单/分支条件取值缺失
+        Map<String, Object> vars = readHistoricVariables(instanceId);
+        vars.put("reviveFromInstanceId", instanceId);
+
+        String title = StringUtils.isNotEmpty(hpi.getName()) ? hpi.getName() : hpi.getProcessDefinitionName();
+        org.flowable.engine.runtime.ProcessInstanceBuilder builder = runtimeService.createProcessInstanceBuilder()
+                .processDefinitionId(definition.getId())
+                .name(title)
+                .variables(vars);
+        if (StringUtils.isNotEmpty(hpi.getBusinessKey()))
+        {
+            builder.businessKey(hpi.getBusinessKey());
+        }
+        // 发起人保持原实例的发起人（「退回发起人」节点、按发起人过滤待办都依赖它），取不到才用当前管理员
+        String starterId = StringUtils.isNotEmpty(hpi.getStartUserId()) ? hpi.getStartUserId()
+                : String.valueOf(SecurityUtils.getUserId());
+        ProcessInstance revived;
+        org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(starterId);
+        try
+        {
+            revived = builder.start();
+            // 启动后执行流会自然停在流程的第一个用户任务上，再搬到管理员指定的节点
+            List<String> activeIds = runtimeService.getActiveActivityIds(revived.getId());
+            List<String> fromIds = new ArrayList<>();
+            for (String id : activeIds)
+            {
+                if (model.getFlowElement(id) instanceof UserTask)
+                {
+                    fromIds.add(id);
+                }
+            }
+            if (fromIds.isEmpty())
+            {
+                fromIds.addAll(activeIds);
+            }
+            boolean alreadyAtTarget = fromIds.size() == 1 && fromIds.contains(targetActivityId);
+            if (!alreadyAtTarget)
+            {
+                if (fromIds.isEmpty())
+                {
+                    throw new ServiceException("复活后流程没有可流转的活动节点，请检查流程配置");
+                }
+                runtimeService.createChangeActivityStateBuilder()
+                        .processInstanceId(revived.getId())
+                        .moveActivityIdsToSingleActivityId(fromIds, targetActivityId)
+                        .changeState();
+            }
+        }
+        finally
+        {
+            org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null);
+        }
+
+        List<Task> tasks = taskService.createTaskQuery().processInstanceId(revived.getId())
+                .taskDefinitionKey(targetActivityId).list();
+        if (assigneeId != null)
+        {
+            for (Task task : tasks)
+            {
+                taskService.setAssignee(task.getId(), String.valueOf(assigneeId));
+            }
+        }
+        StringBuilder msg = new StringBuilder(ADMIN_REVIVE_PREFIX)
+                .append("管理员复活已结束流程至「").append(targetName).append("」");
+        if (assigneeId != null)
+        {
+            msg.append("，指定办理人「").append(resolveUserNickname(String.valueOf(assigneeId))).append("」");
+        }
+        if (StringUtils.isNotEmpty(comment))
+        {
+            msg.append("：").append(comment);
+        }
+        taskService.addComment(tasks.isEmpty() ? null : tasks.get(0).getId(), revived.getId(), "comment",
+                msg.toString());
+
+        // 业务数据行继续沿用（同一单继续走），实例ID指向新实例，详情页从新实例取数据
+        rebindBusinessInstanceId(definition.getKey(), hpi.getBusinessKey(), instanceId, revived.getId());
+
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("instanceId", revived.getId());
+        data.put("sourceInstanceId", instanceId);
+        data.put("processDefinitionId", definition.getId());
+        data.put("processDefinitionKey", definition.getKey());
+        data.put("title", title);
+        data.put("targetActivityId", targetActivityId);
+        data.put("targetActivityName", targetName);
+        data.put("taskCount", tasks.size());
+        data.put("assigneeId", assigneeId);
+        data.put("assigneeName", assigneeId == null ? null : resolveUserNickname(String.valueOf(assigneeId)));
+        return data;
+    }
+
+    /**
+     * 以原流程的表单数据为模板重新发起一条新流程。
+     *
+     * <p>业务行数据优先于历史变量：审批过程中字段可能被改写，业务表才是最新值。
+     * 流程编号不沿用原单（清空后按规则重新生成），避免两条流程共用同一个编号。</p>
+     */
+    @Override
+    @Transactional
+    public Map<String, Object> restartInstance(String instanceId, String title)
+    {
+        if (StringUtils.isEmpty(instanceId))
+        {
+            throw new ServiceException("流程实例不能为空");
+        }
+        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(instanceId).singleResult();
+        if (hpi == null)
+        {
+            throw new ServiceException("流程实例不存在");
+        }
+        if (hpi.getEndTime() == null)
+        {
+            throw new ServiceException("流程仍在运行中，无需重新发起");
+        }
+        String processKey = hpi.getProcessDefinitionKey();
+        if (StringUtils.isEmpty(processKey))
+        {
+            throw new ServiceException("流程定义标识为空，无法重新发起");
+        }
+        com.ruoyi.flowable.domain.FlowForm form = resolveBusinessForm(processKey, hpi.getBusinessKey(), instanceId);
+        Map<String, Object> vars = readHistoricVariables(instanceId);
+        // 业务数据行覆盖变量：字段最新值以业务表为准
+        if (form != null && StringUtils.isNotEmpty(form.getTableName()) && StringUtils.isNotEmpty(hpi.getBusinessKey()))
+        {
+            try
+            {
+                Map<String, Object> row = jdbcTemplate.queryForMap(
+                        "SELECT * FROM `" + form.getTableName() + "` WHERE id = ?", hpi.getBusinessKey());
+                for (Map.Entry<String, Object> entry : row.entrySet())
+                {
+                    String key = entry.getKey();
+                    if ("id".equals(key) || "process_instance_id".equals(key) || "create_by".equals(key)
+                            || "create_time".equals(key) || "update_by".equals(key) || "update_time".equals(key))
+                    {
+                        continue;
+                    }
+                    vars.put(key, entry.getValue());
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("重新发起：读取原单据数据失败（{}），改为使用历史变量：{}", hpi.getBusinessKey(), e.getMessage());
+            }
+        }
+        // 重新发号：同一个流程编号不能挂在两条流程上
+        vars.remove(FlowSystemFields.FIELD_PROCESS_NO);
+        String sourceTitle = StringUtils.isNotEmpty(hpi.getName()) ? hpi.getName() : hpi.getProcessDefinitionName();
+        String newTitle = StringUtils.isNotEmpty(title) ? title.trim() : sourceTitle + "（重新发起）";
+        vars.put(FlowSystemFields.FIELD_TITLE, newTitle);
+
+        String newInstanceId = flowFormService.launch(processKey, form == null ? null : form.getFormId(), vars, null,
+                newTitle);
+
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("instanceId", newInstanceId);
+        data.put("sourceInstanceId", instanceId);
+        data.put("processDefinitionKey", processKey);
+        data.put("formId", form == null ? null : form.getFormId());
+        data.put("title", newTitle);
+        Object newProcessNo = null;
+        try
+        {
+            newProcessNo = runtimeService.getVariable(newInstanceId, FlowSystemFields.FIELD_PROCESS_NO);
+        }
+        catch (Exception e)
+        {
+            log.warn("重新发起：读取新实例流程编号失败：{}", e.getMessage());
+        }
+        data.put("processNo", newProcessNo != null ? newProcessNo : vars.get(FlowSystemFields.FIELD_PROCESS_NO));
+        return data;
+    }
+
+    /**
+     * 读取历史变量（复活/重新发起共用）
+     *
+     * 排除引擎内部变量、会签集合变量（节点执行时会重新解析）与本方法自己写的追溯变量，
+     * 反序列化失败的变量只记日志跳过，不让一条脏变量卡住整单。
+     */
+    private Map<String, Object> readHistoricVariables(String instanceId)
+    {
+        Map<String, Object> vars = new java.util.HashMap<>();
+        List<org.flowable.variable.api.history.HistoricVariableInstance> list = historyService
+                .createHistoricVariableInstanceQuery().processInstanceId(instanceId).list();
+        for (org.flowable.variable.api.history.HistoricVariableInstance var : list)
+        {
+            String name = var.getVariableName();
+            if (StringUtils.isEmpty(name) || name.startsWith("_") || "processInstanceId".equals(name)
+                    || "executionId".equals(name) || "taskId".equals(name)
+                    || name.startsWith(com.ruoyi.flowable.service.FlowParticipantResolver.COLLECTION_PREFIX)
+                    || "reviveFromInstanceId".equals(name))
+            {
+                continue;
+            }
+            try
+            {
+                Object value = var.getValue();
+                if (value != null)
+                {
+                    vars.put(name, value);
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("历史变量 {} 反序列化失败，已跳过：{}", name, e.getMessage());
+            }
+        }
+        return vars;
+    }
+
+    /**
+     * 复活后把业务数据行重新指向新实例
+     *
+     * businessKey 是业务行主键，复活沿用同一行，只把 process_instance_id 换到新实例。
+     * 不能只信 selectFlowFormByProcessKey：模型 metaInfo 绑定的 formId 可能与实例实际落库的表不一致
+     * （历史数据/多表单绑定），因此按「旧实例ID + 主键」逐张候选表探测，命中哪张改哪张。
+     * 找不到时只告警，不影响流程本身已经跑起来。
+     */
+    private void rebindBusinessInstanceId(String processKey, String businessKey, String sourceInstanceId,
+            String instanceId)
+    {
+        if (StringUtils.isEmpty(businessKey))
+        {
+            return;
+        }
+        for (String table : candidateBusinessTables(processKey))
+        {
+            try
+            {
+                int rows = StringUtils.isNotEmpty(sourceInstanceId)
+                        ? jdbcTemplate.update("UPDATE `" + table
+                                + "` SET process_instance_id = ? WHERE id = ? AND process_instance_id = ?",
+                                instanceId, businessKey, sourceInstanceId)
+                        : jdbcTemplate.update("UPDATE `" + table + "` SET process_instance_id = ? WHERE id = ?",
+                                instanceId, businessKey);
+                if (rows > 0)
+                {
+                    log.info("流程复活：业务表 {} 行 {} 已指向新实例 {}（影响 {} 行）", table, businessKey, instanceId,
+                            rows);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                log.debug("流程复活：跳过表 {}（{}）", table, e.getMessage());
+            }
+        }
+        log.warn("流程复活：未定位到 businessKey={} 的业务数据行，实例ID未回填（新实例 {}）", businessKey, instanceId);
+    }
+
+    /**
+     * 按 businessKey（可选旧实例ID）在候选业务表中定位真实落库的表
+     *
+     * @return 命中的表名，未命中返回 null
+     */
+    private String resolveBusinessTable(String processKey, String businessKey, String sourceInstanceId)
+    {
+        if (StringUtils.isEmpty(businessKey))
+        {
+            return null;
+        }
+        for (String table : candidateBusinessTables(processKey))
+        {
+            try
+            {
+                List<Long> hit = StringUtils.isNotEmpty(sourceInstanceId)
+                        ? jdbcTemplate.queryForList("SELECT id FROM `" + table
+                                + "` WHERE id = ? AND process_instance_id = ? LIMIT 1", Long.class, businessKey,
+                                sourceInstanceId)
+                        : jdbcTemplate.queryForList("SELECT id FROM `" + table + "` WHERE id = ? LIMIT 1", Long.class,
+                                businessKey);
+                if (!hit.isEmpty())
+                {
+                    return table;
+                }
+            }
+            catch (Exception ignored)
+            {
+                // 表结构不一致（无 process_instance_id 列等）直接跳过
+            }
+        }
+        // 兜底：旧实例ID已被覆盖过（重复复活），只按主键再试一轮
+        if (StringUtils.isNotEmpty(sourceInstanceId))
+        {
+            return resolveBusinessTable(processKey, businessKey, null);
+        }
+        return null;
+    }
+
+    /** 候选业务表：先模型绑定表，再全部表单表（新表单优先） */
+    private List<String> candidateBusinessTables(String processKey)
+    {
+        java.util.Set<String> tables = new java.util.LinkedHashSet<>();
+        if (StringUtils.isNotEmpty(processKey))
+        {
+            try
+            {
+                com.ruoyi.flowable.domain.FlowForm bound = flowFormService.selectFlowFormByProcessKey(processKey);
+                if (bound != null && StringUtils.isNotEmpty(bound.getTableName()))
+                {
+                    tables.add(bound.getTableName());
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        try
+        {
+            tables.addAll(jdbcTemplate.queryForList(
+                    "SELECT table_name FROM flow_form WHERE table_name IS NOT NULL AND table_name <> '' ORDER BY form_id DESC",
+                    String.class));
+        }
+        catch (Exception e)
+        {
+            log.warn("读取表单数据表清单失败：{}", e.getMessage());
+        }
+        return new ArrayList<>(tables);
+    }
+
+    /** 解析实例实际落库的表单（优先业务表反查，兼底走模型绑定） */
+    private com.ruoyi.flowable.domain.FlowForm resolveBusinessForm(String processKey, String businessKey,
+            String sourceInstanceId)
+    {
+        String table = resolveBusinessTable(processKey, businessKey, sourceInstanceId);
+        if (StringUtils.isNotEmpty(table))
+        {
+            try
+            {
+                Long formId = jdbcTemplate.queryForObject(
+                        "SELECT form_id FROM flow_form WHERE table_name = ? ORDER BY form_id DESC LIMIT 1", Long.class,
+                        table);
+                if (formId != null)
+                {
+                    com.ruoyi.flowable.domain.FlowForm f = flowFormService.selectFlowFormByFormId(formId);
+                    if (f != null)
+                    {
+                        return f;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                log.warn("按业务表 {} 反查表单失败：{}", table, e.getMessage());
+            }
+        }
+        return flowFormService.selectFlowFormByProcessKey(processKey);
     }
 }
