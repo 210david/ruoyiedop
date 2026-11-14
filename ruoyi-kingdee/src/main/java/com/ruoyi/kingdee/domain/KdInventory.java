@@ -27,6 +27,10 @@ public class KdInventory extends BaseEntity
     private String categoryName;
     /** 商品类别排序（金蝶商品类别树的展示顺序） */
     private Integer categorySort;
+    /** 一级商品类别（金蝶两级分类的父级） */
+    private String rootCategoryId;
+    private String rootCategoryName;
+    private Integer rootCategorySort;
     private String imageUrl;
     private Date syncTime;
 
@@ -58,6 +62,12 @@ public class KdInventory extends BaseEntity
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     public Integer getCategorySort() { return categorySort; }
     public void setCategorySort(Integer categorySort) { this.categorySort = categorySort; }
+    public String getRootCategoryId() { return rootCategoryId; }
+    public void setRootCategoryId(String rootCategoryId) { this.rootCategoryId = rootCategoryId; }
+    public String getRootCategoryName() { return rootCategoryName; }
+    public void setRootCategoryName(String rootCategoryName) { this.rootCategoryName = rootCategoryName; }
+    public Integer getRootCategorySort() { return rootCategorySort; }
+    public void setRootCategorySort(Integer rootCategorySort) { this.rootCategorySort = rootCategorySort; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public Date getSyncTime() { return syncTime; }

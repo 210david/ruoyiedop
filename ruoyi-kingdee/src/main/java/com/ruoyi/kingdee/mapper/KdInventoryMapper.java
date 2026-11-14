@@ -1,6 +1,7 @@
 package com.ruoyi.kingdee.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.kingdee.domain.KdInventory;
 
 /**
@@ -16,5 +17,5 @@ public interface KdInventoryMapper
 
     List<String> selectDistinctCategories();
 
-    List<KdInventory> selectCategoryList();
+    List<Map<String, Object>> selectCategoryList();
 }
