@@ -152,7 +152,7 @@
                 <el-col :span="12"><el-form-item label="所属部门" prop="deptId">
                   <el-input v-model="form.deptName" placeholder="选择人员后自动回填" :disabled="!!form.userId" />
                 </el-form-item></el-col>
-                <el-col :span="12"><el-form-item label="岗位" prop="position"><el-input v-model="form.position" placeholder="选择人员后自动带出，可修改" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="岗位" prop="position"><el-input v-model="form.position" placeholder="选择人员后自动带出，可不填，可修改" /></el-form-item></el-col>
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12"><el-form-item label="联系电话" prop="phone"><el-input v-model="form.phone" placeholder="请输入联系电话" /></el-form-item></el-col>
@@ -295,7 +295,7 @@ const data = reactive({
   rules: {
     workerName: [{ required: true, message: '请输入或选择人员', trigger: 'change' }],
     deptId: [{ validator: (rule, value, callback) => { (form.value.userId && !value) ? callback(new Error('所属部门不能为空')) : callback() }, trigger: 'change' }],
-    position: [{ required: true, message: '岗位不能为空', trigger: 'blur' }],
+    position: [{ max: 50, message: '岗位长度不能超过 50 个字符', trigger: 'blur' }],
     phone: [
       { required: true, message: '联系电话不能为空', trigger: 'blur' },
       { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号码', trigger: 'blur' }
@@ -358,6 +358,9 @@ function onUserPickerConfirm(user) {
   form.value.workerName = user.nickName
   form.value.deptId = user.deptId
   form.value.deptName = user.deptName || ''
+  // 自动带出真实工号与岗位（均可手动修改；工号来自 biz_hr_employee 联查，岗位来自 sys_user_post）
+  form.value.workerNo = user.employeeNo || form.value.workerNo
+  form.value.position = user.postName || form.value.position
 }
 /** 清除人员选择 */
 function clearUser() {
