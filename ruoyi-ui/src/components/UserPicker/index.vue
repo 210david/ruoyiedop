@@ -88,9 +88,6 @@
             </template>
           </el-table-column>
           <el-table-column label="姓名" prop="nickName" min-width="90" show-overflow-tooltip />
-          <el-table-column label="工号" prop="employeeNo" min-width="90" show-overflow-tooltip>
-            <template #default="scope">{{ scope.row.employeeNo || '-' }}</template>
-          </el-table-column>
           <el-table-column label="岗位" prop="postName" min-width="110" show-overflow-tooltip>
             <template #default="scope">{{ scope.row.postName || '-' }}</template>
           </el-table-column>
@@ -105,6 +102,7 @@
           <el-icon><InfoFilled /></el-icon>
           <span v-if="multiple">勾选行或点击表头全选当前列表，可跨部门多选，点击「确定」完成</span>
           <span v-else>点击行选中，双击行确认选择</span>
+          <span class="tip-scope" v-if="isOrgScope">（可选组织内全部人员）</span>
         </div>
       </div>
     </div>
@@ -117,6 +115,7 @@
 
 <script setup>
 import { deptTreeSelect, listUser } from '@/api/system/user'
+import { listOrgPickerUsers, getOrgPickerDepts } from '@/api/flowable/flow'
 
 const props = defineProps({
   title: {
@@ -126,8 +125,21 @@ const props = defineProps({
   multiple: {
     type: Boolean,
     default: false
+  },
+  /**
+   * 数据源范围：
+   * - data：走 /system/user/list + /system/user/deptTree，受数据权限（@DataScope）过滤
+   * - all：走 /flowable/picker/*，取组织全量人员与部门树，不做数据权限过滤
+   *   适用于流程办理页的转办/加签/抄送——选人范围应是整个组织，而不是「我的数据权限」
+   */
+  scope: {
+    type: String,
+    default: 'data'
   }
 })
+
+/** 是否「组织全量」模式 */
+const isOrgScope = computed(() => props.scope === 'all')
 
 const emit = defineEmits(['confirm'])
 
@@ -265,16 +277,21 @@ function onOpen() {
 
 /** 加载部门树 */
 function loadDeptTree() {
-  deptTreeSelect().then(res => {
-    deptOptions.value = res.data
+  const api = isOrgScope.value ? getOrgPickerDepts : deptTreeSelect
+  api().then(res => {
+    deptOptions.value = res.data || []
   })
 }
 
 /** 加载用户列表（全量加载，前端过滤） */
 function loadUsers() {
   loading.value = true
-  listUser({ pageNum: 1, pageSize: 9999 }).then(res => {
-    allUsers.value = res.rows
+  // 两种来源都一次性取全量，搜索/部门筛选在前端做，避免翻查后丢失已选人员的完整信息
+  const req = isOrgScope.value
+    ? listOrgPickerUsers().then(res => ({ rows: res.data || [] }))
+    : listUser({ pageNum: 1, pageSize: 9999 })
+  req.then(res => {
+    allUsers.value = res.rows || []
   }).finally(() => {
     loading.value = false
   })
@@ -344,7 +361,6 @@ function handleConfirm() {
         userId: u.userId,
         nickName: u.nickName,
         userName: u.userName,
-        employeeNo: u.employeeNo,
         postName: u.postName,
         deptId: u.dept ? u.dept.deptId : undefined,
         deptName: u.dept ? u.dept.deptName : undefined,
@@ -362,7 +378,6 @@ function handleConfirm() {
       userId: user.userId,
       nickName: user.nickName,
       userName: user.userName,
-      employeeNo: user.employeeNo,
       postName: user.postName,
       deptId: user.dept ? user.dept.deptId : undefined,
       deptName: user.dept ? user.dept.deptName : undefined,
@@ -536,6 +551,10 @@ defineExpose({ open })
 
   .el-icon {
     font-size: 14px;
+  }
+
+  .tip-scope {
+    color: #409eff;
   }
 }
 

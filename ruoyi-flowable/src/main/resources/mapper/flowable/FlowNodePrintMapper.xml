@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowNodePrintMapper">
+
+    <resultMap type="FlowNodePrint" id="FlowNodePrintResult">
+        <result property="id"             column="id"              />
+        <result property="modelId"        column="model_id"        />
+        <result property="modelKey"       column="model_key"       />
+        <result property="nodeId"         column="node_id"         />
+        <result property="nodeName"       column="node_name"       />
+        <result property="templateFormId" column="template_form_id"/>
+        <result property="templateName"   column="template_name"   />
+        <result property="fieldsJson"     column="fields_json"     />
+        <result property="layoutJson"     column="layout_json"     />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+    </resultMap>
+
+    <sql id="selectNodePrintVo">
+        select id, model_id, model_key, node_id, node_name, template_form_id, template_name,
+               fields_json, layout_json, create_by, create_time, update_by, update_time
+        from flow_node_print
+    </sql>
+
+    <select id="selectByModelId" parameterType="String" resultMap="FlowNodePrintResult">
+        <include refid="selectNodePrintVo"/>
+        where model_id = #{modelId}
+    </select>
+
+    <select id="selectByModelIdAndNodeId" resultMap="FlowNodePrintResult">
+        <include refid="selectNodePrintVo"/>
+        where model_id = #{modelId} and node_id = #{nodeId}
+        limit 1
+    </select>
+
+    <select id="selectByModelKeyAndNodeId" resultMap="FlowNodePrintResult">
+        <include refid="selectNodePrintVo"/>
+        where model_key = #{modelKey} and node_id = #{nodeId}
+        order by update_time desc, id desc
+        limit 1
+    </select>
+
+    <insert id="insertFlowNodePrint" parameterType="FlowNodePrint" useGeneratedKeys="true" keyProperty="id">
+        insert into flow_node_print
+        (model_id, model_key, node_id, node_name, template_form_id, template_name,
+         fields_json, layout_json, create_by, create_time)
+        values
+        (#{modelId}, #{modelKey}, #{nodeId}, #{nodeName}, #{templateFormId}, #{templateName},
+         #{fieldsJson}, #{layoutJson}, #{createBy}, sysdate())
+    </insert>
+
+    <update id="updateFlowNodePrint" parameterType="FlowNodePrint">
+        update flow_node_print
+        <set>
+            <if test="modelKey != null">model_key = #{modelKey},</if>
+            <if test="nodeName != null">node_name = #{nodeName},</if>
+            template_form_id = #{templateFormId},
+            template_name = #{templateName},
+            fields_json = #{fieldsJson},
+            layout_json = #{layoutJson},
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteByModelIdAndNodeId">
+        delete from flow_node_print where model_id = #{modelId} and node_id = #{nodeId}
+    </delete>
+</mapper>

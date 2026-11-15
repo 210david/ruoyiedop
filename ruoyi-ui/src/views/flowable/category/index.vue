@@ -247,13 +247,13 @@ function submitForm() {
 function handleDelete(row) {
   proxy.$modal.confirm('确认删除分类"' + row.dictLabel + '"？该分类被流程引用时删除将被拒绝。').then(() => delCategory(row.dictCode)).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
 
 function handleBatchDelete() {
   proxy.$modal.confirm('确认删除选中的 ' + selectedIds.value.length + ' 个分类？被流程引用的分类删除将被拒绝。').then(() => delCategory(selectedIds.value.join(','))).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList()
-  }).catch(() => {})
+  }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('批量删除失败：' + (e?.message || e)) })
 }
 
 getList()
