@@ -295,6 +295,13 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- 综合办公模块-->
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-oa</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -321,6 +328,7 @@
         <module>ruoyi-bi</module>
         <module>ruoyi-integration</module>
         <module>ruoyi-kingdee</module>
+        <module>ruoyi-oa</module>
     </modules>
     <packaging>pom</packaging>
 

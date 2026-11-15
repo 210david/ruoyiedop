@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.oa.mapper.OaVehicleInsuranceMapper">
+
+    <resultMap type="OaVehicleInsurance" id="OaVehicleInsuranceResult">
+        <result property="insuranceId"   column="insurance_id"/>
+        <result property="policyNo"      column="policy_no"/>
+        <result property="insuranceNo"   column="insurance_no"/>
+        <result property="vehicleId"     column="vehicle_id"/>
+        <result property="plateNo"       column="plate_no"/>
+        <result property="insuranceType" column="insurance_type"/>
+        <result property="insurer"       column="insurer"/>
+        <result property="startDate"     column="start_date"/>
+        <result property="endDate"       column="end_date"/>
+        <result property="premium"       column="premium"/>
+        <result property="insuredAmount" column="insured_amount"/>
+        <result property="contactName"   column="contact_name"/>
+        <result property="contactPhone"  column="contact_phone"/>
+        <result property="status"        column="status"/>
+        <result property="attachment"    column="attachment"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectOaVehicleInsuranceVo">
+        SELECT insurance_id, policy_no, insurance_no, vehicle_id, plate_no, insurance_type, insurer,
+               start_date, end_date, premium, insured_amount, contact_name, contact_phone,
+               status, attachment, del_flag, create_by, create_time, update_by, update_time, remark
+        FROM biz_oa_vehicle_insurance
+    </sql>
+
+    <select id="selectOaVehicleInsuranceList" parameterType="OaVehicleInsurance" resultMap="OaVehicleInsuranceResult">
+        <include refid="selectOaVehicleInsuranceVo"/>
+        <where>
+            del_flag = '0'
+            <if test="policyNo != null and policyNo != ''"> AND policy_no LIKE CONCAT('%', #{policyNo}, '%')</if>
+            <if test="plateNo != null and plateNo != ''"> AND plate_no LIKE CONCAT('%', #{plateNo}, '%')</if>
+            <if test="insuranceType != null and insuranceType != ''"> AND insurance_type = #{insuranceType}</if>
+            <if test="insurer != null and insurer != ''"> AND insurer LIKE CONCAT('%', #{insurer}, '%')</if>
+            <if test="contactName != null and contactName != ''"> AND contact_name LIKE CONCAT('%', #{contactName}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginEndDate != null and params.beginEndDate != ''"> AND end_date &gt;= #{params.beginEndDate}</if>
+            <if test="params.endEndDate != null and params.endEndDate != ''"> AND end_date &lt;= #{params.endEndDate}</if>
+            <if test="params.beginStartDate != null and params.beginStartDate != ''"> AND start_date &gt;= #{params.beginStartDate}</if>
+            <if test="params.endStartDate != null and params.endStartDate != ''"> AND start_date &lt;= #{params.endStartDate}</if>
+        </where>
+        ORDER BY end_date ASC, insurance_id DESC
+    </select>
+
+    <select id="selectOaVehicleInsuranceById" parameterType="Long" resultMap="OaVehicleInsuranceResult">
+        <include refid="selectOaVehicleInsuranceVo"/> WHERE insurance_id = #{insuranceId}
+    </select>
+
+    <select id="selectOaVehicleInsuranceByPolicyNo" parameterType="String" resultMap="OaVehicleInsuranceResult">
+        <include refid="selectOaVehicleInsuranceVo"/> WHERE del_flag = '0' AND policy_no = #{policyNo} LIMIT 1
+    </select>
+
+    <insert id="insertOaVehicleInsurance" parameterType="OaVehicleInsurance" useGeneratedKeys="true" keyProperty="insuranceId">
+        INSERT INTO biz_oa_vehicle_insurance (
+            policy_no, insurance_no, vehicle_id, plate_no, insurance_type, insurer,
+            start_date, end_date, premium, insured_amount, contact_name, contact_phone,
+            status, attachment, create_by, create_time, remark
+        ) VALUES (
+            #{policyNo}, #{insuranceNo}, #{vehicleId}, #{plateNo}, #{insuranceType}, #{insurer},
+            #{startDate}, #{endDate}, #{premium}, #{insuredAmount}, #{contactName}, #{contactPhone},
+            #{status}, #{attachment}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateOaVehicleInsurance" parameterType="OaVehicleInsurance">
+        UPDATE biz_oa_vehicle_insurance
+        <set>
+            <if test="policyNo != null and policyNo != ''">policy_no = #{policyNo},</if>
+            <if test="insuranceNo != null">insurance_no = #{insuranceNo},</if>
+            <if test="vehicleId != null">vehicle_id = #{vehicleId},</if>
+            <if test="plateNo != null">plate_no = #{plateNo},</if>
+            <if test="insuranceType != null">insurance_type = #{insuranceType},</if>
+            <if test="insurer != null">insurer = #{insurer},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="premium != null">premium = #{premium},</if>
+            <if test="insuredAmount != null">insured_amount = #{insuredAmount},</if>
+            <if test="contactName != null">contact_name = #{contactName},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE insurance_id = #{insuranceId}
+    </update>
+
+    <delete id="deleteOaVehicleInsuranceById" parameterType="Long">
+        UPDATE biz_oa_vehicle_insurance SET del_flag = '2' WHERE insurance_id = #{insuranceId}
+    </delete>
+
+    <delete id="deleteOaVehicleInsuranceByIds" parameterType="Long">
+        UPDATE biz_oa_vehicle_insurance SET del_flag = '2' WHERE insurance_id IN
+        <foreach item="insuranceId" collection="array" open="(" separator="," close=")">#{insuranceId}</foreach>
+    </delete>
+
+</mapper>
