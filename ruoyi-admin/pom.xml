@@ -148,6 +148,13 @@
             <artifactId>ruoyi-integration</artifactId>
         </dependency>
 
+
+        <!-- 综合办公模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-oa</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
