@@ -2,6 +2,8 @@ package com.ruoyi.flowable.controller;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +33,11 @@ public class FlowDefinitionController extends BaseController
 
     /**
      * 查询流程定义列表（最新版本）
+     *
+     * 权限放宽到「可发起 / 我的请求」：前台「流程发起」页依赖该接口列出可发起流程，
+     * 普通员工没有流程管理权限，若只校验 definition:list 会整页 403（看不到任何可发起流程）。
      */
-    @PreAuthorize("@ss.hasPermi('flowable:definition:list')")
+    @PreAuthorize("@ss.hasAnyPermi('flowable:definition:list,flowable:process:start,flowable:process:myList')")
     @GetMapping("/list")
     public TableDataInfo list(FlowModel model)
     {
@@ -43,12 +48,39 @@ public class FlowDefinitionController extends BaseController
 
     /**
      * 查看流程定义 BPMN XML
+     *
+     * 同上：发起页的流程图预览与「下一环节办理人」回退解析都要读 XML，发起人同样需要访问。
      */
-    @PreAuthorize("@ss.hasPermi('flowable:definition:query')")
+    @PreAuthorize("@ss.hasAnyPermi('flowable:definition:query,flowable:process:start,flowable:process:myList')")
     @GetMapping("/xml/{processDefinitionId}")
     public AjaxResult getXml(@PathVariable("processDefinitionId") String processDefinitionId)
     {
-        return success(flowModelService.getDefinitionBpmnXml(processDefinitionId));
+        // 注意：BaseController 同时存在 success(String msg) 与 success(Object data) 重载，
+        // 直接传 String 会命中 msg 重载导致 data 为空，这里显式走 (msg, data) 形式
+        return AjaxResult.success("操作成功", flowModelService.getDefinitionBpmnXml(processDefinitionId));
+    }
+
+    /**
+     * 流程定义 BPMN XML（按流程 Key 取当前活动版本）
+     * 供前台发起页「流程图」页签用 bpmn-js 渲染，与后台设计器同一样式；
+     * 与 diagram 接口一样不做权限注解，保证普通发起人能看图
+     */
+    @GetMapping("/xmlByKey/{processKey}")
+    public AjaxResult getXmlByKey(@PathVariable("processKey") String processKey)
+    {
+        // 同上：必须用 (msg, data) 形式，XML 才会落在 data 里
+        return AjaxResult.success("操作成功", flowModelService.getDefinitionBpmnXmlByKey(processKey));
+    }
+
+    /**
+     * 流程定义流程图（发起前预览：按流程 Key 取当前活动版本，无活动版本时取最高版本）
+     * 供前台发起页「流程图」页签使用，尚无实例、不做节点高亮
+     */
+    @GetMapping("/diagram/{processKey}")
+    public ResponseEntity<byte[]> diagram(@PathVariable("processKey") String processKey)
+    {
+        byte[] png = flowModelService.generateDefinitionDiagram(processKey);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(png);
     }
 
     /**
@@ -61,5 +93,28 @@ public class FlowDefinitionController extends BaseController
             @RequestParam("suspend") boolean suspend)
     {
         return toAjax(flowModelService.changeDefinitionState(processDefinitionId, suspend));
+    }
+
+    /**
+     * 更新流程定义版本备注
+     */
+    @Log(title = "流程定义", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:definition:state')")
+    @PutMapping("/remark/{processDefinitionId}")
+    public AjaxResult updateRemark(@PathVariable("processDefinitionId") String processDefinitionId,
+            @RequestParam("remark") String remark)
+    {
+        return toAjax(flowModelService.updateDefinitionRemark(processDefinitionId, remark));
+    }
+
+    /**
+     * 设为当前活动版本（发起流程时优先使用该版本）
+     */
+    @Log(title = "流程定义", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:definition:state')")
+    @PutMapping("/active/{processDefinitionId}")
+    public AjaxResult setActive(@PathVariable("processDefinitionId") String processDefinitionId)
+    {
+        return toAjax(flowModelService.setActiveDefinition(processDefinitionId));
     }
 }

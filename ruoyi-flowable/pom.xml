@@ -29,6 +29,11 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
+        <!-- AI公共模块（统一模型调用：开关/限额/脱敏/审计） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-ai</artifactId>
+        </dependency>
         <!-- Flowable 工作流引擎（BPMN 流程 + DMN 决策 + CMMN 案例） -->
         <dependency>
             <groupId>org.flowable</groupId>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowDraftMapper">
+
+    <resultMap type="FlowDraft" id="FlowDraftResult">
+        <id     property="draftId"       column="draft_id"        />
+        <result property="processKey"    column="process_key"     />
+        <result property="processName"   column="process_name"    />
+        <result property="formId"        column="form_id"         />
+        <result property="title"         column="title"           />
+        <result property="formData"      column="form_data"       />
+        <result property="startUserId"   column="start_user_id"   />
+        <result property="startUserName" column="start_user_name" />
+        <result property="startNickName" column="start_nick_name" />
+        <result property="deptId"        column="dept_id"         />
+        <result property="createTime"    column="create_time"     />
+        <result property="updateTime"    column="update_time"     />
+    </resultMap>
+
+    <!-- 列表不返回 form_data（大字段，列表用不到） -->
+    <sql id="selectFlowDraftVo">
+        select draft_id, process_key, process_name, form_id, title,
+               start_user_id, start_user_name, start_nick_name, dept_id,
+               create_time, update_time
+        from flow_draft
+    </sql>
+
+    <select id="selectFlowDraftList" parameterType="FlowDraft" resultMap="FlowDraftResult">
+        <include refid="selectFlowDraftVo"/>
+        <where>
+            <if test="startUserId != null">and start_user_id = #{startUserId}</if>
+            <if test="processKey != null and processKey != ''">and process_key = #{processKey}</if>
+            <if test="processName != null and processName != ''">and process_name like concat('%', #{processName}, '%')</if>
+            <if test="title != null and title != ''">and title like concat('%', #{title}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and update_time &gt;= #{params.beginTime}</if>
+            <if test="params.endTime != null and params.endTime != ''">and update_time &lt;= concat(#{params.endTime}, ' 23:59:59')</if>
+        </where>
+        order by update_time desc, draft_id desc
+    </select>
+
+    <select id="selectFlowDraftById" resultMap="FlowDraftResult">
+        select draft_id, process_key, process_name, form_id, title, form_data,
+               start_user_id, start_user_name, start_nick_name, dept_id,
+               create_time, update_time
+        from flow_draft
+        where draft_id = #{draftId}
+          and start_user_id = #{startUserId}
+    </select>
+
+    <insert id="insertFlowDraft" parameterType="FlowDraft" useGeneratedKeys="true" keyProperty="draftId">
+        insert into flow_draft (
+            process_key, process_name, form_id, title, form_data,
+            start_user_id, start_user_name, start_nick_name, dept_id,
+            create_time, update_time
+        ) values (
+            #{processKey}, #{processName}, #{formId}, #{title}, #{formData},
+            #{startUserId}, #{startUserName}, #{startNickName}, #{deptId},
+            sysdate(), sysdate()
+        )
+    </insert>
+
+    <update id="updateFlowDraft" parameterType="FlowDraft">
+        update flow_draft
+        <set>
+            <if test="processName != null">process_name = #{processName},</if>
+            <if test="formId != null">form_id = #{formId},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="formData != null">form_data = #{formData},</if>
+            update_time = sysdate()
+        </set>
+        where draft_id = #{draftId}
+          and start_user_id = #{startUserId}
+    </update>
+
+    <delete id="deleteFlowDraftByIds">
+        delete from flow_draft
+        where start_user_id = #{startUserId}
+          and draft_id in
+        <foreach item="draftId" collection="draftIds" open="(" separator="," close=")">
+            #{draftId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByUserAndKey">
+        delete from flow_draft where start_user_id = #{startUserId} and process_key = #{processKey}
+    </delete>
+
+</mapper>

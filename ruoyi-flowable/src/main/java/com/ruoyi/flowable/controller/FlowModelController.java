@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
@@ -88,13 +89,26 @@ public class FlowModelController extends BaseController
     }
 
     /**
-     * 部署模型
+     * 部署前结构对比（结构未变则无需存为新版本）
+     */
+    @GetMapping("/deployCheck/{modelId}")
+    public AjaxResult deployCheck(@PathVariable("modelId") String modelId)
+    {
+        return success(flowModelService.checkDeployStructure(modelId));
+    }
+
+    /**
+     * 部署模型（mode=new 新版本并存，默认；mode=replace 覆盖当前版本，部署后停用旧版本并设为活动版本；
+     * remark 版本备注；setActive 是否设为活动版本）
      */
     @Log(title = "流程模型", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('flowable:model:deploy')")
     @PostMapping("/deploy/{modelId}")
-    public AjaxResult deploy(@PathVariable("modelId") String modelId)
+    public AjaxResult deploy(@PathVariable("modelId") String modelId,
+            @RequestParam(value = "mode", required = false, defaultValue = "new") String mode,
+            @RequestParam(value = "remark", required = false) String remark,
+            @RequestParam(value = "setActive", required = false, defaultValue = "true") Boolean setActive)
     {
-        return toAjax(flowModelService.deployModel(modelId));
+        return toAjax(flowModelService.deployModel(modelId, mode, remark, setActive));
     }
 }

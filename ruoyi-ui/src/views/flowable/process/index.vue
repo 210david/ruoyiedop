@@ -38,7 +38,7 @@
               </span>
             </template>
           </el-tree>
-          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程定义</div>
+          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程数据</div>
         </div>
         </template>
       </div>
@@ -118,9 +118,14 @@
       <div class="table-wrap">
         <el-table ref="tableRef" v-loading="loading" :data="list" border class="app-table" @header-dragend="onHeaderDragEnd">
           <el-table-column type="index" label="序号" :width="colWidth('序号', 85)" align="center" />
+          <!-- 流程编号：发起时按「流程高级设置 → 编号规则」生成，比 UUID 单号更适合业务侧引用 -->
+          <el-table-column v-if="columns.processNo.visible" label="流程编号" prop="processNo" key="processNo" :width="colWidth('processNo', 180)" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.processNo || '-' }}</template>
+          </el-table-column>
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 220)" show-overflow-tooltip>
             <template #default="scope">
-              <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
+              <span v-if="urgencyBadge(scope.row.urgency)" class="badge" :class="urgencyBadge(scope.row.urgency).cls">{{ urgencyBadge(scope.row.urgency).text }}</span>
+              <span class="col-strong link-like" role="link" tabindex="0" @click="handleView(scope.row)" @keydown.enter="handleView(scope.row)">{{ scope.row.title || scope.row.processDefinitionName || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columns.processDefinitionName.visible" label="流程名称" prop="processDefinitionName" key="processDefinitionName" :min-width="colWidth('processDefinitionName', 150)" show-overflow-tooltip>
@@ -132,11 +137,10 @@
               <span class="badge" :class="scope.row.status === 'running' ? 'blue' : 'gray'"><span class="dot"></span>{{ scope.row.currentActivityName || (scope.row.status === 'completed' ? '流程结束' : '已终止') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="110" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-                <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === 'running'" v-hasPermi="['flowable:process:cancel']">撤销</el-button>
               </div>
             </template>
           </el-table-column>
@@ -152,23 +156,18 @@
       </div>
     </div>
 
-    <!-- ===== 流程详情弹窗（四页签共享组件） ===== -->
-    <flow-detail v-model:open="detailOpen" :instance-id="detailInstanceId">
-      <template #header-extra>
-        <span v-if="detailStatus" class="badge" :class="statusBadge(detailStatus)"><span class="dot"></span>{{ statusLabel(detailStatus) }}</span>
-      </template>
-    </flow-detail>
-
   </div>
 </template>
 
 <script setup name="FlowProcess">
-import { listMyProcess, cancelProcess, getProcessTree } from '@/api/flowable/flow'
+import { listMyProcess, getProcessTree } from '@/api/flowable/flow'
 import FlowDetail from '@/components/FlowDetail/index.vue'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useRouter } from 'vue-router'
 import { Search, Filter, Document, Guide, Folder, Fold, Expand } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('flowable_process_index')
 
@@ -178,6 +177,13 @@ const showSearch = ref(true)
 const total = ref(0)
 const activeStatusTab = ref('all')
 const statusCounts = ref({ all: 0, running: 0, completed: 0, canceled: 0 })
+/** 紧急程度徽标：1普通（不显示）/ 2紧急 / 3特急 */
+function urgencyBadge(v) {
+  if (v === '3' || v === 3) return { text: '特急', cls: 'red' }
+  if (v === '2' || v === 2) return { text: '紧急', cls: 'amber' }
+  return null
+}
+
 const detailOpen = ref(false)
 const detailInstanceId = ref('')
 const detailStatus = ref('')
@@ -210,7 +216,9 @@ function filterNode(value, nodeData) {
 
 function loadTree() {
   treeLoading.value = true
-  getProcessTree().then(res => {
+  // 数量口径与右侧「我发起的流程」列表一致（含状态页签），避免左右数据不一致
+  const status = queryParams.value.status || undefined
+  getProcessTree('my', status).then(res => {
     const groups = res.data || []
     // 根节点"全部流程"，count=各类数量之和
     const totalTree = groups.reduce((s, g) => s + (g.count || 0), 0)
@@ -227,6 +235,7 @@ function handleNodeClick(node) {
 
 // ===== 列显隐（RightToolbar 持久化） =====
 const defaultColumns = {
+  processNo: { label: '流程编号', visible: true },
   title: { label: '流程标题', visible: true },
   processDefinitionName: { label: '流程名称', visible: true },
   startTime: { label: '创建日期', visible: true },
@@ -273,7 +282,7 @@ function loadStatusCounts() {
     const counts = { all: res.total, running: 0, completed: 0, canceled: 0 }
     ;(res.rows || []).forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     statusCounts.value = counts
-  }).catch(() => {})
+  }).catch(() => { statusCounts.value = { all: 0, running: 0, completed: 0, canceled: 0 } })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
@@ -293,6 +302,7 @@ function handleStatusTabClick(status) {
   activeStatusTab.value = status
   queryParams.value.status = status === 'all' ? undefined : status
   handleQuery()
+  loadTree()
 }
 
 function statusBadge(status) {
@@ -304,22 +314,13 @@ function statusLabel(status) {
   return map[status] || status || '-'
 }
 
-async function handleView(row) {
-  detailInstanceId.value = row.instanceId
-  detailStatus.value = row.status || ''
-  detailOpen.value = true
-}
-
-function handleCancel(row) {
-  proxy.$modal.confirm('确认撤销该流程？撤销后流程终止且不可恢复').then(() => {
-    return proxy.$prompt('请输入撤销原因（可选）', '撤销流程', { confirmButtonText: '确定', cancelButtonText: '取消', inputType: 'textarea' })
-  }).then(({ value }) => {
-    return cancelProcess(row.instanceId, value)
-  }).then(() => {
-    proxy.$modal.msgSuccess('流程已撤销')
-    getList()
-    loadStatusCounts()
-  }).catch(() => {})
+/** 查看流程详情：新标签页打开独立页面（不再使用当前页弹框） */
+function handleView(row) {
+  const href = router.resolve({
+    path: '/flow/detail/create',
+    query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
+  }).href
+  window.open(href, '_blank')
 }
 
 getList()
@@ -438,10 +439,6 @@ onActivated(() => { getList(); loadStatusCounts(); loadTree() })
       height: 32px;
       border-radius: 8px;
     }
-  }
-  .link-like {
-    cursor: pointer;
-    &:hover { color: var(--el-color-primary); }
   }
 }
 </style>
