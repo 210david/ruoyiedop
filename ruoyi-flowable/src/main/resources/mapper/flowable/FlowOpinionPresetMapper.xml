@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowOpinionPresetMapper">
+
+    <resultMap type="FlowOpinionPreset" id="FlowOpinionPresetResult">
+        <id     property="presetId"   column="preset_id"   />
+        <result property="userId"     column="user_id"     />
+        <result property="content"    column="content"     />
+        <result property="showOrder"  column="show_order"  />
+        <result property="createBy"   column="create_by"   />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy"   column="update_by"   />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectFlowOpinionPresetVo">
+        select preset_id, user_id, content, show_order, create_by, create_time, update_by, update_time
+        from flow_opinion_preset
+    </sql>
+
+    <select id="selectByUser" resultMap="FlowOpinionPresetResult">
+        <include refid="selectFlowOpinionPresetVo"/>
+        where user_id = #{userId}
+        order by show_order asc, preset_id asc
+    </select>
+
+    <delete id="deleteByUser">
+        delete from flow_opinion_preset where user_id = #{userId}
+    </delete>
+
+    <insert id="batchInsert">
+        insert into flow_opinion_preset (user_id, content, show_order, create_by, create_time) values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.content}, #{item.showOrder}, #{item.createBy}, sysdate())
+        </foreach>
+    </insert>
+
+</mapper>
