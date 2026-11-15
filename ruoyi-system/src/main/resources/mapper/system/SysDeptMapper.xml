@@ -173,8 +173,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<update id="syncLeaderToUsers">
 		update sys_user
 		<set>
-			<if test="leaderId != null">superior_leader_id = case when user_id = #{leaderId} then superior_leader_id else #{leaderId} end,</if>
-			<if test="chargeLeaderId != null">charge_leader_id = case when user_id = #{chargeLeaderId} then charge_leader_id else #{chargeLeaderId} end,</if>
+			<if test="leaderId != null">superior_leader_id = case when user_id = #{leaderId} then ifnull(superior_leader_id, #{leaderId}) else #{leaderId} end,</if>
+			<if test="chargeLeaderId != null">charge_leader_id = case when user_id = #{chargeLeaderId} then ifnull(charge_leader_id, #{chargeLeaderId}) else #{chargeLeaderId} end,</if>
 			update_time = sysdate()
 		</set>
 		where dept_id = #{deptId} and del_flag = '0'
