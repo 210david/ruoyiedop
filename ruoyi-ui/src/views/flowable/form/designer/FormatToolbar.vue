@@ -1,12 +1,12 @@
 <template>
   <div class="wm-ft">
-    <!-- 单行分组（泛微式）：字体 | 对齐 | 缩进 | 线框 | 合并格式 | 行列 | 清除 | 坐标 -->
+    <!-- 单行分组（Excel 式）：字体 | 对齐 | 缩进 | 线框 | 合并格式 | 行列 | 清除 | 坐标 -->
     <div class="wm-g" title="字体">
       <el-select :model-value="styleObj?.font ?? 'Microsoft YaHei'" size="small" @update:model-value="v => emitSet('font', v)" :disabled="!hasSel" style="width:100px">
         <el-option v-for="f in fonts" :key="f" :label="fontCn(f)" :value="f" />
       </el-select>
-      <el-select :model-value="styleObj?.fontSize ?? 12" size="small" @update:model-value="v => emitSet('fontSize', Number(v))" :disabled="!hasSel" style="width:56px">
-        <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24]" :key="s" :label="s" :value="s" />
+      <el-select :model-value="styleObj?.fontSize ?? SIZE_DEF" size="small" @update:model-value="v => emitSet('fontSize', Number(v))" :disabled="!hasSel" style="width:56px">
+        <el-option v-for="s in [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72]" :key="s" :label="s" :value="s" />
       </el-select>
       <button class="wm-btn b" :class="{ on: styleObj?.bold }" :disabled="!hasSel" @click="$emit('toggle', 'bold')" title="加粗"><b>B</b></button>
       <button class="wm-btn i" :class="{ on: styleObj?.italic }" :disabled="!hasSel" @click="$emit('toggle', 'italic')" title="斜体"><i>I</i></button>
@@ -20,7 +20,7 @@
         <span class="bg-glyph" :style="{ background: styleObj?.bg || '#fff' }"></span>
         <el-color-picker :model-value="styleObj?.bg || ''" size="small" :disabled="!hasSel" @update:model-value="v => emitSet('bg', v || '')" />
       </span>
-      <button class="wm-btn" :class="{ on: painter }" :disabled="!hasSel" @click="$emit('painter')" title="格式刷：吸取当前样式，点击目标格应用"><WmIcon name="painter" /></button>
+      <button class="wm-btn" :class="{ on: painter }" :disabled="!hasSel && !painter" @click="$emit('painter')" title="格式刷：吸取当前样式，点击目标格应用"><WmIcon name="painter" /></button>
     </div>
     <div class="wm-g" title="对齐">
       <button v-for="a in ['left', 'center', 'right']" :key="a" class="wm-btn" :class="{ on: styleObj?.align === a }" :disabled="!hasSel" @click="$emit('align', a)" :title="alignTitle[a]"><WmIcon :name="'align-' + a" /></button>
@@ -72,6 +72,7 @@
 import { ref } from 'vue'
 import WmIcon from './WmIcon.vue'
 import BorderPresetIcon from './BorderPresetIcon.vue'
+import { SIZE_DEF } from './useGridMatrix.js'
 
 defineProps({
   hasSel: Boolean,
@@ -112,7 +113,7 @@ function onBorderPreset(p) {
 
 <style lang="scss" scoped>
 .wm-ft { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; background: #f5f6fa; border: 1px solid #d9def0; border-radius: 6px; padding: 3px 6px; flex: none; }
-/* 泛微式分组：单行排布，组间深色竖线分隔，组内图标紧凑 */
+/* Excel 式分组：单行排布，组间深色竖线分隔，组内图标紧凑 */
 .wm-g { display: flex; align-items: center; gap: 2px; padding: 0 7px; border-right: 1px solid #c9d2e8; }
 .wm-g.no-sep { border-right: none; }
 .wm-ft :deep(.el-select) { width: 96px; }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowDelegateMapper">
+
+    <resultMap type="FlowDelegate" id="FlowDelegateResult">
+        <id     property="delegateId" column="delegate_id" />
+        <result property="instanceId" column="instance_id" />
+        <result property="taskId"     column="task_id"     />
+        <result property="taskName"   column="task_name"   />
+        <result property="fromId"     column="from_id"     />
+        <result property="fromName"   column="from_name"   />
+        <result property="toId"       column="to_id"       />
+        <result property="toName"     column="to_name"     />
+        <result property="comment"    column="comment"     />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <insert id="insertDelegate" parameterType="FlowDelegate" useGeneratedKeys="true" keyProperty="delegateId">
+        insert into flow_delegate (
+            instance_id, task_id, task_name, from_id, from_name,
+            to_id, to_name, comment, create_time
+        ) values (
+            #{instanceId}, #{taskId}, #{taskName}, #{fromId}, #{fromName},
+            #{toId}, #{toName}, #{comment}, sysdate()
+        )
+    </insert>
+
+    <select id="selectByInstance" resultMap="FlowDelegateResult">
+        select delegate_id, instance_id, task_id, task_name, from_id, from_name,
+               to_id, to_name, comment, create_time
+        from flow_delegate
+        where instance_id = #{instanceId}
+        order by create_time asc, delegate_id asc
+    </select>
+
+    <select id="selectByFromUser" resultMap="FlowDelegateResult">
+        select delegate_id, instance_id, task_id, task_name, from_id, from_name,
+               to_id, to_name, comment, create_time
+        from flow_delegate
+        where from_id = #{fromId}
+        order by create_time desc, delegate_id desc
+    </select>
+
+</mapper>

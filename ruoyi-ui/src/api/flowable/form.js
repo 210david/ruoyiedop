@@ -35,3 +35,4 @@ export function createTable(formId) {
 export function launch(data) {
   return request({ url: '/flowable/form/launch', method: 'post', data: data })
 }
+
