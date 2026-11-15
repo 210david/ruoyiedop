@@ -37,6 +37,12 @@ public interface IFlowModelService
     /** 根据流程定义ID导出BPMN XML */
     public String getDefinitionBpmnXml(String processDefinitionId);
 
+    /**
+     * 按流程 Key 取当前活动版本（无活动版本时取最高版本）的 BPMN XML
+     * 供前台发起页用 bpmn-js 渲染流程图，样式与后台设计器一致
+     */
+    public String getDefinitionBpmnXmlByKey(String processKey);
+
     /** 查询流程定义列表（已部署） */
     public List<FlowModel> selectDefinitionList(FlowModel model);
 
@@ -48,4 +54,11 @@ public interface IFlowModelService
 
     /** 挂起/激活流程定义 */
     public int changeDefinitionState(String processDefinitionId, boolean suspend);
+
+    /**
+     * 部署前结构对比：当前保存的流程模型 vs 已部署版本。
+     * 结构未变（仅表单字段/必填/只读/名称调整）→ 无需存为新版本；
+     * 增删节点、变更流转线、更换绑定数据表 → 需部署新版本。
+     */
+    public java.util.Map<String, Object> checkDeployStructure(String modelId);
 }

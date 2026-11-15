@@ -33,8 +33,11 @@ public class FlowDefinitionController extends BaseController
 
     /**
      * 查询流程定义列表（最新版本）
+     *
+     * 权限放宽到「可发起 / 我的请求」：前台「流程发起」页依赖该接口列出可发起流程，
+     * 普通员工没有流程管理权限，若只校验 definition:list 会整页 403（看不到任何可发起流程）。
      */
-    @PreAuthorize("@ss.hasPermi('flowable:definition:list')")
+    @PreAuthorize("@ss.hasAnyPermi('flowable:definition:list,flowable:process:start,flowable:process:myList')")
     @GetMapping("/list")
     public TableDataInfo list(FlowModel model)
     {
@@ -45,12 +48,28 @@ public class FlowDefinitionController extends BaseController
 
     /**
      * 查看流程定义 BPMN XML
+     *
+     * 同上：发起页的流程图预览与「下一环节办理人」回退解析都要读 XML，发起人同样需要访问。
      */
-    @PreAuthorize("@ss.hasPermi('flowable:definition:query')")
+    @PreAuthorize("@ss.hasAnyPermi('flowable:definition:query,flowable:process:start,flowable:process:myList')")
     @GetMapping("/xml/{processDefinitionId}")
     public AjaxResult getXml(@PathVariable("processDefinitionId") String processDefinitionId)
     {
-        return success(flowModelService.getDefinitionBpmnXml(processDefinitionId));
+        // 注意：BaseController 同时存在 success(String msg) 与 success(Object data) 重载，
+        // 直接传 String 会命中 msg 重载导致 data 为空，这里显式走 (msg, data) 形式
+        return AjaxResult.success("操作成功", flowModelService.getDefinitionBpmnXml(processDefinitionId));
+    }
+
+    /**
+     * 流程定义 BPMN XML（按流程 Key 取当前活动版本）
+     * 供前台发起页「流程图」页签用 bpmn-js 渲染，与后台设计器同一样式；
+     * 与 diagram 接口一样不做权限注解，保证普通发起人能看图
+     */
+    @GetMapping("/xmlByKey/{processKey}")
+    public AjaxResult getXmlByKey(@PathVariable("processKey") String processKey)
+    {
+        // 同上：必须用 (msg, data) 形式，XML 才会落在 data 里
+        return AjaxResult.success("操作成功", flowModelService.getDefinitionBpmnXmlByKey(processKey));
     }
 
     /**

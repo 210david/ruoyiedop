@@ -66,6 +66,65 @@ public class FlowTask extends BaseEntity
     /** 流程定义Key（用于按流程过滤） */
     private String processDefinitionKey;
 
+    /** 流程实例状态（已办返回）：running 进行中 / completed 已办结 / canceled 已撤销 */
+    private String status;
+
+    /** 当前所在环节名称（流程未办结时返回） */
+    private String currentTaskName;
+
+    /** 已办页签筛选（仅查询参数）：all 全部 / running 未结束 / finished 已结束 */
+    private String statusScope;
+
+    /**
+     * 参与状态（流程状态/审批意见展示用）：
+     * done 已办理 / pending 待办理 / undone 未办理（是候选人但流程已被他人处理或已走过）
+     */
+    private String state;
+
+    /**
+     * 是否候选人展开行：同一节点多名候选人时，为每人各展开一行；
+     * true 表示该行是按候选人身份补出来的，不是实际办理人那一行。
+     */
+    private Boolean candidate;
+
+    /** 是否「被退回」的待办（true=上游节点驳回退回给本人，待办「退回」页签展示） */
+    private Boolean returned;
+
+    /** 退回来源环节（哪个节点退回来的） */
+    private String returnFrom;
+
+    /** 退回操作人姓名 */
+    private String returnByName;
+
+    /** 退回时间（yyyy-MM-dd HH:mm:ss） */
+    private String returnTime;
+
+    /** 待办查询条件：true=仅看被退回的 / false=仅看正常待办 / null=全部 */
+    private Boolean returnedOnly;
+
+    /** 已办行是否允许「收回」：下一节点办理前，本节点办理人可把流程收回重新办理 */
+    private Boolean canRecall;
+
+    /** 查看时间（流程状态：待办人员点开查看时间，对标泛微「已查看」操作状态） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date viewTime;
+
+    /** 抄送人姓名（抄送记录使用：该条抄送由谁发起） */
+    private String receiverName;
+
+    /**
+     * 是否被管理员干预跳过：任务被强制结束但从未有人办理。
+     * 流程状态/审批意见据此把「未办理」标注为「干预跳过」，避免与正常未办理混淆。
+     */
+    private Boolean skipped;
+
+    /**
+     * 是否为不单独展示的发起人（开始）节点任务行。
+     * 初次提交由流程记录里的开始行（发起提交）代表；强制收回后的再次提交也不留痕。
+     * 被「退回」到发起人后的再次提交属于新的业务动作，不标记该字段，正常成行。
+     */
+    private Boolean initiatorPending;
+
     public String getTaskId() { return taskId; }
     public void setTaskId(String taskId) { this.taskId = taskId; }
     public String getTaskName() { return taskName; }
@@ -100,4 +159,34 @@ public class FlowTask extends BaseEntity
     public void setUrgency(String urgency) { this.urgency = urgency; }
     public String getProcessDefinitionKey() { return processDefinitionKey; }
     public void setProcessDefinitionKey(String processDefinitionKey) { this.processDefinitionKey = processDefinitionKey; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getCurrentTaskName() { return currentTaskName; }
+    public void setCurrentTaskName(String currentTaskName) { this.currentTaskName = currentTaskName; }
+    public String getStatusScope() { return statusScope; }
+    public void setStatusScope(String statusScope) { this.statusScope = statusScope; }
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+    public Boolean getCandidate() { return candidate; }
+    public void setCandidate(Boolean candidate) { this.candidate = candidate; }
+    public Boolean getReturned() { return returned; }
+    public void setReturned(Boolean returned) { this.returned = returned; }
+    public String getReturnFrom() { return returnFrom; }
+    public void setReturnFrom(String returnFrom) { this.returnFrom = returnFrom; }
+    public String getReturnByName() { return returnByName; }
+    public void setReturnByName(String returnByName) { this.returnByName = returnByName; }
+    public String getReturnTime() { return returnTime; }
+    public void setReturnTime(String returnTime) { this.returnTime = returnTime; }
+    public Boolean getReturnedOnly() { return returnedOnly; }
+    public void setReturnedOnly(Boolean returnedOnly) { this.returnedOnly = returnedOnly; }
+    public Boolean getCanRecall() { return canRecall; }
+    public void setCanRecall(Boolean canRecall) { this.canRecall = canRecall; }
+    public Date getViewTime() { return viewTime; }
+    public void setViewTime(Date viewTime) { this.viewTime = viewTime; }
+    public String getReceiverName() { return receiverName; }
+    public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
+    public Boolean getSkipped() { return skipped; }
+    public void setSkipped(Boolean skipped) { this.skipped = skipped; }
+    public Boolean getInitiatorPending() { return initiatorPending; }
+    public void setInitiatorPending(Boolean initiatorPending) { this.initiatorPending = initiatorPending; }
 }

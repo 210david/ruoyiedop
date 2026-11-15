@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowNodeFormMapper">
+
+    <resultMap type="FlowNodeForm" id="FlowNodeFormResult">
+        <id     property="id"         column="id"/>
+        <result property="modelId"    column="model_id"/>
+        <result property="modelKey"   column="model_key"/>
+        <result property="nodeId"     column="node_id"/>
+        <result property="nodeType"   column="node_type"/>
+        <result property="nodeName"   column="node_name"/>
+        <result property="formName"   column="form_name"/>
+        <result property="formKey"    column="form_key"/>
+        <result property="fieldsJson" column="fields_json"/>
+        <result property="layoutJson" column="layout_json"/>
+        <result property="createBy"   column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy"   column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectFlowNodeFormVo">
+        select id, model_id, model_key, node_id, node_type, node_name, form_name, form_key, fields_json, layout_json,
+               create_by, create_time, update_by, update_time from flow_node_form
+    </sql>
+
+    <select id="selectByModelId" parameterType="String" resultMap="FlowNodeFormResult">
+        <include refid="selectFlowNodeFormVo"/>
+        where model_id = #{modelId}
+        order by id asc
+    </select>
+
+    <select id="selectByModelIdAndNodeId" resultMap="FlowNodeFormResult">
+        <include refid="selectFlowNodeFormVo"/>
+        where model_id = #{modelId} and node_id = #{nodeId} limit 1
+    </select>
+
+    <select id="selectStartByModelKey" parameterType="String" resultMap="FlowNodeFormResult">
+        <include refid="selectFlowNodeFormVo"/>
+        where model_key = #{modelKey} and node_type = 'start' order by update_time desc limit 1
+    </select>
+
+    <select id="selectByModelKeyAndNodeId" resultMap="FlowNodeFormResult">
+        <include refid="selectFlowNodeFormVo"/>
+        where model_key = #{modelKey} and node_id = #{nodeId} limit 1
+    </select>
+
+    <insert id="insertFlowNodeForm" parameterType="FlowNodeForm" useGeneratedKeys="true" keyProperty="id">
+        insert into flow_node_form
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="modelId != null">model_id,</if>
+            <if test="modelKey != null">model_key,</if>
+            <if test="nodeId != null">node_id,</if>
+            <if test="nodeType != null">node_type,</if>
+            <if test="nodeName != null">node_name,</if>
+            <if test="formName != null">form_name,</if>
+            <if test="formKey != null">form_key,</if>
+            <if test="fieldsJson != null">fields_json,</if>
+            <if test="layoutJson != null">layout_json,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="modelId != null">#{modelId},</if>
+            <if test="modelKey != null">#{modelKey},</if>
+            <if test="nodeId != null">#{nodeId},</if>
+            <if test="nodeType != null">#{nodeType},</if>
+            <if test="nodeName != null">#{nodeName},</if>
+            <if test="formName != null">#{formName},</if>
+            <if test="formKey != null">#{formKey},</if>
+            <if test="fieldsJson != null">#{fieldsJson},</if>
+            <if test="layoutJson != null">#{layoutJson},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFlowNodeForm" parameterType="FlowNodeForm">
+        update flow_node_form
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="modelKey != null">model_key = #{modelKey},</if>
+            <if test="nodeType != null">node_type = #{nodeType},</if>
+            <if test="nodeName != null">node_name = #{nodeName},</if>
+            <if test="formName != null">form_name = #{formName},</if>
+            <if test="formKey != null">form_key = #{formKey},</if>
+            <if test="fieldsJson != null">fields_json = #{fieldsJson},</if>
+            <if test="layoutJson != null">layout_json = #{layoutJson},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where model_id = #{modelId} and node_id = #{nodeId}
+    </update>
+
+    <delete id="deleteByModelIdAndNodeId">
+        delete from flow_node_form where model_id = #{modelId} and node_id = #{nodeId}
+    </delete>
+</mapper>

@@ -11,6 +11,8 @@ import com.alibaba.fastjson2.JSONObject;
  * 背景：参照泛微 e-cology，每个流程表单默认都带这几个系统字段，用户无需手动添加。
  * 这些字段承载平台级语义，不只是展示用：
  *   - 标题(title)        流程标题，发起时写入 Flowable 实例名，列表可快速检索
+ *   - 流程编号(processNo) 按流程「高级设置 → 流程编号规则」生成的业务单号，
+ *                         发起时由后端生成写入数据行与流程变量，表单里只读展示
  *   - 紧急程度(urgency)   档位由 flow_urgency_level 配置表驱动（可自定义名称/排序/封存），
  *                         默认 1普通 / 2紧急 / 3特急，用于待办排序与提醒分级
  *   - 签字意见(signOpinion) 节点办理意见
@@ -28,6 +30,9 @@ public class FlowSystemFields
 
     /** 标题 */
     public static final String FIELD_TITLE = "title";
+
+    /** 流程编号 */
+    public static final String FIELD_PROCESS_NO = "processNo";
 
     /** 紧急程度 */
     public static final String FIELD_URGENCY = "urgency";
@@ -59,6 +64,20 @@ public class FlowSystemFields
         title.put(SYS_FIELD_FLAG, true);
         arr.add(title);
 
+        // 流程编号：只读系统字段，发起时按高级设置里的编号规则生成，不允许人工填写
+        JSONObject processNo = new JSONObject();
+        processNo.put("field", FIELD_PROCESS_NO);
+        processNo.put("label", "流程编号");
+        processNo.put("form", "text");
+        processNo.put("dtype", "text");
+        processNo.put("length", 64);
+        processNo.put("scale", 2);
+        processNo.put("table", "main");
+        processNo.put(SYS_FIELD_FLAG, true);
+        processNo.put("readonly", true);
+        processNo.put("placeholder", "提交后自动生成");
+        arr.add(processNo);
+
         JSONObject urgency = new JSONObject();
         urgency.put("field", FIELD_URGENCY);
         urgency.put("label", "紧急程度");
@@ -81,7 +100,8 @@ public class FlowSystemFields
         sign.put("label", "签字意见");
         sign.put("form", "textarea");
         sign.put("dtype", "text");
-        sign.put("length", 2000);
+        // 签字意见已改为富文本（存 HTML），长度上限 4000，落库为 varchar(4000)
+        sign.put("length", 4000);
         sign.put("scale", 2);
         sign.put("table", "main");
         sign.put(SYS_FIELD_FLAG, true);

@@ -38,7 +38,7 @@
               </span>
             </template>
           </el-tree>
-          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程定义</div>
+          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程数据</div>
         </div>
         </template>
       </div>
@@ -97,8 +97,16 @@
         <div class="field" v-show="showAdvanced">
           <label>流程编号</label>
           <div class="control">
-            <el-input v-model="queryParams.instanceId" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <el-input v-model="queryParams.processNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><CollectionTag /></el-icon></template>
+            </el-input>
+          </div>
+        </div>
+        <div class="field" v-show="showAdvanced">
+          <label>流程请求ID</label>
+          <div class="control">
+            <el-input v-model="queryParams.requestId" placeholder="请输入" clearable @keyup.enter="handleQuery">
+              <template #prefix><el-icon><Tickets /></el-icon></template>
             </el-input>
           </div>
         </div>
@@ -148,7 +156,7 @@
           </el-table-column>
           <el-table-column v-if="columns.title.visible" label="流程标题" prop="title" key="title" :min-width="colWidth('title', 200)" show-overflow-tooltip>
             <template #default="scope">
-              <span class="col-strong link-like" @click="handleView(scope.row)">{{ scope.row.title || '-' }}</span>
+              <span class="col-strong link-like" role="link" tabindex="0" @click="handleView(scope.row)" @keydown.enter="handleView(scope.row)">{{ scope.row.title || '-' }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columns.startUserName.visible" label="创建人" prop="startUserName" key="startUserName" :width="colWidth('startUserName', 110)" align="center" show-overflow-tooltip>
@@ -167,8 +175,11 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column v-if="columns.instanceId.visible" label="流程编号" prop="instanceId" key="instanceId" :min-width="colWidth('instanceId', 180)" show-overflow-tooltip>
-            <template #default="scope"><span class="col-mono">{{ scope.row.instanceId || '-' }}</span></template>
+          <el-table-column v-if="columns.processNo.visible" label="流程编号" prop="processNo" key="processNo" :min-width="colWidth('processNo', 150)" show-overflow-tooltip>
+            <template #default="scope"><span class="col-mono">{{ scope.row.processNo || '-' }}</span></template>
+          </el-table-column>
+          <el-table-column v-if="columns.requestId.visible" label="流程请求ID" prop="requestId" key="requestId" :width="colWidth('requestId', 110)" align="center" show-overflow-tooltip>
+            <template #default="scope"><span class="col-mono">{{ scope.row.requestId || '-' }}</span></template>
           </el-table-column>
           <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
@@ -214,7 +225,7 @@ const detailStatus = ref('')
 const dateRange = ref([])
 
 const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 10, title: undefined, processDefinitionName: undefined, currentActivityName: undefined, startUserName: undefined, instanceId: undefined, processDefinitionKey: undefined, status: undefined }
+  queryParams: { pageNum: 1, pageSize: 10, title: undefined, processDefinitionName: undefined, currentActivityName: undefined, startUserName: undefined, processNo: undefined, requestId: undefined, processDefinitionKey: undefined, status: undefined }
 })
 const { queryParams } = toRefs(data)
 
@@ -226,7 +237,8 @@ const defaultColumns = {
   startTime: { label: '创建时间', visible: true },
   currentActivityName: { label: '当前节点', visible: true },
   status: { label: '当前状态', visible: true },
-  instanceId: { label: '流程编号', visible: true }
+  requestId: { label: '流程请求ID', visible: true },
+  processNo: { label: '流程编号', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -266,7 +278,9 @@ function filterNode(value, nodeData) {
 
 function loadTree() {
   treeLoading.value = true
-  getProcessTree().then(res => {
+  // 数量口径与右侧「我参与的流程」列表一致（含状态筛选），避免左右数据不一致
+  const status = queryParams.value.status || undefined
+  getProcessTree('involved', status).then(res => {
     const groups = res.data || []
     // 根节点"全部流程"，count=各类数量之和
     const totalTree = groups.reduce((s, g) => s + (g.count || 0), 0)
@@ -287,7 +301,8 @@ const activeFilterCount = computed(() => {
   if (queryParams.value.processDefinitionName) count++
   if (queryParams.value.currentActivityName) count++
   if (queryParams.value.startUserName) count++
-  if (queryParams.value.instanceId) count++
+  if (queryParams.value.processNo) count++
+  if (queryParams.value.requestId) count++
   if (queryParams.value.status) count++
   if (dateRange.value && dateRange.value.length === 2) count++
   return count
@@ -318,7 +333,8 @@ function resetQuery() {
   queryParams.value.processDefinitionName = undefined
   queryParams.value.currentActivityName = undefined
   queryParams.value.startUserName = undefined
-  queryParams.value.instanceId = undefined
+  queryParams.value.processNo = undefined
+  queryParams.value.requestId = undefined
   queryParams.value.processDefinitionKey = undefined
   queryParams.value.status = undefined
   dateRange.value = []
@@ -331,12 +347,14 @@ function handleStatusTabClick(s) {
   activeStatusTab.value = s
   queryParams.value.status = s === 'all' ? undefined : s
   handleQuery()
+  loadTree()
 }
 // 高级筛选中状态下拉与页签联动
 function syncStatusTab() {
   const s = queryParams.value.status
   activeStatusTab.value = ['running', 'completed'].includes(s) ? s : 'all'
   handleQuery()
+  loadTree()
 }
 function statusBadge(s) { return { running: 'blue', completed: 'green', canceled: 'gray' }[s] || 'gray' }
 function statusLabel(s) { return { running: '进行中', completed: '已结束', canceled: '已撤销' }[s] || s || '-' }
@@ -466,10 +484,6 @@ onActivated(() => { getList(); loadStatusCounts(); loadTree() })
       height: 32px;
       border-radius: 8px;
     }
-  }
-  .link-like {
-    cursor: pointer;
-    &:hover { color: var(--el-color-primary); }
   }
 }
 </style>

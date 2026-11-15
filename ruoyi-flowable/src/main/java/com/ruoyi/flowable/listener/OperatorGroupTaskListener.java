@@ -14,7 +14,6 @@ import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import org.flowable.common.engine.api.delegate.event.FlowableEvent;
 import org.flowable.common.engine.api.delegate.event.FlowableEventListener;
-import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.task.service.impl.persistence.entity.TaskEntity;
@@ -25,6 +24,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.utils.spring.SpringUtils;
+import com.ruoyi.flowable.service.FlowRuntimeModelService;
 
 /**
  * 操作组任务监听器：任务创建时解析节点扩展属性 flowable:operatorGroups，
@@ -62,8 +62,9 @@ public class OperatorGroupTaskListener implements FlowableEventListener
             {
                 return;
             }
-            RepositoryService repositoryService = SpringUtils.getBean(RepositoryService.class);
-            BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+            // 节点配置以设计器最新保存的模型为准
+            BpmnModel bpmnModel = SpringUtils.getBean(FlowRuntimeModelService.class)
+                    .getByDefinitionId(task.getProcessDefinitionId());
             if (bpmnModel == null)
             {
                 return;

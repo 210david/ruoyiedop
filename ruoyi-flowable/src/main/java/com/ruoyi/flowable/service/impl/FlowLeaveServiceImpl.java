@@ -40,6 +40,10 @@ public class FlowLeaveServiceImpl implements IFlowLeaveService
     @Autowired
     private org.flowable.engine.RepositoryService repositoryService;
 
+    /** 流程定义版本解析：活动版本优先 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
+
     @Autowired
     private HistoryService historyService;
 
@@ -114,10 +118,8 @@ public class FlowLeaveServiceImpl implements IFlowLeaveService
             throw new ServiceException("请选择审批人");
         }
         // 发起流程：businessKey = leaveId，变量 approver 供 UserTask 表达式 ${approver} 使用
-        org.flowable.engine.repository.ProcessDefinition definition = repositoryService
-                .createProcessDefinitionQuery()
-                .processDefinitionKey("leave_process")
-                .latestVersion().singleResult();
+        org.flowable.engine.repository.ProcessDefinition definition = flowDefinitionResolver
+                .requireLaunchable("leave_process");
         if (definition == null)
         {
             throw new ServiceException("流程[leave_process]未部署，请先在流程模型中部署");

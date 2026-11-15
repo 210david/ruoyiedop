@@ -230,6 +230,135 @@ public class AiClient
     }
 
     /**
+     * 多模态调用（文字+图片）：用于截图、图片类方案的文字提取与理解
+     *
+     * @param imageDataUrl data:image/png;base64,xxx 形式的内联图片
+     * @param maxTokens    输出上限（推理模型需预留思考token）
+     * @param timeoutSeconds 超时时间（图片识图通常比纯文本慢）
+     */
+    public AiResult chatVision(String module, String feature, String prompt, String imageDataUrl, int maxTokens,
+            int timeoutSeconds)
+    {
+        long start = System.currentTimeMillis();
+        String status = AiResult.STATUS_SUCCESS;
+        String error = null;
+        String content = null;
+        try
+        {
+            if (StringUtils.isEmpty(imageDataUrl))
+            {
+                return AiResult.failed("图片内容为空，无法识别");
+            }
+            prompt = applyTemplateOverride(module, feature, prompt);
+
+            if (!isEnabled(module, feature))
+            {
+                AiResult r = AiResult.degraded("AI功能未开启");
+                audit(module, feature, AiResult.STATUS_DEGRADED, 0, prompt, "AI功能未开启");
+                return r;
+            }
+            if (isOverLimit())
+            {
+                AiResult r = AiResult.limited();
+                audit(module, feature, AiResult.STATUS_LIMITED, 0, prompt, r.getError());
+                return r;
+            }
+
+            String maskedPrompt = SensitiveDataMasker.mask(prompt);
+            content = doChatVision(maskedPrompt, imageDataUrl, maxTokens, timeoutSeconds);
+            if (content == null)
+            {
+                status = AiResult.STATUS_DEGRADED;
+                error = "AI图片识别失败";
+                AiResult r = AiResult.degraded(error);
+                audit(module, feature, status, System.currentTimeMillis() - start, maskedPrompt, error);
+                return r;
+            }
+
+            increaseCount();
+            long latency = System.currentTimeMillis() - start;
+            audit(module, feature, AiResult.STATUS_SUCCESS, latency, maskedPrompt, null);
+            return AiResult.ok(content, latency);
+        }
+        catch (Exception e)
+        {
+            log.error("AI图片识别异常 module={} feature={}", module, feature, e);
+            status = AiResult.STATUS_FAILED;
+            error = e.getMessage();
+            AiResult r = AiResult.failed(error);
+            audit(module, feature, status, System.currentTimeMillis() - start, prompt, abbreviate(error, 500));
+            return r;
+        }
+    }
+
+    /** 实际调用多模态模型（content 为分段数组） */
+    private String doChatVision(String prompt, String imageDataUrl, int maxTokens, int timeoutSeconds)
+    {
+        try
+        {
+            String apiUrl = getApiUrl();
+            String apiKey = getSecretConfig("ai.api_key");
+            String modelName = getConfig("ai.model_name");
+
+            if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey))
+            {
+                log.warn("AI大模型API地址或Key未配置");
+                return null;
+            }
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", StringUtils.isNotEmpty(modelName) ? modelName : "deepseek-chat");
+            requestBody.put("temperature", 0.1);
+            requestBody.put("max_tokens", maxTokens);
+
+            JSONArray parts = new JSONArray();
+            JSONObject textPart = new JSONObject();
+            textPart.put("type", "text");
+            textPart.put("text", prompt);
+            parts.add(textPart);
+
+            JSONObject imagePart = new JSONObject();
+            imagePart.put("type", "image_url");
+            JSONObject imageUrl = new JSONObject();
+            imageUrl.put("url", imageDataUrl);
+            imagePart.put("image_url", imageUrl);
+            parts.add(imagePart);
+
+            JSONObject message = new JSONObject();
+            message.put("role", "user");
+            message.put("content", parts);
+            JSONArray messages = new JSONArray();
+            messages.add(message);
+            requestBody.put("messages", messages);
+
+            HttpResponse<String> response = send(apiUrl, apiKey, requestBody, timeoutSeconds);
+            if (response.statusCode() == 200)
+            {
+                JSONObject respJson = JSON.parseObject(response.body());
+                JSONArray choices = respJson.getJSONArray("choices");
+                if (choices != null && !choices.isEmpty())
+                {
+                    JSONObject msg = choices.getJSONObject(0).getJSONObject("message");
+                    String reply = msg != null ? msg.getString("content") : null;
+                    if (StringUtils.isNotEmpty(reply))
+                    {
+                        return reply.trim();
+                    }
+                }
+            }
+            else
+            {
+                log.error("AI图片识别调用失败, HTTP {}: {}", response.statusCode(), response.body());
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("AI图片识别调用异常", e);
+        }
+        return null;
+    }
+
+    /**
      * 应用自定义模板覆盖：读取 ai.prompt.<module>.<feature>，
      * 含 {prompt} 占位符则嵌入业务原始提示词（含业务数据），否则整体替换
      */
@@ -434,7 +563,7 @@ public class AiClient
 
     // ==================== 内部实现 ====================
 
-    /** 调用LLM（瞬时失败自动重试：共尝试最多 1+RETRY_TIMES 次，间隔 RETRY_INTERVAL_MS 毫秒，避免用户直接看到"AI调用失败"） */
+        /** 调用LLM（瞬时失败自动重试：共尝试最多 1+RETRY_TIMES 次，间隔 RETRY_INTERVAL_MS 毫秒，避免用户直接看到"AI调用失败"） */
     private String doChatWithRetry(String prompt, int maxTokens)
     {
         String content = doChat(prompt, maxTokens);
@@ -457,7 +586,8 @@ public class AiClient
 
     /** 实际调用LLM，返回content或null */
     private String doChat(String prompt, int maxTokens)
-    {        try
+    {
+        try
         {
             String apiUrl = getApiUrl();
             String apiKey = getSecretConfig("ai.api_key");
