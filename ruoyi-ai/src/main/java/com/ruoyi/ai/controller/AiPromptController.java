@@ -36,6 +36,8 @@ public class AiPromptController extends AiBaseConfigController
         FEATURE_NAMES.put("report_draft", "质量报告初稿（QMS）");
         FEATURE_NAMES.put("abnormal_advice", "异常诊断建议（MMS）");
         FEATURE_NAMES.put("daily_report", "生产日报生成（MMS）");
+        FEATURE_NAMES.put("flow_generate", "AI流程生成（Flowable）");
+        FEATURE_NAMES.put("flow_ocr", "AI流程截图识别（Flowable）");
         FEATURE_NAMES.put("request_advice", "采购申请建议（PMS）");
         FEATURE_NAMES.put("price_summary", "比价分析摘要（PMS）");
         FEATURE_NAMES.put("content_copy", "内容文案生成（MK）");
