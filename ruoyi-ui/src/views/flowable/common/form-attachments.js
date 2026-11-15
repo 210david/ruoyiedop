@@ -32,9 +32,10 @@ function splitUrls(value) {
  *
  * @param {Array} fields 表单字段定义
  * @param {Object} values 表单值（流程变量，明细在 values.detailData）
+ * @param {Object} [meta] 上传人/上传时间（表单附件没有独立的登记记录，取流程发起人 + 发起时间）
  * @returns {Array<{attachId:null,fileName:string,fileUrl:string,fileSize:null,taskName:string,uploaderName:string,createTime:string}>}
  */
-export function collectFormAttachments(fields, values) {
+export function collectFormAttachments(fields, values, meta = {}) {
   const rows = [];
   if (!Array.isArray(fields) || !values) return rows;
   const seen = new Set();
@@ -47,8 +48,8 @@ export function collectFormAttachments(fields, values) {
       fileUrl: url,
       fileSize: null,
       taskName: label || FORM_SOURCE,
-      uploaderName: '',
-      createTime: '',
+      uploaderName: meta.uploaderName || '',
+      createTime: meta.createTime || '',
     });
   };
   for (const f of fields) {

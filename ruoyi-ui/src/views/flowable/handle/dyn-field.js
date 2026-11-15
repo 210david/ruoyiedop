@@ -11,8 +11,8 @@ export const DynField = defineComponent({
   props: {
     f: { type: Object, required: true },
     modelValue: { type: [String, Number, Boolean, Array], default: undefined },
-    /** 浏览按钮伴生值：已选 ID（逗号分隔），仅用于弹框回显 */
-    modelIds: { type: [String, Array], default: '' }
+    /** 浏览按钮伴生值：已选 ID（逗号分隔），仅用于弹框回显（兼容数字 ID 与数组） */
+    modelIds: { type: [String, Number, Array], default: '' }
   },
   emits: ['update:modelValue', 'update:modelIds'],
   setup(props, { emit }) {

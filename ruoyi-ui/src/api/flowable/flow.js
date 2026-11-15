@@ -56,9 +56,6 @@ export function setActiveDefinition(definitionId) {
 }
 
 // ===== 流程实例 =====
-export function startProcess(data) {
-  return request({ url: '/flowable/process/start', method: 'post', data: data })
-}
 
 export function listMyProcess(query) {
   return request({ url: '/flowable/process/myList', method: 'get', params: query })
@@ -82,9 +79,10 @@ export function listAllTask(query) {
   return request({ url: '/flowable/task/allList', method: 'get', params: query })
 }
 
-// 流程分类树（待办/查询页左侧树）
-export function getProcessTree() {
-  return request({ url: '/flowable/process/tree', method: 'get' })
+// 流程分类树（待办/已办/查询/我的请求页左侧树）
+// scope：页面数据口径 todo/returned/cc/draft/all/done/my/involved/monitor；status：与右侧列表状态页签一致
+export function getProcessTree(scope, status) {
+  return request({ url: '/flowable/process/tree', method: 'get', params: { scope, status } })
 }
 
 export function countTodoTask() {
@@ -126,6 +124,11 @@ export function addSignTask(taskId, targetUserId, comment) {
 // 办理页「终止」：办理人强制结束流程
 export function terminateTask(taskId, reason) {
   return request({ url: '/flowable/task/terminate/' + taskId, method: 'put', params: { reason } })
+}
+
+// 我的已办「收回」：下一节点办理前，把流程收回到本节点重新办理
+export function recallMyTask(instanceId, reason) {
+  return request({ url: '/flowable/task/recall/' + instanceId, method: 'put', params: { reason } })
 }
 
 // 办理页「抄送」：把手动选择的接收人写入待阅

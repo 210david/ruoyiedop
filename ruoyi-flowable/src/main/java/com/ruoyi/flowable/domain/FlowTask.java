@@ -102,6 +102,29 @@ public class FlowTask extends BaseEntity
     /** 待办查询条件：true=仅看被退回的 / false=仅看正常待办 / null=全部 */
     private Boolean returnedOnly;
 
+    /** 已办行是否允许「收回」：下一节点办理前，本节点办理人可把流程收回重新办理 */
+    private Boolean canRecall;
+
+    /** 查看时间（流程状态：待办人员点开查看时间，对标泛微「已查看」操作状态） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date viewTime;
+
+    /** 抄送人姓名（抄送记录使用：该条抄送由谁发起） */
+    private String receiverName;
+
+    /**
+     * 是否被管理员干预跳过：任务被强制结束但从未有人办理。
+     * 流程状态/审批意见据此把「未办理」标注为「干预跳过」，避免与正常未办理混淆。
+     */
+    private Boolean skipped;
+
+    /**
+     * 是否为不单独展示的发起人（开始）节点任务行。
+     * 初次提交由流程记录里的开始行（发起提交）代表；强制收回后的再次提交也不留痕。
+     * 被「退回」到发起人后的再次提交属于新的业务动作，不标记该字段，正常成行。
+     */
+    private Boolean initiatorPending;
+
     public String getTaskId() { return taskId; }
     public void setTaskId(String taskId) { this.taskId = taskId; }
     public String getTaskName() { return taskName; }
@@ -156,4 +179,14 @@ public class FlowTask extends BaseEntity
     public void setReturnTime(String returnTime) { this.returnTime = returnTime; }
     public Boolean getReturnedOnly() { return returnedOnly; }
     public void setReturnedOnly(Boolean returnedOnly) { this.returnedOnly = returnedOnly; }
+    public Boolean getCanRecall() { return canRecall; }
+    public void setCanRecall(Boolean canRecall) { this.canRecall = canRecall; }
+    public Date getViewTime() { return viewTime; }
+    public void setViewTime(Date viewTime) { this.viewTime = viewTime; }
+    public String getReceiverName() { return receiverName; }
+    public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
+    public Boolean getSkipped() { return skipped; }
+    public void setSkipped(Boolean skipped) { this.skipped = skipped; }
+    public Boolean getInitiatorPending() { return initiatorPending; }
+    public void setInitiatorPending(Boolean initiatorPending) { this.initiatorPending = initiatorPending; }
 }

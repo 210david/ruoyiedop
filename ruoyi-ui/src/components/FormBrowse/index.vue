@@ -37,8 +37,8 @@ const props = defineProps({
   f: { type: Object, default: () => ({}) },
   /** 显示值：已选名称 */
   modelValue: { type: [String, Number], default: '' },
-  /** 存储值：已选 ID（逗号分隔），用于弹框回显 */
-  modelIds: { type: [String, Array], default: '' },
+  /** 存储值：已选 ID（逗号分隔），用于弹框回显（兼容数字 ID 与数组） */
+  modelIds: { type: [String, Number, Array], default: '' },
   /** 附加信息（人员字段带回部门等），由父级存到 `${field}__extra` */
   modelExtra: { type: Object, default: null },
   disabled: { type: Boolean, default: false },

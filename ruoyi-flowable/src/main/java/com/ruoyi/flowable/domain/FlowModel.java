@@ -77,6 +77,9 @@ public class FlowModel extends BaseEntity
     /** 流程编号规则（JSON 字符串，存于 metaInfo） */
     private String processNoRule;
 
+    /** 跳过相同审批人：相邻两个节点办理人为同一人时自动跳过后一节点（存于 metaInfo，部署时写入 BPMN） */
+    private Boolean skipSameApprover;
+
     /** 版本备注说明（来自扩展表，展示用） */
     private String remark;
 
@@ -137,6 +140,8 @@ public class FlowModel extends BaseEntity
     public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
     public String getProcessNoRule() { return processNoRule; }
     public void setProcessNoRule(String processNoRule) { this.processNoRule = processNoRule; }
+    public Boolean getSkipSameApprover() { return skipSameApprover; }
+    public void setSkipSameApprover(Boolean skipSameApprover) { this.skipSameApprover = skipSameApprover; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public String getActiveFlag() { return activeFlag; }

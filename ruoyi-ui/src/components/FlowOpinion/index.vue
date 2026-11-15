@@ -102,9 +102,21 @@ const ACTION_MAP = {
   approved: { text: '同意', tone: 'green' },
   rejected: { text: '驳回', tone: 'red' },
   delegate: { text: '转办', tone: 'blue' },
+  cc: { text: '抄送', tone: 'blue' },
   canceled: { text: '撤销', tone: 'gray' },
   end: { text: '流程结束', tone: 'green' },
-  undone: { text: '未办理', tone: 'gray' }
+  undone: { text: '未办理', tone: 'gray' },
+  intervene: { text: '管理员干预', tone: 'violet' }
+}
+
+/** 抄送/抄送动作是操作记录，不参与「接收人」推导与耗时计算，也不单独成行 */
+function isCcRow(t) {
+  return t && (t.outcome === 'cc' || t.outcome === 'ccSend')
+}
+
+/** 管理员干预行：后台调整流程节点，单独成行展示，不参与「下一节点」推导 */
+function isInterveneRow(t) {
+  return t && t.outcome === 'intervene'
 }
 
 /** 长意见折叠阈值（字符数） */
@@ -149,25 +161,42 @@ const filesByTask = computed(() => {
  */
 const rows = computed(() => {
   const list = (props.tasks || [])
-    .filter(t => t && t.taskId !== '__end__')
+    // 抄送记录只在「流程状态」展示（本卡片底部已有抄送人汇总），避免签批意见表重复成行
+    .filter(t => t && t.taskId !== '__end__' && !isCcRow(t))
     .filter(t => props.showStart || t.outcome !== 'start')
+    // 发起人（开始）节点任务由 __start__ 发起记录代表，不单独成行，也不参与「接收人」推导
+    .filter(t => !t.initiatorPending)
   const isEnded = ended.value
   return list.map((t, index) => {
     const meta = ACTION_MAP[t.outcome] || null
-    const opinion = opinionOf(t.comment)
+    // 转办说明属于办理动作，放到「接收人」列展示，不再占用签字意见列
+    const isDelegate = t.outcome === 'delegate'
+    const isIntervene = isInterveneRow(t)
+    const rawComment = opinionOf(t.comment)
+    const opinion = isDelegate ? '' : rawComment
     const state = t.state || (t.endTime ? 'done' : 'pending')
     const pending = state === 'pending' && !isEnded
     // 未办理：候选池里没抢到的其他候选人；或撤销/终止时引擎补了 endTime 但无人真正办理
-    const unhandled = state === 'undone' || (isEnded && !t.outcome && !opinion)
-    // 下一节点：跳过同任务的其他候选人行；接收人列出该节点全部办理人（候选池多人时一并展示）
-    const next = list.slice(index + 1).find(x => x.taskId !== t.taskId)
+    const unhandled = !t.skipped && (state === 'undone' || (isEnded && !t.outcome && !opinion))
+    // 下一节点：跳过同任务的其他候选人行、抄送记录与管理员干预行；接收人列出该节点全部办理人
+    const next = list.slice(index + 1).find(x => x.taskId !== t.taskId && !isCcRow(x) && !isInterveneRow(x))
     const nextNames = next
       ? [...new Set(list.filter(x => x.taskId === next.taskId)
         .map(x => x.assigneeName || (x.assigneeId ? String(x.assigneeId) : ''))
         .filter(Boolean))]
       : []
     let receiver = ''
-    if (!unhandled) {
+    if (isDelegate) {
+      // 转办：接收人就是被转办人；转办说明与「转办给XX」重复时不再拼接
+      const note = rawComment && !rawComment.includes(t.receiverName || '\u0000') ? '（' + rawComment + '）' : ''
+      receiver = '转办给 ' + (t.receiverName || '-') + note
+    } else if (t.outcome === 'cc') {
+      // 抄送记录：接收人就是被抄送人
+      receiver = t.receiverName || ''
+    } else if (isIntervene) {
+      // 管理员干预：接收人就是调整后的目标节点 + 指定办理人
+      receiver = t.receiverName || ''
+    } else if (!unhandled) {
       if (next) receiver = next.taskName + (nextNames.length ? '：' + nextNames.join('、') : '（待认领）')
       else if (isEnded) receiver = '流程结束'
     }
@@ -176,21 +205,27 @@ const rows = computed(() => {
       taskName: t.taskName,
       person: t.assigneeName || (t.assigneeId ? String(t.assigneeId) : ''),
       avatar: avatarChar(t.assigneeName || t.assigneeId),
+      outcome: t.outcome,
+      skipped: !!t.skipped,
+      initiatorPending: !!t.initiatorPending,
       pending,
       unhandled,
-      // 无意见时的空态文案：待办 / 候选未中签（流程还在走）/ 流程结束未办理 / 无
-      noneNote: pending
-        ? '等待办理，暂无意见'
-        : (t.state === 'undone' && !isEnded ? '本人未办理（该环节已由他人处理）' : (unhandled ? '流程结束前未办理' : '—')),
-      tone: pending ? 'amber' : (unhandled ? 'gray' : (meta ? meta.tone : 'gray')),
-      actionText: pending ? '待办理' : (unhandled ? '未办理' : (meta ? meta.text : '已办理')),
+      // 无意见时的空态文案：待办 / 未办理 / 候选未中签（流程还在走）/ 流程结束未办理 / 无
+      noneNote: t.skipped
+        ? '本人未办理（该环节已由他人处理）'
+        : (pending
+          ? '等待办理，暂无意见'
+          : (t.state === 'undone' && !isEnded ? '本人未办理（该环节已由他人处理）' : (unhandled ? '流程结束前未办理' : '—'))),
+      tone: t.skipped ? 'gray' : (pending ? 'amber' : (unhandled ? 'gray' : (meta ? meta.tone : 'gray'))),
+      // 节点行只显示办理人自己的操作：未办理；管理员干预单独成行
+      actionText: t.skipped ? '未办理' : (pending ? '待办理' : (unhandled ? '未办理' : (meta ? meta.text : '已办理'))),
       opinion,
       long: opinion.length > LONG_LIMIT || opinion.split('\n').length > 3,
-      timeText: pending ? shortTime(t.createTime) : (unhandled ? '' : shortTime(t.endTime || t.createTime)),
-      costText: pending || unhandled || t.outcome === 'start' ? '' : durationText(t.createTime, t.endTime),
+      timeText: (pending || t.skipped) ? shortTime(t.endTime || t.createTime) : (unhandled ? '' : shortTime(t.endTime || t.createTime)),
+      costText: pending || unhandled || t.skipped || t.outcome === 'start' || isCcRow(t) ? '' : durationText(t.createTime, t.endTime),
       receiver,
-      // 未办理行不挂环节附件：附件是该环节实际办理时上传的，不属于没办理的人
-      files: unhandled ? [] : (filesByTask.value[t.taskId] || [])
+      // 未办理/被跳过的行不挂环节附件：附件是该环节实际办理时上传的
+      files: (unhandled || t.skipped) ? [] : (filesByTask.value[t.taskId] || [])
     }
   })
 })
@@ -198,8 +233,10 @@ const rows = computed(() => {
 const pendingCount = computed(() => rows.value.filter(r => r.pending).length)
 const undoneCount = computed(() => rows.value.filter(r => r.unhandled).length)
 
-/** 表格展示行：开启「仅看有意见」时过滤掉无意见的记录 */
-const visibleRows = computed(() => (onlyOpinion.value ? rows.value.filter(r => r.opinion) : rows.value))
+/** 表格展示行：开启「仅看有意见」时过滤掉无意见的记录（管理员干预是流程轨迹，始终保留） */
+const visibleRows = computed(() => (onlyOpinion.value
+  ? rows.value.filter(r => r.opinion || r.outcome === 'intervene')
+  : rows.value))
 
 /** 抄送人：同一人多次抄送只显示一次，tooltip 给出抄送环节/时间/抄送人 */
 const ccReceivers = computed(() => {
@@ -219,10 +256,11 @@ const ccReceivers = computed(() => {
   return [...map.values()]
 })
 
-/** 待办行 / 未办理行高亮 */
+/** 待办行 / 未办理行 / 管理员干预行高亮 */
 function rowClass({ row }) {
   if (row.pending) return 'fo-row-pending'
-  if (row.unhandled) return 'fo-row-unhandled'
+  if (row.outcome === 'intervene') return 'fo-row-intervene'
+  if (row.unhandled || row.skipped) return 'fo-row-unhandled'
   return ''
 }
 
@@ -243,11 +281,11 @@ function opinionOf(comment) {
   }
 }
 
-/** 头像占位字符：中文取末字，英文取首字母 */
+/** 头像占位字符：中文取姓（首字），英文取首字母 */
 function avatarChar(name) {
   const s = String(name || '').trim()
   if (!s) return '·'
-  return /[\u4e00-\u9fa5]/.test(s) ? s.slice(-1) : s.slice(0, 1).toUpperCase()
+  return /[\u4e00-\u9fa5]/.test(s) ? s.slice(0, 1) : s.slice(0, 1).toUpperCase()
 }
 
 /** 时间显示：去掉毫秒与秒，只留到分钟 */
@@ -403,6 +441,10 @@ $c-line: #e9eef5;
   }
   :deep(.fo-row-unhandled) {
     --el-table-tr-bg-color: #fafbfc;
+  }
+  /* 管理员干预行淡紫底：与审批人操作行区分开 */
+  :deep(.fo-row-intervene) {
+    --el-table-tr-bg-color: #f7f5ff;
   }
 }
 

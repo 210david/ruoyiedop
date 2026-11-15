@@ -5,23 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
-import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
-import com.ruoyi.flowable.domain.dto.FlowStartDTO;
 import com.ruoyi.flowable.service.IFlowProcessService;
 
 /**
@@ -35,18 +29,6 @@ public class FlowProcessController extends BaseController
 {
     @Autowired
     private IFlowProcessService flowProcessService;
-
-    /**
-     * 发起流程
-     */
-    @Log(title = "流程实例", businessType = BusinessType.INSERT)
-    @PreAuthorize("@ss.hasPermi('flowable:process:start')")
-    @PostMapping("/start")
-    public AjaxResult start(@Validated @RequestBody FlowStartDTO dto)
-    {
-        // 显式返回 (msg, data)：success(String) 重载会把实例ID放进 msg，前端取 data 时拿不到
-        return AjaxResult.success("操作成功", flowProcessService.startProcess(dto));
-    }
 
     /**
      * 查询我发起的流程（支持流程标题/创建日期等条件，内存过滤后手动分页）
@@ -86,12 +68,17 @@ public class FlowProcessController extends BaseController
 
     /**
      * 流程分类树（左侧树）
+     *
+     * @param scope  数据口径：todo 待办 / returned 退回 / cc 待阅 / draft 草稿 / all 待办-全部 /
+     *               done 已办 / my 我的请求 / involved 流程查询 / monitor 流程监控
+     * @param status 状态页签（与右侧列表页签保持一致）
      */
     @PreAuthorize("@ss.hasAnyPermi('flowable:task:todo,flowable:task:done,flowable:process:query,flowable:process:start,flowable:process:myList')")
     @GetMapping("/tree")
-    public AjaxResult tree()
+    public AjaxResult tree(@RequestParam(value = "scope", required = false) String scope,
+            @RequestParam(value = "status", required = false) String status)
     {
-        return success(flowProcessService.selectProcessTree());
+        return success(flowProcessService.selectProcessTree(scope, status));
     }
 
     /**
@@ -135,6 +122,19 @@ public class FlowProcessController extends BaseController
     public AjaxResult nodeViewed(@PathVariable("taskId") String taskId)
     {
         flowProcessService.recordNodeView(taskId);
+        return success();
+    }
+
+    /**
+     * 记录流程已查看（本人打开流程详情时上报）
+     *
+     * 仅当本人是该实例当前待办的办理人或候选人时写入，供流程状态展示查看时间；
+     * 与 nodeViewed 共用 flow_node_viewer，失败不影响查看，故不抛业务异常。
+     */
+    @PostMapping("/viewInstance/{instanceId}")
+    public AjaxResult viewInstance(@PathVariable("instanceId") String instanceId)
+    {
+        flowProcessService.recordInstanceView(instanceId);
         return success();
     }
 

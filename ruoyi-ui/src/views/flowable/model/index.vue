@@ -331,7 +331,7 @@
         <el-form-item label="版本内容">
           <el-button plain icon="View" @click="openVersionView" v-hasPermi="['flowable:definition:query']">查看节点/XML</el-button>
           <el-button plain icon="RefreshLeft" @click="loadVersionIntoDesigner" v-hasPermi="['flowable:model:edit']">载入到设计器</el-button>
-          <div class="form-tip" style="margin-top: 6px">载入会把当前画布替换成该版本内容（不自动保存），确认后用右上「保存」写回草稿，再部署即成为新版本</div>
+          <div class="form-tip" style="margin-top: 6px">载入会把当前画布替换成该版本内容（不自动保存），确认后点右上「存为新版」即生成新版本（会先自动保存草稿）</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -381,7 +381,9 @@
           <div class="designer-actions">
             <!-- 流转设置页签的保存由子页签内的「编辑」页承载，顶部保存对该页无意义；
  关闭按钮保留，保证任何页签都有明确退出入口 -->
-            <el-button v-if="designTab !== 'flow'" type="primary" icon="Check" @click="saveDesigner" v-hasPermi="['flowable:model:edit']">保存</el-button>
+            <el-button v-if="designTab !== 'flow'" type="primary" icon="Check" @click="saveDesigner()" v-hasPermi="['flowable:model:edit']">保存</el-button>
+            <!-- 存为新版：先保存当前设计再部署，生成该流程的新版本（历史版本并存，运行中实例继续按原版本走完） -->
+            <el-button type="success" icon="Promotion" @click="deployFromDesigner" v-hasPermi="['flowable:model:deploy']">存为新版</el-button>
             <el-button @click="designOpen = false">关 闭</el-button>
           </div>
         </div>
@@ -425,6 +427,10 @@
               </el-select>
               <div class="form-tip">也可在"表单管理"页签查看表单详情；修改后点击右上"保存"生效</div></el-form-item
             >
+            <el-form-item label="跳过相同审批人">
+              <el-switch v-model="designModel.skipSameApprover" active-text="开启" inactive-text="关闭" />
+              <div class="form-tip">开启后，相邻两个节点办理人为同一人时，后一节点自动跳过；关闭则同一人仍需再次审批。保存后立即生效，进行中的流程从下一节点开始按新设置判断</div>
+            </el-form-item>
             <el-form-item label="当前状态">
               <span class="badge" :class="designModel.deployed === '1' ? 'green' : 'gray'"><span class="dot"></span>{{ designModel.deployed === '1' ? '已部署' : '未部署' }}</span>
               <span class="badge blue" style="margin-left: 8px" v-if="designActiveVersion"><span class="dot"></span>当前版本 V{{ designActiveVersion }}</span>
@@ -766,7 +772,7 @@
                       </div>
                       <div class="props-tip">每个节点可设置独立表单、表单样式与字段必填</div>
                     </el-form-item>
-                    <el-form-item label="打印模板">
+                    <el-form-item v-if="!selectedElement.isEnd" label="打印模板">
                       <div class="props-link-row">
                         <el-button link type="primary" class="props-link" :title="printTemplateText(selectedElement)" @click="openPrintTemplate(selectedElement)">{{
                           printTemplateText(selectedElement)
@@ -788,7 +794,15 @@
                         }}</el-button>
                         <el-button link type="primary" icon="Setting" class="props-link-gear" title="配置操作菜单" @click="openNodeOpMenu(selectedElement)" />
                       </div>
-                      <div class="props-tip">勾选该节点办理页显示的操作按钮</div>
+                      <div class="props-tip">
+                        {{ selectedElement.isStart ? '申请节点只保留发起场景按钮（提交 / 打印 / 抄送）' : '审批节点默认勾选提交、退回、打印、抄送' }}
+                      </div>
+                    </el-form-item>
+                    <el-form-item v-if="!selectedElement.isEnd" label="强制收回">
+                      <div class="props-link-row">
+                        <el-switch v-model="selectedElement.allowRecall" inline-prompt active-text="允许" inactive-text="关闭" @change="setAllowRecall" />
+                      </div>
+                      <div class="props-tip">默认允许；下一节点办理前，本节点办理人可在「待办流程-已办」收回流程，回到本节点重新办理</div>
                     </el-form-item>
                     <el-form-item v-if="selectedElement.isUserTask" label="抄送人员">
                       <div class="props-link-row">
@@ -804,6 +818,22 @@
                     <div class="cond-head">
                       <span class="cond-head-title">分支条件</span>
                       <el-switch v-model="condAdvanced" size="small" inline-prompt active-text="表达式" inactive-text="配置" @change="onCondModeChange" />
+                    </div>
+
+                    <!-- 默认出口：兜底分支，不参与条件判断（仅排他/包容网关有效，同一网关只能有一条） -->
+                    <div v-if="selectedElement.defaultFlowSupported" class="cond-default">
+                      <div class="cond-default-row">
+                        <span class="cond-default-label">默认出口</span>
+                        <el-switch
+                          v-model="selectedElement.isDefaultFlow"
+                          size="small"
+                          inline-prompt
+                          active-text="默认"
+                          inactive-text="非默认"
+                          @change="setDefaultFlow"
+                        />
+                      </div>
+                      <div class="props-tip">默认出口不参与条件判断：所有条件都不成立时走这里；同一网关只能有一条，设为默认会清空该出口的条件。</div>
                     </div>
 
                     <template v-if="!condAdvanced">
@@ -910,7 +940,7 @@
           </div>
         </div>
         <!-- 设置操作人员：处理方式 + 办理方式 + 参与者模式 + 关系对象 -->
-        <el-dialog v-model="participantOpen" width="860px" append-to-body draggable class="rd-dialog" destroy-on-close :close-on-click-modal="false">
+        <el-dialog v-model="participantOpen" width="1032px" append-to-body draggable class="rd-dialog" destroy-on-close :close-on-click-modal="false">
           <template #header>
             <div class="rd-detail-header">
               <div class="rd-detail-header-icon">
@@ -923,44 +953,67 @@
               </div>
             </div>
           </template>
-          <el-form v-if="selectedElement" label-width="96px" size="small">
-            <el-form-item v-if="participantDraft.scope === 'cc'" label="抄送时机">
-              <el-radio-group v-model="participantDraft.timing" @change="onCcTimingChange">
-                <el-radio value="enter">节点到达时</el-radio>
-                <el-radio value="complete">办理完成后</el-radio>
-                <el-radio value="both">两者都抄送</el-radio>
-              </el-radio-group>
-              <div class="props-tip">抄送人在「待办流程-待阅」中查看流程详情并标记已读</div>
-            </el-form-item>
-            <el-form-item v-if="participantDraft.scope !== 'cc'" label="处理方式">
-              <el-radio-group v-model="selectedElement.handleMode" size="small" @change="onHandleModeChange">
-                <el-radio-button value="assign">指定</el-radio-button>
-                <el-radio-button value="candidate" :disabled="selectedElement.performMode !== 'claim'">候选</el-radio-button>
-                <el-radio-button value="runtime">提交时指定</el-radio-button>
-              </el-radio-group>
-              <div class="props-tip">指定：按配置算出的人直接落到人（会签/串签每人一个任务）；候选：算出的范围进候选池，认领即办（仅抢占）；提交时指定：上一环节提交时从范围内选人</div>
-            </el-form-item>
-            <el-form-item v-if="selectedElement.isUserTask && participantDraft.scope !== 'cc'" label="办理方式">
-              <el-radio-group v-model="selectedElement.performMode" size="small" @change="onPerformModeChange">
-                <el-radio-button value="and">会签</el-radio-button>
-                <el-radio-button value="seq">串签</el-radio-button>
-                <el-radio-button value="claim">抢占</el-radio-button>
-              </el-radio-group>
-              <div class="props-tip">会签：多人并行办理；串签：按顺序依次办理；抢占：任一人办理即通过</div>
-            </el-form-item>
-            <el-form-item :label="participantDraft.scope === 'cc' ? '抄送对象' : '关系对象'">
-              <div class="pc-rel-groups">
-                <div v-for="g in RELATION_GROUPS" :key="g.label" class="pc-rel-group">
-                  <span class="pc-rel-group-label">{{ g.label }}</span>
-                  <el-radio-group v-model="participantDraft.relType" @change="onRelTypeChange">
-                    <el-radio v-for="r in g.options" :key="r.type" :value="r.type">{{ r.label }}</el-radio>
-                  </el-radio-group>
-                </div>
+          <el-form v-if="selectedElement" label-width="96px" size="small" class="pc-form">
+            <div class="pc-section">
+              <div class="pc-section-head">
+                <span class="pc-section-title">{{ participantDraft.scope === 'cc' ? '抄送规则' : '办理规则' }}</span>
+                <span class="pc-section-desc">{{ participantDraft.scope === 'cc' ? '设置抄送时机与接收人' : '先决定任务怎么派，再选择具体操作人' }}</span>
               </div>
-              <div class="props-tip">先选关系对象，再在下方选择具体人员 / 部门 / 角色 / 岗位 / 节点 / 表单字段</div>
-            </el-form-item>
+              <el-form-item v-if="participantDraft.scope === 'cc'" label="抄送时机">
+                <el-radio-group v-model="participantDraft.timing" @change="onCcTimingChange">
+                  <el-radio value="enter">节点到达时</el-radio>
+                  <el-radio value="complete">办理完成后</el-radio>
+                  <el-radio value="both">两者都抄送</el-radio>
+                </el-radio-group>
+                <div class="props-tip">抄送人在「待办流程-待阅」中查看流程详情并标记已读</div>
+              </el-form-item>
+              <template v-else>
+                <el-form-item label="处理方式">
+                  <el-radio-group v-model="selectedElement.handleMode" size="small" @change="onHandleModeChange">
+                    <el-radio-button value="assign">指定</el-radio-button>
+                    <el-radio-button value="runtime" :disabled="selectedElement.performMode !== 'claim'">提交时指定</el-radio-button>
+                  </el-radio-group>
+                  <div class="pc-mode-tip">
+                    <span class="pc-mode-badge">{{ currentHandleModeLabel }}</span>
+                    <span>{{ handleModeTip }}</span>
+                  </div>
+                  <div v-if="selectedElement.performMode === 'claim' && selectedElement.handleMode === 'runtime'" class="pc-mode-compare">
+                    <span><b>提交时指定</b>：上一环节提交时从范围内指定 1 人办理</span>
+                  </div>
+                </el-form-item>
+                <el-form-item v-if="selectedElement.isUserTask" label="办理方式">
+                  <el-radio-group v-model="selectedElement.performMode" size="small" @change="onPerformModeChange">
+                    <el-radio-button value="and">会签</el-radio-button>
+                    <el-radio-button value="seq">串签</el-radio-button>
+                    <el-radio-button value="claim">抢占</el-radio-button>
+                  </el-radio-group>
+                  <div class="pc-mode-tip">
+                    <span class="pc-mode-badge">{{ currentPerformModeLabel }}</span>
+                    <span>{{ performModeTip }}</span>
+                  </div>
+                </el-form-item>
+              </template>
+            </div>
+            <div class="pc-section">
+              <div class="pc-section-head">
+                <span class="pc-section-title">{{ participantDraft.scope === 'cc' ? '抄送范围' : '操作人范围' }}</span>
+                <span class="pc-section-desc">先选关系对象，再选择具体对象或直接添加</span>
+              </div>
+              <el-form-item :label="participantDraft.scope === 'cc' ? '抄送对象' : '关系对象'">
+                <div class="pc-rel-groups">
+                  <el-radio-group v-model="participantDraft.relCategory" class="pc-rel-tabs" @change="onRelCategoryChange">
+                    <el-radio-button v-for="g in RELATION_GROUPS" :key="g.key" :value="g.key">{{ g.label }}</el-radio-button>
+                  </el-radio-group>
+                  <div class="pc-rel-panel">
+                    <span class="pc-rel-group-hint">{{ pcRelationHint }}</span>
+                    <el-radio-group v-model="participantDraft.relType" class="pc-rel-radios" @change="onRelTypeChange">
+                      <el-radio v-for="r in pcRelationOptions" :key="r.type" :value="r.type" border size="small" class="pc-rel-chip">{{ r.label }}</el-radio>
+                    </el-radio-group>
+                  </div>
+                </div>
+              </el-form-item>
 
-            <el-form-item label="选择对象">
+              <el-form-item label="选择对象">
               <div class="pc-pick-row">
                 <template v-if="pcPickerKind === 'user'">
                   <el-button size="small" icon="User" @click="openPcUserPicker">选择人员</el-button>
@@ -981,49 +1034,70 @@
                   <el-radio-group v-model="participantDraft.nodeRelation">
                     <el-radio value="self">{{ pcNodeSelfLabel }}</el-radio>
                     <el-radio value="leader">{{ pcNodeLeaderLabel }}</el-radio>
+                    <el-radio value="chargeLeader">{{ pcNodeChargeLeaderLabel }}</el-radio>
                   </el-radio-group>
                 </template>
-                <template v-else>
-                  <el-select v-model="participantDraft.fieldKey" filterable clearable placeholder="选择表单字段" style="width: 260px">
-                    <el-option v-for="f in formFieldOptions" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" />
+                <template v-else-if="pcPickerKind === 'field'">
+                  <el-select v-model="participantDraft.fieldKey" filterable clearable :placeholder="'选择' + (pcFieldWantDept ? '部门' : '人员') + '字段'" style="width: 260px">
+                    <el-option v-for="f in pcFieldOptions" :key="f.field" :label="f.label + '（' + f.field + '）'" :value="f.field" />
                   </el-select>
                 </template>
-                <span v-if="pcPickerKind !== 'node' && pcPickerKind !== 'field'" class="pc-picked">{{ pcPickedText }}</span>
+                <span v-else class="pc-all-users">全部启用人员，无需选择对象</span>
+                <span v-if="pcPickerKind !== 'node' && pcPickerKind !== 'field' && pcPickerKind !== 'none'" class="pc-picked">{{ pcPickedText }}</span>
+                <el-button size="small" type="primary" plain @click="addParticipantFromDraft">添加到已选</el-button>
               </div>
-              <div v-if="pcPickerKind === 'field'" class="props-tip">运行时取该字段的值：人员字段按其所属部门推导领导，部门字段直接取该部门</div>
+              <div v-if="pcPickerKind === 'field'" class="props-tip">
+                {{ pcFieldOptions.length ? pcFieldValueHint : '当前表单没有' + (pcFieldWantDept ? '部门' : '人员') + '类型的浏览字段，请先在表单中配置' }}
+              </div>
               <div v-else-if="pcPickerKind === 'node'" class="props-tip">
                 <template v-if="participantDraft.nodeId === PREV_NODE_ID">运行期取最近一个已完成任务的办理人（首个审批环节回退为发起人），跟着流程实际走到哪一步，不用指定具体节点</template>
                 <template v-else>取该节点最近一次办理人；选择「申请节点」时取流程发起人（用于按发起人及其领导派单）；流程未流转到该节点时无法解析</template>
               </div>
-            </el-form-item>
+              <div v-else-if="pcPickerKind === 'none'" class="props-tip">「所有人」覆盖全部启用人员，后续新增人员也会自动纳入范围</div>
+              </el-form-item>
+            </div>
 
-            <el-form-item label=" ">
-              <el-button size="small" type="primary" plain @click="addParticipantFromDraft">添加到已选</el-button>
-            </el-form-item>
-
-            <el-form-item :label="participantDraft.scope === 'cc' ? '已选抄送人' : '已选操作人'">
+            <div class="pc-section">
+              <div class="pc-section-head">
+                <span class="pc-section-title">{{ participantDraft.scope === 'cc' ? '已选抄送人' : '已选操作人' }}</span>
+                <span v-if="participantDraft.items.length" class="pc-section-count">{{ participantDraft.items.length }} 条</span>
+                <span class="pc-section-desc" style="margin-left: auto">
+                  {{ participantDraft.scope === 'cc'
+                    ? '多条取并集，合并去重后全部抄送'
+                    : '多条取并集，不是二选一：指定+会签/串签每人一个任务，指定+抢占多人进候选池，提交时指定由上一环节从中选 1 人' }}
+                </span>
+              </div>
+              <div class="pc-selected-body">
               <el-table v-if="participantDraft.items.length" :data="participantDraft.items" size="small" border class="pc-items-table">
                 <el-table-column label="关系" min-width="160">
                   <template #default="s">{{ relationLabel(s.row) }}</template>
                 </el-table-column>
-                <el-table-column label="对象" prop="name" min-width="200" show-overflow-tooltip />
+                <el-table-column label="对象" min-width="200" show-overflow-tooltip>
+                  <template #default="s">{{ participantNameText(s.row) }}</template>
+                </el-table-column>
                 <el-table-column label="操作" width="70" align="center">
                   <template #default="s">
                     <el-button link type="danger" size="small" @click="participantDraft.items.splice(s.$index, 1)">删除</el-button>
                   </template>
                 </el-table-column>
               </el-table>
-              <span v-else class="pc-empty">尚未添加</span>
-            </el-form-item>
+                <span v-else class="pc-empty">尚未添加，先在上方选择关系对象并「添加到已选」</span>
+              </div>
+            </div>
 
-            <el-form-item v-if="participantDraft.scope !== 'cc'" label="兜底办理人">
+            <div v-if="participantDraft.scope !== 'cc'" class="pc-section">
+              <div class="pc-section-head">
+                <span class="pc-section-title">兜底设置</span>
+                <span class="pc-section-desc">解析不到人时转交，避免节点无人可办、会签被跳过</span>
+              </div>
+              <el-form-item label="兜底办理人">
               <div class="pc-pick-row">
                 <el-button size="small" icon="User" @click="openPcFallbackPicker">选择兜底办理人</el-button>
                 <span class="pc-picked">{{ participantDraft.fallbackNames.length ? participantDraft.fallbackNames.join('、') : '未设置（解析不到人时转流程管理员）' }}</span>
                 <el-button v-if="participantDraft.fallbackIds.length" link type="danger" size="small" @click="clearPcFallback">清除</el-button>
               </div>
-              <div class="props-tip">参与者解析不到人时转交给兜底人，避免节点无人可办、会签节点被跳过</div>
-            </el-form-item>
+              </el-form-item>
+            </div>
           </el-form>
           <template #footer>
             <el-button size="small" @click="participantOpen = false">取消</el-button>
@@ -1431,9 +1505,11 @@
           <span class="rd-detail-header-title">操作菜单：{{ opMenuDraft.nodeName }}</span>
         </div>
       </template>
-      <div class="props-tip" style="margin-bottom: 10px">勾选该节点办理页显示的操作菜单按钮</div>
+      <div class="props-tip" style="margin-bottom: 10px">
+        {{ opMenuDraft.isStart ? '申请节点只提供发起场景按钮（提交 / 打印 / 抄送）' : '勾选该节点办理页显示的操作菜单按钮，默认提交、退回、打印、抄送' }}
+      </div>
       <el-checkbox-group v-model="opMenuDraft.items" class="op-menu-group">
-        <el-checkbox v-for="m in OP_MENU_OPTIONS" :key="m.value" :value="m.value">{{ m.label }}</el-checkbox>
+        <el-checkbox v-for="m in opMenuOptions" :key="m.value" :value="m.value">{{ m.label }}</el-checkbox>
       </el-checkbox-group>
       <template #footer>
         <el-button size="small" @click="resetOpMenuDefault">恢复默认</el-button>
@@ -2697,6 +2773,45 @@ function isInitiatorNode(el) {
   return v === true || v === 'true';
 }
 
+/** 部署时注入的发起人技术节点 ID（与后端 FlowReturnConstants.INITIATOR_NODE_ID 保持一致） */
+const INITIATOR_NODE_ID = 'applyNode';
+
+/**
+ * 剔除部署时注入的「发起人（重新提交）」技术节点：节点本身 + 相关连线 + 对应图形（DI）。
+ *
+ * 版本 XML 取自部署产物，天然带这个技术节点。若直接载入设计器：画布会多出一个虚线框、
+ * 节点数变多，而且点「保存 / 存为新版」会把技术节点写回模型草稿，模型从此长期被污染。
+ * 因此展示与编辑侧统一先剥离；部署时后端 injectInitiatorNode 会按需重新注入，能力不受影响。
+ */
+function stripInitiatorArtifacts(xml) {
+  if (!xml || (xml.indexOf(INITIATOR_NODE_ID) < 0 && xml.indexOf('initiatorNode') < 0)) return xml;
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    if (!doc || doc.getElementsByTagName('parsererror').length) return xml;
+    const all = Array.from(doc.getElementsByTagName('*'));
+    const node = all.find(
+      (el) => el.getAttribute && (el.getAttribute('flowable:initiatorNode') === 'true' || el.getAttribute('initiatorNode') === 'true' || el.getAttribute('id') === INITIATOR_NODE_ID),
+    );
+    if (!node) return xml;
+    const nodeId = node.getAttribute('id');
+    const removed = new Set([nodeId]);
+    // 技术节点只有出线没有入线：两条都按 id 一并摘掉，避免残留孤立连线
+    all
+      .filter((el) => el.localName === 'sequenceFlow' && (el.getAttribute('sourceRef') === nodeId || el.getAttribute('targetRef') === nodeId))
+      .forEach((el) => removed.add(el.getAttribute('id')));
+    all.forEach((el) => {
+      const ref = el.getAttribute('bpmnElement');
+      const isIncomingOutgoingRef = (el.localName === 'incoming' || el.localName === 'outgoing') && removed.has((el.textContent || '').trim());
+      if (removed.has(el.getAttribute('id')) || (ref && removed.has(ref)) || isIncomingOutgoingRef) {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }
+    });
+    return new XMLSerializer().serializeToString(doc);
+  } catch (e) {
+    return xml;
+  }
+}
+
 /** 单体节点视觉标记：开始=绿圆、结束=红色终止、发起人=灰虚线卡、用户任务=蓝色卡片、网关=橙色菱形 */
 function markWmShape(el, modeler) {
   if (!el || !modeler) return;
@@ -2985,6 +3100,16 @@ function loadSelectedElement(el) {
     isSequenceFlow,
     isBranchNode,
     sourceIsGateway: !!(el.source && el.source.type && el.source.type.includes('Gateway')),
+    // 默认出口只对排他/包容网关有意义（并行网关按全部出口同时激活，不存在兜底）
+    defaultFlowSupported:
+      isSequenceFlow && !!el.source && (el.source.type === 'bpmn:ExclusiveGateway' || el.source.type === 'bpmn:InclusiveGateway'),
+    isDefaultFlow: !!(
+      isSequenceFlow &&
+      el.source &&
+      el.source.businessObject &&
+      el.source.businessObject.default &&
+      el.source.businessObject.default.id === bo.id
+    ),
     condition,
     assignee: (bo.get && bo.get('flowable:assignee')) || bo.assignee || '',
     candidateGroups: (bo.get && bo.get('flowable:candidateGroups')) || bo.candidateGroups || '',
@@ -2993,6 +3118,7 @@ function loadSelectedElement(el) {
     nodeFormSnapshot: nodeFormMap.value[bo.id] ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null } : readNodeFormSnapshot(bo),
     opMenus: parseOpMenus(bo),
     signOpinion: parseSignOpinion(bo),
+    allowRecall: parseAllowRecall(bo),
     fieldPerms: parseFieldPerms(bo),
     multiInstance: !!bo.loopCharacteristics,
     ...(isUserTask || isStart || isEnd ? parseParticipantConfig(bo) : {}),
@@ -3176,6 +3302,7 @@ function saveFieldPerms() {
 // 申请节点 → 发起人；上一节点办理人（自动）→ 运行期动态锚点。存量配置仍按 LEGACY_RELATION_LABELS 正常回显与解析。
 const RELATION_GROUPS = [
   {
+    key: 'general',
     label: '通用',
     options: [
       { type: 'user', label: '指定人员', picker: 'user' },
@@ -3185,19 +3312,23 @@ const RELATION_GROUPS = [
       { type: 'role', label: '指定角色', picker: 'role' },
       { type: 'post', label: '指定岗位', picker: 'post' },
       { type: 'nodeUser', label: '流程节点操作人', picker: 'node' },
+      { type: 'allUsers', label: '所有人', picker: 'none' },
     ],
   },
   {
-    label: '表单字段',
+    key: 'field',
+    label: '流程表单',
     options: [
-      { type: 'fieldUser', label: '所选字段中的人员', picker: 'field' },
-      { type: 'fieldUserLeader', label: '所选字段中的人员上级领导', picker: 'field' },
-      { type: 'fieldDeptLeader', label: '所选字段中组织的领导', picker: 'field' },
-      { type: 'fieldDeptChargeLeader', label: '所选字段中组织的分管领导', picker: 'field' },
+      { type: 'fieldUser', label: '所选人员', picker: 'field' },
+      { type: 'fieldUserLeader', label: '所选人员部门领导', picker: 'field' },
+      { type: 'fieldUserChargeLeader', label: '所选人员分管领导', picker: 'field' },
+      { type: 'fieldDeptUsers', label: '所选组织部门人员', picker: 'field' },
+      { type: 'fieldDeptLeader', label: '所选组织部门领导', picker: 'field' },
+      { type: 'fieldDeptChargeLeader', label: '所选组织分管领导', picker: 'field' },
     ],
   },
 ];
-const RELATION_LABELS = { nodeUserLeader: '流程节点操作人的上级领导' };
+const RELATION_LABELS = { nodeUserLeader: '流程节点操作人的部门领导', nodeUserChargeLeader: '流程节点操作人的分管领导' };
 RELATION_GROUPS.forEach((g) =>
   g.options.forEach((o) => {
     RELATION_LABELS[o.type] = o.label;
@@ -3211,15 +3342,15 @@ const LEGACY_RELATION_LABELS = {
   deptParentLeader: '指定部门领导',
   deptOrgLeader: '指定部门领导',
   initiatorDeptAndBelow: '流程发起人所属组织',
-  activityUserLeader: '上一节点办理人的上级领导',
+  activityUserLeader: '上一节点办理人的部门领导',
   activityUserOrgLeader: '上一节点办理人的部门领导',
   activityUserChargeLeader: '上一节点办理人的分管领导',
-  prevAssigneeLeader: '上一节点办理人的上级领导',
-  currentUserLeader: '当前办理人上级领导',
-  userLeader: '所选人员的上级领导',
+  prevAssigneeLeader: '上一节点办理人的部门领导',
+  currentUserLeader: '当前办理人的部门领导',
+  userLeader: '所选人员的部门领导',
   userOrgLeader: '所选人员的部门领导',
   userChargeLeader: '所选人员的分管领导',
-  fieldDeptParentLeader: '所选字段中组织的领导',
+  fieldDeptParentLeader: '所选组织部门领导',
   field: '表单字段',
 };
 const participantOpen = ref(false);
@@ -3233,8 +3364,9 @@ const pcFallbackPickerRef = ref();
 const participantDraft = reactive({
   scope: 'handler',
   timing: 'enter',
+  relCategory: 'general', // 关系对象一级分类：通用 / 流程表单
   relType: 'user', // 关系对象 type
-  nodeRelation: 'self', // 节点操作人子关系：本人 / 上级领导
+  nodeRelation: 'self', // 节点操作人子关系：本人 / 部门领导 / 分管领导
   pickIds: [], // 已选对象ID（人员/部门/角色/岗位）
   pickNames: [], // 已选对象名称
   nodeId: '',
@@ -3243,21 +3375,37 @@ const participantDraft = reactive({
   fallbackNames: [],
   items: [],
 });
-const pcRelationMeta = computed(() => {
-  for (const g of RELATION_GROUPS) {
-    const hit = g.options.find((o) => o.type === participantDraft.relType);
-    if (hit) return hit;
-  }
-  return RELATION_GROUPS[0].options[0];
-});
+/** 当前一级分类下的二级关系选项 */
+const pcRelationOptions = computed(() => (RELATION_GROUPS.find((g) => g.key === participantDraft.relCategory) || RELATION_GROUPS[0]).options);
+const pcRelationHint = computed(() =>
+  participantDraft.relCategory === 'field'
+    ? '取表单浏览按钮字段的值：人员字段取所选人员、其部门领导或分管领导；组织字段取所选部门的人员、部门领导或分管领导'
+    : '按人员、部门、角色、岗位等范围取人',
+);
+const pcRelationMeta = computed(() => pcRelationOptions.value.find((o) => o.type === participantDraft.relType) || pcRelationOptions.value[0]);
 const pcPickerKind = computed(() => pcRelationMeta.value.picker);
+/** 流程表单：组织类选项只允许部门字段，人员类选项只允许人员字段 */
+const pcFieldWantDept = computed(() => ['fieldDeptUsers', 'fieldDeptLeader', 'fieldDeptChargeLeader'].includes(participantDraft.relType));
+const pcFieldOptions = computed(() => formFieldOptions.value.filter((f) => f.fieldType === (pcFieldWantDept.value ? 'dept' : 'user')));
+/** 流程表单取值说明：按当前关系对象说明运行期取到的是谁 */
+const pcFieldValueHint = computed(() => {
+  const map = {
+    fieldUser: '运行时取该人员字段的值，即所选人员本人',
+    fieldUserLeader: '运行时取该人员字段所选人员所属部门的领导',
+    fieldUserChargeLeader: '运行时取该人员字段所选人员所属部门的分管领导',
+    fieldDeptUsers: '运行时取该部门字段所选部门下的人员（本部门）',
+    fieldDeptLeader: '运行时取该部门字段所选部门的领导',
+    fieldDeptChargeLeader: '运行时取该部门字段所选部门的分管领导',
+  };
+  return map[participantDraft.relType] || '运行时取该字段的值推导出办理人';
+});
 /** 部门多选（仅「指定部门」支持多选；领导类只允许单选部门） */
 const pcDeptMultiple = computed(() => participantDraft.relType === 'dept');
 const pcPickedText = computed(() => (participantDraft.pickNames.length ? participantDraft.pickNames.join('、') : '未选择'));
 /** 「流程节点操作人」下拉里的虚拟节点：上一节点办理人（运行期动态取值，不绑定具体节点） */
 const PREV_NODE_ID = '__prev_assignee__';
 /** 可选节点：申请（开始）节点 + 流程中的用户任务 + 上一节点办理人（动态）
- * 申请节点没有任务记录，后端按「流程发起人」解析（可衍生成「申请节点的上级领导」）；
+ * 申请节点没有任务记录，后端按「流程发起人」解析（可衍生成「申请节点的部门领导」）；
  * 上一节点办理人由后端取最近一个已完成任务的办理人（首个审批环节回退为发起人） */
 const participantNodeOptions = computed(() => {
   const list = (graphicNodes.value || [])
@@ -3269,9 +3417,25 @@ const participantNodeOptions = computed(() => {
   list.push({ id: PREV_NODE_ID, name: '上一节点办理人', optionLabel: '上一节点办理人（自动）', virtual: true });
   return list;
 });
-/** 节点本人 / 上级领导 单选文案：虚拟节点换成「上一节点办理人」的说法 */
+/** 节点本人 / 部门领导 单选文案：虚拟节点换成「上一节点办理人」的说法 */
 const pcNodeSelfLabel = computed(() => (participantDraft.nodeId === PREV_NODE_ID ? '上一节点办理人' : '节点本人'));
-const pcNodeLeaderLabel = computed(() => (participantDraft.nodeId === PREV_NODE_ID ? '上一节点办理人的上级领导' : '节点本人上级领导'));
+const pcNodeLeaderLabel = computed(() => (participantDraft.nodeId === PREV_NODE_ID ? '上一节点办理人的部门领导' : '节点本人的部门领导'));
+const pcNodeChargeLeaderLabel = computed(() => (participantDraft.nodeId === PREV_NODE_ID ? '上一节点办理人的分管领导' : '节点本人的分管领导'));
+
+/** 处理方式 / 办理方式：当前选中项的名称与说明（弹窗分组提示联动） */
+const HANDLE_MODE_META = {
+  assign: { label: '指定', tip: '按配置直接算出办理人：会签/串签每人一个任务；抢占解析出多人时进入候选池' },
+  runtime: { label: '提交时指定', tip: '上一环节提交时从算出的范围内指定 1 人办理，未指定则退回候选池' },
+};
+const PERFORM_MODE_META = {
+  and: { label: '会签', tip: '范围内多人并行办理，全部办完节点才通过' },
+  seq: { label: '串签', tip: '按配置顺序依次办理，所有人办完节点才通过' },
+  claim: { label: '抢占', tip: '任务只有一份，范围内谁先办理谁完成；可配合「提交时指定」' },
+};
+const currentHandleModeLabel = computed(() => (HANDLE_MODE_META[(selectedElement.value || {}).handleMode] || HANDLE_MODE_META.assign).label);
+const handleModeTip = computed(() => (HANDLE_MODE_META[(selectedElement.value || {}).handleMode] || HANDLE_MODE_META.assign).tip);
+const currentPerformModeLabel = computed(() => (PERFORM_MODE_META[(selectedElement.value || {}).performMode] || PERFORM_MODE_META.claim).label);
+const performModeTip = computed(() => (PERFORM_MODE_META[(selectedElement.value || {}).performMode] || PERFORM_MODE_META.claim).tip);
 
 /** 读取节点参与者配置，兼容旧的 assignee / candidateGroups 写法 */
 function parseParticipantConfig(bo) {
@@ -3299,7 +3463,9 @@ function parseParticipantConfig(bo) {
         });
     }
   }
-  const handleMode = cfg.handleMode || (bo.get && bo.get('flowable:candidateGroups') ? 'candidate' : 'assign');
+  // 历史配置的「候选」与「提交时指定」同属候选池语义，统一归并到「提交时指定」
+  const rawHandleMode = cfg.handleMode || (bo.get && bo.get('flowable:candidateGroups') ? 'candidate' : 'assign');
+  const handleMode = rawHandleMode === 'candidate' ? 'runtime' : rawHandleMode;
   const loop = bo.loopCharacteristics;
   const performMode = cfg.performMode || (loop ? (loop.isSequential ? 'seq' : 'and') : 'claim');
   const participantMode = cfg.participantMode || (participants.length > 1 ? 'multi' : 'single');
@@ -3325,6 +3491,21 @@ function relationLabel(item) {
   return RELATION_LABELS[item.type] || LEGACY_RELATION_LABELS[item.type] || item.type || '';
 }
 
+/** 操作人/抄送人显示名称：存量配置的 name 里可能还是旧文案，统一显示为新关系名 */
+const LEGACY_NAME_TEXT = [
+  ['所选字段中人员的部门领导', '所选人员部门领导'],
+  ['所选字段中组织的分管领导', '所选组织分管领导'],
+  ['所选字段中组织的领导', '所选组织部门领导'],
+  ['所选字段中的人员', '所选人员'],
+];
+function participantNameText(p) {
+  let text = String((p && p.name) || '').replace(/上级领导/g, '部门领导');
+  LEGACY_NAME_TEXT.forEach(([from, to]) => {
+    text = text.split(from).join(to);
+  });
+  return text;
+}
+
 function openParticipantPicker(scope) {
   const se = selectedElement.value;
   if (!isConfigurableNode(se)) return;
@@ -3332,6 +3513,7 @@ function openParticipantPicker(scope) {
   const source = target === 'cc' ? se.ccParticipants || [] : se.participants || [];
   participantDraft.scope = target;
   participantDraft.timing = se.ccTiming || 'enter';
+  participantDraft.relCategory = 'general';
   participantDraft.relType = 'user';
   participantDraft.nodeRelation = 'self';
   participantDraft.pickIds = [];
@@ -3351,6 +3533,13 @@ function onCcTimingChange() {
   if (!se) return;
   se.ccTiming = participantDraft.timing;
   persistCcConfig();
+}
+
+/** 切换关系对象一级分类：默认选中该分类下第一个二级选项，并清空已选 */
+function onRelCategoryChange(key) {
+  const group = RELATION_GROUPS.find((g) => g.key === key) || RELATION_GROUPS[0];
+  participantDraft.relType = group.options[0].type;
+  onRelTypeChange();
 }
 
 /** 切换关系对象时清空已选，避免不同类型之间串值 */
@@ -3476,25 +3665,31 @@ function addParticipantFromDraft() {
       proxy.$modal.msgWarning('请先选择节点');
       return;
     }
-    const leader = d.nodeRelation === 'leader';
+    const relation = d.nodeRelation || 'self';
+    const leader = relation === 'leader';
+    const chargeLeader = relation === 'chargeLeader';
+    const relationText = chargeLeader ? '分管领导' : leader ? '部门领导' : '本人';
     if (d.nodeId === PREV_NODE_ID) {
       // 虚拟节点「上一节点办理人（自动）」：由运行期上下文决定，不绑定具体节点
       item = {
-        type: leader ? 'activityUserLeader' : 'activityUser',
+        type: chargeLeader ? 'activityUserChargeLeader' : leader ? 'activityUserLeader' : 'activityUser',
         mode: 'activity',
-        relation: leader ? 'leader' : 'self',
-        name: '上一节点办理人 · ' + (leader ? '上级领导' : '本人'),
+        relation,
+        name: '上一节点办理人 · ' + relationText,
       };
     } else {
       const n = participantNodeOptions.value.find((x) => x.id === d.nodeId);
       item = {
-        type: leader ? 'nodeUserLeader' : 'nodeUser',
+        type: chargeLeader ? 'nodeUserChargeLeader' : leader ? 'nodeUserLeader' : 'nodeUser',
         mode: 'node',
         nodeId: d.nodeId,
-        relation: leader ? 'leader' : 'self',
-        name: (n ? n.name || n.id : d.nodeId) + ' · ' + (leader ? '上级领导' : '本人'),
+        relation,
+        name: (n ? n.name || n.id : d.nodeId) + ' · ' + relationText,
       };
     }
+  } else if (meta.picker === 'none') {
+    // 「所有人」：不需要选对象，运行时解析为全部启用人员
+    item = { type: 'allUsers', mode: 'all', name: '所有人' };
   } else if (meta.picker === 'field') {
     if (!d.fieldKey) {
       proxy.$modal.msgWarning('请先选择表单字段');
@@ -3533,27 +3728,27 @@ function addParticipantFromDraft() {
   d.fieldKey = '';
 }
 
-/** 处理方式切换：抢占+指定只能落 1 人，多人需用会签/串签或候选 */
+/** 处理方式切换：抢占+指定只能落 1 人，多人需用会签/串签或提交时指定 */
 function onHandleModeChange(mode) {
   const se = selectedElement.value;
   if (!se) return;
   const ps = se.participants || [];
   const claim = (se.performMode || 'claim') === 'claim';
   if (mode === 'assign' && claim && ps.length > 1) {
-    se.handleMode = 'candidate';
-    proxy.$modal.msgWarning('抢占节点「指定」只能有 1 条操作人配置；多人请改办理方式为会签/串签，或改用「候选」');
+    se.handleMode = 'runtime';
+    proxy.$modal.msgWarning('抢占节点「指定」只能有 1 条操作人配置；多人请改办理方式为会签/串签，或改用「提交时指定」');
     return;
   }
   persistParticipantConfig();
 }
 
-/** 办理方式切换：会签/串签按人落任务，「候选」（认领池）不适用，自动改回指定 */
+/** 办理方式切换：会签/串签按人落任务，「提交时指定」（认领池）不适用，自动改回指定 */
 function onPerformModeChange(mode) {
   const se = selectedElement.value;
   if (!se) return;
-  if (mode !== 'claim' && se.handleMode === 'candidate') {
+  if (mode !== 'claim' && (se.handleMode || 'assign') !== 'assign') {
     se.handleMode = 'assign';
-    proxy.$modal.msgSuccess('会签/串签按人逐个生成任务，「候选」已自动改为「指定」');
+    proxy.$modal.msgSuccess('会签/串签按人逐个生成任务，「提交时指定」仅抢占可用，已改为「指定」');
   }
   persistParticipantConfig();
 }
@@ -3576,7 +3771,7 @@ function saveParticipantConfig() {
     }
     const claim = (selectedElement.value.performMode || 'claim') === 'claim';
     if (claim && (selectedElement.value.handleMode || 'assign') === 'assign' && items.length > 1) {
-      proxy.$modal.msgWarning('抢占节点「指定」只能有 1 条操作人配置；多人请把办理方式改为会签/串签，或把处理方式改为「候选」');
+      proxy.$modal.msgWarning('抢占节点「指定」只能有 1 条操作人配置；多人请把办理方式改为会签/串签，或把处理方式改为「提交时指定」');
       return;
     }
     selectedElement.value.participants = items.map((p) => Object.assign({}, p));
@@ -3716,6 +3911,19 @@ function clearCondition() {
   updateCondition();
 }
 
+/** 设为/取消该网关的默认出口（写入 BPMN 网关的 default 属性，同一网关只允许一条） */
+function setDefaultFlow(val) {
+  if (!selectedEl || selectedEl.type !== 'bpmn:SequenceFlow' || !selectedEl.source) return;
+  const gateway = selectedEl.source;
+  // bpmn-js 的 UpdatePropertiesHandler 会自动把连线元素解包成 businessObject
+  currentModeling().updateProperties(gateway, { default: val ? selectedEl : undefined });
+  if (val) {
+    // 默认出口不参与条件判断，清掉该出口的条件（含智能规则行），避免“配了条件却不生效”的误解
+    clearCondition();
+  }
+  selectedElement.value.isDefaultFlow = !!val;
+}
+
 // ===== 工具栏命令 =====
 function cmdUndo() {
   bpmnModeler.get('commandStack').undo();
@@ -3756,6 +3964,8 @@ function validateDiagram(modeler) {
   const issues = [];
   let hasEnd = false;
   (root.children || []).forEach((c) => {
+    // 跳过名称文字元素：bpmn-js 会把事件/网关/连线的名称渲染成独立的 label 元素，并非流程节点
+    if (c.type === 'label' || c.labelTarget) return;
     if (c.type === 'bpmn:EndEvent') hasEnd = true;
     // 通用任务/服务任务/中间事件/子流程等：属性面板无法配置，引擎里也不会生成人工待办
     if (!SUPPORTED_DIAGRAM_TYPES.includes(c.type)) {
@@ -3776,6 +3986,30 @@ function validateDiagram(modeler) {
       }
       if (!a && !g && !hasParticipants && !bo.loopCharacteristics) {
         issues.push('「' + (bo.name || bo.id) + '」未配置办理人或候选组');
+      }
+    }
+    // 多出口网关：既没有条件也没有默认出口时，引擎会按连线顺序固定取第一条，必须提前拦住
+    if (c.type === 'bpmn:ExclusiveGateway' || c.type === 'bpmn:InclusiveGateway') {
+      const gbo = c.businessObject;
+      const outgoing = (c.outgoing || []).map((f) => f.businessObject || f);
+      if (outgoing.length > 1) {
+        const defaultId = gbo.default && gbo.default.id;
+        const conditionOf = (f) => {
+          const expr = f.get ? f.get('conditionExpression') : f.conditionExpression;
+          return expr && expr.body ? String(expr.body).trim() : '';
+        };
+        const conditionalCount = outgoing.filter((f) => conditionOf(f)).length;
+        if (!conditionalCount && !defaultId) {
+          issues.push('网关「' + (gbo.name || gbo.id) + '」有 ' + outgoing.length + ' 条出口，但都没有条件和默认出口，引擎会固定走第一条出口（按连线顺序）');
+        } else if (!defaultId && conditionalCount < outgoing.length) {
+          issues.push('网关「' + (gbo.name || gbo.id) + '」存在未设置条件的出口且未设置默认出口，将按连线顺序命中第一条无条件的出口，建议把兜底出口设为默认出口');
+        }
+        if (defaultId) {
+          const defFlow = outgoing.find((f) => f.id === defaultId);
+          if (defFlow && conditionOf(defFlow)) {
+            issues.push('网关「' + (gbo.name || gbo.id) + '」的默认出口「' + (defFlow.name || defFlow.id) + '」仍配置了条件，默认出口不参与条件判断，该条件不会生效');
+          }
+        }
       }
     }
   });
@@ -3814,6 +4048,8 @@ async function handleDesign(row) {
   const res = await getModel(row.modelId);
   designModel.value = {
     ...res.data,
+    // 历史草稿可能已被部署注入的技术节点污染，进入设计器前统一剥离
+    bpmnXml: stripInitiatorArtifacts(res.data.bpmnXml || ''),
     deployed: res.data.deployed || row.deployed,
     version: res.data.version || row.version,
     deployMode: res.data.deployMode || 'new',
@@ -3821,6 +4057,7 @@ async function handleDesign(row) {
     helpDoc: res.data.helpDoc || '',
     orderNum: res.data.orderNum != null ? res.data.orderNum : 0,
     processNoRule: parseNoRule(res.data.processNoRule),
+    skipSameApprover: !!res.data.skipSameApprover,
   };
   loadFormOptions();
   loadDesignVersions();
@@ -4125,18 +4362,27 @@ const nodeFormDraft = reactive({
   grid: null,
 });
 const opMenuOpen = ref(false);
-const opMenuDraft = reactive({ nodeId: '', nodeName: '', items: [] });
+const opMenuDraft = reactive({ nodeId: '', nodeName: '', isStart: false, items: [] });
+/** 办理节点可配置的操作按钮（签字意见有独立开关、附件走「相关资源」，不再放进操作菜单） */
 const OP_MENU_OPTIONS = [
   { value: 'submit', label: '提交' },
   { value: 'reject', label: '退回' },
   { value: 'transfer', label: '转办' },
   { value: 'addSign', label: '加签' },
   { value: 'terminate', label: '终止' },
-  { value: 'comment', label: '签字意见' },
-  { value: 'attach', label: '附件上传' },
   { value: 'print', label: '打印' },
   { value: 'cc', label: '抄送' },
 ];
+/** 历史配置可能仍带「签字意见/附件上传」，仅用于摘要文案展示 */
+const OP_MENU_LEGACY_LABELS = { comment: '签字意见', attach: '附件上传' };
+/** 审批/办理节点默认菜单 */
+const DEFAULT_OP_MENUS = ['submit', 'reject', 'print', 'cc'];
+/** 申请（开始）节点默认菜单：发起场景不需要退回/转办/加签/终止 */
+const START_OP_MENUS = ['submit', 'print', 'cc'];
+/** 操作菜单弹窗可勾选的按钮：申请节点只保留发起场景按钮 */
+const opMenuOptions = computed(() =>
+  opMenuDraft.isStart ? OP_MENU_OPTIONS.filter((m) => START_OP_MENUS.includes(m.value)) : OP_MENU_OPTIONS
+);
 
 /** 右侧「操作人员」行摘要 */
 const participantSummaryText = computed(() => {
@@ -4146,12 +4392,12 @@ const participantSummaryText = computed(() => {
   return ps.length > 2
     ? ps
         .slice(0, 2)
-        .map((p) => p.name)
+        .map((p) => participantNameText(p))
         .join('、') +
         ' 等' +
         ps.length +
         '人'
-    : ps.map((p) => p.name).join('、');
+    : ps.map((p) => participantNameText(p)).join('、');
 });
 
 /** 右侧「抄送人员」行摘要 */
@@ -4162,12 +4408,12 @@ const ccSummaryText = computed(() => {
   return ps.length > 2
     ? ps
         .slice(0, 2)
-        .map((p) => p.name)
+        .map((p) => participantNameText(p))
         .join('、') +
         ' 等' +
         ps.length +
         '人'
-    : ps.map((p) => p.name).join('、');
+    : ps.map((p) => participantNameText(p)).join('、');
 });
 
 const flowFormName = computed(() => {
@@ -4271,7 +4517,7 @@ function parseOpMenus(bo) {
 
 /**
  * 解析节点扩展属性 flowable:signOpinion（签字意见开关）
- * 未显式配置时跟随操作菜单（菜单未配置视为全默认，含签字意见）——与后端 fieldPerms 口径一致
+ * 签字意见已从操作菜单中独立出来：未显式配置时默认启用，由本开关单独控制
  */
 function parseSignOpinion(bo) {
   const raw = (bo && bo.get && bo.get('flowable:signOpinion')) || (bo && bo.$attrs && bo.$attrs['flowable:signOpinion']) || '';
@@ -4279,8 +4525,15 @@ function parseSignOpinion(bo) {
     const v = String(raw).trim().toLowerCase();
     return !(v === 'false' || v === '0' || v === '否');
   }
-  const menus = parseOpMenus(bo);
-  return !menus.length || menus.includes('comment');
+  return true;
+}
+
+/** 解析节点扩展属性 flowable:allowRecall（强制收回开关）：未配置时默认允许 */
+function parseAllowRecall(bo) {
+  const raw = (bo && bo.get && bo.get('flowable:allowRecall')) || (bo && bo.$attrs && bo.$attrs['flowable:allowRecall']) || '';
+  if (!raw) return true;
+  const v = String(raw).trim().toLowerCase();
+  return !(v === 'false' || v === '0' || v === '否');
 }
 
 /** 解析节点表单快照（flowable:nodeFormJson） */
@@ -4554,11 +4807,24 @@ function nodeFormText(node) {
 
 function nodeOpMenuText(node) {
   const items = (node && node.opMenus) || [];
-  if (!items.length) return '默认菜单';
+  if (!items.length) {
+    // 未配置时展示按节点类型给出的默认菜单
+    const defaults = node && node.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS;
+    return (
+      '默认菜单（' +
+      defaults
+        .map((v) => {
+          const hit = OP_MENU_OPTIONS.find((m) => m.value === v);
+          return hit ? hit.label : v;
+        })
+        .join('、') +
+      '）'
+    );
+  }
   return items
     .map((v) => {
       const hit = OP_MENU_OPTIONS.find((m) => m.value === v);
-      return hit ? hit.label : v;
+      return hit ? hit.label : OP_MENU_LEGACY_LABELS[v] || v;
     })
     .join('、');
 }
@@ -4908,13 +5174,18 @@ function openNodeOpMenu(node) {
   if (!node || (!node.isUserTask && !node.isStart)) return;
   opMenuDraft.nodeId = node.id;
   opMenuDraft.nodeName = node.name || node.id;
-  opMenuDraft.items = (node.opMenus || []).slice();
+  opMenuDraft.isStart = !!node.isStart;
+  // 弹窗勾选状态 = 该节点实际生效的按钮：已配置取配置值，未配置取默认菜单
+  const allowed = opMenuDraft.isStart ? START_OP_MENUS : OP_MENU_OPTIONS.map((m) => m.value);
+  const items = (node.opMenus || []).filter((v) => allowed.includes(v));
+  const defaults = opMenuDraft.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS;
+  opMenuDraft.items = (items.length ? items : defaults).slice();
   opMenuOpen.value = true;
 }
 
 function resetOpMenuDefault() {
-  // 默认菜单含「签字意见」：恢复默认不应把签字意见一并关掉
-  opMenuDraft.items = ['submit', 'reject', 'transfer', 'comment', 'print'];
+  // 申请节点只保留发起场景按钮；审批节点默认提交、退回、打印、抄送
+  opMenuDraft.items = (opMenuDraft.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS).slice();
 }
 
 /**
@@ -4939,6 +5210,28 @@ function setSignOpinion(v) {
   proxy.$modal.msgSuccess((v ? '已启用' : '已关闭') + '该节点的签字意见，点右上"保存"后生效');
 }
 
+/**
+ * 保存节点「强制收回」开关到 BPMN 扩展属性 flowable:allowRecall
+ * 开启后该节点办理人在下一节点办理前可在「已办」收回流程
+ */
+function setAllowRecall(v) {
+  const se = selectedElement.value;
+  if (!graphicModeler || !se) return;
+  const el = graphicModeler.get('elementRegistry').get(se.id);
+  if (!el) {
+    proxy.$modal.msgWarning('节点已不存在，请重新选中');
+    return;
+  }
+  const val = v ? 'true' : 'false';
+  graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:allowRecall': val });
+  try {
+    el.businessObject.$attrs['flowable:allowRecall'] = val;
+  } catch (e) {}
+  se.allowRecall = !!v;
+  refreshGraphicData();
+  proxy.$modal.msgSuccess((v ? '已允许' : '已关闭') + '该节点的强制收回，点右上"保存"后生效');
+}
+
 function saveNodeOpMenu() {
   if (!graphicModeler) return;
   const el = graphicModeler.get('elementRegistry').get(opMenuDraft.nodeId);
@@ -4946,15 +5239,18 @@ function saveNodeOpMenu() {
     proxy.$modal.msgWarning('节点已不存在，请重新打开');
     return;
   }
-  const json = opMenuDraft.items.length ? JSON.stringify(opMenuDraft.items) : undefined;
+  // 申请节点只保存发起场景按钮：历史配置里的退回/转办/加签/终止一并丢弃
+  const allowed = opMenuDraft.isStart ? START_OP_MENUS : OP_MENU_OPTIONS.map((m) => m.value);
+  const items = opMenuDraft.items.filter((v) => allowed.includes(v));
+  const json = items.length ? JSON.stringify(items) : undefined;
   graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:operationMenus': json });
   try {
     if (json) el.businessObject.$attrs['flowable:operationMenus'] = json;
     else delete el.businessObject.$attrs['flowable:operationMenus'];
   } catch (e) {}
   if (selectedElement.value && selectedElement.value.id === opMenuDraft.nodeId) {
-    selectedElement.value.opMenus = opMenuDraft.items.slice();
-    // 未显式配置签字意见开关时，开关状态跟随操作菜单的「签字意见」勾选
+    selectedElement.value.opMenus = items.slice();
+    // 签字意见已独立成开关：未显式配置时默认启用
     selectedElement.value.signOpinion = parseSignOpinion(el.businessObject);
   }
   refreshGraphicData();
@@ -5109,6 +5405,7 @@ function refreshGraphicData() {
           nodeFormSnapshot: nodeFormMap.value[bo.id] ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null } : readNodeFormSnapshot(bo),
           opMenus: parseOpMenus(bo),
           signOpinion: parseSignOpinion(bo),
+          allowRecall: parseAllowRecall(bo),
           participants: parseParticipantConfig(bo).participants || [],
           operatorGroups: parseOperatorGroups(bo),
           multiInstance: !!bo.loopCharacteristics,
@@ -6205,6 +6502,7 @@ async function graphicSave() {
       helpDoc: designModel.value.helpDoc || null,
       orderNum: designModel.value.orderNum != null ? designModel.value.orderNum : null,
       processNoRule: JSON.stringify(designModel.value.processNoRule || defaultNoRule()),
+      skipSameApprover: !!designModel.value.skipSameApprover,
       bpmnXml: xml,
     });
     proxy.$modal.msgSuccess('流程图已保存，已同步回设计器');
@@ -6356,7 +6654,8 @@ function openVersionView() {
   versionViewOpen.value = true;
   getDefinitionXml(v.modelId)
     .then((res) => {
-      const xml = res.data || '';
+      // 部署产物里带「重新提交」技术节点（部署时自动注入），只读查看时剥离，避免当成业务节点
+      const xml = stripInitiatorArtifacts(res.data || '');
       versionView.value = { version: v.version, xml, nodes: parseVersionNodes(xml) };
     })
     .catch((e) => proxy.$modal.msgError('读取版本内容失败：' + (e?.message || e)))
@@ -6373,7 +6672,9 @@ function loadVersionIntoDesigner() {
     .confirm('将把 V' + v.version + ' 的流程图载入当前设计器，当前画布内容会被替换且不会自动保存，确认继续？')
     .then(() => getDefinitionXml(v.modelId))
     .then(async (res) => {
-      const xml = (res.data || '').trim();
+      // 版本 XML 是部署产物，含部署时注入的「重新提交」技术节点：载入前剥离，
+      // 否则画布多出虚线框，点「保存 / 存为新版」还会把技术节点写回模型草稿
+      const xml = stripInitiatorArtifacts((res.data || '').trim());
       if (!xml) throw new Error('该版本没有可用的 BPMN XML');
       if (!/<bpmndi:BPMNDiagram[\s>]/.test(xml)) throw new Error('该版本 XML 缺少图形段（DI），无法载入画布');
       versionOpen.value = false;
@@ -6486,24 +6787,25 @@ function onDesignTabChange(tab) {
   }
 }
 
-async function saveDesigner() {
+/** 保存设计：返回是否保存成功（silent=true 时静默保存，供「存为新版」前自动落盘用） */
+async function saveDesigner(silent = false) {
   try {
     // 流程锁定：锁定后保存需二次确认，防止误改已上线流程
     if (designModel.value.locked) {
       try {
         await ElMessageBox.confirm('该流程已锁定，确认仍要保存修改？', '流程锁定提醒', { confirmButtonText: '仍要保存', cancelButtonText: '返回修改', type: 'warning', draggable: true });
       } catch (e) {
-        return;
+        return false;
       }
     }
     // 「表单管理 → 编辑字段」里改了字段却没点「保存字段设计」：顶部保存顺带提交，避免字段改动丢失
     if (formFieldsRef.value && formFieldsRef.value.isDirty) {
       const flushed = await formFieldsRef.value.flush();
-      if (!flushed.ok) return;
+      if (!flushed.ok) return false;
     }
     const { xml } = await bpmnModeler.saveXML({ format: true });
     // 保存前校验
-    if (!(await confirmDiagramIssues(validateDiagram()))) return;
+    if (!(await confirmDiagramIssues(validateDiagram()))) return false;
     await updateModel({
       modelId: designModel.value.modelId,
       modelName: designModel.value.modelName,
@@ -6516,13 +6818,24 @@ async function saveDesigner() {
       helpDoc: designModel.value.helpDoc || null,
       orderNum: designModel.value.orderNum != null ? designModel.value.orderNum : null,
       processNoRule: JSON.stringify(designModel.value.processNoRule || defaultNoRule()),
+      skipSameApprover: !!designModel.value.skipSameApprover,
       bpmnXml: xml,
     });
-    proxy.$modal.msgSuccess('流程设计已保存，可点击"部署"发布流程');
+    if (!silent) proxy.$modal.msgSuccess('流程设计已保存，可点击"部署"发布流程');
     getList();
+    return true;
   } catch (e) {
     proxy.$modal.msgError('保存失败：' + (e.message || e));
+    return false;
   }
+}
+
+/** 设计器内「存为新版」：先保存设计（部署读的是已落库的 XML），再打开部署弹窗并固定在「存为新版本」 */
+async function deployFromDesigner() {
+  if (!(await saveDesigner(true))) return;
+  await handleDeploy({ modelId: designModel.value.modelId, modelName: designModel.value.modelName, deployMode: 'new' });
+  // 结构对比可能把预选改成「覆盖当前版本」，本入口明确是存为新版，这里纠正回来
+  deployMode.value = 'new';
 }
 
 async function exportXml() {
@@ -6600,6 +6913,11 @@ function submitDeploy() {
       proxy.$modal.msgSuccess('部署成功：' + tip);
       deployOpen.value = false;
       getList();
+      // 从设计器内发起部署：同步"当前状态/版本标签行"，无需关掉设计器再重进
+      if (designOpen.value) {
+        designModel.value.deployed = '1';
+        loadDesignVersions();
+      }
     })
     .catch((e) => {
       proxy.$modal.msgError('部署失败：' + (e?.message || e || '请检查流程图是否已保存'));
@@ -6735,34 +7053,149 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
   font-size: 12px;
   color: #334155;
 }
-.pc-rel-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
+.pc-form {
+  padding-top: 2px;
 }
-.pc-rel-group {
+.pc-section {
+  border: 1px solid #e8eef7;
+  border-radius: 10px;
+  background: #fbfcfe;
+  padding: 12px 14px 2px;
+  margin-bottom: 12px;
+}
+.pc-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pc-section-title {
+  position: relative;
+  padding-left: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 18px;
+}
+.pc-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 2px;
+  background: #2563eb;
+}
+.pc-section-desc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.pc-section-count {
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  line-height: 18px;
+}
+.pc-section .el-form-item {
+  margin-bottom: 12px;
+}
+.pc-selected-body {
+  width: 100%;
+  padding-bottom: 12px;
+}
+.pc-mode-tip {
   display: flex;
   align-items: flex-start;
   gap: 6px;
   width: 100%;
-}
-.pc-rel-group-label {
-  flex: none;
-  width: 58px;
-  line-height: 26px;
+  margin-top: 6px;
   font-size: 12px;
+  line-height: 18px;
   color: #64748b;
 }
-.pc-rel-group :deep(.el-radio-group) {
+.pc-mode-badge {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #2563eb;
+  line-height: 18px;
+}
+.pc-mode-compare {
   display: flex;
   flex-wrap: wrap;
-  gap: 0;
-  flex: 1;
+  gap: 4px 16px;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 12px;
+  color: #94a3b8;
 }
-.pc-rel-group :deep(.el-radio) {
-  margin-right: 14px;
+.pc-mode-compare b {
+  color: #64748b;
+  font-weight: 600;
+}
+.pc-rel-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.pc-rel-tabs {
+  align-self: flex-start;
+}
+.pc-rel-tabs :deep(.el-radio-button__inner) {
+  padding: 6px 18px;
+  font-size: 13px;
+}
+.pc-rel-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.pc-rel-group-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 18px;
+}
+.pc-rel-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pc-rel-radios :deep(.el-radio) {
+  margin-right: 0;
   height: 26px;
+}
+.pc-rel-radios :deep(.el-radio.is-bordered) {
+  padding: 0 10px;
+  height: 26px;
+  border-radius: 13px;
+}
+.pc-rel-radios :deep(.el-radio.is-bordered .el-radio__label) {
+  padding-left: 5px;
+  font-size: 12px;
+}
+.pc-rel-radios :deep(.el-radio.is-bordered.is-checked) {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+.pc-all-users {
+  padding: 1px 10px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
 }
 .pc-items-table {
   width: 100%;
@@ -7296,6 +7729,24 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .cond-head-title {
   font-size: 13px;
   font-weight: 600;
+  color: #1e293b;
+}
+/* 默认出口开关：网关兜底分支，不参与条件判断 */
+.cond-default {
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px dashed #bfdbfe;
+  border-radius: 6px;
+  background: #fff;
+}
+.cond-default-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.cond-default-label {
+  font-size: 13px;
   color: #1e293b;
 }
 .cond-row {

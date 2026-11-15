@@ -102,6 +102,8 @@
             <el-form ref="dynRef" :model="dynData" label-width="120px">
               <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid" :fields="boundForm.fields" :values="dynData" :editable-fields="noRuleEditableFields" editable />
               <template v-else>
+                <!-- 简易模式顶部流程名称：与分组标题一起构成表单层级 -->
+                <div class="dyn-form-title">{{ boundForm.formName }}</div>
                 <template v-for="(grp, gi) in renderGroups" :key="gi">
                   <div class="dyn-section-title" v-if="grp.title">{{ grp.title }}</div>
                   <el-row :gutter="8">
@@ -225,42 +227,123 @@
     </el-dialog>
 
     <!-- 提交审批弹窗（「后续任务」）：提交前展示下一步节点与办理人，确认后发送 -->
-    <el-dialog v-model="submitOpen" append-to-body width="620px" :close-on-click-modal="false" class="submit-dialog">
+    <el-dialog v-model="submitOpen" append-to-body width="840px" draggable :close-on-click-modal="false" class="submit-dialog">
       <template #header>
-        <div class="sd-header">提交审批</div>
+        <div class="sd-header">
+          <span class="sd-header-icon"><el-icon><Promotion /></el-icon></span>
+          <div>
+            <div class="sd-header-title">提交审批</div>
+            <div class="sd-header-sub">确认后续环节与办理人，提交后流程将立即流转</div>
+          </div>
+        </div>
       </template>
       <div class="sd-section">
-        <div class="sd-section-title">后续任务</div>
-        <div v-if="nextLoading" class="sd-loading">正在获取下一步审批人…</div>
+        <div class="sd-section-head">
+          <span class="sd-section-title">后续任务</span>
+          <span v-if="nextNodes.length" class="sd-section-count">{{ nextNodes.length }} 个环节</span>
+        </div>
+        <div v-if="nextLoading" class="sd-loading">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>正在获取下一步审批人…</span>
+        </div>
         <template v-else>
-          <div class="sd-node" v-for="n in nextNodes" :key="n.id">
+          <div class="sd-node" v-for="(n, ni) in nextNodes" :key="n.id">
             <div class="sd-node-head">
-              <el-icon class="sd-node-icon"><CircleCheck /></el-icon>
+              <span class="sd-node-step">{{ ni + 1 }}</span>
               <span class="sd-node-name">{{ n.name }}</span>
-              <span class="sd-node-mode">{{ n.modeText }} · {{ n.perfText }}</span>
-            </div>
-            <div class="sd-people">
-              <span class="sd-person" v-for="(p, pi) in n.people" :key="pi" :class="'is-' + p.kind">
-                <span class="sd-avatar">{{ p.label.slice(0, 1) }}</span
-                >{{ p.label }}
+              <span class="sd-node-mode">
+                <el-tag size="small" effect="plain" round>{{ n.modeText }}</el-tag>
+                <el-tag size="small" effect="plain" type="info" round>{{ n.perfText }}</el-tag>
               </span>
-              <span v-if="n.auto" class="sd-auto">节点未配置具体办理人，提交后由引擎按组织关系自动指派</span>
             </div>
-            <!-- 取人方式=提交时指定：从系统解析出的候选范围里选人 -->
+            <!-- 已解析出办理人（无需提交时选人）：一行紧凑展示，不再铺满标签 -->
+            <div class="sd-people" v-if="!n.needPick && n.people.length">
+              <span class="sd-people-label">办理人</span>
+              <span class="sd-person" v-for="(p, pi) in n.people" :key="pi">
+                <span class="sd-cand-avatar">{{ p.label.slice(0, 1) }}</span>{{ p.label }}
+              </span>
+            </div>
+            <!-- 取人方式=提交时指定：在系统解析出的候选范围内按组织勾选 -->
             <div v-if="n.needPick" class="sd-pick">
-              <div class="sd-pick-title">该环节需在提交时指定办理人</div>
-              <el-checkbox-group v-if="n.people.length" v-model="n.picked" size="small" class="sd-pick-group">
-                <el-checkbox v-for="(p, pi) in n.people" :key="pi" :value="p.id">{{ p.label }}</el-checkbox>
-              </el-checkbox-group>
-              <span v-else class="sd-auto">未解析出候选范围，提交后按节点配置自动指派</span>
+              <div class="sd-pick-head">
+                <span class="sd-pick-title">选择办理人</span>
+                <span class="sd-pick-count">
+                  已选 <b>{{ (n.picked || []).length }}</b> / {{ pickablePeople(n).length }}
+                </span>
+              </div>
+              <template v-if="pickablePeople(n).length">
+                <div class="sd-pick-body">
+                  <!-- 候选跨多个部门：左侧组织树，点部门筛右侧人员 -->
+                  <div class="sd-org" v-if="n.multiDept">
+                    <el-input v-model="n.deptKw" size="small" clearable :prefix-icon="Search" placeholder="搜索组织" @input="(v) => filterOrgTree(n, v)" />
+                    <div class="sd-org-tree">
+                      <el-tree
+                        :ref="(el) => setOrgTreeRef(n, el)"
+                        :data="n.deptTree"
+                        :props="{ label: 'label', children: 'children' }"
+                        node-key="id"
+                        :expand-on-click-node="false"
+                        :default-expand-all="true"
+                        :filter-node-method="filterOrgNode"
+                        highlight-current
+                        @node-click="(d) => (n.deptId = d && d.id ? d.id : null)"
+                      >
+                        <template #default="{ data }">
+                          <span class="sd-org-node">
+                            <span class="sd-org-name" :title="data.label">{{ data.label }}</span>
+                            <span class="sd-org-count">{{ data.count }}</span>
+                          </span>
+                        </template>
+                      </el-tree>
+                    </div>
+                  </div>
+                  <div class="sd-users">
+                    <div class="sd-pick-bar">
+                      <el-input v-model="n.userKw" class="sd-pick-search" size="small" clearable :prefix-icon="Search" placeholder="搜索姓名" />
+                      <el-checkbox
+                        size="small"
+                        :model-value="isAllPicked(n)"
+                        :indeterminate="isSomePicked(n)"
+                        @change="(v) => togglePickAll(n, v)"
+                      >全选</el-checkbox>
+                    </div>
+                    <div class="sd-cand" :class="{ 'is-tree': n.multiDept }">
+                      <div class="sd-cand-group" v-for="g in pickGroups(n)" :key="g.dept">
+                        <div class="sd-cand-dept" v-if="!n.multiDept">{{ g.dept }}</div>
+                        <el-checkbox-group v-model="n.picked" class="sd-cand-list">
+                          <el-checkbox v-for="p in g.users" :key="p.id" :value="p.id">
+                            <span class="sd-cand-avatar">{{ p.label.slice(0, 1) }}</span>{{ p.label }}
+                          </el-checkbox>
+                        </el-checkbox-group>
+                      </div>
+                      <div class="sd-cand-none" v-if="!pickGroups(n).length">没有匹配的人员</div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <span v-else class="sd-pick-empty">未解析出候选范围，提交后按节点配置自动指派</span>
+            </div>
+            <div v-if="n.auto" class="sd-auto">
+              <el-icon><InfoFilled /></el-icon>
+              <span>节点未配置具体办理人，提交后由引擎按组织关系自动指派</span>
+            </div>
+            <div v-else-if="n.dynamic.length" class="sd-auto">
+              <el-icon><InfoFilled /></el-icon>
+              <span>{{ n.dynamic.join('、') }}：提交后按组织关系自动匹配</span>
             </div>
           </div>
-          <div v-if="!nextNodes.length" class="sd-empty">未解析到下一步审批节点，提交后由流程引擎自动流转</div>
+          <div v-if="!nextNodes.length" class="sd-empty">
+            <el-icon><InfoFilled /></el-icon>
+            <span>未解析到下一步审批节点，提交后由流程引擎自动流转</span>
+          </div>
         </template>
       </div>
       <template #footer>
-        <el-button @click="submitOpen = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="confirmSubmit">发送</el-button>
+        <span class="sd-footer-tip">提交后可在「我发起的」中查看流转进度</span>
+        <div class="sd-footer-actions">
+          <el-button @click="submitOpen = false">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="confirmSubmit">发送</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -311,14 +394,14 @@
 </template>
 
 <script setup name="FlowLaunch">
-import { listDefinition } from '@/api/flowable/flow';
+import { listDefinition, getOrgPickerDepts } from '@/api/flowable/flow';
 import { formByProcess, launch } from '@/api/flowable/form';
 import { getDraft, listDraft, saveDraft as saveDraftApi, delDraft } from '@/api/flowable/draft';
 import request from '@/utils/request';
 import { parseTime } from '@/utils/ruoyi';
 import { getToken } from '@/utils/auth';
 import useUserStore from '@/store/modules/user';
-import { Search, Promotion, ArrowRight, Files, CircleCheck } from '@element-plus/icons-vue';
+import { Search, Promotion, ArrowRight, Files, CircleCheck, Loading, InfoFilled } from '@element-plus/icons-vue';
 import FormGridRender from '@/components/FormGridRender.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
@@ -542,6 +625,7 @@ function saveDraft() {
       const newId = res && (res.draftId || (res.data && res.data.draftId));
       if (newId) {
         draftId.value = newId;
+        syncDraftQuery(newId);
         proxy.$modal.msgSuccess('已保存草稿，可在「待办流程-草稿」继续填写');
         return;
       }
@@ -561,12 +645,33 @@ function adoptDraftByTitle() {
   return listDraft({ pageNum: 1, pageSize: 10, processKey: current.value.modelKey, title: submitTitle() })
     .then((r) => {
       const row = (r.rows || [])[0];
-      if (row && row.draftId) draftId.value = row.draftId;
+      if (row && row.draftId) {
+        draftId.value = row.draftId;
+        syncDraftQuery(row.draftId);
+      }
       proxy.$modal.msgSuccess('已保存草稿，可在「待办流程-草稿」继续填写');
     })
     .catch(() => {
       proxy.$modal.msgSuccess('已保存草稿，可在「待办流程-草稿」继续填写');
     });
+}
+
+/**
+ * 草稿ID同步到地址栏：独立发起页只有在 URL 带 draftId 时才恢复草稿内容，
+ * 保存草稿后不同步的话，刷新会被当成一次新的发起（打开空白新表单）。
+ */
+function syncDraftQuery(id) {
+  if (!isStandaloneLaunch.value || !id) return;
+  if (String(route.query.draftId || '') === String(id)) return;
+  router.replace({ path: route.path, query: { ...route.query, draftId: String(id) } });
+}
+
+/** 提交成功后草稿已删除：从地址栏摘掉 draftId，避免刷新时再去找一份不存在的草稿 */
+function clearDraftQuery() {
+  if (!isStandaloneLaunch.value || !route.query.draftId) return;
+  const query = { ...route.query };
+  delete query.draftId;
+  router.replace({ path: route.path, query });
 }
 
 /** 关闭全屏发起页 */
@@ -807,9 +912,10 @@ const renderGroups = computed(() => {
     const o = JSON.parse(boundForm.value?.layoutJson || '{}');
     if (Array.isArray(o.sections)) layout = o;
   } catch (e) {}
-  const byField = {};
+  // 主表与明细表允许同名字段（如「部门」）：布局里的普通单元格只认主表字段
+  const byMainField = {};
   all.forEach((f) => {
-    byField[f.field] = f;
+    if (!f.table || f.table === 'main') byMainField[f.field] = f;
   });
   const used = new Set();
   const detailUsed = new Set();
@@ -823,7 +929,8 @@ const renderGroups = computed(() => {
   for (const sec of layout.sections) {
     const cells = (sec.rows || [])
       .flat()
-      .filter((c) => c && ((c.field && byField[c.field] && !isFlowSysField(c.field)) || c.note || c.detailTable))
+      // v>=3 布局里管理员主动放置的系统字段（标题/流程编号/紧急程度）要正常渲染
+      .filter((c) => c && ((c.field && byMainField[c.field]) || c.note || c.detailTable))
       .map((c) => {
         if (c.detailTable) {
           detailUsed.add(c.detailTable);
@@ -831,7 +938,7 @@ const renderGroups = computed(() => {
         }
         if (c.note) return { key: 'note' + ++noteSeq, note: c.note, span: spanOf(c.span), style: c };
         used.add(c.field);
-        return { key: c.field, f: { ...byField[c.field], label: c.label || byField[c.field].label }, span: spanOf(c.span), style: c };
+        return { key: c.field, f: { ...byMainField[c.field], label: c.label || byMainField[c.field].label }, span: spanOf(c.span), style: c };
       });
     if (cells.length) groups.push({ title: sec.title || '', cells });
   }
@@ -1116,7 +1223,7 @@ async function loadNextNodes() {
     });
     const nodes = (res && res.data && res.data.nodes) || [];
     if (nodes.length) {
-      nextNodes.value = nodes.map(toNextNode);
+      await setNextNodes(nodes.map(toNextNode));
     } else {
       await loadNextNodesFromXml();
     }
@@ -1134,25 +1241,183 @@ async function loadNextNodes() {
 
 /** 后端返回的节点 → 弹窗展示结构 */
 function toNextNode(n) {
-  const people = (n.people || []).map((p) => ({
-    id: String(p.userId),
-    label: p.userName || p.loginName || p.userId,
-    kind: 'user',
-  }));
-  (n.unresolved || []).forEach((u) => {
-    if (!people.some((p) => p.label === u)) people.push({ id: '', label: u, kind: 'dynamic' });
-  });
+  const people = (n.people || [])
+    .filter((p) => p && String(p.userId || '') !== '')
+    .map((p) => ({
+      id: String(p.userId),
+      label: p.userName || p.loginName || p.userId,
+      dept: p.deptName || '',
+    }));
+  const dynamic = (n.unresolved || []).filter((u) => u && !people.some((p) => p.label === u));
   return {
     id: n.id,
     name: n.name || '审批节点',
     modeText: n.handleMode === 'candidate' ? '候选办理' : n.handleMode === 'runtime' ? '提交时指定' : '指定办理',
     perfText: { and: '会签', seq: '串签', claim: '抢占' }[n.performMode] || '抢占',
     people,
+    dynamic,
     needPick: !!n.needPick,
     picked: [],
-    auto: people.length === 0,
+    userKw: '',
+    deptKw: '',
+    deptId: null,
+    deptTree: [],
+    multiDept: false,
+    auto: people.length === 0 && dynamic.length === 0,
   };
 }
+
+/** 可勾选的候选办理人（提交时指定环节用） */
+function pickablePeople(n) {
+  return (n.people || []).filter((p) => p.id);
+}
+
+/** 当前节点可见的候选办理人（部门树筛选 + 姓名搜索） */
+function pickPeople(n) {
+  const kw = (n.userKw || '').trim().toLowerCase();
+  let list = pickablePeople(n);
+  if (n.multiDept && n.deptId) {
+    const ids = collectSubtreeIds(findTreeData(n.deptTree, n.deptId));
+    list = list.filter((p) => ids.includes(p.deptKey));
+  }
+  if (kw) list = list.filter((p) => (p.label || '').toLowerCase().includes(kw));
+  return list;
+}
+
+/** 可见候选人按部门分组（单部门时用于显示部门小标题） */
+function pickGroups(n) {
+  const groups = [];
+  pickPeople(n).forEach((p) => {
+    const dept = p.dept || '未归属部门';
+    let g = groups.find((x) => x.dept === dept);
+    if (!g) {
+      g = { dept, users: [] };
+      groups.push(g);
+    }
+    g.users.push(p);
+  });
+  return groups;
+}
+
+/** 当前筛选结果里的全部候选人ID */
+function visiblePickIds(n) {
+  return pickPeople(n).map((p) => p.id);
+}
+
+function isAllPicked(n) {
+  const ids = visiblePickIds(n);
+  return ids.length > 0 && ids.every((id) => (n.picked || []).includes(id));
+}
+
+function isSomePicked(n) {
+  const ids = visiblePickIds(n);
+  const count = ids.filter((id) => (n.picked || []).includes(id)).length;
+  return count > 0 && count < ids.length;
+}
+
+/** 全选 / 取消全选（只作用于当前搜索结果） */
+function togglePickAll(n, checked) {
+  const set = new Set(n.picked || []);
+  visiblePickIds(n).forEach((id) => (checked ? set.add(id) : set.delete(id)));
+  n.picked = Array.from(set);
+}
+
+/* ===== 提交时指定：组织树 ===== */
+/** 组织全量部门树（懒加载一次，供候选跨部门时展示层级） */
+const orgDeptTree = ref([]);
+
+function ensureOrgDeptTree() {
+  if (orgDeptTree.value.length) return Promise.resolve();
+  // 用流程模块的组织全量部门树：不受数据范围限制，且发起人都已具备 flowable:task:complete 权限
+  return getOrgPickerDepts()
+    .then((res) => {
+      orgDeptTree.value = (res && res.data) || [];
+    })
+    .catch(() => {
+      orgDeptTree.value = [];
+    });
+}
+
+/** 部门树扁平索引：label → {id,label,parentId} */
+function indexDeptByName(nodes, parentId, map) {
+  (nodes || []).forEach((nd) => {
+    const label = nd.label || nd.deptName || '';
+    if (label) map[label] = { id: nd.id, label, parentId };
+    indexDeptByName(nd.children, nd.id, map);
+  });
+  return map;
+}
+
+/** 只保留有候选人的部门分支，count 为该部门（含下级）候选人数 */
+function pruneDeptTree(nodes, own) {
+  const out = [];
+  (nodes || []).forEach((nd) => {
+    const children = pruneDeptTree(nd.children, own);
+    const self = own[nd.id] || 0;
+    const total = self + children.reduce((acc, c) => acc + c.count, 0);
+    if (self > 0 || children.length) {
+      out.push({ id: nd.id, label: nd.label || nd.deptName || '', count: total, children });
+    }
+  });
+  return out;
+}
+
+function findTreeData(nodes, id) {
+  for (const nd of nodes || []) {
+    if (nd.id === id) return nd;
+    const hit = findTreeData(nd.children, id);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function collectSubtreeIds(node, out) {
+  const acc = out || [];
+  if (!node) return acc;
+  acc.push(node.id);
+  (node.children || []).forEach((c) => collectSubtreeIds(c, acc));
+  return acc;
+}
+
+/** 节点候选范围 → 组织树（候选跨多个部门时才展示，单部门保持平铺列表） */
+function buildNodeDeptTree(n) {
+  n.deptTree = [];
+  n.deptId = null;
+  n.multiDept = false;
+  const people = pickablePeople(n);
+  if (!people.length) return;
+  const byName = indexDeptByName(orgDeptTree.value, null, {});
+  const own = {};
+  people.forEach((p) => {
+    const hit = p.dept ? byName[p.dept] : null;
+    p.deptKey = hit ? hit.id : 'x:' + (p.dept || '');
+    if (hit) own[hit.id] = (own[hit.id] || 0) + 1;
+  });
+  const kinds = new Set(people.map((p) => String(p.deptKey)));
+  n.multiDept = kinds.size > 1 && Object.keys(byName).length > 0;
+  if (!n.multiDept) return;
+  const branches = pruneDeptTree(orgDeptTree.value, own);
+  n.deptTree = [{ id: 0, label: '全部人员', count: people.length, children: branches }];
+}
+
+/** 候选区左侧组织树实例（每个节点一个，按节点ID存放） */
+const orgTreeRefs = {};
+
+function setOrgTreeRef(n, el) {
+  if (el) orgTreeRefs[n.id] = el;
+  else delete orgTreeRefs[n.id];
+}
+
+function filterOrgNode(value, data) {
+  return !value || (data.label || '').indexOf(value) !== -1;
+}
+
+function filterOrgTree(n, value) {
+  const tree = orgTreeRefs[n.id];
+  if (tree && tree.filter) tree.filter(value);
+}
+
+
 
 /** 兜底：取当前流程定义 BPMN，从开始事件沿出口找到首个（或并行多个）用户任务 */
 async function loadNextNodesFromXml() {
@@ -1164,7 +1429,15 @@ async function loadNextNodesFromXml() {
   const raw = (xmlRes && (xmlRes.data || xmlRes.msg)) || '';
   const xml = typeof raw === 'string' && raw.indexOf('<') === 0 ? raw : '';
   if (!xml) return;
-  nextNodes.value = parseNextNodes(xml);
+  await setNextNodes(parseNextNodes(xml));
+}
+
+/** 写入弹窗节点，并按候选部门情况生成组织树（单部门不建树） */
+async function setNextNodes(nodes) {
+  nextNodes.value = nodes;
+  if (!nodes.some((n) => n.needPick && pickablePeople(n).length > 1)) return;
+  await ensureOrgDeptTree();
+  nodes.forEach(buildNodeDeptTree);
 }
 
 function parseNextNodes(xml) {
@@ -1224,32 +1497,46 @@ function describeNode(el) {
   const handleMode = cfg.handleMode || (candidateGroups ? 'candidate' : 'assign');
   const performMode = cfg.performMode || 'claim';
   const people = [];
-  const push = (label, kind) => {
+  const dynamic = [];
+  const push = (label) => {
     if (!label) return;
     if (people.some((p) => p.label === label)) return;
-    people.push({ label, kind });
+    people.push({ id: '', label, dept: '' });
   };
   const assignee = attr('flowable:assignee');
   if (assignee) push(assignee === '${initiator}' ? '发起人本人' : userLabel(assignee), 'user');
   (attr('flowable:candidateUsers') || '')
     .split(',')
     .filter(Boolean)
-    .forEach((id) => push(userLabel(id), 'user'));
+    .forEach((id) => push(userLabel(id)));
   (candidateGroups || '')
     .split(',')
     .filter(Boolean)
-    .forEach((g) => push(g, 'group'));
+    .forEach((g) => {
+      if (!dynamic.includes(g)) dynamic.push(g);
+    });
   (cfg.participants || []).forEach((p) => {
-    if (p.type === 'user' && p.id) push(userLabel(p.id), 'user');
-    else push(p.name || p.type || '按组织关系自动匹配', 'dynamic');
+    if (p.type === 'user' && p.id) push(userLabel(p.id));
+    else {
+      const label = p.name || p.type || '按组织关系自动匹配';
+      if (!dynamic.includes(label)) dynamic.push(label);
+    }
   });
   return {
     id: attr('id'),
     name: attr('name') || '审批节点',
-    modeText: handleMode === 'candidate' ? '候选办理' : '指定办理',
+    modeText: handleMode === 'candidate' ? '候选办理' : handleMode === 'runtime' ? '提交时指定' : '指定办理',
     perfText: { and: '会签', seq: '串签', claim: '抢占' }[performMode] || '抢占',
     people,
-    auto: people.length === 0,
+    dynamic,
+    needPick: false,
+    picked: [],
+    userKw: '',
+    deptKw: '',
+    deptId: null,
+    deptTree: [],
+    multiDept: false,
+    auto: people.length === 0 && dynamic.length === 0,
   };
 }
 
@@ -1281,7 +1568,7 @@ function confirmSubmit() {
   // 下一环节「提交时指定」：把选定的人写进变量，后端监听器创建任务时采纳
   for (const n of nextNodes.value || []) {
     if (!n.needPick) continue;
-    if (n.people.length && !(n.picked || []).length) {
+    if (pickablePeople(n).length && !(n.picked || []).length) {
       proxy.$modal.msgWarning('请为「' + n.name + '」选择办理人');
       submitting.value = false;
       return;
@@ -1302,6 +1589,7 @@ function confirmSubmit() {
       if (draftId.value) {
         delDraft(draftId.value).catch(() => {});
         draftId.value = null;
+        clearDraftQuery();
       }
       submitOpen.value = false;
       resetAfterLaunch();
@@ -1473,8 +1761,8 @@ export const DynField = defineComponent({
   props: {
     f: { type: Object, required: true },
     modelValue: { type: [String, Number, Boolean], default: undefined },
-    /** 浏览按钮伴生值：已选 ID（逗号分隔），仅用于弹框回显 */
-    modelIds: { type: [String, Array], default: '' },
+    /** 浏览按钮伴生值：已选 ID（逗号分隔），仅用于弹框回显（兼容数字 ID 与数组） */
+    modelIds: { type: [String, Number, Array], default: '' },
     /** 浏览按钮附加信息（人员带回部门） */
     modelExtra: { type: Object, default: null },
   },
@@ -1557,6 +1845,14 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
   line-height: 32px;
 }
 
+/* 简易模式顶部流程名称（表单标题）：居中大字，与预览保持一致 */
+.dyn-form-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  padding: 2px 0 12px;
+}
 .dyn-section-title {
   font-size: 14px;
   font-weight: 600;
@@ -1923,36 +2219,116 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
 }
 
 /* ===== 提交审批弹窗：后续任务（下一步审批人） ===== */
+/* dialog 外框 teleport 到 body，scoped 命中不到，需 :global */
+:global(.submit-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 94vw;
+}
+:global(.submit-dialog .el-dialog__header) {
+  margin-right: 0;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+:global(.submit-dialog .el-dialog__headerbtn) {
+  top: 14px;
+  right: 14px;
+}
+:global(.submit-dialog .el-dialog__body) {
+  padding: 16px 20px 8px;
+}
+:global(.submit-dialog .el-dialog__footer) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 16px;
+  border-top: 1px solid #f1f5f9;
+}
 .sd-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: move;
+  user-select: none;
+}
+.sd-header-icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 17px;
+}
+.sd-header-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--ink-900, #0f172a);
+  line-height: 20px;
+}
+.sd-header-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-400, #94a3b8);
+  line-height: 17px;
+}
+.sd-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 .sd-section-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-900, #0f172a);
-  padding: 2px 0 10px;
+}
+.sd-section-count {
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  line-height: 18px;
 }
 .sd-loading {
-  color: var(--ink-400, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--ink-500, #64748b);
   font-size: 13px;
-  padding: 6px 0 4px;
 }
 .sd-node {
-  border: 1px solid var(--ink-200, #e2e8f0);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border: 1px solid #e8eef7;
+  border-radius: 10px;
+  background: #fbfcfe;
+  padding: 12px 14px;
   margin-bottom: 10px;
-  background: #fff;
+}
+.sd-node:last-child {
+  margin-bottom: 0;
 }
 .sd-node-head {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.sd-node-icon {
-  color: #16a34a;
+.sd-node-step {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
 }
 .sd-node-name {
   font-size: 14px;
@@ -1960,42 +2336,174 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
   color: var(--ink-900, #0f172a);
 }
 .sd-node-mode {
+  display: inline-flex;
+  gap: 6px;
   margin-left: auto;
-  font-size: 12px;
-  color: var(--ink-400, #94a3b8);
 }
 .sd-people {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
+}
+.sd-people-label {
+  font-size: 12px;
+  color: var(--ink-400, #94a3b8);
 }
 .sd-person {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px 3px 3px;
+  padding: 2px 10px 2px 3px;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: #fff;
   border: 1px solid #e2e8f0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-900, #0f172a);
+  line-height: 20px;
 }
-.sd-person.is-group {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #3730a3;
-  padding-left: 10px;
-}
-.sd-person.is-dynamic {
+.sd-auto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
   background: #f8fafc;
-  color: var(--ink-500, #64748b);
-  padding-left: 10px;
+  color: var(--ink-400, #94a3b8);
+  font-size: 12px;
+  line-height: 18px;
 }
-.sd-avatar {
+.sd-pick {
+  margin-top: 10px;
+  padding: 10px 12px 12px;
+  border: 1px solid #e8eef7;
+  border-radius: 8px;
+  background: #fff;
+}
+.sd-pick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sd-pick-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+.sd-pick-count {
+  font-size: 13px;
+  color: var(--ink-400, #94a3b8);
+}
+.sd-pick-count b {
+  color: #2563eb;
+  font-weight: 600;
+}
+.sd-pick-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+/* 多部门：组织树 + 人员列表两栏 */
+.sd-pick-body {
+  display: flex;
+  gap: 12px;
+}
+.sd-org {
+  width: 235px;
+  flex: none;
+  min-width: 0;
+  padding-right: 10px;
+  border-right: 1px solid #f1f5f9;
+}
+.sd-org-tree {
+  margin-top: 6px;
+  height: 216px;
+  overflow: auto;
+  padding-right: 2px;
+}
+.sd-org-tree :deep(.el-tree-node__content) {
+  height: 30px;
+  border-radius: 4px;
+}
+.sd-org-tree :deep(.el-tree-node__label) {
+  font-size: 14px;
+}
+.sd-org-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding-right: 4px;
+}
+.sd-org-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.sd-org-count {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-400, #94a3b8);
+}
+.sd-users {
+  flex: 1;
+  min-width: 0;
+}
+.sd-pick-search {
+  flex: 1;
+  min-width: 0;
+}
+.sd-cand {
+  max-height: 216px;
+  overflow: auto;
+  padding-right: 2px;
+}
+.sd-cand-group + .sd-cand-group {
+  margin-top: 8px;
+}
+.sd-cand-dept {
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--ink-400, #94a3b8);
+}
+.sd-cand-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 8px;
+}
+/* 组织树模式：右侧两列展示，充分利用加宽后的空间 */
+.sd-cand.is-tree .sd-cand-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 12px;
+}
+.sd-cand-list :deep(.el-checkbox) {
+  margin-right: 0;
+  height: 30px;
+  min-width: 0;
+}
+.sd-cand-list :deep(.el-checkbox__label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-900, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-cand-avatar {
   width: 20px;
   height: 20px;
+  flex: none;
   border-radius: 50%;
   background: var(--brand-600, #4f46e5);
   color: #fff;
@@ -2003,37 +2511,29 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: none;
 }
-.sd-person.is-group .sd-avatar,
-.sd-person.is-dynamic .sd-avatar {
-  display: none;
-}
-.sd-auto {
+.sd-cand-none {
+  padding: 8px 0;
   font-size: 12px;
   color: var(--ink-400, #94a3b8);
-  line-height: 20px;
 }
-.sd-pick {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: #f8fafc;
-  border-radius: 6px;
-}
-.sd-pick-title {
+.sd-pick-empty {
   font-size: 12px;
-  color: var(--ink-500, #64748b);
-  margin-bottom: 6px;
-}
-.sd-pick-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 12px;
+  color: var(--ink-400, #94a3b8);
 }
 .sd-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
   color: var(--ink-400, #94a3b8);
   font-size: 13px;
-  padding: 8px 0;
+}
+.sd-footer-tip {
+  font-size: 12px;
+  color: var(--ink-400, #94a3b8);
 }
 
 /* ===== 提交成功回执：流程图（仿照，提交后确认流程走向再关页） ===== */

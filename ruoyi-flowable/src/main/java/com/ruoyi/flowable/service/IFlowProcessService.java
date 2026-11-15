@@ -4,7 +4,6 @@ import java.util.List;
 import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
-import com.ruoyi.flowable.domain.dto.FlowStartDTO;
 
 /**
  * 流程实例/任务 Service 接口
@@ -13,9 +12,6 @@ import com.ruoyi.flowable.domain.dto.FlowStartDTO;
  */
 public interface IFlowProcessService
 {
-    /** 发起流程，返回流程实例ID */
-    public String startProcess(FlowStartDTO dto);
-
     /** 查询我发起的流程 */
     public List<FlowInstance> selectMyProcessList(FlowInstance query);
 
@@ -63,6 +59,28 @@ public interface IFlowProcessService
      * @return 收回结果：fromActivityName / prevActivityId / prevActivityName / prevAssignee / prevAssigneeName
      */
     public java.util.Map<String, Object> recallInstance(String instanceId, String reason);
+
+    /**
+     * 我的已办「收回」：下一节点办理前，本节点办理人把流程收回重新办理。
+     *
+     * <p>与管理员强制收回复用同一套节点回退逻辑，但增加办理人校验：</p>
+     * <p>1) 当前登录人必须是该实例最近一次办理的办理人；</p>
+     * <p>2) 该节点在设计器里开启了「强制收回」（flowable:allowRecall，未配置默认允许）；</p>
+     * <p>3) 下一节点还没人办理过；</p>
+     * <p>4) 我办理的节点必须是当前待办节点的直接上一环节。</p>
+     *
+     * @param instanceId 流程实例ID
+     * @param reason     可选备注（只进系统日志）
+     * @return 收回结果：fromActivityName / prevActivityId / prevActivityName / prevAssignee / prevAssigneeName
+     */
+    public java.util.Map<String, Object> recallMyInstance(String instanceId, String reason);
+
+    /**
+     * 已办行是否展示「收回」按钮：满足 {@link #recallMyInstance(String, String)} 的全部前置条件。
+     *
+     * @param instanceId 流程实例ID
+     */
+    public boolean canRecallInstance(String instanceId);
 
     /**
      * 管理员结束流程
@@ -148,8 +166,15 @@ public interface IFlowProcessService
     /** 办理任务（同意 / 驳回退回）。驳回时按 targetActivityId 把流程退回到指定节点 */
     public int completeTask(FlowCompleteDTO dto);
 
-    /** 流程分类树（最新版本流程定义按分类分组） */
-    public java.util.List<java.util.Map<String, Object>> selectProcessTree();
+    /**
+     * 流程分类树（按页面数据口径统计，数量与右侧列表保持一致）
+     *
+     * @param scope  数据口径：todo 待办 / returned 退回 / cc 待阅 / draft 草稿 /
+     *               all 待办-全部（待办+未读待阅+草稿）/ done 已办 /
+     *               my 我的请求 / involved 流程查询 / monitor 流程监控
+     * @param status 状态页签：my/involved/monitor 取 running|completed|canceled；done 取 running|finished
+     */
+    public java.util.List<java.util.Map<String, Object>> selectProcessTree(String scope, String status);
 
     /** 任务转办 */
     public int delegateTask(String taskId, Long targetUserId, String comment);
@@ -172,4 +197,12 @@ public interface IFlowProcessService
      * @param taskId 任务ID
      */
     public void recordNodeView(String taskId);
+
+    /**
+     * 记录「已查看」：本人打开流程详情时上报实例ID，按其当前待办（含候选）节点写入查看时间，
+     * 供流程状态展示「查看时间」，与办理页上报共用 flow_node_viewer。
+     *
+     * @param instanceId 流程实例ID
+     */
+    public void recordInstanceView(String instanceId);
 }

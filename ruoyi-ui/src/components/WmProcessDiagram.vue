@@ -1,10 +1,11 @@
 <template>
   <div class="wm-diagram-root" :class="{ 'wm-diagram-root--fill': fill }">
     <div v-if="showLegend" class="wm-diagram-legend">
-      <span v-if="showAssigneeHint" class="lg-item lg-hint">点击节点查看办理人</span>
+      <span v-if="showAssigneeHint" class="lg-item lg-hint">点击节点查看办理人 / 查看 / 抄送等操作明细</span>
       <span class="lg-item"><i class="lg-dot lg-active"></i>当前停留节点</span>
       <span class="lg-item"><i class="lg-dot lg-done"></i>已流转</span>
       <span class="lg-item"><i class="lg-dot lg-pending"></i>未流转</span>
+      <span class="lg-item" v-if="(skippedIds || []).length"><i class="lg-dot lg-skipped"></i>干预跳过</span>
     </div>
     <!-- fill 模式高度由 flex 决定（铺满外层卡片），其余场景按内容收紧后的高度 -->
     <div class="wm-diagram" :style="fill ? null : { height: heightPx }">
@@ -42,6 +43,8 @@ const props = defineProps({
   activeIds: { type: Array, default: () => [] },
   /** 已流转的连线 ID（实例图高亮：绿色路径） */
   doneFlowIds: { type: Array, default: () => [] },
+  /** 被管理员干预跳过的节点 ID（实例图高亮：灰色虚线 + 标注「干预跳过」） */
+  skippedIds: { type: Array, default: () => [] },
   /** 是否显示图例（无状态数据时自动不显示） */
   legend: { type: Boolean, default: true },
   /**
@@ -294,8 +297,9 @@ function applyStatus() {
     const registry = viewer.get('elementRegistry');
     const done = new Set((props.doneIds || []).map(displayNodeId));
     const active = new Set((props.activeIds || []).map(displayNodeId));
+    const skipped = new Set((props.skippedIds || []).map(displayNodeId));
     const doneFlows = new Set(props.doneFlowIds || []);
-    const statusMarkers = ['wm-done', 'wm-active', 'wm-pending', 'wm-flow-done', 'wm-flow-pending'];
+    const statusMarkers = ['wm-done', 'wm-active', 'wm-pending', 'wm-skipped', 'wm-flow-done', 'wm-flow-pending'];
     // 事件名称已经画在圆里（独立 label 元素，不跟图形的 opacity 一起走），
     // 未流转时得单独补一个淡出标记，否则白字会浮在淡化的圆上
     const eventLabels = new Map();
@@ -334,6 +338,8 @@ function applyStatus() {
       // 容器类元素（流程/协作/泳道）不参与着色
       if (el.type === 'bpmn:Process' || el.type === 'bpmn:Collaboration' || /Lane$/.test(el.type)) return;
       if (active.has(el.id)) canvas.addMarker(el.id, 'wm-active');
+      // 被管理员干预跳过的节点：不按「已流转」画绿卡，改成灰底虚线，和真正办理过的节点区分开
+      else if (skipped.has(el.id)) canvas.addMarker(el.id, 'wm-skipped');
       else if (done.has(el.id)) canvas.addMarker(el.id, 'wm-done');
       else {
         canvas.addMarker(el.id, 'wm-pending');
@@ -400,12 +406,15 @@ function resolveVisibleNodeInfo() {
         done: [...(node.done || [])],
         pending: [...(node.pending || [])],
         viewed: [...(node.viewed || [])],
+        cc: [...(node.cc || [])],
+        delegate: [...(node.delegate || [])],
+        intervene: [...(node.intervene || [])],
       };
       return;
     }
     // 开始事件自身的名称优先；技术节点的人员记录合并到开始节点展示
     if (id === targetId && node.name) target.name = node.name;
-    ['done', 'pending', 'viewed'].forEach((key) => {
+    ['done', 'pending', 'viewed', 'cc', 'delegate', 'intervene'].forEach((key) => {
       target[key] = [...(target[key] || []), ...(node[key] || [])];
     });
   });
@@ -424,18 +433,45 @@ function isDoneNode(id) {
   return (props.doneIds || []).some((rawId) => displayNodeId(rawId) === id);
 }
 
-/** 节点下方显示的审批人：当前节点显示待办人，已流转节点显示最后一次办理人；多人折叠成「张三 等3人」 */
-function assigneeText(node) {
+/** 是否被管理员干预跳过（节点被强制结束、没人办理） */
+function isSkippedNode(id) {
+  return (props.skippedIds || []).some((rawId) => displayNodeId(rawId) === id);
+}
+
+/** 节点下方显示的审批人：当前节点显示待办人 + 查看状态，已流转节点显示最后一次办理人 + 动作 */
+function assigneeText(node, el) {
   if (!node) return '';
   const pending = node.pending || [];
-  const source = isActiveNode(node.nodeId) && pending.length ? pending : node.done || [];
+  const done = node.done || [];
+  const skippedNode = isSkippedNode(node.nodeId);
+  const isEvent = el && (el.type === 'bpmn:StartEvent' || el.type === 'bpmn:EndEvent');
+  // 被干预跳过的节点没有办理人，退回到「未审批」人员里取当时待办的人
+  const source = isActiveNode(node.nodeId) && pending.length
+    ? pending
+    : (done.length || !skippedNode ? done : pending);
   const names = [];
   source.forEach((p) => {
     const name = p.userName || p.userId;
     if (name && names.indexOf(name) < 0) names.push(name);
   });
   if (!names.length) return '';
-  return names.length > 1 ? names[0] + ' 等' + names.length + '人' : names[0];
+  if (names.length > 1) return names[0] + ' 等' + names.length + '人';
+  const name = names[0];
+  // 开始/结束事件空间小，只显示人名，状态放到点击浮层里
+  if (isEvent) return name;
+  if (skippedNode && pending.length) return name + '·干预跳过';
+  if (isActiveNode(node.nodeId) && pending.length) {
+    const person = pending[0];
+    if (person.kind === 'candidate') return name + '·候选';
+    const viewed = person.viewed || person.viewTime;
+    return name + (viewed ? '·已查看' : '·未查看');
+  }
+  if (done.length) {
+    const action = done[done.length - 1].action;
+    if (action === 'start' || action === 'end' || action === 'cancel' || action === 'canceled') return name;
+    return name + '·' + (ACTION_TEXT[action] || '已提交');
+  }
+  return name;
 }
 
 function escapeHtml(value) {
@@ -450,14 +486,38 @@ function shortTime(value) {
   return m ? m[2] + '-' + m[3] + ' ' + m[4] + ':' + m[5] : s;
 }
 
-/** 浮层里的一行：头像（姓名首字）+ 姓名 + 动作/时间 + 签字意见 */
+/** 接收 → 操作（或查看）的耗时，与流程状态「耗时」同一口径 */
+function durationText(begin, end) {
+  if (!begin || !end) return '';
+  const b = new Date(String(begin).replace(/-/g, '/'));
+  const e = new Date(String(end).replace(/-/g, '/'));
+  const ms = e - b;
+  if (!isFinite(ms) || ms < 0) return '';
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return '不足1分钟';
+  if (min < 60) return min + '分钟';
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return hours + '小时' + (min % 60 ? (min % 60) + '分钟' : '');
+  const days = Math.floor(hours / 24);
+  return days + '天' + (hours % 24 ? (hours % 24) + '小时' : '');
+}
+
+/**
+ * 浮层里的一行（对标泛微流程图浮层）：
+ * 头像 + 姓名 + 状态/动作 + 接收时间/操作时间/查看时间/耗时 + 签字意见
+ */
 function personRow(person, tagText) {
   const name = person.userName || person.userId || '-';
-  const meta = [];
-  if (tagText) meta.push(tagText);
-  if (person.action) meta.push(ACTION_TEXT[person.action] || person.action);
-  const time = shortTime(person.time);
-  if (time) meta.push(time);
+  const tags = [];
+  if (tagText) tags.push(tagText);
+  if (person.action) tags.push(ACTION_TEXT[person.action] || person.action);
+  const viewAt = person.viewTime || (!person.action ? person.time : null);
+  const times = [];
+  if (person.createTime) times.push('接收 ' + shortTime(person.createTime));
+  if (person.action && person.time) times.push('操作 ' + shortTime(person.time));
+  if (!person.action && viewAt) times.push('查看 ' + shortTime(viewAt));
+  const cost = durationText(person.createTime, person.action ? person.time : viewAt);
+  if (cost) times.push('耗时 ' + cost);
   let comment = '';
   if (person.comment) {
     try {
@@ -475,41 +535,156 @@ function personRow(person, tagText) {
     '<span class="wm-pop-name">' +
     escapeHtml(name) +
     '</span>' +
-    (meta.length ? '<span class="wm-pop-meta">' + escapeHtml(meta.join(' · ')) + '</span>' : '') +
+    (tags.length ? '<span class="wm-pop-meta">' + escapeHtml(tags.join(' · ')) + '</span>' : '') +
+    (times.length ? '<span class="wm-pop-meta">' + escapeHtml(times.join(' · ')) + '</span>' : '') +
     (comment ? '<span class="wm-pop-cmt">' + escapeHtml(comment) + '</span>' : '') +
     '</span></div>'
   );
 }
 
-/** 浮层内容：节点名 + 状态 + 未审批/已查看/已操作三段（顺序：未审批 / 已查看 / 已操作） */
+/** 抄送记录行：抄送人 → 接收人，已读/未读 + 阅读时间 + 抄送时间 */
+function ccRow(cc) {
+  const sender = cc.senderName || cc.senderId || '-';
+  const receiver = cc.receiverName || cc.receiverId || '-';
+  const read = String(cc.readFlag) === '1';
+  const meta = [read ? '已读' : '未读'];
+  if (read && cc.readTime) meta.push(shortTime(cc.readTime));
+  if (cc.time) meta.push('抄送 ' + shortTime(cc.time));
+  return (
+    '<div class="wm-pop-row">' +
+    '<span class="wm-pop-avatar">' +
+    escapeHtml(String(receiver).slice(0, 1)) +
+    '</span>' +
+    '<span class="wm-pop-main">' +
+    '<span class="wm-pop-name">' +
+    escapeHtml(sender) +
+    ' → ' +
+    escapeHtml(receiver) +
+    '</span>' +
+    '<span class="wm-pop-meta">' +
+    escapeHtml(meta.join(' · ')) +
+    '</span>' +
+    '</span></div>'
+  );
+}
+
+/** 转办记录行：转办人 → 被转办人，转办时间 + 转办说明 */
+function delegateRow(item) {
+  const from = item.fromName || item.fromId || '-';
+  const to = item.toName || item.toId || '-';
+  const meta = [];
+  if (item.time) meta.push('转办 ' + shortTime(item.time));
+  // 「转办给XXX」这类系统自动文案与上面的「转办人 → 被转办人」重复，不再展示
+  const remark = /^转办给/.test(String(item.comment || '').trim()) ? '' : item.comment;
+  return (
+    '<div class="wm-pop-row">' +
+    '<span class="wm-pop-avatar">' +
+    escapeHtml(String(to).slice(0, 1)) +
+    '</span>' +
+    '<span class="wm-pop-main">' +
+    '<span class="wm-pop-name">' +
+    escapeHtml(from) +
+    ' → ' +
+    escapeHtml(to) +
+    '</span>' +
+    (meta.length ? '<span class="wm-pop-meta">' + escapeHtml(meta.join(' · ')) + '</span>' : '') +
+    (remark ? '<span class="wm-pop-cmt">' + escapeHtml(remark) + '</span>' : '') +
+    '</span></div>'
+  );
+}
+
+/** 管理员干预记录行：管理员 + 调整时间 + 「来源节点 → 目标节点」+ 指定办理人 + 说明 */
+function interveneRow(item) {
+  const name = item.userName || item.userId || '管理员';
+  const fromNames = item.fromNames && item.fromNames.length
+    ? item.fromNames.join('、')
+    : item.fromName;
+  const to = item.toName || '';
+  const meta = [];
+  if (item.time) meta.push('干预 ' + shortTime(item.time));
+  if (to) meta.push((fromNames ? fromNames + ' → ' : '至 ') + to);
+  if (item.assigneeName) meta.push('办理人 ' + item.assigneeName);
+  const remark = item.comment ? String(item.comment) : '';
+  return (
+    '<div class="wm-pop-row">' +
+    '<span class="wm-pop-avatar wm-pop-avatar--admin">' +
+    escapeHtml(String(name).slice(0, 1)) +
+    '</span>' +
+    '<span class="wm-pop-main">' +
+    '<span class="wm-pop-name">' +
+    escapeHtml(name) +
+    ' · 管理员干预</span>' +
+    (meta.length ? '<span class="wm-pop-meta">' + escapeHtml(meta.join(' · ')) + '</span>' : '') +
+    (remark ? '<span class="wm-pop-cmt">' + escapeHtml(remark) + '</span>' : '') +
+    '</span></div>'
+  );
+}
+
+/**
+ * 浮层内容：节点名 + 状态 + 未审批/已查看/已操作/转办/抄送五段。
+ *
+ * 人员过多时每段默认只展示最重要的前 POPOVER_ROW_LIMIT 条，
+ * 其余折叠为「展开剩余 N 条」，避免浮层被撑高、遮挡流程图。
+ */
 function buildPopoverHtml(node) {
   const pending = node.pending || [];
   const done = node.done || [];
   const viewed = node.viewed || [];
+  const cc = node.cc || [];
+  const delegate = node.delegate || [];
+  const intervene = node.intervene || [];
   const parts = [];
   const section = (title, rows, cls) => {
     if (!rows.length) return;
-    parts.push('<div class="wm-pop-sec ' + (cls || '') + '">' + '<div class="wm-pop-sec-title">' + title + '<em>' + rows.length + '</em></div>' + rows.join('') + '</div>');
+    const visible = rows.slice(0, POPOVER_ROW_LIMIT);
+    const rest = rows.slice(POPOVER_ROW_LIMIT);
+    let html =
+      '<div class="wm-pop-sec ' + (cls || '') + '">' +
+      '<div class="wm-pop-sec-title">' + title + '<em>' + rows.length + '</em></div>' +
+      visible.join('');
+    if (rest.length) {
+      html +=
+        '<div class="wm-pop-sec-rest" hidden>' + rest.join('') + '</div>' +
+        '<button type="button" class="wm-pop-more-btn" data-rest="' + rest.length + '">展开剩余 ' + rest.length + ' 条</button>';
+    }
+    html += '</div>';
+    parts.push(html);
   };
   section(
     '未审批操作人',
-    pending.map((p) => personRow(p, KIND_TEXT[p.kind] || '')),
+    pending.map((p) => personRow(p, (KIND_TEXT[p.kind] || '') + ' · ' + (p.viewed || p.viewTime ? '已查看' : '未查看'))),
     'is-todo',
   );
   section(
     '已查看人员',
-    viewed.map((p) => personRow(p, '')),
+    viewed.map((p) => personRow(p, '已查看')),
     'is-view',
   );
   section(
     '已操作人员',
-    done.map((p) => personRow(p, '')),
+    done.map((p) => personRow(p, '已提交')),
     'is-done',
+  );
+  section(
+    '转办记录',
+    delegate.map((item) => delegateRow(item)),
+    'is-delegate',
+  );
+  section(
+    '抄送记录',
+    cc.map((item) => ccRow(item)),
+    'is-cc',
+  );
+  section(
+    '管理员干预',
+    intervene.map((item) => interveneRow(item)),
+    'is-intervene',
   );
   if (!parts.length) parts.push('<div class="wm-pop-empty">该节点暂无办理人信息</div>');
   const active = isActiveNode(node.nodeId);
-  const stateText = active ? '审批中' : isDoneNode(node.nodeId) ? '已审批' : '未流转';
-  const stateCls = active ? 'is-active' : isDoneNode(node.nodeId) ? 'is-done' : 'is-idle';
+  const skippedNode = isSkippedNode(node.nodeId);
+  const stateText = skippedNode ? '干预跳过' : active ? '审批中' : isDoneNode(node.nodeId) ? '已审批' : '未流转';
+  const stateCls = skippedNode ? 'is-skip' : active ? 'is-active' : isDoneNode(node.nodeId) ? 'is-done' : 'is-idle';
   return (
     '<div class="wm-pop-head">' +
     '<span class="wm-pop-title">' +
@@ -576,7 +751,7 @@ function applyNodeInfo() {
     try {
       canvas.addMarker(id, 'wm-clickable');
     } catch (e) {}
-    const text = assigneeText(node);
+    const text = assigneeText(node, el);
     if (!text) return;
     // 节点名太长（换两行）时框内底部放不下审批人 → 退化成贴在框下方，避免文字叠在一起
     let nameBottom = 0;
@@ -619,7 +794,9 @@ function closePopover() {
 }
 
 /** 浮层固定宽度（与 CSS .wm-node-pop 的 width 一致，用于边界钳制） */
-const POPOVER_WIDTH = 258;
+const POPOVER_WIDTH = 300;
+/** 浮层每段默认展示条数，超出折叠（人员/抄送过多时保持浮层高度稳定） */
+const POPOVER_ROW_LIMIT = 3;
 
 /** 打开节点浮层：节点在视口上半部分就往下弹，否则往上弹，避免浮层被画布裁掉 */
 function openPopover(el) {
@@ -647,6 +824,18 @@ function openPopover(el) {
   const card = document.createElement('div');
   card.className = 'wm-node-pop' + (below ? '' : ' is-above');
   card.innerHTML = buildPopoverHtml(node);
+  // 分段折叠：点击「展开剩余 N 条」就地展开/收起，浮层高度随内容自适应
+  card.addEventListener('click', (ev) => {
+    const btn = ev.target.closest && ev.target.closest('.wm-pop-more-btn');
+    if (!btn) return;
+    ev.stopPropagation();
+    const rest = btn.previousElementSibling;
+    if (!rest || !rest.classList.contains('wm-pop-sec-rest')) return;
+    const expanded = !rest.hidden;
+    rest.hidden = expanded;
+    btn.classList.toggle('is-open', !expanded);
+    btn.textContent = expanded ? '展开剩余 ' + (btn.dataset.rest || '') + ' 条' : '收起';
+  });
   // 浮层内容不随画布缩放（scale:false），但 offset 仍按图形坐标 → 换算成固定的 10px 视觉间距
   const left = (el.width || 0) / 2 + shift;
   const gap = (el.height || 0) + Math.round(10 / scale);
@@ -766,7 +955,7 @@ watch(
 );
 // 状态数据变化（切换实例 / 办理完刷新）：只重贴高亮与人员标签，不重新 importXML
 watch(
-  () => [props.doneIds, props.activeIds, props.doneFlowIds, props.nodeInfo],
+  () => [props.doneIds, props.activeIds, props.doneFlowIds, props.skippedIds, props.nodeInfo],
   () => {
     if (state.value !== 'ok') return;
     applyStatus();
@@ -850,6 +1039,10 @@ onBeforeUnmount(() => {
 }
 .wm-diagram-legend .lg-pending {
   background: #e2e8f0;
+}
+.wm-diagram-legend .lg-skipped {
+  background: #f1f5f9;
+  border: 1.5px dashed #94a3b8;
 }
 .wm-diagram {
   position: relative;
@@ -997,6 +1190,16 @@ onBeforeUnmount(() => {
   stroke: #22c55e !important;
   stroke-width: 2 !important;
 }
+/* 被管理员干预跳过的节点：灰底 + 虚线边框，与真正办理过的蓝色实色卡片区分开 */
+.wm-diagram-canvas :deep(.wm-task.wm-skipped.djs-shape .djs-visual > rect) {
+  fill: #f1f5f9 !important;
+  stroke: #94a3b8 !important;
+  stroke-width: 2 !important;
+  stroke-dasharray: 6 4 !important;
+}
+.wm-diagram-canvas :deep(.wm-task.wm-skipped.djs-shape .djs-visual text.djs-label) {
+  fill: #475569 !important;
+}
 /* 当前停留节点：红色粗框 + 外发光（与后端 PNG 的红色当前节点同一语义） */
 .wm-diagram-canvas :deep(.wm-active.djs-shape .djs-visual > rect),
 .wm-diagram-canvas :deep(.wm-active.djs-shape .djs-visual > circle),
@@ -1062,9 +1265,12 @@ onBeforeUnmount(() => {
 .wm-diagram-canvas :deep(.wm-node-pop) {
   position: absolute;
   transform: translateX(-50%);
-  width: 258px;
-  max-height: 280px;
-  overflow: auto;
+  width: 300px;
+  max-height: 340px;
+  /* 纵向 flex：标题固定、正文内部滚动，展开/收起时只有内容变化，浮层不溢出画布 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #dbe3ee;
   border-radius: 8px;
@@ -1087,10 +1293,16 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #eef2f7;
   border-radius: 8px 8px 0 0;
   background: #f8fafc;
+  flex: none;
 }
 .wm-diagram-canvas :deep(.wm-pop-title) {
   font-weight: 600;
   color: #0f172a;
+  /* 节点名过长时省略，避免把固定宽度的浮层撑变形 */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wm-diagram-canvas :deep(.wm-pop-state) {
   flex: none;
@@ -1113,8 +1325,39 @@ onBeforeUnmount(() => {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
 }
+.wm-diagram-canvas :deep(.wm-pop-state.is-skip) {
+  color: #6d28d9;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
 .wm-diagram-canvas :deep(.wm-pop-body) {
   padding: 6px 10px 8px;
+  /* 内容超长时只在正文内滚动，标题栏固定，浮层整体高度/位置不变形 */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.wm-diagram-canvas :deep(.wm-pop-sec-rest[hidden]) {
+  display: none;
+}
+.wm-diagram-canvas :deep(.wm-pop-more-btn) {
+  display: block;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: #2f8ee0;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.wm-diagram-canvas :deep(.wm-pop-more-btn:hover) {
+  text-decoration: underline;
+}
+.wm-diagram-canvas :deep(.wm-pop-more-btn.is-open) {
+  color: #94a3b8;
 }
 .wm-diagram-canvas :deep(.wm-pop-sec + .wm-pop-sec) {
   margin-top: 6px;
@@ -1144,6 +1387,15 @@ onBeforeUnmount(() => {
 .wm-diagram-canvas :deep(.wm-pop-sec.is-done .wm-pop-sec-title) {
   color: #15803d;
 }
+.wm-diagram-canvas :deep(.wm-pop-sec.is-cc .wm-pop-sec-title) {
+  color: #1d4ed8;
+}
+.wm-diagram-canvas :deep(.wm-pop-sec.is-delegate .wm-pop-sec-title) {
+  color: #7c3aed;
+}
+.wm-diagram-canvas :deep(.wm-pop-sec.is-intervene .wm-pop-sec-title) {
+  color: #6d28d9;
+}
 .wm-diagram-canvas :deep(.wm-pop-row) {
   display: flex;
   gap: 6px;
@@ -1161,15 +1413,27 @@ onBeforeUnmount(() => {
   font-weight: 600;
   text-align: center;
 }
+.wm-diagram-canvas :deep(.wm-pop-avatar--admin) {
+  background: #ede9fe;
+  color: #6d28d9;
+}
 .wm-diagram-canvas :deep(.wm-pop-main) {
   display: flex;
-  flex-direction: column;
+  /* 姓名 / 状态 / 时间同一行排布，只有签字意见独占下一行，浮层更紧凑 */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
   min-width: 0;
   line-height: 1.45;
 }
 .wm-diagram-canvas :deep(.wm-pop-name) {
   color: #0f172a;
   font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wm-diagram-canvas :deep(.wm-pop-meta) {
   color: #94a3b8;
@@ -1177,6 +1441,8 @@ onBeforeUnmount(() => {
 }
 .wm-diagram-canvas :deep(.wm-pop-cmt) {
   display: -webkit-box;
+  /* 签字意见始终独占一行，避免挤在姓名/时间后面 */
+  flex: 0 0 100%;
   margin-top: 1px;
   color: #475569;
   font-size: 11px;

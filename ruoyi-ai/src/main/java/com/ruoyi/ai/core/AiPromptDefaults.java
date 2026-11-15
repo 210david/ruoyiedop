@@ -96,6 +96,27 @@ public class AiPromptDefaults
                 + "- 官网：正式专业，突出产品与服务价值\n"
                 + "- 其他：通用风格，简洁清晰\n"
                 + "输出要求：严格按业务侧指定的JSON结构返回每个渠道的标题、正文与话题标签，话题标签以#开头空格分隔，禁止编造活动信息。");
+
+        // ===== 流程管理（Flowable）：AI流程生成 =====
+        // 注意：与 FlowAiGenServiceImpl.buildPrompt() 保持一致；
+        // {prompt} 代表业务组装的原始提示词（可用角色/部门目录 + 流程方案原文 + 输出契约）
+        DEFAULTS.put("flowable.flow_generate",
+                "你是企业流程设计专家。请阅读以下《流程开发方案》，抽取审批节点、连线与表单字段，设计一个可在Flowable引擎运行的流程。\n"
+                + "严格只输出一个JSON对象，不要输出markdown代码块和解释文字。\n"
+                + "JSON结构：processName、processKey、category、description、nodes（start/userTask/exclusiveGateway/end）、"
+                + "flows（from/to/condition）、detailTables、form.fields、form.sections。\n"
+                + "办理人只能从提示词给出的系统角色/部门目录中选择名称；表单字段名必须为小写字母开头的字母/数字/下划线；"
+                + "附件用form=attach，人员用form=browse+browseType=user，明细字段用table=dt1/dt2。\n\n{prompt}");
+
+        // ===== 流程管理（Flowable）：截图/图片方案文字识别 =====
+        // 注意：与 FlowAiGenServiceImpl.OCR_PROMPT 保持一致；
+        // {prompt} 代表业务侧默认的识别要求
+        DEFAULTS.put("flowable.flow_ocr",
+                "你是OCR文字识别专家。请识别图片中的全部文字，按阅读顺序输出纯文本：\n"
+                + "1. 只输出图片中真实存在的文字，不要总结、不要解释、不要补充；\n"
+                + "2. 表格按行输出，列之间用「 | 」分隔；\n"
+                + "3. 流程/箭头关系用「A -> B」表示；\n"
+                + "4. 看不清的字用「□」代替，无法识别时只输出空内容。\n\n{prompt}");
     }
 
     /** 获取默认提示词，无注册返回null */

@@ -320,6 +320,39 @@ const fieldMap = computed(() => {
   for (const f of props.fields || []) m[f.field] = f
   return m
 })
+/**
+ * 字段显示名快照：在「编辑字段」里改名后，画布上由「插入标签」生成的标签格跟随更新。
+ * 仅同步文字仍等于旧字段名的标签格，用户自定义的标签文字保持不变。
+ */
+const labelSnapshot = {}
+for (const f of props.fields || []) labelSnapshot[f.field] = f.label || ''
+watch(
+  () => (props.fields || []).map(f => f.field + '\u0001' + (f.label || '')).join('\u0002'),
+  () => {
+    const next = {}
+    for (const f of props.fields || []) next[f.field] = f.label || ''
+    const g = grid.value
+    if (g && Array.isArray(g.cells)) {
+      for (const f of props.fields || []) {
+        const old = labelSnapshot[f.field]
+        const cur = next[f.field]
+        if (old == null || old === cur) continue
+        // 已绑定 labelField 的标签格
+        for (const c of g.cells) {
+          if (c && c.type === 'text' && c.labelField === f.field && (c.text || '') === old) c.text = cur
+        }
+        // 历史布局中字段格左侧同名的纯文本标签
+        for (const c of g.cells) {
+          if (!c || c.type !== 'field' || c.field !== f.field) continue
+          const left = g.cells.find(x => x.r === c.r && x.c + (x.cs || 1) === c.c && x.type === 'text')
+          if (left && (left.text || '') === old) left.text = cur
+        }
+      }
+    }
+    for (const k of Object.keys(labelSnapshot)) delete labelSnapshot[k]
+    Object.assign(labelSnapshot, next)
+  }
+)
 const placedSet = computed(() => {
   const s = new Set()
   for (const c of grid.value.cells) if (c.type === 'field' && c.field) s.add(c.field)

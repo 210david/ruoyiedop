@@ -38,7 +38,7 @@
                 </span>
               </template>
             </el-tree>
-            <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程定义</div>
+            <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程数据</div>
           </div>
         </template>
       </div>
@@ -393,7 +393,9 @@ function filterNode(value, nodeData) {
 }
 function loadTree() {
   treeLoading.value = true
-  getProcessTree().then(res => {
+  // 数量口径与右侧「流程监控」列表一致（含状态页签），避免左右数据不一致
+  const status = queryParams.value.status || undefined
+  getProcessTree('monitor', status).then(res => {
     const groups = res.data || []
     const totalCount = groups.reduce((s, g) => s + (g.count || 0), 0)
     treeData.value = [{ id: '__all__', label: '全部流程', count: totalCount, children: groups }].filter(g => groups.length || g.children)
@@ -486,12 +488,14 @@ function handleStatusTabClick(s) {
   activeStatusTab.value = s
   queryParams.value.status = s === 'all' ? undefined : s
   handleQuery()
+  loadTree()
 }
 /** 高级筛选里的状态下拉与页签联动 */
 function syncStatusTab() {
   const s = queryParams.value.status
   activeStatusTab.value = ['running', 'completed', 'canceled'].includes(s) ? s : 'all'
   handleQuery()
+  loadTree()
 }
 
 function refreshAll() { getList(); loadStatusCounts() }

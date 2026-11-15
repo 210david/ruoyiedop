@@ -86,6 +86,7 @@
               :done-ids="diagramData.doneIds"
               :active-ids="diagramData.activeIds"
               :done-flow-ids="diagramData.doneFlowIds"
+              :skipped-ids="diagramData.skippedIds"
               :node-info="diagramData.nodes"
               :height="560"
               :fill="standalone"
@@ -112,7 +113,7 @@
           <el-table :data="resourceList" border size="small" empty-text="尚无附件（表单附件与各环节附件会汇总在此）">
             <el-table-column label="附件名称" min-width="240">
               <template #default="scope">
-                <a class="resource-link" :href="fileHref(scope.row.fileUrl)" target="_blank" rel="noopener">{{ scope.row.fileName || '附件' }}</a>
+                <a class="resource-link" @click.prevent="handlePreview(scope.row)">{{ scope.row.fileName || '附件' }}</a>
                 <span class="resource-size" v-if="fileSizeText(scope.row.fileSize)">{{ fileSizeText(scope.row.fileSize) }}</span>
               </template>
             </el-table-column>
@@ -125,10 +126,21 @@
             <el-table-column label="上传时间" width="170" align="center">
               <template #default="scope">{{ scope.row.createTime || '-' }}</template>
             </el-table-column>
+            <el-table-column label="操作" width="130" align="center">
+              <template #default="scope">
+                <span class="resource-ops">
+                  <el-link type="success" underline="never" @click="handlePreview(scope.row)">预览</el-link>
+                  <el-link type="primary" underline="never" @click="handleDownload(scope.row)">下载</el-link>
+                </span>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </section>
     </div>
+
+    <!-- 文件预览（图片/PDF/Word/Excel/视频/文本统一弹窗预览） -->
+    <file-preview ref="filePreviewRef" />
 
     <template #footer v-if="!standalone">
       <el-button @click="emit('update:open', false)">关 闭</el-button>
@@ -148,6 +160,7 @@ import { listFlowAttach } from '@/api/flowable/attach';
 import { listCcByInstance } from '@/api/flowable/cc';
 import { collectFormAttachments } from '@/views/flowable/common/form-attachments';
 import { getToken } from '@/utils/auth';
+import { ElMessage } from 'element-plus';
 import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
 
 const props = defineProps({
@@ -170,15 +183,20 @@ const statusLoading = ref(false);
 const attachList = ref([]);
 /** 抄送记录（审批意见表底部「抄送」） */
 const ccList = ref([]);
-const diagramData = ref({ xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} });
+const diagramData = ref({ xml: '', doneIds: [], activeIds: [], doneFlowIds: [], skippedIds: [], nodes: {} });
 const detailTab = ref('form');
 const formFields = ref([]);
 const formLayout = ref({ sections: [] });
 /** 网格布局（mode=grid 时走 FormGridRender 只读回显） */
 const gridLayout = ref(null);
+/** 文件预览弹窗 */
+const filePreviewRef = ref(null);
 
-/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录） */
-const formAttachList = computed(() => collectFormAttachments(formFields.value, detailData.value.variables));
+/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录，上传人/时间取发起人与发起时间） */
+const formAttachList = computed(() => collectFormAttachments(formFields.value, detailData.value.variables, {
+  uploaderName: detailData.value.startUserName || '',
+  createTime: detailData.value.startTime || '',
+}));
 /** 相关资源页签展示口径：表单附件 + 各环节附件 */
 const resourceList = computed(() => (attachList.value || []).concat(formAttachList.value));
 
@@ -294,11 +312,13 @@ async function resolveProcessKeyByTask(instanceId) {
 
 async function load() {
   if (!props.instanceId) return;
+  // 记录「已查看」：本人是该实例当前待办办理人/候选人时写入查看时间（流程状态/流程图展示）
+  request({ url: '/flowable/process/viewInstance/' + props.instanceId, method: 'post' }).catch(() => {});
   detailData.value = {};
   historyTasks.value = [];
   attachList.value = [];
   ccList.value = [];
-  diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+  diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], skippedIds: [], nodes: {} };
   formFields.value = [];
   formLayout.value = { sections: [] };
   gridLayout.value = null;
@@ -339,12 +359,14 @@ async function load() {
         doneIds: d.doneIds || [],
         activeIds: d.activeIds || [],
         doneFlowIds: d.doneFlowIds || [],
+        // 管理员干预跳过的节点：图上灰底虚线标注
+        skippedIds: d.skippedIds || [],
         // 节点人员：节点下显示审批人 + 点击节点看已操作/未审批/已查看
         nodes: d.nodes || {},
       };
     })
     .catch(() => {
-      diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], nodes: {} };
+      diagramData.value = { xml: '', doneIds: [], activeIds: [], doneFlowIds: [], skippedIds: [], nodes: {} };
     });
 }
 
@@ -360,6 +382,33 @@ function fileSizeText(size) {
   if (n < 1024) return n + ' B';
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
   return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+/** 预览：图片/PDF/Word/Excel/视频/文本统一走文件预览弹窗 */
+function handlePreview(row) {
+  if (!row || !row.fileUrl) return;
+  filePreviewRef.value?.open(row.fileUrl, row.fileName);
+}
+
+/** 下载：<a> 无法携带 Authorization，带 Token 取 Blob 后触发下载 */
+function handleDownload(row) {
+  if (!row || !row.fileUrl) return;
+  fetch(fileHref(row.fileUrl), { headers: { Authorization: 'Bearer ' + getToken() } })
+    .then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.blob();
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = row.fileName || '附件';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+    })
+    .catch(() => ElMessage.error('文件下载失败'));
 }
 
 /**
@@ -422,9 +471,15 @@ watch(
 .resource-link {
   color: var(--el-color-primary);
   text-decoration: none;
+  cursor: pointer;
 }
 .resource-link:hover {
   text-decoration: underline;
+}
+/* 相关资源操作列：预览 / 下载 两个文字按钮之间留一点间距 */
+.resource-ops :deep(.el-link) {
+  margin: 0 5px;
+  font-size: 13px;
 }
 .resource-size {
   margin-left: 6px;

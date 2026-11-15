@@ -54,6 +54,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where receiver_id = #{receiverId} and read_flag = '0'
     </update>
 
+    <!-- 打开流程详情时，把本人在该流程下的未读抄送标记为已读（记录查看时间） -->
+    <update id="markReadByInstance">
+        update flow_cc
+        set read_flag = '1', read_time = sysdate()
+        where instance_id = #{instanceId} and receiver_id = #{receiverId} and read_flag = '0'
+    </update>
+
     <insert id="insertCc" parameterType="FlowCc" useGeneratedKeys="true" keyProperty="ccId">
         insert into flow_cc (
             instance_id, process_key, process_name, business_key, title,

@@ -38,7 +38,7 @@
               </span>
             </template>
           </el-tree>
-          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程定义</div>
+          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程数据</div>
         </div>
         </template>
       </div>
@@ -278,7 +278,9 @@ function filterNode(value, nodeData) {
 
 function loadTree() {
   treeLoading.value = true
-  getProcessTree().then(res => {
+  // 数量口径与右侧「我参与的流程」列表一致（含状态筛选），避免左右数据不一致
+  const status = queryParams.value.status || undefined
+  getProcessTree('involved', status).then(res => {
     const groups = res.data || []
     // 根节点"全部流程"，count=各类数量之和
     const totalTree = groups.reduce((s, g) => s + (g.count || 0), 0)
@@ -345,12 +347,14 @@ function handleStatusTabClick(s) {
   activeStatusTab.value = s
   queryParams.value.status = s === 'all' ? undefined : s
   handleQuery()
+  loadTree()
 }
 // 高级筛选中状态下拉与页签联动
 function syncStatusTab() {
   const s = queryParams.value.status
   activeStatusTab.value = ['running', 'completed'].includes(s) ? s : 'all'
   handleQuery()
+  loadTree()
 }
 function statusBadge(s) { return { running: 'blue', completed: 'green', canceled: 'gray' }[s] || 'gray' }
 function statusLabel(s) { return { running: '进行中', completed: '已结束', canceled: '已撤销' }[s] || s || '-' }

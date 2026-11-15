@@ -43,6 +43,9 @@ public class FlowFormServiceImpl implements IFlowFormService
     private org.flowable.engine.RepositoryService repositoryService;
 
     @Autowired
+    private org.flowable.engine.HistoryService historyService;
+
+    @Autowired
     private org.flowable.engine.RuntimeService runtimeService;
 
     @Autowired
@@ -149,7 +152,116 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Transactional
     public int deleteFlowFormByFormIds(Long[] formIds)
     {
+        for (Long formId : formIds)
+        {
+            FlowForm form = flowFormMapper.selectFlowFormByFormId(formId);
+            if (form == null)
+            {
+                continue;
+            }
+            // 校验一：表单数据表已有业务数据，不允许删除
+            long dataRows = countFormDataRows(form);
+            if (dataRows > 0)
+            {
+                throw new ServiceException("流程表单《" + form.getFormName() + "》已产生 " + dataRows
+                        + " 条业务数据，不能删除。如不再使用，请先清理数据或保留该表单。");
+            }
+            // 校验二：表单已被流程使用并产生流程实例（含已办结），不允许删除
+            for (String processKey : boundProcessKeys(form))
+            {
+                long instances = countInstances(processKey);
+                if (instances > 0)
+                {
+                    throw new ServiceException("流程表单《" + form.getFormName() + "》已被流程《" + processKey + "》使用并产生 "
+                            + instances + " 个流程实例（含已办结），不能删除。如不再使用，请先解除流程绑定或保留该表单。");
+                }
+            }
+        }
         return flowFormMapper.deleteFlowFormByFormIds(formIds);
+    }
+
+    /** 统计表单数据表（主表 + 明细表）中的业务数据行数，表不存在按 0 处理 */
+    private long countFormDataRows(FlowForm form)
+    {
+        String tableName = form.getTableName();
+        if (StringUtils.isEmpty(tableName))
+        {
+            if (StringUtils.isEmpty(form.getFormKey()))
+            {
+                return 0L;
+            }
+            tableName = "flow_data_" + form.getFormKey();
+        }
+        if (!tableName.matches("^[a-z0-9_]{1,64}$"))
+        {
+            return 0L;
+        }
+        List<String> tables = new ArrayList<>();
+        tables.add(tableName);
+        for (int i = 1; i <= 9; i++)
+        {
+            tables.add(tableName + "_dt" + i);
+        }
+        long total = 0L;
+        for (String table : tables)
+        {
+            Long exists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                    Long.class, table);
+            if (exists == null || exists == 0L)
+            {
+                continue;
+            }
+            Long rows = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM `" + table + "`", Long.class);
+            total += rows == null ? 0L : rows;
+        }
+        return total;
+    }
+
+    /** 表单关联的流程Key：表单侧旧字段 + 流程模型 metaInfo.formId 绑定 */
+    private java.util.Set<String> boundProcessKeys(FlowForm form)
+    {
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        if (StringUtils.isNotEmpty(form.getProcessKey()))
+        {
+            keys.add(form.getProcessKey());
+        }
+        for (org.flowable.engine.repository.Model model : repositoryService.createModelQuery().list())
+        {
+            if (StringUtils.isEmpty(model.getMetaInfo()) || StringUtils.isEmpty(model.getKey()))
+            {
+                continue;
+            }
+            try
+            {
+                Long formId = com.alibaba.fastjson2.JSONObject.parseObject(model.getMetaInfo()).getLong("formId");
+                if (form.getFormId() != null && form.getFormId().equals(formId))
+                {
+                    keys.add(model.getKey());
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        return keys;
+    }
+
+    /** 统计流程Key已产生的实例数（含已办结）；统计失败时抛异常，避免误删 */
+    private long countInstances(String processKey)
+    {
+        if (StringUtils.isEmpty(processKey))
+        {
+            return 0L;
+        }
+        try
+        {
+            return historyService.createHistoricProcessInstanceQuery().processDefinitionKey(processKey).count();
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("校验流程《" + processKey + "》的业务数据失败，为避免误删已阻止本次删除：" + e.getMessage());
+        }
     }
 
     /** 表现形式 → 数据库列类型（按字段类型/长度/小数位推导） */

@@ -30,6 +30,7 @@ import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.flowable.domain.FlowCc;
 import com.ruoyi.flowable.mapper.FlowCcMapper;
 import com.ruoyi.flowable.service.FlowParticipantResolver;
+import com.ruoyi.flowable.service.FlowRuntimeModelService;
 
 /**
  * 流程抄送监听器（对标泛微「抄送 / 待阅」）
@@ -72,8 +73,9 @@ public class FlowCcListener implements FlowableEventListener
             {
                 return;
             }
-            RepositoryService repositoryService = SpringUtils.getBean(RepositoryService.class);
-            BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+            // 抄送配置同样以设计器最新保存的模型为准，保存即生效
+            BpmnModel bpmnModel = SpringUtils.getBean(FlowRuntimeModelService.class)
+                    .getByDefinitionId(task.getProcessDefinitionId());
             if (bpmnModel == null)
             {
                 return;

@@ -43,6 +43,7 @@ import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.ExtensionAttribute;
 import org.flowable.bpmn.model.FlowElement;
+import org.flowable.bpmn.model.StartEvent;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.task.api.Task;
 
@@ -81,6 +82,9 @@ public class FlowTaskController extends BaseController
 
     @Autowired
     private HistoryService historyService;
+
+    @Autowired
+    private com.ruoyi.flowable.service.FlowRuntimeModelService flowRuntimeModelService;
 
     /**
      * 查询我的待办（支持流程标题/创建人/创建时间等条件，内存过滤后手动分页）
@@ -129,7 +133,21 @@ public class FlowTaskController extends BaseController
     @GetMapping("/doneList")
     public TableDataInfo doneList(FlowTask query)
     {
-        return buildPage(flowProcessService.selectDoneList(query));
+        TableDataInfo page = buildPage(flowProcessService.selectDoneList(query));
+        // 仅对当前页回填「收回」标记，避免对整份已办列表逐条查询引擎
+        if (page.getRows() != null)
+        {
+            for (Object row : page.getRows())
+            {
+                if (row instanceof FlowTask)
+                {
+                    FlowTask ft = (FlowTask) row;
+                    ft.setCanRecall("running".equals(ft.getStatus())
+                            && flowProcessService.canRecallInstance(ft.getInstanceId()));
+                }
+            }
+        }
+        return page;
     }
 
     /**
@@ -307,20 +325,25 @@ public class FlowTaskController extends BaseController
         String permJson = "";
         String opMenuJson = "";
         String signOpinionAttr = "";
-        // 发起人（申请）节点：退回后由发起人修改表单重新提交，字段默认全部可编辑
-        boolean initiatorNode = false;
+        // 发起人（申请）节点：退回后由发起人修改表单重新提交，字段默认全部可编辑。
+        // 该节点部署时才注入，设计器模型里没有，先按固定节点ID兜底识别
+        boolean initiatorNode = com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID
+                .equals(task.getTaskDefinitionKey());
         try
         {
-            BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
-            FlowElement el = bpmnModel.getFlowElement(task.getTaskDefinitionKey());
-            if (el instanceof UserTask)
+            // 节点配置取设计器最新保存的模型：按钮、字段权限等设置保存即生效
+            BpmnModel bpmnModel = flowRuntimeModelService.getByDefinitionId(task.getProcessDefinitionId());
+            FlowElement el = resolveConfigElement(bpmnModel, task.getTaskDefinitionKey());
+            if (el != null)
             {
-                UserTask ut = (UserTask) el;
-                permJson = readNodeAttr(ut, "fieldPerms");
-                opMenuJson = readNodeAttr(ut, "operationMenus");
-                signOpinionAttr = readNodeAttr(ut, "signOpinion");
-                String initiatorAttr = readNodeAttr(ut, com.ruoyi.flowable.config.FlowReturnConstants.ATTR_INITIATOR_NODE);
-                initiatorNode = "true".equalsIgnoreCase(initiatorAttr) || "1".equals(initiatorAttr);
+                permJson = readNodeAttr(el, "fieldPerms");
+                opMenuJson = readNodeAttr(el, "operationMenus");
+                signOpinionAttr = readNodeAttr(el, "signOpinion");
+                if (el instanceof UserTask)
+                {
+                    String initiatorAttr = readNodeAttr(el, com.ruoyi.flowable.config.FlowReturnConstants.ATTR_INITIATOR_NODE);
+                    initiatorNode = initiatorNode || "true".equalsIgnoreCase(initiatorAttr) || "1".equals(initiatorAttr);
+                }
             }
         }
         catch (Exception e)
@@ -328,15 +351,16 @@ public class FlowTaskController extends BaseController
             permJson = "";
             opMenuJson = "";
             signOpinionAttr = "";
-            initiatorNode = false;
         }
         // 绑定表单 + 流程变量当前值
         ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
                 .processDefinitionId(task.getProcessDefinitionId()).singleResult();
         // 节点模板：只覆盖「显示布局」与模板名称；字段定义始终取表单管理里的那一份，
         // 这样表单增删字段后所有节点实时同步（对标泛微：节点引用同一份表单字段，不存在字段快照）
+        // 发起人节点没有自己的模板，复用开始节点的显示模板，保证与开始节点完全一致
+        String templateNodeId = resolveTemplateNodeId(task, task.getTaskDefinitionKey());
         FlowNodeForm nodeForm = pd == null ? null
-                : flowNodeFormService.selectByModelKeyAndNodeId(pd.getKey(), task.getTaskDefinitionKey());
+                : flowNodeFormService.selectByModelKeyAndNodeId(pd.getKey(), templateNodeId);
         FlowForm form = pd == null ? null : flowFormService.selectFlowFormByProcessKey(pd.getKey());
         java.util.Map<String, Object> variables = taskService.getVariables(taskId);
         com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
@@ -358,8 +382,8 @@ public class FlowTaskController extends BaseController
             data.put("layoutJson", form == null ? "" : (form.getLayoutJson() == null ? "" : form.getLayoutJson()));
         }
         data.put("variables", variables == null ? new java.util.HashMap<>() : variables);
-        // 节点操作菜单：设计器勾选的按钮（提交/退回/转办/加签/终止/签字意见/附件上传/打印/抄送），
-        // 未配置时返回空数组，由前端回退到默认菜单
+        // 节点操作菜单：设计器勾选的按钮（提交/退回/转办/加签/终止/打印/抄送），
+        // 未配置时返回空数组，由前端回退到默认菜单（提交/退回/打印/抄送）
         java.util.List<String> menus = parseMenuConfig(opMenuJson);
         data.put("opMenus", menus);
         // 节点是否启用签字意见（默认启用；表单里已放「签字意见」字段时由前端自行去重）
@@ -403,7 +427,8 @@ public class FlowTaskController extends BaseController
                 .processDefinitionId(task.getProcessDefinitionId()).singleResult();
         String modelKey = pd == null ? null : pd.getKey();
         com.ruoyi.flowable.domain.FlowNodePrint print =
-                flowNodePrintService.selectByModelKeyAndNodeId(modelKey, task.getTaskDefinitionKey());
+                flowNodePrintService.selectByModelKeyAndNodeId(modelKey,
+                        resolveTemplateNodeId(task, task.getTaskDefinitionKey()));
 
         com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
         boolean configured = print != null && StringUtils.isNotEmpty(print.getLayoutJson());
@@ -470,9 +495,46 @@ public class FlowTaskController extends BaseController
     }
 
     /**
+     * 节点配置来源：发起人节点就是流程开始节点，其字段权限/操作菜单/签字意见等统一取开始事件
+     */
+    private FlowElement resolveConfigElement(BpmnModel bpmnModel, String taskDefinitionKey)
+    {
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            return null;
+        }
+        if (com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID.equals(taskDefinitionKey))
+        {
+            return findStartEvent(bpmnModel);
+        }
+        return bpmnModel.getFlowElement(taskDefinitionKey);
+    }
+
+    private StartEvent findStartEvent(BpmnModel bpmnModel)
+    {
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            return null;
+        }
+        java.util.List<StartEvent> starts = bpmnModel.getMainProcess()
+                .findFlowElementsOfType(StartEvent.class, true);
+        return starts.isEmpty() ? null : starts.get(0);
+    }
+
+    private String resolveTemplateNodeId(Task task, String taskDefinitionKey)
+    {
+        if (!com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID.equals(taskDefinitionKey))
+        {
+            return taskDefinitionKey;
+        }
+        StartEvent start = findStartEvent(repositoryService.getBpmnModel(task.getProcessDefinitionId()));
+        return start == null || StringUtils.isEmpty(start.getId()) ? taskDefinitionKey : start.getId();
+    }
+
+    /**
      * 读取节点上的扩展属性值（BPMN 中形如 flowable:fieldPerms / flowable:operationMenus）
      */
-    private String readNodeAttr(UserTask task, String name)
+    private String readNodeAttr(FlowElement task, String name)
     {
         Map<String, java.util.List<ExtensionAttribute>> attrs = task.getAttributes();
         if (attrs == null)
@@ -518,7 +580,7 @@ public class FlowTaskController extends BaseController
     /**
      * 节点是否启用签字意见：
      * 1) 节点属性 flowable:signOpinion 明确写了值 → 以其为准（false/0/否 为关闭）；
-     * 2) 未配置（老流程）→ 跟随操作菜单：菜单未配置视为默认全开，配置了则看是否勾选「签字意见」。
+     * 2) 未配置（老流程）→ 默认启用（签字意见已从操作菜单独立出来）。
      */
     private boolean resolveSignOpinion(String attr, java.util.List<String> menus)
     {
@@ -527,7 +589,8 @@ public class FlowTaskController extends BaseController
             String v = attr.trim();
             return !("false".equalsIgnoreCase(v) || "0".equals(v) || "否".equals(v));
         }
-        return menus.isEmpty() || menus.contains("comment");
+        // 签字意见已从操作菜单独立出来，由节点开关单独控制：未显式配置时默认启用
+        return true;
     }
 
     /**
@@ -618,5 +681,18 @@ public class FlowTaskController extends BaseController
     {
         flowProcessService.terminateTask(taskId, reason);
         return AjaxResult.success("流程已终止");
+    }
+
+    /**
+     * 我的已办「收回」：下一节点办理前，本节点办理人把流程收回到本节点重新办理
+     */
+    @Log(title = "流程任务", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:task:done')")
+    @PutMapping("/recall/{instanceId}")
+    public AjaxResult recallMine(@PathVariable("instanceId") String instanceId,
+            @RequestParam(value = "reason", required = false) String reason)
+    {
+        Map<String, Object> data = flowProcessService.recallMyInstance(instanceId, reason);
+        return AjaxResult.success("已收回到「" + data.get("prevActivityName") + "」", data);
     }
 }

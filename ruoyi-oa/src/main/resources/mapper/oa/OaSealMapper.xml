@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.oa.mapper.OaSealMapper">
+
+    <resultMap type="OaSeal" id="OaSealResult">
+        <result property="sealId"         column="seal_id"/>
+        <result property="sealName"       column="seal_name"/>
+        <result property="sealCode"       column="seal_code"/>
+        <result property="sealType"       column="seal_type"/>
+        <result property="keeperName"     column="keeper_name"/>
+        <result property="keeperDept"     column="keeper_dept"/>
+        <result property="keeperPhone"    column="keeper_phone"/>
+        <result property="keepPlace"      column="keep_place"/>
+        <result property="enableDate"     column="enable_date"/>
+        <result property="status"         column="status"/>
+        <result property="flowInstanceId" column="flow_instance_id"/>
+        <result property="attachment"     column="attachment"/>
+        <result property="delFlag"        column="del_flag"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <sql id="selectOaSealVo">
+        SELECT seal_id, seal_name, seal_code, seal_type, keeper_name, keeper_dept, keeper_phone,
+               keep_place, enable_date, status, flow_instance_id, attachment, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        FROM biz_oa_seal
+    </sql>
+
+    <select id="selectOaSealList" parameterType="OaSeal" resultMap="OaSealResult">
+        <include refid="selectOaSealVo"/>
+        <where>
+            del_flag = '0'
+            <if test="sealName != null and sealName != ''"> AND seal_name LIKE CONCAT('%', #{sealName}, '%')</if>
+            <if test="sealCode != null and sealCode != ''"> AND seal_code LIKE CONCAT('%', #{sealCode}, '%')</if>
+            <if test="sealType != null and sealType != ''"> AND seal_type = #{sealType}</if>
+            <if test="keeperName != null and keeperName != ''"> AND keeper_name LIKE CONCAT('%', #{keeperName}, '%')</if>
+            <if test="keeperDept != null and keeperDept != ''"> AND keeper_dept LIKE CONCAT('%', #{keeperDept}, '%')</if>
+            <if test="keepPlace != null and keepPlace != ''"> AND keep_place LIKE CONCAT('%', #{keepPlace}, '%')</if>
+            <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.beginEnableDate != null and params.beginEnableDate != ''"> AND enable_date &gt;= #{params.beginEnableDate}</if>
+            <if test="params.endEnableDate != null and params.endEnableDate != ''"> AND enable_date &lt;= #{params.endEnableDate}</if>
+        </where>
+        ORDER BY seal_id DESC
+    </select>
+
+    <select id="selectOaSealById" parameterType="Long" resultMap="OaSealResult">
+        <include refid="selectOaSealVo"/> WHERE seal_id = #{sealId}
+    </select>
+
+    <select id="selectOaSealByCode" parameterType="String" resultMap="OaSealResult">
+        <include refid="selectOaSealVo"/> WHERE del_flag = '0' AND seal_code = #{sealCode} LIMIT 1
+    </select>
+
+    <insert id="insertOaSeal" parameterType="OaSeal" useGeneratedKeys="true" keyProperty="sealId">
+        INSERT INTO biz_oa_seal (
+            seal_name, seal_code, seal_type, keeper_name, keeper_dept, keeper_phone,
+            keep_place, enable_date, status, flow_instance_id, attachment,
+            create_by, create_time, remark
+        ) VALUES (
+            #{sealName}, #{sealCode}, #{sealType}, #{keeperName}, #{keeperDept}, #{keeperPhone},
+            #{keepPlace}, #{enableDate}, #{status}, #{flowInstanceId}, #{attachment},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateOaSeal" parameterType="OaSeal">
+        UPDATE biz_oa_seal
+        <set>
+            <if test="sealName != null and sealName != ''">seal_name = #{sealName},</if>
+            <if test="sealCode != null">seal_code = #{sealCode},</if>
+            <if test="sealType != null">seal_type = #{sealType},</if>
+            <if test="keeperName != null">keeper_name = #{keeperName},</if>
+            <if test="keeperDept != null">keeper_dept = #{keeperDept},</if>
+            <if test="keeperPhone != null">keeper_phone = #{keeperPhone},</if>
+            <if test="keepPlace != null">keep_place = #{keepPlace},</if>
+            <if test="enableDate != null">enable_date = #{enableDate},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="flowInstanceId != null">flow_instance_id = #{flowInstanceId},</if>
+            <if test="attachment != null">attachment = #{attachment},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        WHERE seal_id = #{sealId}
+    </update>
+
+    <delete id="deleteOaSealById" parameterType="Long">
+        UPDATE biz_oa_seal SET del_flag = '2' WHERE seal_id = #{sealId}
+    </delete>
+
+    <delete id="deleteOaSealByIds" parameterType="Long">
+        UPDATE biz_oa_seal SET del_flag = '2' WHERE seal_id IN
+        <foreach item="sealId" collection="array" open="(" separator="," close=")">#{sealId}</foreach>
+    </delete>
+
+</mapper>

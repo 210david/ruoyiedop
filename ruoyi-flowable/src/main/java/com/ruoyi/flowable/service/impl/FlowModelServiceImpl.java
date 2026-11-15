@@ -148,17 +148,36 @@ public class FlowModelServiceImpl implements IFlowModelService
             }
             else
             {
-                ProcessDefinition newest = definitions.get(0);
-                fm.setDeployed("1");
-                fm.setVersion(newest.getVersion());
-                fm.setDeploymentId(newest.getDeploymentId());
-                // 挂起状态：与版本编辑弹框口径统一，列表可直接标识该部署版本是否可发起
-                fm.setSuspended(newest.isSuspended());
-                // 活动版本标志（扩展表）：列表可直接标识当前生效版本
-                FlowProcdefExt ext = flowProcdefExtMapper.selectFlowProcdefExtByProcdefId(newest.getId());
-                if (ext != null)
+                // 列表展示版本与发起口径保持一致：优先「当前活动版本」，没有活动版本才回退到最高版本
+                List<FlowProcdefExt> extList = flowProcdefExtMapper.selectFlowProcdefExtByProcKey(model.getKey());
+                Map<String, FlowProcdefExt> extMap = new java.util.HashMap<>();
+                if (extList != null)
                 {
-                    fm.setActiveFlag(ext.getActiveFlag());
+                    for (FlowProcdefExt ext : extList)
+                    {
+                        extMap.put(ext.getProcdefId(), ext);
+                    }
+                }
+                ProcessDefinition shown = definitions.get(0);
+                for (ProcessDefinition def : definitions)
+                {
+                    FlowProcdefExt ext = extMap.get(def.getId());
+                    if (ext != null && "1".equals(ext.getActiveFlag()))
+                    {
+                        shown = def;
+                        break;
+                    }
+                }
+                fm.setDeployed("1");
+                fm.setVersion(shown.getVersion());
+                fm.setDeploymentId(shown.getDeploymentId());
+                // 挂起状态：与版本编辑弹框口径统一，列表可直接标识该部署版本是否可发起
+                fm.setSuspended(shown.isSuspended());
+                // 活动版本标志（扩展表）：列表可直接标识当前生效版本
+                FlowProcdefExt shownExt = extMap.get(shown.getId());
+                if (shownExt != null)
+                {
+                    fm.setActiveFlag(shownExt.getActiveFlag());
                 }
             }
             list.add(fm);
@@ -252,8 +271,18 @@ public class FlowModelServiceImpl implements IFlowModelService
         // 流程编号规则：前端传 JSON 字符串覆盖，未传沿用原规则
         String processNoRule = flowModel.getProcessNoRule() != null ? flowModel.getProcessNoRule()
                 : oldMeta.getString("processNoRule");
-        model.setMetaInfo(buildMetaInfo(desc, formId, deployMode, locked, helpDoc, orderNum, processNoRule));
+        // 跳过相同审批人：未传沿用原值
+        Boolean skipSameApprover = flowModel.getSkipSameApprover() != null ? flowModel.getSkipSameApprover()
+                : oldMeta.getBoolean("skipSameApprover");
+        model.setMetaInfo(buildMetaInfo(desc, formId, deployMode, locked, helpDoc, orderNum, processNoRule, skipSameApprover));
         repositoryService.saveModel(model);
+        // 分类同步：流程分类在部署时会快照到 act_re_procdef.CATEGORY_，
+        // 之后仅修改模型分类不会自动生效，导致流程发起页仍按旧分类展示。
+        // 此处按 Key 同步到该流程的所有已部署版本。
+        if (StringUtils.isNotEmpty(flowModel.getCategory()))
+        {
+            syncDefinitionCategory(model.getKey(), model.getCategory());
+        }
         // 名称同步：模型改名后，已部署的流程定义（act_re_procdef.NAME_）仍是部署时的快照，
         // 不同步会导致前台/流程定义列表显示旧名。此处按 key 同步所有已部署定义名。
         if (StringUtils.isNotEmpty(flowModel.getModelName()))
@@ -287,6 +316,33 @@ public class FlowModelServiceImpl implements IFlowModelService
             return;
         }
         flowProcdefExtMapper.updateDefinitionNameByKey(processKey, newName);
+    }
+
+    /**
+     * 同步模型分类到该 Key 下所有已部署的流程定义。
+     *
+     * 背景：流程分类在部署时会快照写入 act_re_procdef.CATEGORY_，
+     * 修改模型分类不会自动同步，导致流程发起页的分类页签仍显示旧分类。
+     *
+     * @param processKey 流程 Key
+     * @param category   新的流程分类
+     */
+    private void syncDefinitionCategory(String processKey, String category)
+    {
+        if (StringUtils.isEmpty(processKey) || StringUtils.isEmpty(category))
+        {
+            return;
+        }
+        List<ProcessDefinition> definitions = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(processKey)
+                .list();
+        for (ProcessDefinition definition : definitions)
+        {
+            if (!category.equals(definition.getCategory()))
+            {
+                repositoryService.setProcessDefinitionCategory(definition.getId(), category);
+            }
+        }
     }
 
     @Override
@@ -352,7 +408,8 @@ public class FlowModelServiceImpl implements IFlowModelService
         catch (Exception e)
         {
             log.warn("统计流程实例数失败（{}）：{}", processKey, e.getMessage());
-            return 0L;
+            // 统计失败时不能当作“没有业务数据”放行，否则可能误删单据与审批记录
+            throw new ServiceException("校验流程《" + processKey + "》的实例数据失败，为避免误删已阻止本次删除：" + e.getMessage());
         }
     }
 
@@ -767,6 +824,7 @@ public class FlowModelServiceImpl implements IFlowModelService
         fm.setHelpDoc(meta.getString("helpDoc"));
         fm.setOrderNum(meta.getInteger("orderNum"));
         fm.setProcessNoRule(meta.getString("processNoRule"));
+        fm.setSkipSameApprover(Boolean.TRUE.equals(meta.getBoolean("skipSameApprover")));
         if (formId != null)
         {
             try
@@ -796,11 +854,11 @@ public class FlowModelServiceImpl implements IFlowModelService
 
     private String buildMetaInfo(String description, Long formId)
     {
-        return buildMetaInfo(description, formId, null, null, null, null, null);
+        return buildMetaInfo(description, formId, null, null, null, null, null, null);
     }
 
     private String buildMetaInfo(String description, Long formId, String deployMode, Boolean locked, String helpDoc, Integer orderNum,
-            String processNoRule)
+            String processNoRule, Boolean skipSameApprover)
     {
         JSONObject meta = new JSONObject();
         meta.put("description", description == null ? "" : description.replace("\"", "'"));
@@ -827,6 +885,10 @@ public class FlowModelServiceImpl implements IFlowModelService
         if (processNoRule != null)
         {
             meta.put("processNoRule", processNoRule);
+        }
+        if (skipSameApprover != null)
+        {
+            meta.put("skipSameApprover", skipSameApprover);
         }
         return meta.toJSONString();
     }
@@ -960,6 +1022,12 @@ public class FlowModelServiceImpl implements IFlowModelService
             appendRawAttr(startAttrs, "flowable:formKey", node);
             appendRawAttr(startAttrs, "flowable:nodeFormName", node);
             appendRawAttr(startAttrs, "flowable:nodeFormJson", node);
+            // 发起人节点就是流程开始节点：节点配置（字段权限/操作菜单/签字意见/收回开关/抄送）一并带过去
+            appendRawAttr(startAttrs, "flowable:fieldPerms", node);
+            appendRawAttr(startAttrs, "flowable:operationMenus", node);
+            appendRawAttr(startAttrs, "flowable:signOpinion", node);
+            appendRawAttr(startAttrs, "flowable:allowRecall", node);
+            appendRawAttr(startAttrs, "flowable:ccConfig", node);
             node.append("/>");
             String flowId = "flowApplyTo_" + firstTarget;
             node.append("\n    <sequenceFlow id=\"").append(flowId)
@@ -1314,9 +1382,20 @@ public class FlowModelServiceImpl implements IFlowModelService
         }
         for (FlowElement el : elements)
         {
+            // 部署时注入的「重新提交」发起人节点只在部署产物里存在，模型草稿里没有；
+            // 若不排除，结构对比会永远报“新增节点：重新提交 + 新增流转线”，永远建议存为新版本。
+            if (isInjectedInitiator(el))
+            {
+                continue;
+            }
             if (el instanceof SequenceFlow)
             {
                 SequenceFlow sf = (SequenceFlow) el;
+                if (FlowReturnConstants.INITIATOR_NODE_ID.equals(sf.getSourceRef())
+                        || FlowReturnConstants.INITIATOR_NODE_ID.equals(sf.getTargetRef()))
+                {
+                    continue;
+                }
                 set.add("F|" + sf.getSourceRef() + "->" + sf.getTargetRef());
             }
             else if (el instanceof FlowNode)
@@ -1328,6 +1407,34 @@ public class FlowModelServiceImpl implements IFlowModelService
                 }
             }
         }
+    }
+
+    /** 是否为部署时注入的发起人（重新提交）技术节点 */
+    private boolean isInjectedInitiator(FlowElement el)
+    {
+        if (el == null)
+        {
+            return false;
+        }
+        if (FlowReturnConstants.INITIATOR_NODE_ID.equals(el.getId()))
+        {
+            return true;
+        }
+        // 自定义扩展属性（flowable:initiatorNode）在扩展属性表里按属性名存放
+        java.util.Map<String, java.util.List<org.flowable.bpmn.model.ExtensionAttribute>> attrs = el.getAttributes();
+        java.util.List<org.flowable.bpmn.model.ExtensionAttribute> flags = attrs == null ? null
+                : attrs.get(FlowReturnConstants.ATTR_INITIATOR_NODE);
+        if (flags != null)
+        {
+            for (org.flowable.bpmn.model.ExtensionAttribute flag : flags)
+            {
+                if ("true".equalsIgnoreCase(flag.getValue()))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private Map<String, String> nodeNamesOfModel(Model model)

@@ -23,6 +23,16 @@ public interface IFlowCcService
     public int markAllRead();
 
     /**
+     * 标记某流程实例下本人的未读抄送为已读
+     *
+     * 抄送接收人打开流程详情时调用，记录阅读时间，供流程状态展示「抄送·已读/未读 + 查看时间」
+     *
+     * @param instanceId 流程实例ID
+     * @return 实际标记条数
+     */
+    public int markReadByInstance(String instanceId);
+
+    /**
      * 办理页手动抄送：办理人把当前任务所在的流程抄送给指定人员
      *
      * 与节点级自动抄送（FlowCcListener）共用 flow_cc 表，接收人同样在「待办流程-待阅」查看；

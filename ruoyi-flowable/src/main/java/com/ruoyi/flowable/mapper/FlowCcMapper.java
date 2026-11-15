@@ -23,6 +23,10 @@ public interface FlowCcMapper
     /** 全部标记已读 */
     public int markAllRead(@Param("receiverId") Long receiverId);
 
+    /** 标记某实例下本人的未读抄送为已读（打开流程详情时记录阅读时间） */
+    public int markReadByInstance(@Param("instanceId") String instanceId,
+                                  @Param("receiverId") Long receiverId);
+
     /** 新增抄送记录 */
     public int insertCc(FlowCc cc);
 

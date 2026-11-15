@@ -2,8 +2,17 @@ package com.ruoyi.flowable.service.impl;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.UserTask;
@@ -33,12 +42,15 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.DictUtils;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.flowable.config.FlowReturnConstants;
 import com.ruoyi.flowable.config.FlowSystemFields;
+import com.ruoyi.flowable.domain.FlowCc;
+import com.ruoyi.flowable.domain.FlowDelegate;
+import com.ruoyi.flowable.domain.FlowDraft;
 import com.ruoyi.flowable.domain.FlowInstance;
 import com.ruoyi.flowable.domain.FlowTask;
 import com.ruoyi.flowable.domain.dto.FlowCompleteDTO;
-import com.ruoyi.flowable.domain.dto.FlowStartDTO;
 import com.ruoyi.flowable.service.IFlowProcessService;
 
 /**
@@ -66,8 +78,25 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     /** 管理员干预（节点跳转）的批注前缀 */
     private static final String ADMIN_INTERVENE_PREFIX = "【intervene】";
 
+    /**
+     * 管理员干预批注解析。
+     *
+     * <p>新格式：{@code 【intervene】管理员干预「来源节点」→「目标节点」，指定办理人「张三」：说明}；
+     * 旧格式：{@code 【intervene】管理员干预至「目标节点」：说明}（无来源节点与指定办理人）。
+     * 两种格式都要能还原成流程状态/流程图里的干预记录。</p>
+     */
+    private static final Pattern INTERVENE_MSG_PATTERN = Pattern.compile(
+            "^【intervene】管理员干预(?:至)?「([^」]+)」(?:→「([^」]+)」)?(?:，指定办理人「([^」]*)」)?(?:：(.*))?$",
+            Pattern.DOTALL);
+
+    /** 干预批注与任务结束时间允许的误差（毫秒）：用于还原「哪个节点被干预跳过」 */
+    private static final long INTERVENE_TIME_TOLERANCE = 5000L;
+
     /** 管理员复活已结束流程的批注前缀（复活 = 重建运行实例并停在指定节点） */
     private static final String ADMIN_REVIVE_PREFIX = "【revive】";
+
+    /** 节点「强制收回」扩展属性：flowable:allowRecall（未配置默认允许） */
+    private static final String ATTR_ALLOW_RECALL = "allowRecall";
 
     @Autowired
     private RuntimeService runtimeService;
@@ -108,35 +137,19 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Autowired
     private com.ruoyi.flowable.service.FlowRequestService flowRequestService;
 
-    /** 审批意见类型标识 */
+    /** 我的待阅（待办页「待阅」/「全部」页签口径） */
+    @Autowired
+    private com.ruoyi.flowable.service.IFlowCcService flowCcService;
 
-    @Override
-    @Transactional
-    public String startProcess(FlowStartDTO dto)
-    {
-        // 发起路由：优先取活动版本（用户指定的当前启用版本），由 FlowDefinitionResolver 统一口径
-        ProcessDefinition definition = flowDefinitionResolver.requireLaunchable(dto.getProcessDefinitionKey());
-        if (definition == null)
-        {
-            throw new ServiceException("流程定义不存在、未部署或所有版本均已停用：" + dto.getProcessDefinitionKey());
-        }
-        Long userId = SecurityUtils.getUserId();
-        // 记录发起人身份
-        org.flowable.common.engine.impl.identity.Authentication
-                .setAuthenticatedUserId(String.valueOf(userId));
-        try
-        {
-            Map<String, Object> variables = dto.getVariables();
-            ProcessInstance instance = runtimeService.startProcessInstanceById(
-                    definition.getId(), dto.getBusinessKey(), variables);
-            saveStartComment(instance.getId(), variables);
-            return instance.getId();
-        }
-        finally
-        {
-            org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null);
-        }
-    }
+    /** 流程转办记录（转办过程留痕，流程状态/流程图展示用） */
+    @Autowired
+    private com.ruoyi.flowable.mapper.FlowDelegateMapper flowDelegateMapper;
+
+    /** 我的草稿（待办页「草稿」/「全部」页签口径） */
+    @Autowired
+    private com.ruoyi.flowable.service.IFlowDraftService flowDraftService;
+
+    /** 审批意见类型标识 */
 
     @Override
     public List<FlowInstance> selectMyProcessList(FlowInstance query)
@@ -188,11 +201,18 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         return list;
     }
 
-    /** 流程实例列表内存过滤：流程标题/发起人/发起时间区间/已撤销状态（Flowable 原生查询不支持的条件） */
+    /** 流程实例列表内存过滤：流程标题/发起人/发起时间区间/已完成、已撤销状态（Flowable 原生查询不支持的条件） */
     private boolean matchInstanceFilter(FlowInstance fi, FlowInstance query)
     {
         if ("canceled".equals(query.getStatus())
                 && !"canceled".equals(fi.getStatus()))
+        {
+            return false;
+        }
+        // 已结束的实例里包含「正常办结」与「已撤销」，两者在列表/页签上分开统计，
+        // 这里必须再按实例状态精确过滤，否则「已完成」页签会把已撤销的流程也算进去
+        if ("completed".equals(query.getStatus())
+                && !"completed".equals(fi.getStatus()))
         {
             return false;
         }
@@ -251,9 +271,36 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     public List<FlowInstance> selectInvolvedProcessList(FlowInstance query)
     {
         Long userId = SecurityUtils.getUserId();
-        HistoricProcessInstanceQuery hisQuery = historyService.createHistoricProcessInstanceQuery()
-                .involvedUser(String.valueOf(userId))
-                .orderByProcessInstanceStartTime().desc();
+        String uid = String.valueOf(userId);
+        // 被抄送也是参与：抄送给我的流程必须在「流程查询」里能查到，
+        // 否则李华只能从待阅入口进入，查询不到该流程
+        java.util.Set<String> ccInstanceIds = new java.util.LinkedHashSet<>();
+        for (FlowCc cc : flowCcService.selectMyCcList(new FlowCc()))
+        {
+            if (StringUtils.isNotEmpty(cc.getInstanceId()))
+            {
+                ccInstanceIds.add(cc.getInstanceId());
+            }
+        }
+        // 我转办出去的流程同样算参与（转办后任务虽已交给他人，但仍应能查询到）
+        for (FlowDelegate d : flowDelegateMapper.selectByFromUser(userId))
+        {
+            if (StringUtils.isNotEmpty(d.getInstanceId()))
+            {
+                ccInstanceIds.add(d.getInstanceId());
+            }
+        }
+        HistoricProcessInstanceQuery hisQuery = historyService.createHistoricProcessInstanceQuery();
+        if (ccInstanceIds.isEmpty())
+        {
+            hisQuery.involvedUser(uid);
+        }
+        else
+        {
+            // 我发起/审批过的 OR 抄送给我（两种参与方式取并集）
+            hisQuery.or().involvedUser(uid).processInstanceIds(ccInstanceIds).endOr();
+        }
+        hisQuery.orderByProcessInstanceStartTime().desc();
         if (StringUtils.isNotEmpty(query.getProcessDefinitionName()))
         {
             hisQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
@@ -427,7 +474,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 activeIds.add(id);
                 FlowElement el = model.getFlowElement(id);
-                activeNames.add(el == null || el.getName() == null ? id : el.getName());
+                activeNames.add(taskDisplayName(hpi.getProcessDefinitionId(), id,
+                        el == null || el.getName() == null ? id : el.getName()));
             }
         }
         // 当前待办任务（含办理人）
@@ -454,7 +502,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             Map<String, Object> m = new java.util.LinkedHashMap<>();
             m.put("id", ut.getId());
-            m.put("name", StringUtils.isNotEmpty(ut.getName()) ? ut.getName() : ut.getId());
+            m.put("name", taskDisplayName(hpi.getProcessDefinitionId(), ut.getId(),
+                    StringUtils.isNotEmpty(ut.getName()) ? ut.getName() : ut.getId()));
             m.put("multiInstance", ut.getLoopCharacteristics() != null);
             m.put("current", activeIds.contains(ut.getId()));
             nodes.add(m);
@@ -539,8 +588,27 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 taskService.setAssignee(task.getId(), String.valueOf(assigneeId));
             }
         }
-        StringBuilder msg = new StringBuilder(ADMIN_INTERVENE_PREFIX)
-                .append("管理员干预至「").append(targetName).append("」");
+        // 干预批注带上「来源节点 → 目标节点」，流程状态/流程图据此还原整条干预轨迹
+        StringBuilder fromNames = new StringBuilder();
+        for (String id : fromIds)
+        {
+            FlowElement fromEl = model.getFlowElement(id);
+            String name = fromEl != null && StringUtils.isNotEmpty(fromEl.getName()) ? fromEl.getName() : id;
+            if (fromNames.length() > 0)
+            {
+                fromNames.append("、");
+            }
+            fromNames.append(name);
+        }
+        StringBuilder msg = new StringBuilder(ADMIN_INTERVENE_PREFIX).append("管理员干预");
+        if (!sameNode && fromNames.length() > 0)
+        {
+            msg.append("「").append(fromNames).append("」→「").append(targetName).append("」");
+        }
+        else
+        {
+            msg.append("至「").append(targetName).append("」");
+        }
         if (assigneeId != null)
         {
             msg.append("，指定办理人「").append(resolveUserNickname(String.valueOf(assigneeId))).append("」");
@@ -660,7 +728,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     .processInstanceId(instanceId).singleResult();
             prevAssignee = hpi == null ? null : hpi.getStartUserId();
         }
-        String prevName = StringUtils.isNotEmpty(prevTask.getName()) ? prevTask.getName() : prevId;
+        // 回到发起人节点时对外显示开始节点名称（「发起申请」），不暴露内部的「重新提交」
+        String prevName = isInitiatorNode(prevTask) ? startEventDisplayName(model)
+                : StringUtils.isNotEmpty(prevTask.getName()) ? prevTask.getName() : prevId;
         // 会签/串签节点不指定单人办理人，由引擎按参与者集合重新生成
         boolean multi = prevTask.getLoopCharacteristics() != null;
         java.util.Set<String> beforeIds = new java.util.HashSet<>();
@@ -706,6 +776,186 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         data.put("prevAssignee", StringUtils.isEmpty(prevAssignee) ? null : prevAssignee);
         data.put("prevAssigneeName", StringUtils.isEmpty(prevAssignee) ? null : resolveUserNickname(prevAssignee));
         return data;
+    }
+
+    /**
+     * 我的已办「收回」：下一节点办理前，本节点办理人把流程收回重新办理。
+     */
+    @Override
+    @Transactional
+    public Map<String, Object> recallMyInstance(String instanceId, String reason)
+    {
+        if (!canRecallMyInstance(instanceId))
+        {
+            throw new ServiceException("当前无法收回：需在下一节点办理前，且本节点已开启强制收回");
+        }
+        return recallInstance(instanceId, reason);
+    }
+
+    @Override
+    public boolean canRecallInstance(String instanceId)
+    {
+        try
+        {
+            return canRecallMyInstance(instanceId);
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * 我的已办收回校验：满足以下任一情形即可收回。
+     *
+     * <p>情形一（中间环节）：① 流程仍在运行；② 我是该实例最近一次的办理人；
+     * ③ 该节点开启了强制收回；④ 我办理之后没有任何任务办结（下一节点尚未办理）；
+     * ⑤ 我办理的节点是当前待办节点的直接上一环节。</p>
+     *
+     * <p>情形二（发起环节）：① 流程仍在运行；② 我是流程发起人；③ 开始节点开启了强制收回；
+     * ④ 我提交之后没有任何任务办结（下一审批节点尚未办理）；
+     * ⑤ 当前待办节点直接挂在开始节点之后。</p>
+     */
+    private boolean canRecallMyInstance(String instanceId)
+    {
+        if (StringUtils.isEmpty(instanceId))
+        {
+            return false;
+        }
+        ProcessInstance instance = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(instanceId).singleResult();
+        if (instance == null)
+        {
+            return false;
+        }
+        BpmnModel model = repositoryService.getBpmnModel(instance.getProcessDefinitionId());
+        if (model == null)
+        {
+            return false;
+        }
+        String uid = String.valueOf(SecurityUtils.getUserId());
+        List<HistoricTaskInstance> myTasks = historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(instanceId).taskAssignee(uid).finished()
+                .orderByHistoricTaskInstanceEndTime().desc().listPage(0, 1);
+        // 我还没办结过任何任务：可能是我刚发起、下一审批环节还没办理，此时允许收回发起
+        if (myTasks.isEmpty())
+        {
+            return canRecallInitiatorSubmit(instance, model, uid);
+        }
+        HistoricTaskInstance mine = myTasks.get(0);
+        if (!(model.getFlowElement(mine.getTaskDefinitionKey()) instanceof UserTask))
+        {
+            return false;
+        }
+        // 节点级开关：设计器未配置时默认允许收回
+        if (!allowRecall(model.getFlowElement(mine.getTaskDefinitionKey())))
+        {
+            return false;
+        }
+        // 下一节点是否已办理：我办理之后只要还有任务办结，流程就已往前走，不能再收回
+        for (HistoricTaskInstance h : historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(instanceId).finished().list())
+        {
+            if (h.getId().equals(mine.getId()) || h.getEndTime() == null || mine.getEndTime() == null)
+            {
+                continue;
+            }
+            if (h.getEndTime().after(mine.getEndTime()))
+            {
+                return false;
+            }
+        }
+        // 当前待办节点必须直接挂在我办理的节点后面
+        List<String> currentIds = new ArrayList<>();
+        for (Task t : taskService.createTaskQuery().processInstanceId(instanceId).list())
+        {
+            String key = t.getTaskDefinitionKey();
+            if (StringUtils.isNotEmpty(key) && !currentIds.contains(key))
+            {
+                currentIds.add(key);
+            }
+        }
+        return !currentIds.isEmpty()
+                && findUpstreamUserTasks(model, currentIds).contains(mine.getTaskDefinitionKey());
+    }
+
+    /**
+     * 发起环节收回校验：我提交后、下一审批节点尚未办理时，收回「发起申请」重新提交。
+     *
+     * <p>Flowable 无法把执行流停在开始事件上，收回目标取部署时注入的发起人节点（applyNode）；
+     * 早期部署的流程没有该节点，收回后无处可去，因此不提供收回。</p>
+     */
+    private boolean canRecallInitiatorSubmit(ProcessInstance instance, BpmnModel model, String uid)
+    {
+        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(instance.getId()).singleResult();
+        if (hpi == null || !uid.equals(hpi.getStartUserId()))
+        {
+            return false;
+        }
+        UserTask initiatorNode = findInitiatorNode(model);
+        if (initiatorNode == null)
+        {
+            return false;
+        }
+        // 开始节点的强制收回开关（设计器配在开始事件上），未配置默认允许
+        if (!allowInitiatorRecall(model, initiatorNode))
+        {
+            return false;
+        }
+        // 下一审批节点是否已办理：提交之后只要还有任务办结，就不能再收回发起
+        if (historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(instance.getId()).finished().count() > 0)
+        {
+            return false;
+        }
+        // 当前待办节点必须直接挂在开始节点后面
+        List<String> currentIds = new ArrayList<>();
+        for (Task t : taskService.createTaskQuery().processInstanceId(instance.getId()).list())
+        {
+            String key = t.getTaskDefinitionKey();
+            if (StringUtils.isNotEmpty(key) && !currentIds.contains(key))
+            {
+                currentIds.add(key);
+            }
+        }
+        return !currentIds.isEmpty()
+                && findUpstreamUserTasks(model, currentIds).contains(initiatorNode.getId());
+    }
+
+    /** 开始节点是否允许收回发起：开关配在开始事件上，未配置时回落到发起人节点配置（默认允许） */
+    private boolean allowInitiatorRecall(BpmnModel model, UserTask initiatorNode)
+    {
+        if (model.getMainProcess() != null)
+        {
+            for (org.flowable.bpmn.model.StartEvent start
+                    : model.getMainProcess().findFlowElementsOfType(org.flowable.bpmn.model.StartEvent.class, true))
+            {
+                Map<String, java.util.List<org.flowable.bpmn.model.ExtensionAttribute>> attrs = start.getAttributes();
+                if (attrs != null && attrs.containsKey(ATTR_ALLOW_RECALL))
+                {
+                    return allowRecall(start);
+                }
+            }
+        }
+        return allowRecall(initiatorNode);
+    }
+
+    /** 节点是否允许办理人收回（flowable:allowRecall，未配置默认允许） */
+    private boolean allowRecall(FlowElement element)
+    {
+        Map<String, java.util.List<org.flowable.bpmn.model.ExtensionAttribute>> attrs = element.getAttributes();
+        if (attrs == null)
+        {
+            return true;
+        }
+        java.util.List<org.flowable.bpmn.model.ExtensionAttribute> list = attrs.get(ATTR_ALLOW_RECALL);
+        if (list == null || list.isEmpty())
+        {
+            return true;
+        }
+        String value = list.get(0).getValue();
+        return !("false".equalsIgnoreCase(value) || "0".equals(value) || "否".equals(value));
     }
 
     /**
@@ -1151,12 +1401,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         for (HistoricTaskInstance task : hisQuery.list())
         {
             FlowTask ft = convertHistoricTask(task);
-            // 取该任务的审批意见（type=comment），解析【outcome】前缀
-            List<Comment> comments = taskService.getTaskComments(task.getId());
-            if (!comments.isEmpty())
-            {
-                applyComment(ft, comments.get(0));
-            }
+            // 取该任务的审批意见（type=comment），跳过转办/抄送等操作留痕，解析【outcome】前缀
+            applyTaskComments(ft, taskService.getTaskComments(task.getId()));
             if (!matchDoneFilter(ft, query))
             {
                 continue;
@@ -1201,6 +1447,107 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 continue;
             }
             rowMap.put(ft.getInstanceId(), ft);
+        }
+        // 3）抄送我已阅的流程：抄送本身不是办理，但「已阅」是一次处理动作，
+        //    按泛微口径应在已办中可查（环节显示「XX（抄送）」，办理时间取阅读时间）
+        for (FlowCc cc : flowCcService.selectMyCcList(new FlowCc()))
+        {
+            if (!"1".equals(cc.getReadFlag()) || cc.getReadTime() == null)
+            {
+                continue;
+            }
+            if (rowMap.containsKey(cc.getInstanceId()))
+            {
+                continue;
+            }
+            HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceId(cc.getInstanceId()).singleResult();
+            if (hpi == null)
+            {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(query.getProcessDefinitionKey())
+                    && !query.getProcessDefinitionKey().equals(hpi.getProcessDefinitionKey()))
+            {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(query.getProcessDefinitionName())
+                    && (hpi.getProcessDefinitionName() == null
+                            || !hpi.getProcessDefinitionName().contains(query.getProcessDefinitionName())))
+            {
+                continue;
+            }
+            FlowTask ft = new FlowTask();
+            ft.setInstanceId(hpi.getId());
+            ft.setProcessDefinitionId(hpi.getProcessDefinitionId());
+            ft.setProcessDefinitionKey(hpi.getProcessDefinitionKey());
+            ft.setProcessDefinitionName(hpi.getProcessDefinitionName());
+            ft.setBusinessKey(hpi.getBusinessKey());
+            ft.setTitle(StringUtils.isNotEmpty(hpi.getName()) ? hpi.getName()
+                    : (StringUtils.isNotEmpty(cc.getTitle()) ? cc.getTitle() : hpi.getProcessDefinitionName()));
+            ft.setStartUserName(resolveUserNickname(hpi.getStartUserId()));
+            ft.setUrgency(resolveUrgency(hpi.getProcessDefinitionKey(), hpi.getBusinessKey()));
+            ft.setTaskName(StringUtils.isNotEmpty(cc.getTaskName()) ? cc.getTaskName() + "（抄送）" : "抄送");
+            ft.setOutcome("cc");
+            ft.setCreateTime(cc.getCreateTime());
+            ft.setEndTime(cc.getReadTime());
+            ft.setAssigneeId(userId);
+            ft.setAssigneeName(resolveUserNickname(uid));
+            ft.setReceiverName(cc.getSenderName());
+            fillInstanceStatus(ft, hpi);
+            if (!matchDoneFilter(ft, query))
+            {
+                continue;
+            }
+            rowMap.putIfAbsent(cc.getInstanceId(), ft);
+        }
+        // 4）我转办过的流程：转办也是一次处理动作（任务已交给他人继续办理），已办中可查
+        for (FlowDelegate d : flowDelegateMapper.selectByFromUser(userId))
+        {
+            if (rowMap.containsKey(d.getInstanceId()))
+            {
+                continue;
+            }
+            HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceId(d.getInstanceId()).singleResult();
+            if (hpi == null)
+            {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(query.getProcessDefinitionKey())
+                    && !query.getProcessDefinitionKey().equals(hpi.getProcessDefinitionKey()))
+            {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(query.getProcessDefinitionName())
+                    && (hpi.getProcessDefinitionName() == null
+                            || !hpi.getProcessDefinitionName().contains(query.getProcessDefinitionName())))
+            {
+                continue;
+            }
+            FlowTask ft = new FlowTask();
+            ft.setInstanceId(hpi.getId());
+            ft.setProcessDefinitionId(hpi.getProcessDefinitionId());
+            ft.setProcessDefinitionKey(hpi.getProcessDefinitionKey());
+            ft.setProcessDefinitionName(hpi.getProcessDefinitionName());
+            ft.setBusinessKey(hpi.getBusinessKey());
+            ft.setTitle(hpi.getName());
+            ft.setStartUserName(resolveUserNickname(hpi.getStartUserId()));
+            ft.setUrgency(resolveUrgency(hpi.getProcessDefinitionKey(), hpi.getBusinessKey()));
+            ft.setTaskName(StringUtils.isNotEmpty(d.getTaskName()) ? d.getTaskName() + "（转办）" : "转办");
+            ft.setOutcome("delegate");
+            ft.setCreateTime(d.getCreateTime());
+            ft.setEndTime(d.getCreateTime());
+            ft.setAssigneeId(userId);
+            ft.setAssigneeName(resolveUserNickname(uid));
+            ft.setReceiverName(d.getToName());
+            ft.setComment(d.getComment());
+            fillInstanceStatus(ft, hpi);
+            if (!matchDoneFilter(ft, query))
+            {
+                continue;
+            }
+            rowMap.putIfAbsent(d.getInstanceId(), ft);
         }
         List<FlowTask> list = new ArrayList<>(rowMap.values());
         // 统一按办理时间倒序（我发起的流程与办理过的任务混排）
@@ -1780,33 +2127,18 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         // type 固定为 "comment"，转办标识编码进消息前缀
         taskService.addComment(taskId, task.getProcessInstanceId(), "comment",
                 "【delegate】转办：" + (comment == null ? "" : comment));
+        // 转办过程留痕：谁（原办理人）在什么时间把哪个环节转给了谁，供流程状态/流程图回溯
+        FlowDelegate record = new FlowDelegate();
+        record.setInstanceId(task.getProcessInstanceId());
+        record.setTaskId(taskId);
+        record.setTaskName(task.getName());
+        record.setFromId(SecurityUtils.getUserId());
+        record.setFromName(resolveUserNickname(currentUserId));
+        record.setToId(targetUserId);
+        record.setToName(resolveUserNickname(String.valueOf(targetUserId)));
+        record.setComment(comment == null || comment.length() <= 500 ? comment : comment.substring(0, 500));
+        flowDelegateMapper.insertDelegate(record);
         return 1;
-    }
-
-    /**
-     * 发起时把表单里的「签字意见」写成流程级批注（taskId 为空）。
-     * 发起环节没有任务，不存下来的话「审批意见」里的发起行就永远是空白的；
-     * 存成批注而不是只靠流程变量，是为了后续节点即使改写 signOpinion 变量，发起时的原话也不会被覆盖。
-     */
-    private void saveStartComment(String instanceId, Map<String, Object> variables)
-    {
-        try
-        {
-            if (variables == null || variables.get(FlowSystemFields.FIELD_SIGN_OPINION) == null)
-            {
-                return;
-            }
-            String sign = String.valueOf(variables.get(FlowSystemFields.FIELD_SIGN_OPINION));
-            if (StringUtils.isEmpty(sign) || StringUtils.isEmpty(sign.replaceAll("<[^>]*>", "").replace("&nbsp;", "").trim()))
-            {
-                return;
-            }
-            taskService.addComment(null, instanceId, "comment", START_COMMENT_PREFIX + sign);
-        }
-        catch (Exception e)
-        {
-            log.warn("发起签字意见写入失败：{}", e.getMessage());
-        }
     }
 
     /**
@@ -1865,7 +2197,21 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         // 节点候选人：Flowable 在任务创建时就把候选链接写进 act_hi_identitylink（任务结束也不清理），
         // 据此把「候选池里的一个任务」还原成「每个候选人一行」，与泛微流程状态一致
         Map<String, List<String>> candidatesByTask = selectTaskCandidates(instanceId);
+        // 转办记录：按任务归并，转办过的任务，被转办人的接收时间从「转办时刻」起算
+        Map<String, List<FlowDelegate>> delegatesByTask = new HashMap<>();
+        for (FlowDelegate d : flowDelegateMapper.selectByInstance(instanceId))
+        {
+            if (StringUtils.isNotEmpty(d.getTaskId()))
+            {
+                delegatesByTask.computeIfAbsent(d.getTaskId(), k -> new ArrayList<>()).add(d);
+            }
+        }
+        // 管理员干预：批注还原为「干预」操作行，并把被跳过的节点标记出来
+        List<Map<String, Object>> interveneRecords = selectInterveneRecords(instanceId);
+        Set<String> skippedTaskIds = resolveInterveneSkippedTaskIds(tasks, interveneRecords);
         List<FlowTask> list = new ArrayList<>();
+        // 上一个非发起人节点的办理结果：用于判断发起人节点的再次提交是不是「退回后重新提交」
+        String prevNonInitiatorOutcome = null;
         // 发起节点（开始事件）：发起人=实例发起人，接收/操作时间=实例开始时间
         if (hpi != null)
         {
@@ -1890,10 +2236,31 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         for (HistoricTaskInstance task : tasks)
         {
             FlowTask ft = convertHistoricTask(task);
-            List<Comment> comments = taskService.getTaskComments(task.getId());
-            for (Comment comment : comments)
+            // 任务被转办过：当前办理人从最后一次转办时刻接手，接收时间与耗时都从那一刻算
+            List<FlowDelegate> transfers = delegatesByTask.get(task.getId());
+            if (transfers != null && !transfers.isEmpty())
             {
-                applyComment(ft, comment);
+                Date lastTransfer = transfers.get(transfers.size() - 1).getCreateTime();
+                if (lastTransfer != null)
+                {
+                    ft.setCreateTime(lastTransfer);
+                }
+            }
+            // 一个任务可能有多条批注（转办 + 最终办理意见），取最新的一条办理意见；
+            // 转办/抄送属于操作留痕，已由 __delegate__ / __cc__ 行单独展示，不能覆盖签字意见
+            applyTaskComments(ft, taskService.getTaskComments(task.getId()));
+            if (FlowReturnConstants.INITIATOR_NODE_ID.equals(task.getTaskDefinitionKey()))
+            {
+                // 发起人节点（开始）：初次提交由 __start__ 行代表，强制收回后的重提也不留痕；
+                // 只有被「退回」到发起人后的再次提交，才作为一条新的开始记录展示
+                if (!isReturnOutcome(prevNonInitiatorOutcome))
+                {
+                    ft.setInitiatorPending(Boolean.TRUE);
+                }
+            }
+            else if (task.getEndTime() != null && StringUtils.isNotEmpty(ft.getOutcome()))
+            {
+                prevNonInitiatorOutcome = ft.getOutcome();
             }
             boolean finished = task.getEndTime() != null;
             String assignee = task.getAssignee();
@@ -1913,6 +2280,11 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             }
             // 已办理以「有办理意见」为准：撤销/终止时引擎会给未办任务补 endTime，但没人真正办理
             ft.setState(finished ? (StringUtils.isNotEmpty(ft.getOutcome()) ? "done" : "undone") : "pending");
+            // 被管理员干预跳过（任务被强制结束但没人办理）：流程状态里明确标注，避免误读成普通未办理
+            if (skippedTaskIds.contains(task.getId()))
+            {
+                ft.setSkipped(Boolean.TRUE);
+            }
             list.add(ft);
             // 已有人办理：同节点其余候选人各补一行「未办理」，一眼看出流程发给了谁、谁没处理
             if (finished && candidates != null)
@@ -1927,6 +2299,46 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 }
             }
         }
+        // 抄送人所在的环节接收时间：抄送动作发生在该任务上，耗时从任务接收开始计算
+        Map<String, Date> taskStartTimes = new HashMap<>();
+        for (HistoricTaskInstance task : tasks)
+        {
+            taskStartTimes.put(task.getId(), task.getCreateTime());
+        }
+        // 手动/节点抄送：作为一条操作记录写入流程状态（对标泛微：抄送也要留痕）
+        list.addAll(buildCcRows(instanceId, taskStartTimes));
+        // 转办：与抄送一样逐次留痕（转办人 → 被转办人 + 耗时 + 转办说明）
+        list.addAll(buildDelegateRows(instanceId, taskStartTimes, delegatesByTask));
+        // 管理员干预：保留管理员的操作记录（谁、何时、从哪个节点调到哪、说明）
+        list.addAll(buildInterveneRows(instanceId, tasks, skippedTaskIds, interveneRecords));
+        // 点开查看：把查看时间补到当前待办/候选行（对标泛微「已查看」操作状态 + 操作时间）
+        fillNodeViewTimes(instanceId, list);
+        // 抄送、查看与流转记录按发生时间交错展示（开始记录最早，天然排在最前）
+        // 同一时刻：管理员干预发生在目标节点任务生成之前，干预行排在目标节点记录前
+        list.sort((a, b) -> {
+            Date ta = a.getCreateTime();
+            Date tb = b.getCreateTime();
+            if (ta == null && tb == null)
+            {
+                return 0;
+            }
+            if (ta == null)
+            {
+                return 1;
+            }
+            if (tb == null)
+            {
+                return -1;
+            }
+            int result = ta.compareTo(tb);
+            if (result != 0)
+            {
+                return result;
+            }
+            boolean aIntervene = "intervene".equals(a.getOutcome());
+            boolean bIntervene = "intervene".equals(b.getOutcome());
+            return aIntervene == bIntervene ? 0 : (aIntervene ? -1 : 1);
+        });
         // 结束节点（结束事件）：流程已结束时补充"流程结束"记录
         if (hpi != null && hpi.getEndTime() != null)
         {
@@ -2015,7 +2427,439 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         row.setAssigneeName(resolveUserNickname(userId));
         row.setState(state);
         row.setCandidate(Boolean.TRUE);
+        row.setSkipped(base.getSkipped());
         return row;
+    }
+
+    /**
+     * 管理员干预记录：从流程批注还原（谁、何时、来源节点、目标节点、指定办理人、说明）。
+     *
+     * <p>批注由 {@link #interveneInstance} 写入，兼容新旧两种文案格式；
+     * 干预记录只用于展示，查询失败不影响流程状态与流程图。</p>
+     *
+     * @param instanceId 流程实例ID
+     * @return 干预记录（按时间正序）
+     */
+    private List<Map<String, Object>> selectInterveneRecords(String instanceId)
+    {
+        List<Map<String, Object>> records = new ArrayList<>();
+        try
+        {
+            List<Comment> comments = taskService.getProcessInstanceComments(instanceId);
+            if (comments == null || comments.isEmpty())
+            {
+                return records;
+            }
+            for (Comment c : comments)
+            {
+                String msg = c.getFullMessage();
+                if (StringUtils.isEmpty(msg) || !msg.startsWith(ADMIN_INTERVENE_PREFIX))
+                {
+                    continue;
+                }
+                Map<String, Object> rec = new LinkedHashMap<>();
+                rec.put("commentId", c.getId());
+                rec.put("userId", c.getUserId());
+                rec.put("userName", StringUtils.isNotEmpty(c.getUserId())
+                        ? resolveUserNickname(c.getUserId()) : "系统管理员");
+                rec.put("time", c.getTime());
+                Matcher m = INTERVENE_MSG_PATTERN.matcher(msg);
+                if (m.matches())
+                {
+                    String first = m.group(1);
+                    String second = m.group(2);
+                    boolean hasFrom = StringUtils.isNotEmpty(second);
+                    rec.put("fromName", hasFrom ? first : null);
+                    rec.put("toName", hasFrom ? second : first);
+                    rec.put("assigneeName", m.group(3));
+                    rec.put("comment", m.group(4));
+                }
+                else
+                {
+                    // 历史数据格式不标准时，至少把批注原文保留下来
+                    rec.put("toName", msg.substring(ADMIN_INTERVENE_PREFIX.length()));
+                }
+                records.add(rec);
+            }
+            records.sort((a, b) -> {
+                Date ta = (Date) a.get("time");
+                Date tb = (Date) b.get("time");
+                if (ta == null && tb == null)
+                {
+                    return 0;
+                }
+                if (ta == null)
+                {
+                    return 1;
+                }
+                if (tb == null)
+                {
+                    return -1;
+                }
+                return ta.compareTo(tb);
+            });
+        }
+        catch (Exception e)
+        {
+            log.warn("查询管理员干预记录失败：{}", e.getMessage());
+        }
+        return records;
+    }
+
+    /**
+     * 被管理员干预跳过的任务：任务已结束、没人写过办理意见，且结束时间与干预时间吻合。
+     *
+     * @param tasks    实例下的历史任务
+     * @param records  干预记录
+     * @return 被跳过的任务ID集合
+     */
+    private Set<String> resolveInterveneSkippedTaskIds(List<HistoricTaskInstance> tasks,
+            List<Map<String, Object>> records)
+    {
+        Set<String> ids = new HashSet<>();
+        if (tasks == null || tasks.isEmpty() || records == null || records.isEmpty())
+        {
+            return ids;
+        }
+        for (HistoricTaskInstance task : tasks)
+        {
+            if (task.getEndTime() == null
+                    || pickOpinionComment(taskService.getTaskComments(task.getId())) != null)
+            {
+                continue;
+            }
+            for (Map<String, Object> rec : records)
+            {
+                Date time = (Date) rec.get("time");
+                if (time != null && Math.abs(task.getEndTime().getTime() - time.getTime()) <= INTERVENE_TIME_TOLERANCE)
+                {
+                    ids.add(task.getId());
+                    break;
+                }
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * 干预的来源节点名：新格式批注直接带来源节点；旧格式按「被跳过任务 + 同一时刻」还原。
+     */
+    private String resolveInterveneFromName(Map<String, Object> rec, List<HistoricTaskInstance> tasks,
+            Set<String> skippedTaskIds)
+    {
+        Object fromName = rec.get("fromName");
+        if (fromName != null && StringUtils.isNotEmpty(String.valueOf(fromName)))
+        {
+            return String.valueOf(fromName);
+        }
+        Date time = (Date) rec.get("time");
+        if (time == null || tasks == null)
+        {
+            return null;
+        }
+        List<String> names = new ArrayList<>();
+        for (HistoricTaskInstance task : tasks)
+        {
+            if (!skippedTaskIds.contains(task.getId()) || task.getEndTime() == null)
+            {
+                continue;
+            }
+            if (Math.abs(task.getEndTime().getTime() - time.getTime()) > INTERVENE_TIME_TOLERANCE)
+            {
+                continue;
+            }
+            String name = StringUtils.isNotEmpty(task.getName()) ? task.getName() : task.getTaskDefinitionKey();
+            if (name != null && !names.contains(name))
+            {
+                names.add(name);
+            }
+        }
+        return names.isEmpty() ? null : String.join("、", names);
+    }
+
+    /**
+     * 干预记录补全「指定办理人」：旧批注未写办理人时，用目标节点的实际办理人兜底，
+     * 让流程状态/流程图浮层都能显示「人事审核：高洁」而不只是节点名。
+     */
+    private void fillInterveneAssigneeName(List<Map<String, Object>> records, List<HistoricTaskInstance> tasks)
+    {
+        if (records == null || records.isEmpty() || tasks == null || tasks.isEmpty())
+        {
+            return;
+        }
+        for (Map<String, Object> rec : records)
+        {
+            Object current = rec.get("assigneeName");
+            if (current != null && StringUtils.isNotEmpty(String.valueOf(current)))
+            {
+                continue;
+            }
+            String toName = rec.get("toName") == null ? null : String.valueOf(rec.get("toName"));
+            if (StringUtils.isEmpty(toName))
+            {
+                continue;
+            }
+            HistoricTaskInstance matched = null;
+            for (HistoricTaskInstance task : tasks)
+            {
+                if (!toName.equals(task.getName()) || StringUtils.isEmpty(task.getAssignee()))
+                {
+                    continue;
+                }
+                // 优先取仍在办理的任务，其次取最近一条已结束的任务
+                if (task.getEndTime() == null)
+                {
+                    matched = task;
+                    break;
+                }
+                if (matched == null)
+                {
+                    matched = task;
+                }
+            }
+            if (matched != null)
+            {
+                rec.put("assigneeName", resolveUserNickname(matched.getAssignee()));
+            }
+        }
+    }
+
+    /**
+     * 干预目标节点的任务生成时间：干预批注写入前，目标节点任务已由引擎创建；
+     * 取与干预时间最接近的那条任务生成时间作为干预时刻，保证「干预」排在「目标节点待办」之前。
+     * （同一时刻下干预行优先，见流程记录排序）
+     */
+    private Date resolveInterveneTargetCreateTime(Date time, String toName, List<HistoricTaskInstance> tasks)
+    {
+        if (time == null || StringUtils.isEmpty(toName) || tasks == null)
+        {
+            return null;
+        }
+        Date matched = null;
+        for (HistoricTaskInstance task : tasks)
+        {
+            if (!toName.equals(task.getName()) || task.getCreateTime() == null)
+            {
+                continue;
+            }
+            long diff = task.getCreateTime().getTime() - time.getTime();
+            if (diff < -INTERVENE_TIME_TOLERANCE || diff > INTERVENE_TIME_TOLERANCE)
+            {
+                continue;
+            }
+            if (matched == null || task.getCreateTime().after(matched))
+            {
+                matched = task.getCreateTime();
+            }
+        }
+        return matched;
+    }
+
+    /**
+     * 管理员干预操作行：办理人=管理员，动作=干预，接收者=目标节点 + 指定办理人，意见=变动轨迹 + 说明。
+     * 干预行与被干预节点（未办理）分开展示，节点行只呈现办理人自己的操作情况。
+     */
+    private List<FlowTask> buildInterveneRows(String instanceId, List<HistoricTaskInstance> tasks,
+            Set<String> skippedTaskIds, List<Map<String, Object>> records)
+    {
+        List<FlowTask> rows = new ArrayList<>();
+        if (records == null)
+        {
+            return rows;
+        }
+        fillInterveneAssigneeName(records, tasks);
+        for (Map<String, Object> rec : records)
+        {
+            Date time = (Date) rec.get("time");
+            String toName = rec.get("toName") == null ? "指定节点" : String.valueOf(rec.get("toName"));
+            String assigneeName = rec.get("assigneeName") == null ? null : String.valueOf(rec.get("assigneeName"));
+            String fromName = resolveInterveneFromName(rec, tasks, skippedTaskIds);
+            // 干预时刻取目标节点任务的生成时间：干预是「因」，目标节点是「果」，排序时干预在前
+            Date targetTime = resolveInterveneTargetCreateTime(time, toName, tasks);
+            Date showTime = targetTime != null ? targetTime : time;
+            FlowTask row = new FlowTask();
+            row.setTaskId("__intervene__" + rec.get("commentId"));
+            row.setTaskName("管理员干预");
+            row.setInstanceId(instanceId);
+            row.setCreateTime(showTime);
+            row.setEndTime(showTime);
+            row.setOutcome("intervene");
+            row.setState("done");
+            row.setAssigneeName(String.valueOf(rec.get("userName")));
+            try
+            {
+                row.setAssigneeId(Long.valueOf(String.valueOf(rec.get("userId"))));
+            }
+            catch (NumberFormatException ignored) { }
+            row.setReceiverName(toName + (StringUtils.isNotEmpty(assigneeName) ? "：" + assigneeName : ""));
+            StringBuilder note = new StringBuilder("管理员");
+            if (StringUtils.isNotEmpty(fromName))
+            {
+                note.append("将流程由「").append(fromName).append("」调整至「").append(toName).append("」");
+            }
+            else
+            {
+                note.append("干预至「").append(toName).append("」");
+            }
+            String remark = rec.get("comment") == null ? null : String.valueOf(rec.get("comment"));
+            if (StringUtils.isNotEmpty(remark))
+            {
+                note.append("：").append(remark);
+            }
+            row.setComment(note.toString());
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /**
+     * 抄送操作记录：把 flow_cc 中的抄送转换为流程状态里的一条「抄送」操作。
+     *
+     * <p>节点自动抄送与办理人手动抄送都会写入 flow_cc，这里统一还原为：
+     * 抄送人（操作人）、抄送环节、抄送时间、接收人、接收人是否已查看。</p>
+     *
+     * @param instanceId     流程实例ID
+     * @param taskStartTimes taskId → 任务接收时间（抄送行的接收时间取该任务到达时间，便于计算耗时）
+     * @return 抄送记录行
+     */
+    private List<FlowTask> buildCcRows(String instanceId, Map<String, Date> taskStartTimes)
+    {
+        List<FlowTask> rows = new ArrayList<>();
+        try
+        {
+            List<FlowCc> ccs = flowCcService.selectByInstance(instanceId);
+            for (FlowCc cc : ccs)
+            {
+                FlowTask row = new FlowTask();
+                row.setTaskId("__cc__" + cc.getCcId());
+                row.setTaskName(StringUtils.isNotEmpty(cc.getTaskName()) ? cc.getTaskName() : "抄送");
+                row.setInstanceId(instanceId);
+                row.setCreateTime(cc.getCreateTime());
+                // 抄送记录的操作人 = 抄送接收人：接收时间=抄送时间，操作时间=阅读时间，未读则无操作时间
+                row.setEndTime(cc.getReadTime() != null ? cc.getReadTime() : cc.getCreateTime());
+                row.setOutcome("cc");
+                row.setState("done");
+                row.setAssigneeId(cc.getReceiverId());
+                row.setAssigneeName(cc.getReceiverName());
+                // 接收者列展示抄送人（前端渲染为「由 XX 抄送」）
+                row.setReceiverName(cc.getSenderName());
+                row.setViewTime(cc.getReadTime());
+                // 批示意见列已移除，保留 comment 供办理页/详情页其他区域复用
+                String receiver = StringUtils.isNotEmpty(cc.getReceiverName())
+                        ? cc.getReceiverName() : String.valueOf(cc.getReceiverId());
+                boolean read = "1".equals(cc.getReadFlag());
+                String readText = read ? "已查看" : "未查看";
+                if (read && cc.getReadTime() != null)
+                {
+                    readText += " " + DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, cc.getReadTime());
+                }
+                row.setComment("抄送给：" + receiver + "（" + readText + "）");
+                // 抄送人本人也是一次操作：记录「周伟 抄送 → 李华」，保证任何操作都有痕迹
+                FlowTask send = new FlowTask();
+                send.setTaskId("__ccSend__" + cc.getCcId());
+                send.setTaskName(row.getTaskName());
+                send.setInstanceId(instanceId);
+                // 接收时间 = 所属任务到达抄送人的时间（不是抄送动作时间），这样抄送耗时 = 抄送时间 - 接收时间
+                Date taskStart = cc.getTaskId() == null ? null : taskStartTimes.get(cc.getTaskId());
+                send.setCreateTime(taskStart != null ? taskStart : cc.getCreateTime());
+                send.setEndTime(cc.getCreateTime());
+                send.setOutcome("ccSend");
+                send.setState("done");
+                send.setAssigneeId(cc.getSenderId());
+                send.setAssigneeName(cc.getSenderName());
+                send.setReceiverName(cc.getReceiverName());
+                send.setComment(row.getComment());
+                // 同一秒内先展示抄送动作，再展示被抄送人的阅读记录
+                rows.add(send);
+                rows.add(row);
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("查询流程抄送记录失败：{}", e.getMessage());
+        }
+        return rows;
+    }
+
+    /**
+     * 转办过程记录：把 flow_delegate 中的转办逐次还原为流程状态里的「转办」操作。
+     *
+     * <p>同一任务多次转办时，转办行的接收时间按链式计算：
+     * 第一次取任务到达时间，之后取上一次转办时间；操作时间取本次转办时间，
+     * 因此每条转办都能看出「这个人拿了多久才转出去」。</p>
+     *
+     * @param instanceId     流程实例ID
+     * @param taskStartTimes taskId → 任务接收时间
+     * @param delegatesByTask taskId → 转办记录（按转办时间正序）
+     * @return 转办记录行
+     */
+    private List<FlowTask> buildDelegateRows(String instanceId, Map<String, Date> taskStartTimes,
+            Map<String, List<FlowDelegate>> delegatesByTask)
+    {
+        List<FlowTask> rows = new ArrayList<>();
+        for (Map.Entry<String, List<FlowDelegate>> entry : delegatesByTask.entrySet())
+        {
+            Date receivedTime = taskStartTimes.get(entry.getKey());
+            for (FlowDelegate d : entry.getValue())
+            {
+                FlowTask row = new FlowTask();
+                row.setTaskId("__delegate__" + d.getDelegateId());
+                row.setTaskName(StringUtils.isNotEmpty(d.getTaskName()) ? d.getTaskName() : "转办");
+                row.setInstanceId(instanceId);
+                row.setCreateTime(receivedTime != null ? receivedTime : d.getCreateTime());
+                row.setEndTime(d.getCreateTime());
+                row.setOutcome("delegate");
+                row.setState("done");
+                row.setAssigneeId(d.getFromId());
+                row.setAssigneeName(d.getFromName());
+                // 接收者列展示被转办人
+                row.setReceiverName(d.getToName());
+                row.setComment(d.getComment());
+                rows.add(row);
+                // 下一棒：被转办人从本次转办时刻接手
+                receivedTime = d.getCreateTime();
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * 把节点查看时间补到对应的待办/候选行上。
+     *
+     * <p>数据源 flow_node_viewer（办理人/候选人打开办理页或流程详情时上报），
+     * 按「节点 + 用户」匹配，只影响展示，不影响流转。</p>
+     *
+     * @param instanceId 流程实例ID
+     * @param list       已生成的流转记录
+     */
+    private void fillNodeViewTimes(String instanceId, List<FlowTask> list)
+    {
+        Map<String, List<Map<String, Object>>> viewersByNode = flowNodeViewService.selectViewersByNode(instanceId);
+        if (viewersByNode.isEmpty())
+        {
+            return;
+        }
+        Map<String, Object> viewTimes = new HashMap<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : viewersByNode.entrySet())
+        {
+            for (Map<String, Object> viewer : entry.getValue())
+            {
+                viewTimes.put(entry.getKey() + "#" + viewer.get("userId"), viewer.get("time"));
+            }
+        }
+        for (FlowTask row : list)
+        {
+            if (!"pending".equals(row.getState()) || StringUtils.isEmpty(row.getTaskDefinitionKey())
+                    || row.getAssigneeId() == null)
+            {
+                continue;
+            }
+            Object time = viewTimes.get(row.getTaskDefinitionKey() + "#" + row.getAssigneeId());
+            if (time instanceof java.util.Date)
+            {
+                row.setViewTime((java.util.Date) time);
+            }
+        }
     }
 
     @Override
@@ -2116,9 +2960,87 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         data.put("doneIds", new ArrayList<>(doneIds));
         data.put("activeIds", new ArrayList<>(activeIds));
         data.put("doneFlowIds", new ArrayList<>(doneFlowIds));
+        // 管理员干预轨迹：图上把被跳过的节点标灰、点击目标节点能看到谁在什么时候把流程调过来的
+        BpmnModel model = repositoryService.getBpmnModel(hpi.getProcessDefinitionId());
+        List<HistoricTaskInstance> historicTasks = historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(instanceId)
+                .orderByHistoricTaskInstanceStartTime().asc()
+                .list();
+        List<Map<String, Object>> interveneRecords = selectInterveneRecords(instanceId);
+        Set<String> skippedTaskIds = resolveInterveneSkippedTaskIds(historicTasks, interveneRecords);
+        // 旧批注没有指定办理人时，用目标节点的实际办理人补全
+        fillInterveneAssigneeName(interveneRecords, historicTasks);
+        List<Map<String, Object>> interventions = new ArrayList<>();
+        Set<String> skippedNodeIds = new LinkedHashSet<>();
+        for (Map<String, Object> rec : interveneRecords)
+        {
+            Date time = (Date) rec.get("time");
+            String toName = rec.get("toName") == null ? "指定节点" : String.valueOf(rec.get("toName"));
+            Map<String, Object> item = new LinkedHashMap<>(rec);
+            item.put("toId", resolveUserTaskIdByName(model, toName));
+            List<String> fromIds = new ArrayList<>();
+            List<String> fromNames = new ArrayList<>();
+            for (HistoricTaskInstance task : historicTasks)
+            {
+                if (!skippedTaskIds.contains(task.getId()) || task.getEndTime() == null || time == null)
+                {
+                    continue;
+                }
+                if (Math.abs(task.getEndTime().getTime() - time.getTime()) > INTERVENE_TIME_TOLERANCE)
+                {
+                    continue;
+                }
+                if (StringUtils.isNotEmpty(task.getTaskDefinitionKey())
+                        && !fromIds.contains(task.getTaskDefinitionKey()))
+                {
+                    fromIds.add(task.getTaskDefinitionKey());
+                    skippedNodeIds.add(task.getTaskDefinitionKey());
+                }
+                String name = StringUtils.isNotEmpty(task.getName()) ? task.getName() : task.getTaskDefinitionKey();
+                if (name != null && !fromNames.contains(name))
+                {
+                    fromNames.add(name);
+                }
+            }
+            item.put("fromIds", fromIds);
+            item.put("fromNames", fromNames);
+            item.put("fromName", resolveInterveneFromName(rec, historicTasks, skippedTaskIds));
+            interventions.add(item);
+        }
+        data.put("interventions", interventions);
+        data.put("skippedIds", new ArrayList<>(skippedNodeIds));
         // 按节点聚合的运行期人员（节点上显示审批人 + 点节点看已操作/未审批/已查看）
-        data.put("nodes", buildNodeParticipants(instanceId, hpi, activities));
+        Map<String, Object> nodes = buildNodeParticipants(instanceId, hpi, activities);
+        // 干预记录挂到目标节点：浮层里展示「管理员干预」明细
+        for (Map<String, Object> item : interventions)
+        {
+            String toId = item.get("toId") == null ? null : String.valueOf(item.get("toId"));
+            if (StringUtils.isEmpty(toId))
+            {
+                continue;
+            }
+            Map<String, Object> node = nodeEntry(nodes, toId, String.valueOf(item.get("toName")));
+            interveneList(node).add(item);
+        }
+        data.put("nodes", nodes);
         return data;
+    }
+
+    /** 按节点名称在流程定义里定位用户任务ID（干预批注只存名称，图上需要 ID） */
+    private String resolveUserTaskIdByName(BpmnModel model, String name)
+    {
+        if (model == null || model.getMainProcess() == null || StringUtils.isEmpty(name))
+        {
+            return null;
+        }
+        for (FlowElement element : model.getMainProcess().getFlowElements())
+        {
+            if (element instanceof UserTask && name.equals(element.getName()))
+            {
+                return element.getId();
+            }
+        }
+        return null;
     }
 
     /**
@@ -2169,6 +3091,73 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 .list();
         // 候选池：任务创建时写入的 candidate 链接，任务结束也不清理，据此还原「当时发给了谁」
         Map<String, List<String>> candidatesByTask = selectTaskCandidates(instanceId);
+        // 各节点知情人（办理人 + 候选人 + 抄送接收人 + 转办参与人）：已查看人员只在这些人里取，
+        // 避免把旁观者算成节点查看人，同时保留抄送、转办人员的查看记录
+        Map<String, Set<String>> participantsByNode = new HashMap<>();
+        Map<String, String> nodeByTask = new HashMap<>();
+        for (HistoricTaskInstance task : tasks)
+        {
+            if (StringUtils.isEmpty(task.getTaskDefinitionKey()))
+            {
+                continue;
+            }
+            nodeByTask.put(task.getId(), task.getTaskDefinitionKey());
+            Set<String> participants = participantsByNode.computeIfAbsent(task.getTaskDefinitionKey(),
+                    k -> new HashSet<>());
+            if (StringUtils.isNotEmpty(task.getAssignee()))
+            {
+                participants.add(task.getAssignee());
+            }
+            List<String> candidates = candidatesByTask.get(task.getId());
+            if (candidates != null)
+            {
+                participants.addAll(candidates);
+            }
+        }
+        try
+        {
+            for (FlowDelegate d : flowDelegateMapper.selectByInstance(instanceId))
+            {
+                String nodeId = nodeByTask.get(d.getTaskId());
+                if (StringUtils.isEmpty(nodeId))
+                {
+                    continue;
+                }
+                Set<String> participants = participantsByNode.computeIfAbsent(nodeId, k -> new HashSet<>());
+                if (d.getFromId() != null)
+                {
+                    participants.add(String.valueOf(d.getFromId()));
+                }
+                if (d.getToId() != null)
+                {
+                    participants.add(String.valueOf(d.getToId()));
+                }
+            }
+            for (FlowCc cc : flowCcService.selectByInstance(instanceId))
+            {
+                String nodeId = nodeByTask.get(cc.getTaskId());
+                if (StringUtils.isEmpty(nodeId) || cc.getReceiverId() == null)
+                {
+                    continue;
+                }
+                participantsByNode.computeIfAbsent(nodeId, k -> new HashSet<>())
+                        .add(String.valueOf(cc.getReceiverId()));
+            }
+        }
+        catch (Exception e)
+        {
+            log.debug("汇总节点知情人失败：{}", e.getMessage());
+        }
+        // 节点查看记录：按「节点 + 用户」索引，给待办/已操作人员补「是否查看 + 查看时间」
+        Map<String, Map<String, Object>> viewByNodeUser = new HashMap<>();
+        Map<String, List<Map<String, Object>>> viewers = flowNodeViewService.selectViewersByNode(instanceId);
+        for (Map.Entry<String, List<Map<String, Object>>> entry : viewers.entrySet())
+        {
+            for (Map<String, Object> viewer : entry.getValue())
+            {
+                viewByNodeUser.put(entry.getKey() + "#" + viewer.get("userId"), viewer);
+            }
+        }
         for (HistoricTaskInstance task : tasks)
         {
             String nodeId = task.getTaskDefinitionKey();
@@ -2182,25 +3171,16 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             if (task.getEndTime() != null)
             {
                 // 已结束任务：有办理意见才算「已操作」；撤销/终止时引擎补了 endTime 但没人真正办理
+                // 只取真正的签字意见，转办/抄送等操作批注不覆盖办理结果
+                Comment picked = pickOpinionComment(taskService.getTaskComments(task.getId()));
                 String outcome = null;
                 String comment = null;
-                for (Comment c : taskService.getTaskComments(task.getId()))
+                if (picked != null)
                 {
-                    String msg = c.getFullMessage();
-                    if (StringUtils.isEmpty(msg))
-                    {
-                        continue;
-                    }
-                    if (msg.startsWith("【") && msg.contains("】"))
-                    {
-                        int end = msg.indexOf("】");
-                        outcome = msg.substring(1, end);
-                        comment = msg.substring(end + 1);
-                    }
-                    else
-                    {
-                        comment = msg;
-                    }
+                    FlowTask tmp = new FlowTask();
+                    applyComment(tmp, picked);
+                    outcome = tmp.getOutcome();
+                    comment = tmp.getComment();
                 }
                 if (StringUtils.isEmpty(assignee))
                 {
@@ -2212,7 +3192,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     person.put("taskId", task.getId());
                     person.put("action", outcome);
                     person.put("comment", comment);
+                    // 接收时间 / 操作时间：浮层里算「操作耗时」，与泛微流程状态口径一致
+                    person.put("createTime", task.getCreateTime());
                     person.put("time", task.getEndTime());
+                    attachViewTime(nodeId, person, viewByNodeUser);
                     // 同一节点被退回重办时同一人会办理多次，这里不去重，各自的动作与时间都有意义
                     doneList(node).add(person);
                 }
@@ -2221,6 +3204,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     Map<String, Object> person = personEntry(assignee, nameCache);
                     person.put("taskId", task.getId());
                     person.put("kind", "skipped");
+                    person.put("createTime", task.getCreateTime());
+                    attachViewTime(nodeId, person, viewByNodeUser);
                     addPending(node, person);
                 }
                 continue;
@@ -2231,6 +3216,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 Map<String, Object> person = personEntry(assignee, nameCache);
                 person.put("taskId", task.getId());
                 person.put("kind", "assignee");
+                person.put("createTime", task.getCreateTime());
+                attachViewTime(nodeId, person, viewByNodeUser);
                 addPending(node, person);
             }
             List<String> candidates = candidatesByTask.get(task.getId());
@@ -2245,12 +3232,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                     Map<String, Object> person = personEntry(candidate, nameCache);
                     person.put("taskId", task.getId());
                     person.put("kind", "candidate");
+                    person.put("createTime", task.getCreateTime());
+                    attachViewTime(nodeId, person, viewByNodeUser);
                     addPending(node, person);
                 }
             }
         }
-        // 3) 已查看：只保留「看过但还没办理」的人，已操作/待办的人不必在查看列表里重复出现
-        Map<String, List<Map<String, Object>>> viewers = flowNodeViewService.selectViewersByNode(instanceId);
+        // 3) 已查看：只保留「看过但没挂在该节点人员列表里」的人，待办/已操作人员已直接带上查看时间
         for (Map.Entry<String, List<Map<String, Object>>> entry : viewers.entrySet())
         {
             Map<String, Object> node = asNode(nodes.get(entry.getKey()));
@@ -2267,13 +3255,79 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
                 handled.add(String.valueOf(p.get("userId")));
             }
+            Set<String> participants = participantsByNode.getOrDefault(entry.getKey(), java.util.Collections.emptySet());
             for (Map<String, Object> viewer : entry.getValue())
             {
+                // 非该节点办理人/候选人的查看记录（如管理员打开办理页产生的）不展示
+                if (!participants.contains(String.valueOf(viewer.get("userId"))))
+                {
+                    continue;
+                }
                 if (!handled.contains(String.valueOf(viewer.get("userId"))))
                 {
                     viewedList(node).add(viewer);
                 }
             }
+        }
+        // 4) 抄送记录：挂在抄送发生的节点上（flow_cc 只存任务ID，按历史任务还原节点）
+        Map<String, String> taskNodeMap = new HashMap<>();
+        for (HistoricTaskInstance task : tasks)
+        {
+            if (StringUtils.isNotEmpty(task.getTaskDefinitionKey()))
+            {
+                taskNodeMap.put(task.getId(), task.getTaskDefinitionKey());
+            }
+        }
+        try
+        {
+            for (FlowCc cc : flowCcService.selectByInstance(instanceId))
+            {
+                String nodeId = taskNodeMap.get(cc.getTaskId());
+                if (StringUtils.isEmpty(nodeId))
+                {
+                    continue;
+                }
+                Map<String, Object> node = nodeEntry(nodes, nodeId, cc.getTaskName());
+                Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("ccId", cc.getCcId());
+                item.put("senderId", cc.getSenderId());
+                item.put("senderName", cc.getSenderName());
+                item.put("receiverId", cc.getReceiverId());
+                item.put("receiverName", cc.getReceiverName());
+                item.put("readFlag", cc.getReadFlag());
+                item.put("readTime", cc.getReadTime());
+                item.put("time", cc.getCreateTime());
+                ccList(node).add(item);
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("查询流程抄送记录失败：{}", e.getMessage());
+        }
+        try
+        {
+            for (FlowDelegate d : flowDelegateMapper.selectByInstance(instanceId))
+            {
+                String nodeId = taskNodeMap.get(d.getTaskId());
+                if (StringUtils.isEmpty(nodeId))
+                {
+                    continue;
+                }
+                Map<String, Object> node = nodeEntry(nodes, nodeId, d.getTaskName());
+                Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("delegateId", d.getDelegateId());
+                item.put("fromId", d.getFromId());
+                item.put("fromName", d.getFromName());
+                item.put("toId", d.getToId());
+                item.put("toName", d.getToName());
+                item.put("comment", d.getComment());
+                item.put("time", d.getCreateTime());
+                delegateList(node).add(item);
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("查询流程转办记录失败：{}", e.getMessage());
         }
         return nodes;
     }
@@ -2291,6 +3345,9 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             node.put("done", new ArrayList<Map<String, Object>>());
             node.put("pending", new ArrayList<Map<String, Object>>());
             node.put("viewed", new ArrayList<Map<String, Object>>());
+            node.put("cc", new ArrayList<Map<String, Object>>());
+            node.put("delegate", new ArrayList<Map<String, Object>>());
+            node.put("intervene", new ArrayList<Map<String, Object>>());
             nodes.put(nodeId, node);
         }
         return node;
@@ -2318,6 +3375,42 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     private List<Map<String, Object>> viewedList(Map<String, Object> node)
     {
         return (List<Map<String, Object>>) node.get("viewed");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> ccList(Map<String, Object> node)
+    {
+        return (List<Map<String, Object>>) node.get("cc");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> delegateList(Map<String, Object> node)
+    {
+        return (List<Map<String, Object>>) node.get("delegate");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> interveneList(Map<String, Object> node)
+    {
+        return (List<Map<String, Object>>) node.get("intervene");
+    }
+
+    /**
+     * 给节点人员补「是否查看 + 查看时间」。
+     *
+     * <p>查看记录按「节点 + 用户」匹配；有记录即视为该办理人已查看，
+     * 流程图浮层直接显示「已查看 时间」，未查看显示「未查看」。</p>
+     */
+    @SuppressWarnings("unchecked")
+    private void attachViewTime(String nodeId, Map<String, Object> person,
+            Map<String, Map<String, Object>> viewByNodeUser)
+    {
+        Map<String, Object> viewer = viewByNodeUser.get(nodeId + "#" + person.get("userId"));
+        person.put("viewed", viewer != null);
+        if (viewer != null)
+        {
+            person.put("viewTime", viewer.get("time"));
+        }
     }
 
     /** 未审批操作人按人去重：同一人可能同时挂多条未办任务（会签/退回重办） */
@@ -2352,13 +3445,18 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         try
         {
-            HistoricTaskInstance task = historyService.createHistoricTaskInstanceQuery()
-                    .taskId(taskId).singleResult();
-            if (task == null || StringUtils.isEmpty(task.getProcessInstanceId()))
+            Long userId = SecurityUtils.getUserId();
+            if (userId == null)
             {
                 return;
             }
-            Long userId = SecurityUtils.getUserId();
+            // 办理人/候选人，以及该任务的抄送接收人、转办参与人才算「查看该节点」；
+            // 与节点无关的旁观者（如管理员直接打开办理页）不记录，避免节点下凭空多出「已查看人员」
+            Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+            if (task == null || StringUtils.isEmpty(task.getProcessInstanceId()) || !isViewableBy(task, userId))
+            {
+                return;
+            }
             flowNodeViewService.recordView(task.getProcessInstanceId(), task.getTaskDefinitionKey(), task.getId(),
                     userId, resolveUserNickname(String.valueOf(userId)));
         }
@@ -2366,6 +3464,79 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             // 查看记录仅用于流程图展示，失败不影响办理
             log.debug("记录流程节点查看失败：{}", e.getMessage());
+        }
+    }
+
+    /**
+     * 当前用户能否把该任务算作「本人查看」。
+     *
+     * <p>除办理人/候选人外，该任务的抄送接收人、转办参与人（转办人/被转办人）也属于节点知情人，
+     * 打开办理页同样要留下查看记录；没有任何关联的旁观者不记录。</p>
+     */
+    private boolean isViewableBy(Task task, Long userId)
+    {
+        String uid = String.valueOf(userId);
+        if (taskService.createTaskQuery().taskId(task.getId()).taskCandidateOrAssigned(uid).count() > 0)
+        {
+            return true;
+        }
+        try
+        {
+            for (FlowDelegate d : flowDelegateMapper.selectByInstance(task.getProcessInstanceId()))
+            {
+                if (task.getId().equals(d.getTaskId())
+                        && (userId.equals(d.getFromId()) || userId.equals(d.getToId())))
+                {
+                    return true;
+                }
+            }
+            for (FlowCc cc : flowCcService.selectByInstance(task.getProcessInstanceId()))
+            {
+                if (task.getId().equals(cc.getTaskId()) && userId.equals(cc.getReceiverId()))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.debug("校验节点查看人失败：{}", e.getMessage());
+        }
+        return false;
+    }
+
+    @Override
+    public void recordInstanceView(String instanceId)
+    {
+        if (StringUtils.isEmpty(instanceId))
+        {
+            return;
+        }
+        try
+        {
+            Long userId = SecurityUtils.getUserId();
+            if (userId == null)
+            {
+                return;
+            }
+            String uid = String.valueOf(userId);
+            // 只记录「本人是当前节点办理人/候选人」的查看，避免抄送人翻阅详情也被算成节点操作人
+            List<Task> tasks = taskService.createTaskQuery()
+                    .processInstanceId(instanceId)
+                    .taskCandidateOrAssigned(uid)
+                    .list();
+            for (Task task : tasks)
+            {
+                flowNodeViewService.recordView(instanceId, task.getTaskDefinitionKey(), task.getId(),
+                        userId, resolveUserNickname(uid));
+            }
+            // 抄送接收人打开流程详情同样记录阅读，抄送记录才能体现「已查看 + 查看时间」
+            flowCcService.markReadByInstance(instanceId);
+        }
+        catch (Exception e)
+        {
+            // 查看记录只用于展示，失败不影响查看详情
+            log.debug("记录流程查看失败：{}", e.getMessage());
         }
     }
 
@@ -2404,6 +3575,71 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         else
         {
             ft.setComment(msg);
+        }
+    }
+
+    /**
+     * 是否「退回/驳回」类办理结果：退回发起人后的再次提交需要单独留痕。
+     */
+    private boolean isReturnOutcome(String outcome)
+    {
+        if (StringUtils.isEmpty(outcome))
+        {
+            return false;
+        }
+        String o = outcome.trim();
+        return "rejected".equalsIgnoreCase(o) || "reject".equalsIgnoreCase(o) || "return".equalsIgnoreCase(o)
+                || o.contains("退回") || o.contains("驳回");
+    }
+
+    /**
+     * 任务批注是否仅为操作留痕（转办、抄送等）。
+     *
+     * <p>这些记录已经由 flow_delegate / flow_cc 还原成独立的操作行，
+     * 不能再当作「签字意见」，否则会把真正的办理意见覆盖掉。</p>
+     */
+    private boolean isOperationComment(String msg)
+    {
+        return msg != null && (msg.startsWith("【delegate】") || msg.startsWith("【addSign】")
+                || msg.startsWith("【cc】") || msg.startsWith("【ccSend】")
+                // 管理员干预不是办理人签字意见：由单独的「管理员干预」记录展示
+                || msg.startsWith(ADMIN_INTERVENE_PREFIX));
+    }
+
+    /**
+     * 从任务批注里挑出真正的签字意见：跳过转办/抄送等操作留痕，取时间最新的一条。
+     *
+     * <p>同一任务被转办后由新办理人办结时会有多条批注（转办 + 同意/驳回），
+     * 只有最后一条办理意见才代表这个任务的办理结果。</p>
+     */
+    private Comment pickOpinionComment(List<Comment> comments)
+    {
+        if (comments == null || comments.isEmpty())
+        {
+            return null;
+        }
+        Comment picked = null;
+        for (Comment c : comments)
+        {
+            if (c == null || StringUtils.isEmpty(c.getFullMessage()) || isOperationComment(c.getFullMessage()))
+            {
+                continue;
+            }
+            if (picked == null || (c.getTime() != null && (picked.getTime() == null || c.getTime().after(picked.getTime()))))
+            {
+                picked = c;
+            }
+        }
+        return picked;
+    }
+
+    /** 把一个任务的批注合并成 FlowTask 的办理结果（outcome + 签字意见） */
+    private void applyTaskComments(FlowTask ft, List<Comment> comments)
+    {
+        Comment picked = pickOpinionComment(comments);
+        if (picked != null)
+        {
+            applyComment(ft, picked);
         }
     }
 
@@ -2663,52 +3899,157 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
     }
 
-    /** 流程分类树：按最新版本流程定义按分类分组，count=当前用户该流程待办数，供待办/查询页左侧树使用 */
+    /**
+     * 流程分类树：数量口径与右侧列表完全一致（同一份数据源、同一过滤条件），
+     * 避免出现「左侧树显示 1 条、右侧列表为空」这类左右不一致的问题。
+     *
+     * @param scope  数据口径：todo 待办 / returned 退回 / cc 待阅 / draft 草稿 /
+     *               all 待办-全部（待办+未读待阅+草稿）/ done 已办 /
+     *               my 我的请求 / involved 流程查询 / monitor 流程监控
+     * @param status 状态页签：my/involved/monitor 取 running|completed|canceled；done 取 running|finished
+     */
     @Override
-    public List<Map<String, Object>> selectProcessTree()
+    public List<Map<String, Object>> selectProcessTree(String scope, String status)
     {
-        Long userId = SecurityUtils.getUserId();
-        List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
-                .latestVersion().active().orderByProcessDefinitionCategory().asc()
-                .orderByProcessDefinitionName().asc().list();
-        List<Map<String, Object>> tree = new ArrayList<>();
-        Map<String, Map<String, Object>> byCategory = new java.util.LinkedHashMap<>();
-        for (ProcessDefinition def : defs)
+        Map<String, Long> counts = new java.util.LinkedHashMap<>();
+        Map<String, String> names = new java.util.HashMap<>();
+        String s = StringUtils.isEmpty(scope) ? "todo" : scope;
+        if ("todo".equals(s) || "returned".equals(s) || "all".equals(s))
         {
-            String rawCategory = def.getCategory();
-            // 空分类或 BPMN 命名空间归入「未分类」
-            if (StringUtils.isEmpty(rawCategory) || rawCategory.contains("://"))
+            // 待办 / 退回 / 待办-全部：都从「我的待办任务」出发
+            FlowTask todoQuery = new FlowTask();
+            if ("returned".equals(s))
             {
-                rawCategory = "未分类";
+                todoQuery.setReturnedOnly(true);
             }
-            String category = rawCategory;
+            for (FlowTask ft : selectTodoList(todoQuery))
+            {
+                addTreeCount(counts, names, ft.getProcessDefinitionKey(), ft.getProcessDefinitionName());
+            }
+            if ("all".equals(s))
+            {
+                // 「全部」页签 = 待办 + 未读待阅 + 我的草稿（与 allList 合并口径一致）
+                FlowCc ccQuery = new FlowCc();
+                ccQuery.setReadFlag("0");
+                for (FlowCc cc : flowCcService.selectMyCcList(ccQuery))
+                {
+                    addTreeCount(counts, names, cc.getProcessKey(), cc.getProcessName());
+                }
+                for (FlowDraft draft : flowDraftService.selectMyDraftList(new FlowDraft()))
+                {
+                    addTreeCount(counts, names, draft.getProcessKey(), draft.getProcessName());
+                }
+            }
+        }
+        else if ("cc".equals(s))
+        {
+            for (FlowCc cc : flowCcService.selectMyCcList(new FlowCc()))
+            {
+                addTreeCount(counts, names, cc.getProcessKey(), cc.getProcessName());
+            }
+        }
+        else if ("draft".equals(s))
+        {
+            for (FlowDraft draft : flowDraftService.selectMyDraftList(new FlowDraft()))
+            {
+                addTreeCount(counts, names, draft.getProcessKey(), draft.getProcessName());
+            }
+        }
+        else if ("done".equals(s))
+        {
+            FlowTask doneQuery = new FlowTask();
+            doneQuery.setStatusScope(status);
+            for (FlowTask ft : selectDoneList(doneQuery))
+            {
+                addTreeCount(counts, names, ft.getProcessDefinitionKey(), ft.getProcessDefinitionName());
+            }
+        }
+        else if ("my".equals(s) || "involved".equals(s) || "monitor".equals(s))
+        {
+            FlowInstance query = new FlowInstance();
+            query.setStatus(status);
+            List<FlowInstance> instances = "my".equals(s) ? selectMyProcessList(query)
+                    : ("involved".equals(s) ? selectInvolvedProcessList(query) : selectMonitorProcessList(query));
+            for (FlowInstance fi : instances)
+            {
+                addTreeCount(counts, names, fi.getProcessDefinitionKey(), fi.getProcessDefinitionName());
+            }
+        }
+        return buildProcessTree(counts, names);
+    }
+
+    /** 按流程定义Key累加数量（同一实例/任务只算一行） */
+    private void addTreeCount(Map<String, Long> counts, Map<String, String> names, String key, String name)
+    {
+        if (StringUtils.isEmpty(key))
+        {
+            return;
+        }
+        counts.merge(key, 1L, Long::sum);
+        if (StringUtils.isEmpty(names.get(key)) && StringUtils.isNotEmpty(name))
+        {
+            names.put(key, name);
+        }
+    }
+
+    /** 把「定义Key -> 数量」组装成「分类 -> 流程」两层树，只保留有数据的流程 */
+    private List<Map<String, Object>> buildProcessTree(Map<String, Long> counts, Map<String, String> fallbackNames)
+    {
+        Map<String, ProcessDefinition> defByKey = new java.util.HashMap<>();
+        for (ProcessDefinition def : repositoryService.createProcessDefinitionQuery().latestVersion().list())
+        {
+            if (!defByKey.containsKey(def.getKey()))
+            {
+                defByKey.put(def.getKey(), def);
+            }
+        }
+        java.text.Collator collator = java.text.Collator.getInstance(java.util.Locale.CHINA);
+        List<Map<String, Object>> leaves = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : counts.entrySet())
+        {
+            ProcessDefinition def = defByKey.get(entry.getKey());
+            String category = def == null ? null : def.getCategory();
+            // 空分类或 BPMN 命名空间归入「未分类」
+            if (StringUtils.isEmpty(category) || category.contains("://"))
+            {
+                category = "未分类";
+            }
+            String name = def != null && StringUtils.isNotEmpty(def.getName())
+                    ? def.getName() : fallbackNames.get(entry.getKey());
+            Map<String, Object> leaf = new java.util.HashMap<>();
+            leaf.put("id", entry.getKey());
+            leaf.put("key", entry.getKey());
+            leaf.put("label", StringUtils.isNotEmpty(name) ? name : entry.getKey());
+            leaf.put("count", entry.getValue());
+            leaf.put("_category", category);
+            leaves.add(leaf);
+        }
+        leaves.sort((a, b) -> {
+            int byCategory = collator.compare(String.valueOf(a.get("_category")), String.valueOf(b.get("_category")));
+            return byCategory != 0 ? byCategory
+                    : collator.compare(String.valueOf(a.get("label")), String.valueOf(b.get("label")));
+        });
+        Map<String, Map<String, Object>> byCategory = new java.util.LinkedHashMap<>();
+        for (Map<String, Object> leaf : leaves)
+        {
+            String category = String.valueOf(leaf.remove("_category"));
             Map<String, Object> node = byCategory.get(category);
             if (node == null)
             {
                 node = new java.util.HashMap<>();
                 node.put("id", category);
                 String label = DictUtils.getDictLabel("flowable_category", category, ",");
-                if (StringUtils.isEmpty(label))
-                {
-                    label = category;
-                }
-                node.put("label", label);
+                node.put("label", StringUtils.isEmpty(label) ? category : label);
                 node.put("children", new ArrayList<Map<String, Object>>());
-                node.put("count", 0);
+                node.put("count", 0L);
                 byCategory.put(category, node);
             }
-            long cnt = taskService.createTaskQuery().taskAssignee(String.valueOf(userId))
-                    .processDefinitionKey(def.getKey()).count();
-            Map<String, Object> leaf = new java.util.HashMap<>();
-            leaf.put("id", def.getKey());
-            leaf.put("label", def.getName());
-            leaf.put("key", def.getKey());
-            leaf.put("count", cnt);
-            ((List<Map<String, Object>>) node.get("children")).add(leaf);
-            node.put("count", (int) node.get("count") + (int) cnt);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> children = (List<Map<String, Object>>) node.get("children");
+            children.add(leaf);
+            node.put("count", (Long) node.get("count") + (Long) leaf.get("count"));
         }
-        tree.addAll(byCategory.values());
-        return tree;
+        return new ArrayList<>(byCategory.values());
     }
 
     // ==================== 已结束流程的后续处理：复活 / 重新发起 ====================

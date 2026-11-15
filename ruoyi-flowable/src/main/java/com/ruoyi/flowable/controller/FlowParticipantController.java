@@ -1,6 +1,7 @@
 package com.ruoyi.flowable.controller;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -8,13 +9,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.flowable.bpmn.model.Activity;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.EndEvent;
+import org.flowable.bpmn.model.ExclusiveGateway;
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.FlowNode;
+import org.flowable.bpmn.model.InclusiveGateway;
+import org.flowable.bpmn.model.ParallelGateway;
 import org.flowable.bpmn.model.SequenceFlow;
 import org.flowable.bpmn.model.StartEvent;
 import org.flowable.bpmn.model.UserTask;
+import org.flowable.common.engine.api.delegate.Expression;
+import org.flowable.common.engine.api.variable.VariableContainer;
+import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
@@ -63,11 +71,19 @@ public class FlowParticipantController extends BaseController
     @Autowired
     private FlowParticipantResolver flowParticipantResolver;
 
+    /** 节点配置取设计器最新保存的模型，操作者调整保存即生效 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowRuntimeModelService flowRuntimeModelService;
+
     @Autowired
     private TaskService taskService;
 
     @Autowired
     private RuntimeService runtimeService;
+
+    /** 条件表达式求值（与引擎一致：按出口条件决定实际会走的节点） */
+    @Autowired
+    private ProcessEngine processEngine;
 
     /**
      * 预览发起后第一环节的审批节点与办理人
@@ -92,7 +108,11 @@ public class FlowParticipantController extends BaseController
         {
             return AjaxResult.error("流程尚未部署：「" + processKey + "」");
         }
-        BpmnModel bpmnModel = repositoryService.getBpmnModel(definition.getId());
+        BpmnModel bpmnModel = flowRuntimeModelService.getByProcessKey(definition.getKey());
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            bpmnModel = repositoryService.getBpmnModel(definition.getId());
+        }
         if (bpmnModel == null || bpmnModel.getMainProcess() == null)
         {
             return AjaxResult.error("流程模型解析失败：「" + processKey + "」");
@@ -108,7 +128,9 @@ public class FlowParticipantController extends BaseController
             ctx.setVariables(castMap(body.get("variables")));
         }
         List<Map<String, Object>> nodes = new ArrayList<>();
-        for (UserTask task : nextUserTasks(bpmnModel))
+        // 条件网关按发起表单变量求值，只保留实际会走的出口（如请假天数 1 天只走「3天以内」）
+        Map<String, Object> variables = ctx.getVariables() == null ? new HashMap<>() : ctx.getVariables();
+        for (UserTask task : nextUserTasks(bpmnModel, variables))
         {
             nodes.add(describeNode(task, ctx));
         }
@@ -155,12 +177,30 @@ public class FlowParticipantController extends BaseController
         {
             return AjaxResult.error("任务不存在或已办理");
         }
-        BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+        BpmnModel bpmnModel = flowRuntimeModelService.getByDefinitionId(task.getProcessDefinitionId());
+        if (bpmnModel == null || bpmnModel.getMainProcess() == null)
+        {
+            bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+        }
         if (bpmnModel == null || bpmnModel.getMainProcess() == null)
         {
             return AjaxResult.error("流程模型解析失败");
         }
         FlowElement current = bpmnModel.getFlowElement(task.getTaskDefinitionKey());
+        // 发起人（申请）节点只在部署版本的 BPMN 里，设计器模型取不到时回退部署模型
+        if (!(current instanceof FlowNode))
+        {
+            BpmnModel deployed = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+            if (deployed != null && deployed.getMainProcess() != null)
+            {
+                FlowElement deployedNode = deployed.getFlowElement(task.getTaskDefinitionKey());
+                if (deployedNode instanceof FlowNode)
+                {
+                    bpmnModel = deployed;
+                    current = deployedNode;
+                }
+            }
+        }
         if (!(current instanceof FlowNode))
         {
             return AjaxResult.error("当前节点不是流程节点");
@@ -169,6 +209,7 @@ public class FlowParticipantController extends BaseController
         String processInstanceId = task.getProcessInstanceId();
         ctx.setProcessInstanceId(processInstanceId);
         ctx.setProcessDefinitionId(task.getProcessDefinitionId());
+        Map<String, Object> variables = new HashMap<>();
         try
         {
             ProcessInstance instance = runtimeService.createProcessInstanceQuery()
@@ -177,16 +218,22 @@ public class FlowParticipantController extends BaseController
             {
                 ctx.setInitiator(instance.getStartUserId());
             }
-            ctx.setVariables(runtimeService.getVariables(processInstanceId));
+            Map<String, Object> runtimeVariables = runtimeService.getVariables(processInstanceId);
+            if (runtimeVariables != null)
+            {
+                variables = runtimeVariables;
+            }
+            ctx.setVariables(variables);
         }
         catch (Exception e)
         {
-            ctx.setVariables(new HashMap<>());
+            ctx.setVariables(variables);
         }
         // 活动类关系的锚点：本环节办理人
         ctx.setPrevAssignee(task.getAssignee() != null ? task.getAssignee() : ctx.getInitiator());
         List<UserTask> nextTasks = new ArrayList<>();
-        collect(current, nextTasks, new HashSet<>(), 0);
+        // 按出口条件求值，只收集实际会走的节点（避免分支网关把两条分支都列出来）
+        collect(current, nextTasks, new HashSet<>(), 0, variables);
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (UserTask next : nextTasks)
         {
@@ -199,7 +246,7 @@ public class FlowParticipantController extends BaseController
     }
 
     /** 从开始事件沿顺序流找到第一层的用户任务节点（遇到网关继续展开，遇到结束事件跳过） */
-    private List<UserTask> nextUserTasks(BpmnModel bpmnModel)
+    private List<UserTask> nextUserTasks(BpmnModel bpmnModel, Map<String, Object> variables)
     {
         List<UserTask> tasks = new ArrayList<>();
         StartEvent start = null;
@@ -215,17 +262,18 @@ public class FlowParticipantController extends BaseController
         {
             return tasks;
         }
-        collect(start, tasks, new HashSet<>(), 0);
+        collect(start, tasks, new HashSet<>(), 0, variables);
         return tasks;
     }
 
-    private void collect(FlowElement node, List<UserTask> tasks, Set<String> visited, int depth)
+    private void collect(FlowElement node, List<UserTask> tasks, Set<String> visited, int depth,
+            Map<String, Object> variables)
     {
         if (!(node instanceof FlowNode) || depth > MAX_DEPTH || !visited.add(node.getId()))
         {
             return;
         }
-        for (SequenceFlow flow : ((FlowNode) node).getOutgoingFlows())
+        for (SequenceFlow flow : selectOutgoingFlows((FlowNode) node, variables))
         {
             FlowElement target = flow.getTargetFlowElement();
             if (target == null)
@@ -255,8 +303,136 @@ public class FlowParticipantController extends BaseController
             }
             else
             {
-                collect(target, tasks, visited, depth + 1);
+                collect(target, tasks, visited, depth + 1, variables);
             }
+        }
+    }
+
+    /**
+     * 选出当前节点实际会走的出口，规则与 Flowable 引擎一致：
+     * <ul>
+     * <li>排他网关：按顺序取第一条条件为真的出口（无条件视为真），都不满足时走默认出口</li>
+     * <li>包容网关：所有条件为真的出口，都不满足时走默认出口</li>
+     * <li>并行网关：全部出口</li>
+     * <li>普通节点：只走条件为真的出口，都不满足时走默认出口</li>
+     * </ul>
+     * 这样「下一环节」预览不会把多个分支的节点同时列出来。
+     */
+    private List<SequenceFlow> selectOutgoingFlows(FlowNode node, Map<String, Object> variables)
+    {
+        List<SequenceFlow> outgoing = node.getOutgoingFlows();
+        if (outgoing == null || outgoing.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+        if (node instanceof ParallelGateway)
+        {
+            return outgoing;
+        }
+        String defaultFlowId = null;
+        if (node instanceof ExclusiveGateway)
+        {
+            defaultFlowId = ((ExclusiveGateway) node).getDefaultFlow();
+        }
+        else if (node instanceof InclusiveGateway)
+        {
+            defaultFlowId = ((InclusiveGateway) node).getDefaultFlow();
+        }
+        else if (node instanceof Activity)
+        {
+            defaultFlowId = ((Activity) node).getDefaultFlow();
+        }
+        List<SequenceFlow> picked = new ArrayList<>();
+        SequenceFlow defaultFlow = null;
+        for (SequenceFlow flow : outgoing)
+        {
+            if (defaultFlowId != null && defaultFlowId.equals(flow.getId()))
+            {
+                defaultFlow = flow;
+                continue;
+            }
+            if (conditionTrue(flow, variables))
+            {
+                picked.add(flow);
+                // 排他网关只会走第一条满足条件的出口
+                if (node instanceof ExclusiveGateway)
+                {
+                    return picked;
+                }
+            }
+        }
+        if (picked.isEmpty() && defaultFlow != null)
+        {
+            picked.add(defaultFlow);
+        }
+        return picked;
+    }
+
+    /** 顺序流条件求值：无条件视为通过；表达式异常按不通过处理，避免预览把错误分支也列出来 */
+    private boolean conditionTrue(SequenceFlow flow, Map<String, Object> variables)
+    {
+        String expressionText = flow.getConditionExpression();
+        if (expressionText == null || expressionText.trim().isEmpty())
+        {
+            return true;
+        }
+        try
+        {
+            Expression expression = ((org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl) processEngine
+                    .getProcessEngineConfiguration()).getExpressionManager().createExpression(expressionText);
+            Object value = expression.getValue(new MapVariableContainer(variables));
+            return Boolean.TRUE.equals(value) || "true".equalsIgnoreCase(String.valueOf(value));
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
+    /** 基于流程变量 Map 的表达式变量容器（供条件表达式读取 ${字段}） */
+    private static final class MapVariableContainer implements VariableContainer
+    {
+        private final Map<String, Object> variables;
+
+        private MapVariableContainer(Map<String, Object> variables)
+        {
+            this.variables = variables == null ? new HashMap<>() : variables;
+        }
+
+        @Override
+        public boolean hasVariable(String variableName)
+        {
+            return variables.containsKey(variableName);
+        }
+
+        @Override
+        public Object getVariable(String variableName)
+        {
+            return variables.get(variableName);
+        }
+
+        @Override
+        public void setVariable(String variableName, Object value)
+        {
+            variables.put(variableName, value);
+        }
+
+        @Override
+        public void setTransientVariable(String variableName, Object value)
+        {
+            // 预览只读，无需处理临时变量
+        }
+
+        @Override
+        public String getTenantId()
+        {
+            return null;
+        }
+
+        @Override
+        public Set<String> getVariableNames()
+        {
+            return variables.keySet();
         }
     }
 

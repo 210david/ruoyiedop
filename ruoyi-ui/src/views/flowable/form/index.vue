@@ -309,6 +309,7 @@
                 <span class="field-tip">像 Excel 一样操作：拖拽布局、右键合并/拆分单元格、Ctrl+Z 撤销、Delete 删除选中</span>
               </div>
               <div class="ed-canvas" v-if="!layoutPreview">
+                <div class="ed-form-title">{{ form.formName || '流程名称' }}</div>
                 <div class="ed-ruler">
                   <span class="ed-ruler-corner"></span>
                   <span class="ed-ruler-col ed-ruler-label">标签</span>
@@ -376,6 +377,7 @@
                 <div class="ed-drop-last" @dragover.prevent @drop.prevent="onDropToEnd($event)">拖字段到此处 → 新建分组存放</div>
               </div>
               <div class="layout-preview" v-else>
+                <div class="pv-form-title">{{ form.formName || '流程名称' }}</div>
                 <template v-for="(sec, si) in previewSections" :key="si">
                   <div class="pv-section-title" v-if="sec.title">{{ sec.title }}</div>
                   <el-row :gutter="12" class="pv-row">
@@ -397,8 +399,6 @@
                     </el-col>
                   </el-row>
                 </template>
-                <div class="pv-section-title" v-if="detailFields.length">明细表</div>
-                <div class="pv-item" v-for="f in detailFields" :key="f.field" style="width:100%"><span class="pv-label">{{ f.label }}</span><div class="pv-value">明细表字段随明细录入展示</div></div>
                 <div v-if="!previewSections.length" class="layout-empty">未设计布局，发起时将按字段顺序单栏展示</div>
               </div>
             </div>
@@ -1089,6 +1089,7 @@ function submitAdd(enterDesign) {
       fields.value = ensureSystemFields(normalizeFields(safeParse(detail.data.fieldsJson)))
       layout.value = normalizeLayout(detail.data.layoutJson)
       rebuildDetailTables()
+      pruneMissingLayoutFields()
       activeTab.value = 'fields'
       designEntry.value = 'form'
       activeTableTab.value = 'main'
@@ -1107,6 +1108,7 @@ async function handleDesign(row, tab = 'basic') {
   undoStack.value = []
   redoStack.value = []
   rebuildDetailTables()
+  pruneMissingLayoutFields()
   // 「设计」与「页面设计」都直接全屏打开（与页面设计弹框一致），无窗口态
   if (tab === 'layout') ensureGridMode()
   // 从「页面设计」按钮进入时只看设计器（不显示基本信息/编辑字段页签）
@@ -1400,14 +1402,36 @@ function removeCheckedFields() {
   if (!keys.length) { proxy.$modal.msgWarning('系统内置字段不可删除'); return }
   fields.value = fields.value.filter(f => !keys.includes(f.rowKey))
   rebuildDetailTables()
+  pruneMissingLayoutFields()
   if (activeTableTab.value !== 'main' && !detailTables.value.includes(activeTableTab.value)) {
     activeTableTab.value = 'main'
+  }
+}
+
+/**
+ * 布局瘦身：移除字段定义中已不存在的字段格与标签格。
+ * 删除字段后同步清理画布，避免设计器里残留已删除的字段（含历史已保存的残留）。
+ */
+function pruneMissingLayoutFields() {
+  const known = new Set(fields.value.map(f => f.field))
+  for (const sec of layout.value.sections) {
+    sec.rows = sec.rows.map(row => row.filter(c => !(c && c.field && !known.has(c.field)))).filter(row => row.length)
+  }
+  const grid = layout.value.grid
+  if (grid && Array.isArray(grid.cells)) {
+    grid.cells = grid.cells.filter(c => {
+      if (!c) return true
+      if (c.type === 'field' && c.field && !known.has(c.field)) return false
+      if (c.labelField && !known.has(c.labelField)) return false
+      return true
+    })
   }
 }
 
 function removeDetailTable(name) {
   fields.value = fields.value.filter(f => f.table !== name)
   detailTables.value = detailTables.value.filter(t => t !== name)
+  pruneMissingLayoutFields()
   // 同步清理布局中该明细表的占位块
   for (const sec of layout.value.sections) {
     sec.rows = sec.rows.filter(row => !(row.length === 1 && row[0].detailTable === name))
@@ -1428,7 +1452,7 @@ const layout = ref({ mode: 'section', sections: [], grid: null })
 
 const mainFields = computed(() => fields.value.filter(f => (f.table || 'main') === 'main'))
 const detailFields = computed(() => fields.value.filter(f => f.table && f.table !== 'main'))
-/** 字段池可选项：主表全部 + 明细表全部（明细可拖入布局单独成行） */
+/** 全部字段（主表在前、明细表在后），用于标签反查与网格设计器字段源 */
 const poolFields = computed(() => [...mainFields.value, ...detailFields.value])
 
 /** 已被布局占用的主表字段（说明行不占用字段） */
@@ -1439,7 +1463,8 @@ function placedFieldSet() {
 }
 const unplacedFields = computed(() => {
   const used = placedFieldSet()
-  return poolFields.value.filter(f => !used.has(f.field))
+  // 简易模式字段池只放主表字段：明细表字段由「插入明细表」整块承载，拖成普通单元格会渲染不出来
+  return mainFields.value.filter(f => !used.has(f.field))
 })
 function mainFieldLabel(field) {
   const f = poolFields.value.find(x => x.field === field)
@@ -1709,27 +1734,52 @@ function onDropToEnd(e) {
   dragField.value = null
 }
 
+/** 自动布局：顶部先铺「流程标题 / 流程编号 / 紧急程度」，再按两栏排业务字段，明细表块放最后 */
 function autoLayout() {
-  const secs = [{ title: '基本信息', rows: [] }]
+  const secs = []
+  // 顶部固定字段：放在所有分组前面（流程标题整行，流程编号与紧急程度并排）
+  const topFields = ['title', 'processNo', 'urgency'].map(k => mainFields.value.find(f => f.field === k)).filter(Boolean)
+  if (topFields.length) {
+    const rows = []
+    let topRow = []
+    for (const f of topFields) {
+      topRow.push({ field: f.field, span: f.field === 'title' ? 24 : 12 })
+      if (f.field === 'title' || topRow.length === 2) { rows.push(topRow); topRow = [] }
+    }
+    if (topRow.length) rows.push(topRow)
+    secs.push({ title: '', rows })
+  }
+  const basic = { title: '基本信息', rows: [] }
   let row = []
-  // 系统字段不自动铺排，管理员需要时自行拖到画布上
+  // 系统字段已在顶部分组铺排，其余业务字段两栏排列
   for (const f of mainFields.value.filter(f => !isFlowSysField(f.field))) {
     row.push({ field: f.field, span: 12 })
-    if (row.length === 2) { secs[0].rows.push(row); row = [] }
+    if (row.length === 2) { basic.rows.push(row); row = [] }
   }
-  if (row.length) secs[0].rows.push(row)
+  if (row.length) basic.rows.push(row)
+  if (basic.rows.length) secs.push(basic)
+  // 明细表整行占位：明细字段由明细表块承载，不再拆成普通字段
+  for (const dt of detailTables.value) secs.push({ title: '', rows: [[{ detailTable: dt, detailSum: [], span: 24 }]] })
   layout.value = { sections: secs }
-  proxy.$modal.msgSuccess('已按两栏自动生成布局，可继续拖拽调整')
+  proxy.$modal.msgSuccess('已生成布局：顶部为流程标题/流程编号/紧急程度，业务字段两栏，明细表在末尾')
 }
 
-/** 预览：含未布局字段回退区与说明行 */
+/** 预览：含未布局字段回退区与明细表块（与发起页渲染口径一致） */
 const previewSections = computed(() => {
+  const detailKeys = new Set(fields.value.filter(f => f.table && f.table !== 'main').map(f => f.field))
+  // 明细表字段只在明细表块里展示，不能当普通字段渲染
   const list = layout.value.sections.map(sec => ({
     title: sec.title,
-    cells: sec.rows.flat().filter(c => c.field || c.note || c.detailTable).map(c => ({ ...c }))
+    cells: sec.rows.flat().filter(c => c && ((c.field && !detailKeys.has(c.field)) || c.note || c.detailTable)).map(c => ({ ...c }))
   }))
-  const rest = unplacedFields.value.filter(f => !isFlowSysField(f.field))
+  // 未布局字段回退区：仅主表业务字段（明细字段由明细表块承载，系统字段需主动放置）
+  const rest = unplacedFields.value.filter(f => (!f.table || f.table === 'main') && !isFlowSysField(f.field))
   if (rest.length) list.push({ title: '其他信息', cells: rest.map(f => ({ field: f.field, span: 12 })) })
+  // 布局中未出现的明细表：追加明细表块，避免明细字段缺失或被错当普通字段
+  const placedDt = new Set(layout.value.sections.flatMap(s => s.rows.flat()).filter(c => c && c.detailTable).map(c => c.detailTable))
+  for (const dt of detailTables.value) {
+    if (!placedDt.has(dt)) list.push({ title: '', cells: [{ detailTable: dt, detailSum: [], span: 24 }] })
+  }
   return list
 })
 
@@ -1841,7 +1891,7 @@ function handleCreateTable(row) {
 }
 
 function handleDelete(row) {
-  proxy.$modal.confirm('确认删除表单"' + row.formName + '"？其数据表不会被删除').then(() => delForm(row.formId)).then(() => {
+  proxy.$modal.confirm('确认删除表单"' + row.formName + '"？已产生业务数据（表单数据或流程实例）的表单不允许删除；其数据表不会被删除').then(() => delForm(row.formId)).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList()
   }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })
 }
@@ -1901,6 +1951,8 @@ onActivated(() => { getList() })
 .ed-main { flex: 1; min-width: 0; }
 .ed-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .ed-canvas { max-height: 470px; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+/* 简易模式顶部流程名称：与发起页表单标题一致 */
+.ed-form-title { text-align: center; font-size: 16px; font-weight: 700; color: #0f172a; padding: 6px 0; }
 .ed-ruler { display: flex; border: 1px solid #e2e8f0; border-radius: 6px 6px 0 0; background: #f1f5f9; overflow: hidden; }
 .ed-ruler-corner { width: 42px; flex: none; border-right: 1px solid #e2e8f0; }
 .ed-ruler-label { width: 110px; flex: none; }
@@ -1959,6 +2011,8 @@ onActivated(() => { getList() })
 .ed-ctx-item.danger:hover { background: #fef2f2; }
 /* 预览态不显示默认背景框，只保留内容（用户设置的边框由 pv-b-* 条件类渲染） */
 .layout-preview { margin: 0; padding: 14px 16px; max-height: 470px; overflow: auto; }
+/* 预览顶部流程名称：与发起页表单标题一致 */
+.pv-form-title { text-align: center; font-size: 16px; font-weight: 700; color: #0f172a; margin: 2px 0 12px; }
 .pv-section-title { font-size: 14px; font-weight: 600; color: #0f172a; border-left: 3px solid var(--brand-600, #4f46e5); padding-left: 8px; margin: 6px 0 10px; }
 .pv-row { margin-bottom: 4px; }
 /* 预览态不显示默认线框，只显示用户设置的边框（pv-b-all / pv-b-bottom 由 c.border 条件类控制） */

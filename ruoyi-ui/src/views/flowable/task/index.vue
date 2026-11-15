@@ -38,7 +38,7 @@
               </span>
             </template>
           </el-tree>
-          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程定义</div>
+          <div class="tree-empty" v-if="!treeLoading && !treeData.length">暂无流程数据</div>
         </div>
         </template>
       </div>
@@ -216,6 +216,14 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column v-else-if="activeTab === 'done'" label="操作" width="170" align="center" fixed="right" class-name="col-action">
+            <template #default="scope">
+              <div class="action-btn-row">
+                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
+                <el-button v-if="scope.row.canRecall" link type="primary" icon="RefreshLeft" @click="handleRecall(scope.row)">收 回</el-button>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column v-else label="操作" width="100" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
@@ -239,7 +247,7 @@
 </template>
 
 <script setup name="FlowTask">
-import { listTodoTask, listDoneTask, countDoneTask, listAllTask, countTodoTask, countTodoTasks, getProcessTree } from '@/api/flowable/flow'
+import { listTodoTask, listDoneTask, countDoneTask, listAllTask, countTodoTask, countTodoTasks, getProcessTree, recallMyTask } from '@/api/flowable/flow'
 import { listDraft, delDraft } from '@/api/flowable/draft'
 import { listMyCc, getCcUnreadCount, readCc } from '@/api/flowable/cc'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -381,9 +389,19 @@ function filterNode(value, nodeData) {
   return (nodeData.label || '').includes(value)
 }
 
+/** 左侧树数据口径：与当前页签的右侧列表保持同一数据源 */
+function treeScope() {
+  if (activeTab.value === 'done') return 'done'
+  const map = { all: 'all', todo: 'todo', returned: 'returned', cc: 'cc', draft: 'draft' }
+  return map[activeTab.value] || 'todo'
+}
+
 function loadTree() {
   treeLoading.value = true
-  getProcessTree().then(res => {
+  const scope = treeScope()
+  // 已办页签（全部/未结束/已结束）的状态也要带进树口径，数量才能与列表一致
+  const status = scope === 'done' && doneScope.value !== 'all' ? doneScope.value : undefined
+  getProcessTree(scope, status).then(res => {
     const groups = res.data || []
     // 根节点"全部流程"，count=各类数量之和
     const total = groups.reduce((s, g) => s + (g.count || 0), 0)
@@ -492,6 +510,7 @@ function switchTab(tab) {
   }
   router.replace(location).catch(() => {})
   getList()
+  loadTree()
 }
 /** 已办状态页签切换（同步到地址栏 scope，刷新后保持） */
 function switchDoneScope(scope) {
@@ -500,6 +519,7 @@ function switchDoneScope(scope) {
   queryParams.value.pageNum = 1
   router.replace({ path: route.path, query: scope === 'all' ? {} : { scope } }).catch(() => {})
   getList()
+  loadTree()
 }
 
 /** 菜单切换（待办 / 已办 同一组件，keep-alive 复用实例）时重新推导页签 */
@@ -512,6 +532,7 @@ watch(() => [route.path, route.query.tab, route.query.scope], () => {
   queryParams.value.pageNum = 1
   getList()
   loadCounts()
+  loadTree()
 })
 
 function loadCounts() {
@@ -576,6 +597,7 @@ function handleDraftDelete(row) {
     proxy.$modal.msgSuccess('删除成功')
     getList()
     loadCounts()
+    loadTree()
   }).catch(() => {})
 }
 
@@ -594,6 +616,7 @@ function handleCcView(row) {
   }
   readCc(row.ccId).then(() => {
     loadCounts()
+    loadTree()
     if (activeTab.value === 'cc' || activeTab.value === 'all') getList()
   }).catch(() => {}).finally(openDetail)
 }
@@ -605,6 +628,7 @@ function handleCcRead(row) {
     proxy.$modal.msgSuccess('已标记为已读')
     if (activeTab.value === 'cc' || activeTab.value === 'all') getList()
     loadCounts()
+    loadTree()
   }).catch(() => {})
 }
 
@@ -632,6 +656,19 @@ function handleView(row) {
     query: { instanceId: row.instanceId || '', defName: row.processDefinitionName || row.title || '' }
   })
   window.open(href, '_blank')
+}
+
+/** 已办收回：下一节点办理前，把流程收回本节点重新办理 */
+function handleRecall(row) {
+  proxy.$modal
+    .confirm('确认收回流程「' + (row.title || row.processName || '-') + '」？收回后流程回到「' + (row.taskName || '上一环节') + '」，由您重新办理。')
+    .then(() => recallMyTask(row.instanceId))
+    .then((res) => {
+      proxy.$modal.msgSuccess((res && res.msg) || '已收回')
+      getList()
+      loadCounts()
+    })
+    .catch(() => {})
 }
 
 /** 跨标签页刷新：办理页在新标签页办理完成后写入该标记，本页监听到后自动刷新列表与角标 */

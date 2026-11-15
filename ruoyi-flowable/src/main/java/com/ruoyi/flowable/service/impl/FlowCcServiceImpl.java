@@ -84,6 +84,16 @@ public class FlowCcServiceImpl implements IFlowCcService
     }
 
     @Override
+    public int markReadByInstance(String instanceId)
+    {
+        if (StringUtils.isEmpty(instanceId))
+        {
+            return 0;
+        }
+        return flowCcMapper.markReadByInstance(instanceId, currentUserId());
+    }
+
+    @Override
     public int sendCc(String taskId, List<Long> userIds, String comment)
     {
         if (StringUtils.isEmpty(taskId))

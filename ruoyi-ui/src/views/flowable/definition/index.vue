@@ -50,10 +50,6 @@
     <div class="surface">
       <!-- 工具栏 -->
       <div class="toolbar">
-        <div class="left">
-          <el-checkbox v-model="queryParams.onlyActive" @change="handleQuery">仅看当前版本</el-checkbox>
-          <span class="toolbar-tip">默认展示每个流程的全部历史版本，可在此把任意版本设为当前</span>
-        </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="flowable_definition_columns" />
         </div>
@@ -78,14 +74,10 @@
               <span class="badge violet">{{ categoryLabel(scope.row.category) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="版本" prop="version" width="150" align="center">
+          <el-table-column label="版本" prop="version" width="90" align="center">
             <template #default="scope">
               <span>v{{ scope.row.version }}</span>
-              <span class="badge blue" style="margin-left: 6px" v-if="scope.row.activeFlag === '1'"><span class="dot"></span>当前版本</span>
             </template>
-          </el-table-column>
-          <el-table-column label="版本备注" prop="remark" min-width="120" align="center" show-overflow-tooltip>
-            <template #default="scope">{{ scope.row.remark || '—' }}</template>
           </el-table-column>
           <el-table-column label="状态" prop="suspended" width="100" align="center">
             <template #default="scope">
@@ -93,14 +85,10 @@
             </template>
           </el-table-column>
           <el-table-column label="部署时间" prop="deploymentTime" width="170" align="center" />
-          <el-table-column label="操作" width="280" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="200" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleViewXml(scope.row)" v-hasPermi="['flowable:definition:query']">查看XML</el-button>
-                <el-button link type="primary" icon="EditPen" @click="handleUpdateRemark(scope.row)" v-hasPermi="['flowable:definition:state']">备注</el-button>
-                <el-button v-if="scope.row.activeFlag !== '1' && !scope.row.suspended" link type="success" icon="Select" @click="handleSetActive(scope.row)" v-hasPermi="['flowable:definition:state']"
-                  >设为当前</el-button
-                >
                 <el-button v-if="!scope.row.suspended" link type="warning" icon="VideoPause" @click="handleChangeState(scope.row, true)" v-hasPermi="['flowable:definition:state']">挂起</el-button>
                 <el-button v-else link type="success" icon="VideoPlay" @click="handleChangeState(scope.row, false)" v-hasPermi="['flowable:definition:state']">激活</el-button>
               </div>
@@ -141,8 +129,7 @@
 </template>
 
 <script setup name="FlowDefinition">
-import { listDefinition, getDefinitionXml, changeDefinitionState, updateDefinitionRemark, setActiveDefinition } from '@/api/flowable/flow';
-import { ElMessageBox } from 'element-plus';
+import { listDefinition, getDefinitionXml, changeDefinitionState } from '@/api/flowable/flow';
 import { Search, Filter, Document } from '@element-plus/icons-vue';
 
 const { proxy } = getCurrentInstance();
@@ -157,8 +144,8 @@ const xmlContent = ref('');
 const xmlModel = ref({});
 
 const data = reactive({
-  // onlyActive=false：展示全部历史版本（后端默认会按流程 key 聚合，只留 1 条）
-  queryParams: { pageNum: 1, pageSize: 20, modelName: undefined, modelKey: undefined, category: undefined, onlyActive: false },
+  // onlyActive=true：只展示每个流程的当前版本
+  queryParams: { pageNum: 1, pageSize: 20, modelName: undefined, modelKey: undefined, category: undefined, onlyActive: true },
 });
 const { queryParams } = toRefs(data);
 
@@ -247,45 +234,6 @@ function handleChangeState(row, suspend) {
     });
 }
 
-/** 编辑版本备注（每个版本可填写备注说明） */
-function handleUpdateRemark(row) {
-  ElMessageBox.prompt('请输入版本备注说明', '版本备注：v' + row.version, {
-    inputValue: row.remark || '',
-    inputPlaceholder: '如：调整审批人为部门经理',
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    inputType: 'textarea',
-  })
-    .then(({ value }) => {
-      return updateDefinitionRemark(row.modelId, value || '')
-        .then(() => {
-          proxy.$modal.msgSuccess('版本备注已更新');
-          getList();
-        })
-        .catch((e) => {
-          proxy.$modal.msgError('版本备注更新失败：' + (e?.message || e));
-        });
-    })
-    .catch(() => {});
-}
-
-/** 设为当前活动版本（发起流程时优先使用该版本） */
-function handleSetActive(row) {
-  proxy.$modal
-    .confirm(`确认将版本 v${row.version} 设为当前版本？新发起的流程将优先使用该版本`)
-    .then(() => {
-      return setActiveDefinition(row.modelId)
-        .then(() => {
-          proxy.$modal.msgSuccess('已设为当前版本');
-          getList();
-        })
-        .catch((e) => {
-          proxy.$modal.msgError('设为当前版本失败：' + (e?.message || e));
-        });
-    })
-    .catch(() => {});
-}
-
 getList();
 onActivated(() => {
   getList();
@@ -294,12 +242,6 @@ onActivated(() => {
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
-
-.toolbar-tip {
-  margin-left: 12px;
-  font-size: 12px;
-  color: var(--ink-400, #94a3b8);
-}
 
 .xml-view {
   background: var(--ink-900);

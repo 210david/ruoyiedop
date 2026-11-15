@@ -36,9 +36,9 @@ import com.ruoyi.flowable.listener.ParticipantResolveListener;
  * 2. {@link com.ruoyi.flowable.controller.FlowParticipantController}：发起前预览下一步审批人。
  *
  * 参与者数据结构（与 views/flowable/model/index.vue 的「设置操作人员」一致）：
- * - 通用：{type:'user|dept|deptLeader|deptChargeLeader|role|post|nodeUser|nodeUserLeader', ids:[...], nodeId, includeChild, name}
+ * - 通用：{type:'user|dept|deptLeader|deptChargeLeader|role|post|nodeUser|nodeUserLeader|allUsers', ids:[...], nodeId, includeChild, name}
  * - 活动：{type:'initiator|activityUser'}（发起人 / 上一节点办理人，带 mode:'activity'）
- * - 表单字段：{type:'fieldUser|fieldUserLeader|fieldDeptLeader|fieldDeptChargeLeader', field, fieldType, name}
+ * - 表单字段：{type:'fieldUser|fieldUserLeader|fieldUserChargeLeader|fieldDeptUsers|fieldDeptLeader|fieldDeptChargeLeader', field, fieldType, name}
  * - 节点级：handleMode=assign（指定）|candidate（候选）|runtime（提交时指定），
  *   performMode=claim（抢占）|and（会签）|seq（串签），fallbackUserIds 为无人可办时的兜底人
  * - 旧结构继续兼容：{mode:'activity', type:'initiator|activityUser|...'} / {mode:'org', type, kind, id} / {mode:'formField', type:'field', field}
@@ -615,12 +615,12 @@ public class FlowParticipantResolver
      *
      * 配置结构（前端「设置操作人员」弹窗产出）：
      * {
-     *   type: 'user|dept|deptLeader|deptChargeLeader|role|post|nodeUser|nodeUserLeader
+     *   type: 'user|dept|deptLeader|deptChargeLeader|role|post|nodeUser|nodeUserLeader|nodeUserChargeLeader|allUsers
      *         |initiator|activityUser
-     *         |fieldUser|fieldUserLeader|fieldDeptLeader|fieldDeptChargeLeader',
+     *         |fieldUser|fieldUserLeader|fieldUserChargeLeader|fieldDeptUsers|fieldDeptLeader|fieldDeptChargeLeader',
      *   ids: ['1','2'],        // 固定对象（人员/部门/角色/岗位）
      *   id: '1',               // 兼容旧配置的单值写法
-     *   nodeId: 'sid-xxx',     // nodeUser / nodeUserLeader 引用的节点
+     *   nodeId: 'sid-xxx',     // nodeUser / nodeUserLeader / nodeUserChargeLeader 引用的节点
      *   field: 'applyUser',    // field* 类型的表单字段
      *   fieldType: 'user|dept',// 字段值类型（人员字段 / 部门字段），缺省时自动判定
      *   includeChild: false,   // 指定部门默认只取本部门，显式 true 才含下级
@@ -651,7 +651,7 @@ public class FlowParticipantResolver
         List<String> ids = readIds(p);
         // 指定部门 = 该部门本身的人员；只有显式配置 includeChild=true 才含下级部门
         boolean includeChild = Boolean.TRUE.equals(p.getBoolean("includeChild"));
-        if (ids.isEmpty() && !type.startsWith("field") && !type.startsWith("node"))
+        if (ids.isEmpty() && !type.startsWith("field") && !type.startsWith("node") && !"allUsers".equals(type))
         {
             result.getUnresolved().add(blank(label) ? type : label);
             return;
@@ -659,6 +659,10 @@ public class FlowParticipantResolver
         switch (type)
         {
             // ===== 通用·固定对象 =====
+            case "allUsers":
+                // 所有人 = 全部启用且未删除的人员，无需选择对象
+                addAll(allUsers(), result, label);
+                break;
             case "user":
                 for (String id : ids)
                 {
@@ -703,7 +707,7 @@ public class FlowParticipantResolver
             case "userLeader":
                 for (String id : ids)
                 {
-                    addAll(leadersClimb(parentDept(userDept(id))), result, label);
+                    addAll(leadersForUser(id), result, label);
                 }
                 break;
             case "userOrgLeader":
@@ -725,7 +729,14 @@ public class FlowParticipantResolver
             case "nodeUserLeader":
                 for (String assignee : nodeAssignees(p.getString("nodeId"), ctx))
                 {
-                    addAll(leadersClimb(parentDept(userDept(assignee))), result, label);
+                    addAll(leadersForUser(assignee), result, label);
+                }
+                break;
+            case "nodeUserChargeLeader":
+                // 流程节点操作人的分管领导 = 该办理人所在部门 sys_dept.charge_leader_id，缺失时向上回溯
+                for (String assignee : nodeAssignees(p.getString("nodeId"), ctx))
+                {
+                    addAll(chargeLeadersClimb(userDept(assignee)), result, label);
                 }
                 break;
             // ===== 表单字段中的组织或用户 =====
@@ -734,6 +745,13 @@ public class FlowParticipantResolver
                 break;
             case "fieldUserLeader":
                 resolveFieldLeader(p, ctx, label, false, result);
+                break;
+            case "fieldUserChargeLeader":
+                resolveFieldLeader(p, ctx, label, true, result);
+                break;
+            case "fieldDeptUsers":
+                // 所选组织部门人员 = 部门字段所选部门下的人员（本部门，不含下级）
+                resolveField(p, ctx, label, "dept", result);
                 break;
             case "fieldDeptLeader":
                 resolveFieldLeader(p, ctx, label, false, result);
@@ -858,8 +876,7 @@ public class FlowParticipantResolver
         {
             for (String userId : resolveUserTokens(value))
             {
-                leaders.addAll(charge ? chargeLeadersClimb(userDept(userId))
-                        : leadersClimb(parentDept(userDept(userId))));
+                leaders.addAll(charge ? chargeLeadersClimb(userDept(userId)) : leadersForUser(userId));
             }
         }
         if (leaders.isEmpty())
@@ -897,13 +914,13 @@ public class FlowParticipantResolver
                 break;
             case "activityUserLeader":
             case "currentUserLeader":
-                addAll(leadersClimb(parentDept(userDept(base))), result, label);
+                addAll(leadersForUser(base), result, label);
                 break;
             case "prevAssigneeDeptAndBelow":
                 addAll(usersByDeptTree(userDept(base)), result, label);
                 break;
             case "prevAssigneeLeader":
-                addAll(leadersClimb(parentDept(userDept(base))), result, label);
+                addAll(leadersForUser(base), result, label);
                 break;
             case "activityUserChargeLeader":
                 addAll(chargeLeadersClimb(userDept(base)), result, label);
@@ -956,6 +973,12 @@ public class FlowParticipantResolver
     private List<String> usersByDeptTree(String deptId)
     {
         return usersByDept(deptId, true);
+    }
+
+    /** 全部有效用户（启用且未删除） */
+    private List<String> allUsers()
+    {
+        return many("select user_id from sys_user where del_flag = '0' and status = '0'");
     }
 
     /**
@@ -1147,6 +1170,14 @@ public class FlowParticipantResolver
             return null;
         }
         return parentId;
+    }
+
+    /**
+     * 人员的「部门领导」= 其所属部门的负责人（sys_dept.leader），算到谁就是谁，不再向上级部门回溯
+     */
+    private List<String> leadersForUser(String userId)
+    {
+        return leadersClimb(userDept(userId));
     }
 
     /**
