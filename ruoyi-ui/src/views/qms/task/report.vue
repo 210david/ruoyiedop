@@ -41,7 +41,18 @@
             <th>批次号</th><td>{{ reportData.batchNo || '-' }}</td>
           </tr>
           <tr>
-            <th>送检数量</th><td>{{ reportData.inspectQty }}</td>
+            <th>生产日期</th><td>{{ reportData.produceDate ? String(reportData.produceDate).slice(0, 10) : '-' }}</td>
+            <th>报告日期</th><td>{{ reportData.reportDate ? String(reportData.reportDate).slice(0, 10) : '-' }}</td>
+          </tr>
+          <tr>
+            <th>包装规格</th><td>{{ reportData.packageSpec || '-' }}</td>
+            <th>检验机构</th><td>{{ reportData.inspectOrg || '-' }}</td>
+          </tr>
+          <tr>
+            <th>检验依据</th><td colspan="3">{{ reportData.inspectBasis || '-' }}</td>
+          </tr>
+          <tr>
+            <th>送检数量</th><td>{{ reportData.inspectQty }}{{ reportData.qtyUnit || '' }}</td>
             <th>抽样数量<el-tooltip content="样本量(n)，即从检验批中抽取的样本数量，由批量大小和检验水平查表确定" placement="top"><el-icon class="report-tip"><QuestionFilled /></el-icon></el-tooltip></th><td>{{ reportData.sampleSize }} (样本量)</td>
           </tr>
           <tr>
@@ -59,20 +70,22 @@
           <tr><th colspan="7">检验明细</th></tr>
           <tr>
             <th width="8%">序号</th>
-            <th width="22%">检验项目</th>
-            <th width="12%">规格要求</th>
-            <th width="12%">实测值</th>
-            <th width="10%">单项判定</th>
-            <th width="12%">缺陷代码</th>
+            <th width="18%">检验项目</th>
+            <th width="8%">单位</th>
+            <th width="18%">标准规定</th>
+            <th width="14%">实测值</th>
+            <th width="9%">单项判定</th>
+            <th width="15%">检验方法</th>
             <th width="10%">缺陷数量</th>
           </tr>
           <tr v-for="(item, index) in reportData.itemList" :key="index">
             <td>{{ index + 1 }}</td>
             <td>{{ item.stdName }}</td>
-            <td>{{ item.specReq || '-' }}</td>
+            <td>{{ item.unit || '-' }}</td>
+            <td>{{ item.stdValue || item.specReq || '-' }}</td>
             <td>{{ item.measuredVal }}</td>
             <td>{{ dictLabel(qms_insp_result, item.itemResult) }}</td>
-            <td>{{ item.defectCode || '-' }}</td>
+            <td>{{ item.inspectMethod || '-' }}</td>
             <td>{{ item.defectQty != null ? item.defectQty : '-' }}</td>
           </tr>
         </table>
@@ -87,11 +100,17 @@
             <td width="30%">{{ dictLabel(qms_insp_result, reportData.inspectResult) }}</td>
           </tr>
           <tr>
-            <th>检验员</th><td>{{ reportData.inspectorName }}</td>
-            <th>检验时间</th><td>{{ parseTime(reportData.inspectTime) }}</td>
+            <th>检验员</th><td>{{ reportData.inspectorName || '-' }}</td>
+            <th>复核人</th><td>{{ reportData.reviewerName || '-' }}</td>
+          </tr>
+          <tr>
+            <th>检验时间</th><td colspan="3">{{ parseTime(reportData.inspectTime) }}</td>
           </tr>
           <tr>
             <th>判定时间</th><td colspan="3">{{ parseTime(reportData.judgeTime) }}</td>
+          </tr>
+          <tr>
+            <th>检验结论</th><td colspan="3">{{ reportData.conclusion || '-' }}</td>
           </tr>
         </table>
 

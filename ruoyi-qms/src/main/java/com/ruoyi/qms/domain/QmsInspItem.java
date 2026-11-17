@@ -1,5 +1,6 @@
 package com.ruoyi.qms.domain;
 
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
@@ -47,6 +48,18 @@ public class QmsInspItem extends BaseEntity
     /** 缺陷数量（该缺陷出现的次数） */
     private Integer defectQty;
 
+    /** 单位 */
+    @Excel(name = "单位")
+    private String unit;
+
+    /** 标准规定 */
+    @Excel(name = "标准规定")
+    private String stdValue;
+
+    /** 检验方法 */
+    @Excel(name = "检验方法")
+    private String inspectMethod;
+
     public Long getItemId() { return itemId; }
     public void setItemId(Long itemId) { this.itemId = itemId; }
     public Long getTaskId() { return taskId; }
@@ -71,4 +84,10 @@ public class QmsInspItem extends BaseEntity
     public void setDefectLevel(String defectLevel) { this.defectLevel = defectLevel; }
     public Integer getDefectQty() { return defectQty; }
     public void setDefectQty(Integer defectQty) { this.defectQty = defectQty; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public String getStdValue() { return stdValue; }
+    public void setStdValue(String stdValue) { this.stdValue = stdValue; }
+    public String getInspectMethod() { return inspectMethod; }
+    public void setInspectMethod(String inspectMethod) { this.inspectMethod = inspectMethod; }
 }

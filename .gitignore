@@ -62,3 +62,7 @@ managed-browser-*.png
 
 # 金蝶 SDK 原始包（以源码形式内嵌 ruoyi-kingdee/src/main/java/com/kingdee/apigw/）
 ruoyi-kingdee/lib/
+
+# 本地依赖与工具链（不入库）
+node_modules/
+maven/
