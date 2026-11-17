@@ -7,231 +7,256 @@
 -- ============================================================
 SET NAMES utf8mb4;
 
+-- ---------- 0. 通用附件表（服务器若已存在则跳过） ----------
+CREATE TABLE IF NOT EXISTS `sys_file` (
+  `file_id` bigint NOT NULL AUTO_INCREMENT COMMENT '文件ID',
+  `file_name` varchar(255) NOT NULL COMMENT '原始文件名',
+  `file_path` varchar(500) NOT NULL COMMENT '存储相对路径',
+  `file_url` varchar(1000) DEFAULT NULL COMMENT '访问URL',
+  `file_suffix` varchar(20) DEFAULT NULL COMMENT '扩展名',
+  `file_size` bigint DEFAULT '0' COMMENT '文件大小(字节)',
+  `file_hash` varchar(64) DEFAULT NULL COMMENT 'SHA256摘要(去重/防重导)',
+  `mime_type` varchar(100) DEFAULT NULL COMMENT 'MIME类型',
+  `storage_type` varchar(20) DEFAULT 'local' COMMENT '存储方式(local/oss/minio)',
+  `biz_type` varchar(50) DEFAULT NULL COMMENT '业务类型',
+  `biz_id` bigint DEFAULT NULL COMMENT '关联业务主键',
+  `biz_no` varchar(64) DEFAULT NULL COMMENT '关联业务单号',
+  `file_role` varchar(20) DEFAULT 'attach' COMMENT '文件角色',
+  `upload_by` varchar(64) DEFAULT NULL COMMENT '上传人',
+  `upload_time` datetime DEFAULT NULL COMMENT '上传时间',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`file_id`),
+  KEY `idx_hash` (`file_hash`),
+  KEY `idx_biz` (`biz_type`,`biz_id`),
+  KEY `idx_time` (`upload_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通用附件表';
+
 -- ---------- 1. sys_file 附件登记 ----------
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202361_广味香肠.pdf','upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf','pdf',772311,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202361_广味香肠.pdf','upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf','pdf',772311,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429001' LIMIT 1),'FQC20260429001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202361_广味香肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202365_鲜丰旺乌猪五花培根.pdf','upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf','pdf',771776,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202365_鲜丰旺乌猪五花培根.pdf','upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf','/profile/upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf','pdf',771776,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429002' LIMIT 1),'FQC20260429002','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202365_鲜丰旺乌猪五花培根.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202372_川味香肠.pdf','upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf','pdf',772268,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202372_川味香肠.pdf','upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf','pdf',772268,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429003' LIMIT 1),'FQC20260429003','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202372_川味香肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202373_黑松露小甜肠.pdf','upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf','pdf',773167,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202373_黑松露小甜肠.pdf','upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf','pdf',773167,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429004' LIMIT 1),'FQC20260429004','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202373_黑松露小甜肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202374_蜂蜜小甜肠.pdf','upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf','pdf',773005,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202374_蜂蜜小甜肠.pdf','upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf','pdf',773005,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429005' LIMIT 1),'FQC20260429005','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202374_蜂蜜小甜肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202375_橙味小甜肠.pdf','upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf','pdf',772750,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202375_橙味小甜肠.pdf','upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf','pdf',772750,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429006' LIMIT 1),'FQC20260429006','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202375_橙味小甜肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202376_大河乌猪五目肠.pdf','upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf','pdf',771026,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202376_大河乌猪五目肠.pdf','upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf','pdf',771026,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429007' LIMIT 1),'FQC20260429007','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202376_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202377_乌猪经典猪肉肠.pdf','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf','pdf',770936,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26041202377_乌猪经典猪肉肠.pdf','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf','pdf',770936,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429008' LIMIT 1),'FQC20260429008','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202377_乌猪经典猪肉肠_p01.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png','png',1094837,'image/png','local','qms_insp_task',
+SELECT 'CTT26041202377_乌猪经典猪肉肠_p01.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png','/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png','png',1094837,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429008' LIMIT 1),'FQC20260429008','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p01.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202377_乌猪经典猪肉肠_p02.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png','png',1803525,'image/png','local','qms_insp_task',
+SELECT 'CTT26041202377_乌猪经典猪肉肠_p02.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png','/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png','png',1803525,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429008' LIMIT 1),'FQC20260429008','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p02.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26041202377_乌猪经典猪肉肠_p03.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png','png',1469132,'image/png','local','qms_insp_task',
+SELECT 'CTT26041202377_乌猪经典猪肉肠_p03.png','upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png','/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png','png',1469132,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260429008' LIMIT 1),'FQC20260429008','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26041202377_乌猪经典猪肉肠_p03.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200727_大河乌猪咸鲜香肠.pdf','upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf','pdf',963226,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200727_大河乌猪咸鲜香肠.pdf','upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf','/profile/upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf','pdf',963226,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911001' LIMIT 1),'FQC20260911001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200727_大河乌猪咸鲜香肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200729_大河乌猪麻辣香肠.pdf','upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf','pdf',963256,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200729_大河乌猪麻辣香肠.pdf','upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf','/profile/upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf','pdf',963256,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911002' LIMIT 1),'FQC20260911002','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200729_大河乌猪麻辣香肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200730_大河乌猪酱香猪耳.pdf','upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf','pdf',967007,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200730_大河乌猪酱香猪耳.pdf','upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf','/profile/upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf','pdf',967007,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911003' LIMIT 1),'FQC20260911003','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200730_大河乌猪酱香猪耳.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200731_大河乌猪酱香猪脸.pdf','upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf','pdf',967611,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200731_大河乌猪酱香猪脸.pdf','upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf','/profile/upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf','pdf',967611,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911004' LIMIT 1),'FQC20260911004','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200731_大河乌猪酱香猪脸.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200732_大河乌猪酱香猪蹄.pdf','upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf','pdf',967612,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200732_大河乌猪酱香猪蹄.pdf','upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf','/profile/upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf','pdf',967612,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911005' LIMIT 1),'FQC20260911005','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200732_大河乌猪酱香猪蹄.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200733_大河乌猪酱香猪舌.pdf','upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf','pdf',967132,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200733_大河乌猪酱香猪舌.pdf','upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf','/profile/upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf','pdf',967132,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911006' LIMIT 1),'FQC20260911006','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200733_大河乌猪酱香猪舌.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200734_大河乌猪火腿酱.pdf','upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf','pdf',968195,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200734_大河乌猪火腿酱.pdf','upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf','/profile/upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf','pdf',968195,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911007' LIMIT 1),'FQC20260911007','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200734_大河乌猪火腿酱.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','pdf',968680,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','/profile/upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf','pdf',968680,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911008' LIMIT 1),'FQC20260911008','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200735_大河乌猪牛肝菌火腿酱.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200736_大河乌猪鸡枞火腿酱.pdf','upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf','pdf',968540,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200736_大河乌猪鸡枞火腿酱.pdf','upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf','/profile/upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf','pdf',968540,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911009' LIMIT 1),'FQC20260911009','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200736_大河乌猪鸡枞火腿酱.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200737_大河乌猪松茸火腿酱.pdf','upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf','pdf',968444,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200737_大河乌猪松茸火腿酱.pdf','upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf','/profile/upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf','pdf',968444,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911010' LIMIT 1),'FQC20260911010','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200737_大河乌猪松茸火腿酱.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200739_大河乌猪块状火腿.pdf','upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf','pdf',985911,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200739_大河乌猪块状火腿.pdf','upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf','/profile/upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf','pdf',985911,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260911011' LIMIT 1),'FQC20260911011','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200739_大河乌猪块状火腿.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200741_鲜肉.pdf','upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf','pdf',957196,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200741_鲜肉.pdf','upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf','/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf','pdf',957196,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260914001' LIMIT 1),'FQC20260914001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200741_鲜肉_p01.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png','png',1074329,'image/png','local','qms_insp_task',
+SELECT 'CTT26091200741_鲜肉_p01.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png','/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png','png',1074329,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260914001' LIMIT 1),'FQC20260914001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p01.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200741_鲜肉_p02.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png','png',1706956,'image/png','local','qms_insp_task',
+SELECT 'CTT26091200741_鲜肉_p02.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png','/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png','png',1706956,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260914001' LIMIT 1),'FQC20260914001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p02.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200741_鲜肉_p03.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png','png',1078737,'image/png','local','qms_insp_task',
+SELECT 'CTT26091200741_鲜肉_p03.png','upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png','/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png','png',1078737,'image/png','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260914001' LIMIT 1),'FQC20260914001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200741_鲜肉_p03.png' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200740_五花腊肉.pdf','upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf','pdf',974416,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200740_五花腊肉.pdf','upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf','/profile/upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf','pdf',974416,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260915001' LIMIT 1),'FQC20260915001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200740_五花腊肉.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26091200738_大河乌猪香辣肠.pdf','upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf','pdf',990703,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26091200738_大河乌猪香辣肠.pdf','upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf','/profile/upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf','pdf',990703,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260921001' LIMIT 1),'FQC20260921001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26091200738_大河乌猪香辣肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'CTT26101201729_乌猪小甜肠.pdf','upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf','http://localhost:82/profile/upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf','pdf',795723,'application/pdf','local','qms_insp_task',
+SELECT 'CTT26101201729_乌猪小甜肠.pdf','upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf','/profile/upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf','pdf',795723,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20261027001' LIMIT 1),'FQC20261027001','attach','admin','2026-11-16 16:31:12','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/16/qms/CTT26101201729_乌猪小甜肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','pdf',111539,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf','pdf',111539,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20251025001' LIMIT 1),'FQC20251025001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20251025051_鲜丰旺乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20251028052_五花培根.pdf','upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf','pdf',105133,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20251028052_五花培根.pdf','upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf','/profile/upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf','pdf',105133,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20251028001' LIMIT 1),'FQC20251028001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20251028052_五花培根.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20251105053_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf','pdf',111360,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20251105053_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf','pdf',111360,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20251105001' LIMIT 1),'FQC20251105001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20251105053_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20251125054_大河乌猪香辣肠.pdf','upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf','pdf',97482,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20251125054_大河乌猪香辣肠.pdf','upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf','pdf',97482,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20251125001' LIMIT 1),'FQC20251125001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20251125054_大河乌猪香辣肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','pdf',104193,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf','pdf',104193,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260128001' LIMIT 1),'FQC20260128001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260128055_鲜丰旺乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260129056_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf','pdf',104044,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260129056_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf','pdf',104044,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260129001' LIMIT 1),'FQC20260129001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260129056_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260414057_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf','pdf',103772,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260414057_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf','pdf',103772,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260414001' LIMIT 1),'FQC20260414001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260414057_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260603058_五花培根碎.pdf','upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf','pdf',101655,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260603058_五花培根碎.pdf','upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf','/profile/upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf','pdf',101655,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260603001' LIMIT 1),'FQC20260603001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260603058_五花培根碎.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260609059_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf','pdf',103600,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260609059_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf','pdf',103600,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260609001' LIMIT 1),'FQC20260609001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260609059_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260613060_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf','pdf',103592,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260613060_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf','pdf',103592,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260613001' LIMIT 1),'FQC20260613001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260613060_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260616061_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf','pdf',103956,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260616061_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf','pdf',103956,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260616001' LIMIT 1),'FQC20260616001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260616061_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260617062_五花培根.pdf','upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf','pdf',101817,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260617062_五花培根.pdf','upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf','/profile/upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf','pdf',101817,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260617001' LIMIT 1),'FQC20260617001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260617062_五花培根.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260630063_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf','pdf',103712,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260630063_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf','pdf',103712,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260630001' LIMIT 1),'FQC20260630001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260630063_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260702064_大河乌猪香辣肠.pdf','upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf','pdf',97520,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260702064_大河乌猪香辣肠.pdf','upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf','pdf',97520,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260702001' LIMIT 1),'FQC20260702001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260702064_大河乌猪香辣肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260706065_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf','pdf',103989,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260706065_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf','pdf',103989,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260706001' LIMIT 1),'FQC20260706001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260706065_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260801066_五花培根.pdf','upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf','pdf',101870,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260801066_五花培根.pdf','upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf','/profile/upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf','pdf',101870,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260801001' LIMIT 1),'FQC20260801001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260801066_五花培根.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260813067_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf','pdf',104173,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260813067_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf','pdf',104173,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260813001' LIMIT 1),'FQC20260813001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260813067_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260905068_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf','pdf',103844,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260905068_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf','pdf',103844,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260905001' LIMIT 1),'FQC20260905001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260905068_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20260929069_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf','pdf',103962,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20260929069_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf','pdf',103962,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20260929001' LIMIT 1),'FQC20260929001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20260929069_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20261031070_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf','pdf',103595,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20261031070_乌猪经典猪肉肠.pdf','upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf','pdf',103595,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20261031001' LIMIT 1),'FQC20261031001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20261031070_乌猪经典猪肉肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20261021071_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf','pdf',103851,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20261021071_大河乌猪五目肠.pdf','upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf','/profile/upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf','pdf',103851,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20261021001' LIMIT 1),'FQC20261021001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20261021071_大河乌猪五目肠.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20261027003_鲜丰旺乌猪培根.pdf','upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf','pdf',105811,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20261027003_鲜丰旺乌猪培根.pdf','upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf','/profile/upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf','pdf',105811,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20261027003' LIMIT 1),'FQC20261027003','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20261027003_鲜丰旺乌猪培根.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBFQC20261027004_鸡枞火腿酱.pdf','upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf','pdf',105833,'application/pdf','local','qms_insp_task',
+SELECT 'NBFQC20261027004_鸡枞火腿酱.pdf','upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf','/profile/upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf','pdf',105833,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='FQC20261027004' LIMIT 1),'FQC20261027004','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBFQC20261027004_鸡枞火腿酱.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBIPQC20261027006_广味香肠（灌装工序）.pdf','upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf','pdf',104718,'application/pdf','local','qms_insp_task',
+SELECT 'NBIPQC20261027006_广味香肠（灌装工序）.pdf','upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf','/profile/upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf','pdf',104718,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='IPQC20261027006' LIMIT 1),'IPQC20261027006','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBIPQC20261027006_广味香肠（灌装工序）.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','pdf',105164,'application/pdf','local','qms_insp_task',
+SELECT 'NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','/profile/upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf','pdf',105164,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='IQC20261027001' LIMIT 1),'IQC20261027001','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBIQC20261026001_大河乌猪鲜肉（冷鲜肉）.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','pdf',105283,'application/pdf','local','qms_insp_task',
+SELECT 'NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','/profile/upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf','pdf',105283,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='IQC20261027002' LIMIT 1),'IQC20261027002','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBIQC20261027002_大河乌猪鲜肉（冷鲜肉）.pdf' AND del_flag='0');
 INSERT INTO sys_file (file_name,file_path,file_url,file_suffix,file_size,mime_type,storage_type,biz_type,biz_id,biz_no,file_role,upload_by,upload_time,del_flag)
-SELECT 'NBIQC20261026007_天然猪肠衣.pdf','upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf','http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf','pdf',103706,'application/pdf','local','qms_insp_task',
+SELECT 'NBIQC20261026007_天然猪肠衣.pdf','upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf','/profile/upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf','pdf',103706,'application/pdf','local','qms_insp_task',
        (SELECT task_id FROM qms_insp_task WHERE task_no='IQC20261027007' LIMIT 1),'IQC20261027007','report','admin','2026-11-17 10:40:00','0'
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='http://localhost:82/profile/upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf' AND del_flag='0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_file WHERE file_url='/profile/upload/2026/11/17/qms/NBIQC20261026007_天然猪肠衣.pdf' AND del_flag='0');
 
 -- 修正历史记录中 biz_id 与任务主键不一致的问题
 UPDATE sys_file f JOIN qms_insp_task t ON t.task_no COLLATE utf8mb4_general_ci = f.biz_no COLLATE utf8mb4_general_ci
