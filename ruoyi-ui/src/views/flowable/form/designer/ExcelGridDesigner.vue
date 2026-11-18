@@ -50,18 +50,20 @@
                       <template v-else-if="e.cell">
                         <span v-if="e.cell.type === 'title'" class="wm-t" :class="{ ph: !e.cell.text }">{{ e.cell.text || '标题' }}</span>
                         <span v-else-if="e.cell.type === 'note'" class="wm-t" :class="{ ph: !e.cell.text }">{{ e.cell.text || '说明文字…' }}</span>
-                        <span v-else-if="e.cell.type === 'field'" class="wm-f" :class="'attr-' + cellAttr(e.cell)">
+                        <span v-else-if="e.cell.type === 'field'" class="wm-f" :class="'attr-' + cellAttr(e.cell) + (cellFmtRmb(e.cell) ? ' has-fmt-rmb' : '')">
                           <i v-if="cellAttr(e.cell) === 'req'" class="wm-attr req" title="必填">*</i>
                           <span class="wm-ctrl" :title="fieldLabel(e.cell.field) + '（' + e.cell.field + '）'">
                             <i class="wm-box"><b>{{ fieldPlaceholder(e.cell.field) }}</b></i>
                             <i v-if="ctrlIcon(e.cell.field)" class="wm-ico">{{ ctrlIcon(e.cell.field) }}</i>
                           </span>
+                          <i v-if="cellFmtRmb(e.cell)" class="wm-fmt-rmb">大写示例：壹万贰仟叁佰肆拾伍圆陆角柒分</i>
                         </span>
                         <span v-else-if="e.cell.type === 'image'" class="wm-img-wrap" :class="'img-' + ((e.cell.style && e.cell.style.align) || 'center')">
                           <img v-if="e.cell.src" :src="e.cell.src" class="wm-img" alt="图片" />
                           <span v-else class="wm-t ph">图片</span>
                         </span>
                         <span v-else-if="e.cell.type === 'detail'" class="wdm-bar" @dblclick.stop="openDtProps(e.cell)">{{ e.cell.text || '明细表' }}<em>双击进入明细编辑</em></span>
+                        <span v-else-if="e.cell.type === 'group'" class="wgrp-bar">{{ e.cell.text || '分组' }}<em>分组卡片标题（运行态渲染为分组卡片）</em></span>
                         <span v-else class="wm-t" :class="{ ph: !e.cell.text }"><template v-if="e.cell.text">{{ e.cell.text }}</template><template v-else-if="isSingleActiveCell(e.r, e.c)">双击输入文本</template></span>
                       </template>
                       <template v-else><span v-if="isSingleActiveCell(e.r, e.c)" class="wm-t ph wm-cell-tip">双击输入文本</span></template>
@@ -98,6 +100,7 @@
         <div><b>标签/字段</b>：完全独立添加；拖入字段只放字段控件，需要标签时单独拖入标签</div>
         <div><b>行高列宽</b>：拖动行号下缘/列标右缘调整</div>
         <div><b>右键</b>：插入/删除行列、合并拆分、转类型、绑定、清除</div>
+        <div><b>分组卡片</b>：右键单元格选「设为分组卡片标题」即可新增一个分组卡片（运行态按分组渲染为卡片，含明细表各成卡片）；「取消分组」可转回普通文本格；套用「分组卡片式（费用报销）」模板会自动生成</div>
         <div><b>快捷键</b>：Ctrl+Z 撤销 / Ctrl+Y 重做 / Delete 或 Backspace 清除选中单元格 / Ctrl+B 加粗 / Ctrl+I 斜体 / Ctrl+U 下划线</div>
       </div>
     </el-drawer>
@@ -110,8 +113,16 @@
         <el-button @click="pickerOpen = false">取 消</el-button>
       </template>
     </el-dialog>
-    <!-- 明细表编辑弹窗（Excel 式：明细表名称/数据来源 + 逐列配置标签/列宽/表尾合计/必填，序号可拖动排序） -->
-    <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑'" width="760px" append-to-body :close-on-click-modal="false">
+    <!-- 明细表编辑弹窗（Excel 式：明细表名称/数据来源 + 逐列配置标签/列宽/对齐/表尾合计/必填，序号可拖动排序；按弹窗规范 rd-dialog + rd-detail-header + 可拖拽移动） -->
+    <el-dialog v-model="dtPropsOpen" width="988px" append-to-body draggable class="rd-dialog wdm-dt-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/></svg>
+          </div>
+          <span class="rd-detail-header-title">{{ dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑' }}</span>
+        </div>
+      </template>
       <el-form label-width="90px" size="small" class="wdm-head-form">
         <el-row :gutter="12">
           <el-col :span="8"><el-form-item label="明细表名称"><el-input v-model="dtPropsForm.title" placeholder="如：明细表1 / 费用明细" maxlength="30" /></el-form-item></el-col>
@@ -131,7 +142,7 @@
         <span class="lb">默认明细行数</span>
         <el-input-number v-model="dtPropsForm.defaultRows" :min="0" :max="20" size="small" style="width:110px" />
       </div>
-      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分。列的「必填」只校验已填写的行，明细表是否必须有数据由上方「必须填写明细」控制（不勾则整表可留空）</div>
+      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分；「对齐」控制运行态该列内容的水平对齐方式，默认居中。列的「必填」只校验已填写的行，明细表是否必须有数据由上方「必须填写明细」控制（不勾则整表可留空）</div>
       <el-table :data="dtEditRows" border size="small" row-key="field" max-height="320" class="wdm-field-table"
         :row-class-name="dtRowClass">
         <el-table-column label="序号" width="80" align="center">
@@ -160,6 +171,13 @@
             <el-switch v-model="scope.row.sum" size="small" />
           </template>
         </el-table-column>
+        <el-table-column label="对齐" width="90" align="center">
+          <template #default="scope">
+            <el-select v-model="scope.row.align" size="small">
+              <el-option label="居左" value="left" /><el-option label="居中" value="center" /><el-option label="居右" value="right" />
+            </el-select>
+          </template>
+        </el-table-column>
         <el-table-column label="展示属性" width="100" align="center">
           <template #default="scope">
             <el-select v-model="scope.row.attr" size="small">
@@ -173,7 +191,7 @@
         <el-button type="primary" @click="confirmDtProps">确 定</el-button>
       </template>
     </el-dialog>
-    <CellFormatDialog v-model="fmtOpen" :cell="activeCell" />
+    <CellFormatDialog v-model:open="fmtOpen" :cell="activeCell" />
     <!-- 全屏预览（Excel 式）：字段渲染真实控件可模拟输入，必填可校验，模拟发起页填写效果 -->
     <el-dialog v-model="preview" :title="'表单预览 · ' + (form.formName || '')" fullscreen append-to-body
       class="wm-preview-dialog" :close-on-click-modal="false" @open="resetPreviewValues">
@@ -205,7 +223,7 @@ import FormGridRender from '@/components/FormGridRender.vue'
 import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults'
 import './designer.scss'
 import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
-import { stdFormGrid } from './converters.js'
+import { stdFormGrid, expenseCardGrid } from './converters.js'
 
 const props = defineProps({
   modelValue: { type: Object, default: null },
@@ -458,6 +476,10 @@ function fieldPlaceholder(f) {
   if (!d) return f || '未绑定字段'
   const suffix = { select: '（请选择）', radio: '（请选择）', browse: '（点击选择）', date: '（选择日期）', datetime: '（选择时间）', attach: '（上传附件）', check: '（勾选）', switch: '（开关）' }[d.form] || ''
   return (d.label || f) + suffix
+}
+/** 字段格是否设置了「人民币大写」数字格式：设计态在控件下方灰字预览示例 */
+function cellFmtRmb(cell) {
+  return !!(cell && cell.style && cell.style.fmt && cell.style.fmt.cat === 'rmb')
 }
 /** 占位提示仅在单格选中时显示：多格/整行整列选区内不显示，避免干扰多格选中效果 */
 function isSingleActiveCell(r, c) {
@@ -1160,7 +1182,7 @@ function insDetailBlock(key) {
 }
 /** 明细列初始清单：从字段定义生成（编辑字段页签中该明细表的字段） */
 function initDtColumns(dt) {
-  return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, required: !!f.required }))
+  return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, align: 'center', required: !!f.required }))
 }
 /** 明细表属性默认值（勾选面板） */
 function initDtProps() {
@@ -1211,6 +1233,7 @@ function openDtProps(cell) {
     label: c.label,
     width: c.width || undefined,
     sum: !!c.sum,
+    align: c.align || 'center',
     attr: c.attr || (c.required ? 'req' : 'edit')
   }))
   dtPropsOpen.value = true
@@ -1283,9 +1306,9 @@ function confirmDtProps() {
   cell.text = dtPropsForm.value.title || detailBlockTitle(dtPropsForm.value.table)
   cell.detail.table = dtPropsForm.value.table
   cell.detail.title = cell.text
-  // 写回列配置：标签/列宽/表尾合计/必填 + 拖动后的顺序
+  // 写回列配置：标签/列宽/对齐/表尾合计/必填 + 拖动后的顺序
   cell.detail.columns = dtEditRows.value.map(r => ({
-    field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, attr: r.attr || 'edit'
+    field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, align: r.align || 'center', attr: r.attr || 'edit'
   }))
   // 明细行设置写回：mustAdd=必须填写明细（不可删至空），默认行数允许 0（从空开始）
   const prev = cell.detail.props || {}
@@ -1398,35 +1421,17 @@ function selTargets(kind) {
 function formTitle() { return (props.form && props.form.formName) || '表单标题' }
 function replaceGrid(g) { emit('update:modelValue', g); selRange.value = null }
 
-/** 样式模板：tmp_std/tmp_fields 按标准申请单（请假表单）版式生成；tmp_apply/tmp_fee 复刻参考图版式（标题+红说明+两栏字段[+明细区]） */
+/** 样式模板：tmp_std 按标准申请单（请假表单）版式生成；tmp_card 按分组卡片式（费用报销）版式生成 */
 function applyTemplate(kind) {
   pushUndo()
-  if (kind === 'tmp_std' || kind === 'tmp_fields') {
+  if (kind === 'tmp_std') {
     replaceGrid(stdFormGrid(props.fields || [], formTitle()))
     return
   }
-  const cols = 4
-  const cells = [
-    makeCell(0, 0, { type: 'title', text: formTitle(), rs: 1, cs: cols, style: hydrateStyle({ bold: true, fontSize: 16, align: 'center' }) }),
-    makeCell(1, 0, { type: 'note', text: kind === 'tmp_fee' ? '有报销明细的必须填写明细表' : '请如实填写以下内容', rs: 1, cs: cols, style: hydrateStyle({ color: '#e0342b', align: 'center', bg: '#fff7cc' }) })
-  ]
-  let r = 2, c = 0
-  for (const f of (props.fields || [])) {
-    if (!f.field) continue
-    if (c + 2 > cols) { r++; c = 0 }
-    cells.push(makeCell(r, c, { type: 'text', text: f.label, style: hydrateStyle({ align: 'center' }) }))
-    cells.push(makeCell(r, c + 1, { type: 'field', field: f.field, labelLeft: true }))
-    c += 2
+  if (kind === 'tmp_card') {
+    replaceGrid(expenseCardGrid(props.fields || [], formTitle()))
+    return
   }
-  if (kind === 'tmp_fee' && (props.fields || []).some(f => f.field)) {
-    r += 1
-    cells.push(makeCell(r, 0, { type: 'text', text: '明细表1', rs: 1, cs: cols, style: hydrateStyle({ bold: true, bg: '#f5f7fa', align: 'center' }) }))
-    for (let i = 1; i <= 2; i++) cells.push(makeCell(r + i, 0, { type: 'text', text: '', rs: 1, cs: cols }))
-    r += 2
-  }
-  const g = createGrid(Math.max(r + 10, 25), cols)
-  g.cells = cells
-  replaceGrid(g)
 }
 
 // ---- 拖拽落格：标签与字段完全独立，拖入字段只放字段控件（与设计参考一致） ----
@@ -1522,6 +1527,8 @@ const ctxItems = computed(() => {
       { label: '删除选中行', run: delRows, dis: !t, danger: true },
       { label: '转为说明行', run: () => toType('note'), dis: !cell },
       { label: '转为标题行', run: () => toType('title'), dis: !cell },
+      { label: '设为分组卡片标题', run: () => toType('group'), dis: !cell || cell.type === 'group' },
+      { label: '取消分组（转回文本）', run: () => toType('text'), dis: !cell || cell.type !== 'group' },
       { label: '行高…', run: () => applyResizeToSel('row'), dis: !t },
       { label: '清除内容', run: clearContent, dis: !t },
       { label: '清除格式', run: clearStyles, dis: !t },
@@ -1553,6 +1560,8 @@ const ctxItems = computed(() => {
     { label: '清除绑定', run: clearBind, dis: !cell || cell.type !== 'field' },
     { label: '转为说明行', run: () => toType('note'), dis: !cell },
     { label: '转为标题行', run: () => toType('title'), dis: !cell },
+    { label: '设为分组卡片标题', run: () => toType('group'), dis: !cell || cell.type === 'group' },
+    { label: '取消分组（转回文本）', run: () => toType('text'), dis: !cell || cell.type !== 'group' },
     { label: '行高…', run: () => applyResizeToSel('row'), dis: !t },
     { label: '列宽…', run: () => applyResizeToSel('col'), dis: !t },
     { label: '清除内容', run: clearContent, dis: !t },
@@ -1582,14 +1591,14 @@ function toType(type) {
   const cell = findAnchorCell(grid.value, ctx.r, ctx.c)
   if (!cell) return
   pushUndo()
-  if (type === 'note' || type === 'title') {
+  if (type === 'note' || type === 'title' || type === 'group') {
     cell.type = type
     cell.text = cell.text || ''
     cell.field = undefined
     cell.c = 0
     cell.cs = grid.value.cols
     cell.rs = 1
-  } else { cell.type = 'text'; cell.text = ''; cell.field = undefined; cell.labelField = undefined }
+  } else { cell.type = 'text'; cell.text = cell.text || ''; cell.field = undefined; cell.labelField = undefined }
 }
 function clearContent() {
   if (!allRanges.value.length) return

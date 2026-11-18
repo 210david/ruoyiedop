@@ -68,4 +68,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update act_re_procdef set NAME_ = #{name} where KEY_ = #{procKey} and NAME_ &lt;&gt; #{name}
     </update>
 
+    <!-- 轻量修改即时生效：仅覆盖部署资源字节（图形/节点配置），REV_ 自增避免并发覆盖 -->
+    <update id="updateDefinitionResourceBytes">
+        update act_ge_bytearray set BYTES_ = #{bytes}, REV_ = REV_ + 1
+        where DEPLOYMENT_ID_ = #{deploymentId} and NAME_ = #{resourceName}
+    </update>
+
 </mapper>

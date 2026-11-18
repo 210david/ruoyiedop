@@ -125,6 +125,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     @Autowired
     private com.ruoyi.flowable.service.IFlowFormService flowFormService;
 
+    /** 表单规则引擎：办理提交时复算 + 校验 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowFormRuleService formRuleService;
+
     /** 流程定义版本解析（活动版本优先） */
     @Autowired
     private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
@@ -148,6 +152,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     /** 我的草稿（待办页「草稿」/「全部」页签口径） */
     @Autowired
     private com.ruoyi.flowable.service.IFlowDraftService flowDraftService;
+
+    /** 流程模型（设计器最新版优先，节点字段权限读取与前端 fieldPerms 口径一致） */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowRuntimeModelService flowRuntimeModelService;
 
     /** 审批意见类型标识 */
 
@@ -1697,6 +1705,8 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             return returnToNode(task, dto, outcome);
         }
+        // 表单规则：办理提交前按同一份规则复算 + 校验，防止绕过前端
+        applyFormRules(task, dto, false);
         // 记录审批意见：type 必须为 "comment"（Flowable 默认查询仅返回该类型），
         // outcome 编码进 FULL_MSG_ 前缀【outcome:xxx】便于读取
         taskService.addComment(dto.getTaskId(), task.getProcessInstanceId(),
@@ -1760,18 +1770,143 @@ public class FlowProcessServiceImpl implements IFlowProcessService
     }
 
     /**
-     * 驳回（退回）到指定节点。
-     *
-     * 泛微口径：驳回不是「流程继续往下走」，而是把执行流从当前节点挪回前面的某个节点，
-     * 该节点办理人重新出现在待办里（并归到待办「退回」页签）。
-     *
-     * 实现要点：
-     * <ul>
-     * <li>退回意见必须在跳转前写入（跳转后当前任务被删除，再写 comment 就找不到任务了）；</li>
-     * <li>用 {@code moveActivityIdsToSingleActivityId} 做节点跳转，并行/会签的多个当前节点一起挪；</li>
-     * <li>跳转后新产生的任务打上任务级变量 flowReturned=1，前端据此归类到「退回」页签；
-     *     任务级变量随任务结束失效，不会污染后续环节。</li>
-     * </ul>
+     * 暂存表单修改（退回发起人场景）：只把可编辑字段写入流程变量，不办理、不流转、不写意见。
+     * 校验当前办理人，防止越权改别人手上的流程数据。
+     */
+    @Override
+    @Transactional
+    public int saveTaskForm(FlowCompleteDTO dto)
+    {
+        if (dto.getVariables() == null || dto.getVariables().isEmpty())
+        {
+            throw new ServiceException("没有需要保存的表单数据");
+        }
+        Task task = taskService.createTaskQuery().taskId(dto.getTaskId()).singleResult();
+        if (task == null)
+        {
+            throw new ServiceException("任务不存在或已办理");
+        }
+        Long userId = SecurityUtils.getUserId();
+        if (!String.valueOf(userId).equals(task.getAssignee()))
+        {
+            long candidate = taskService.createTaskQuery().taskId(dto.getTaskId())
+                    .taskCandidateUser(String.valueOf(userId)).count();
+            if (candidate == 0)
+            {
+                throw new ServiceException("您不是该任务的办理人或候选人");
+            }
+            taskService.claim(dto.getTaskId(), String.valueOf(userId));
+        }
+        // 暂存也复算 derive 规则（合计/人民币大写等），保证计算值随变量落库；
+        // 但跳过必填与校验拦截——暂存允许未填完，提交时才做完整校验
+        applyFormRules(task, dto, true);
+        taskService.setVariables(dto.getTaskId(), dto.getVariables());
+        return 1;
+    }
+
+    /**
+     * 办理提交前执行表单规则：合并“已有变量 + 本次提交变量”，复算后写回本次变量。
+     * 校验失败直接抛 ServiceException，流程不会推进。
+     */
+    private void applyFormRules(Task task, FlowCompleteDTO dto, boolean skipValidate)
+    {
+        if (dto.getVariables() == null)
+        {
+            dto.setVariables(new HashMap<>());
+        }
+        ProcessDefinition pd = repositoryService.getProcessDefinition(task.getProcessDefinitionId());
+        if (pd == null)
+        {
+            return;
+        }
+        com.ruoyi.flowable.domain.FlowForm form = flowFormService.selectFlowFormByProcessKey(pd.getKey());
+        if (form == null || StringUtils.isEmpty(form.getExtJson()))
+        {
+            return;
+        }
+        // 节点编辑上下文门控（对标泛微「节点表单设计器内实现联动」）：
+        // 发起人（申请填单）节点始终执行；普通办理节点仅在节点字段权限配置了可编辑字段时执行；
+        // 纯审批只读节点跳过规则复算与校验——后续节点是否可编辑/必填由节点表单设置控制
+        if (!isNodeEditableContext(task))
+        {
+            return;
+        }
+        Map<String, Object> merged = new HashMap<>(taskService.getVariables(task.getId()));
+        merged.putAll(dto.getVariables());
+        formRuleService.applyAndValidate(form.getExtJson(), form.getFieldsJson(), merged, skipValidate);
+        for (Map.Entry<String, Object> e : merged.entrySet())
+        {
+            if (!"detailData".equals(e.getKey()))
+            {
+                dto.getVariables().put(e.getKey(), e.getValue());
+            }
+        }
+    }
+
+    /**
+     * 当前任务节点是否处于「可编辑上下文」：
+     * 发起人节点（含退回重填）视为全可编辑；普通节点按 BPMN 扩展属性 fieldPerms 判断，
+     * 任一字段配为 edit 即视为可编辑节点，未配置或全只读则跳过表单规则。
+     */
+    private boolean isNodeEditableContext(Task task)
+    {
+        if (FlowReturnConstants.INITIATOR_NODE_ID.equals(task.getTaskDefinitionKey()))
+        {
+            return true;
+        }
+        try
+        {
+            org.flowable.bpmn.model.BpmnModel model = flowRuntimeModelService.getByDefinitionId(task.getProcessDefinitionId());
+            if (model == null || model.getMainProcess() == null)
+            {
+                return false;
+            }
+            org.flowable.bpmn.model.FlowElement el = model.getFlowElement(task.getTaskDefinitionKey());
+            if (el == null)
+            {
+                return false;
+            }
+            // 开始事件视为发起上下文（部分流程发起人任务 key 即开始事件 id）
+            if (el instanceof org.flowable.bpmn.model.StartEvent)
+            {
+                return true;
+            }
+            String permJson = readNodeAttr(el, "fieldPerms");
+            if (StringUtils.isEmpty(permJson))
+            {
+                return false;
+            }
+            com.alibaba.fastjson2.JSONObject perms = com.alibaba.fastjson2.JSON.parseObject(permJson);
+            return perms != null && perms.containsValue("edit");
+        }
+        catch (Exception e)
+        {
+            log.warn("读取节点字段权限失败，按只读节点跳过表单规则: {}", task.getTaskDefinitionKey(), e);
+            return false;
+        }
+    }
+
+    /** 读取节点上的扩展属性值（BPMN 中形如 flowable:fieldPerms），与 FlowTaskController 同口径 */
+    private String readNodeAttr(org.flowable.bpmn.model.FlowElement task, String name)
+    {
+        Map<String, java.util.List<org.flowable.bpmn.model.ExtensionAttribute>> attrs = task.getAttributes();
+        if (attrs == null)
+        {
+            return "";
+        }
+        java.util.List<org.flowable.bpmn.model.ExtensionAttribute> list = attrs.get(name);
+        if (list == null || list.isEmpty())
+        {
+            return "";
+        }
+        String value = list.get(0).getValue();
+        return value == null ? "" : value;
+    }
+
+    /**
+     * 驳回（退回）到指定节点：把执行流从当前节点挪回前置节点，该节点办理人重新出现在待办里。
+     * 退回意见必须在跳转前写入（跳转后当前任务被删除）；并行/会签的多个当前节点一起挪；
+     * 跳转后的新任务打上任务级变量 flowReturned=1，前端据此归到「退回」页签。
      */
     private int returnToNode(Task task, FlowCompleteDTO dto, String outcome)
     {
@@ -2256,6 +2391,12 @@ public class FlowProcessServiceImpl implements IFlowProcessService
                 if (!isReturnOutcome(prevNonInitiatorOutcome))
                 {
                     ft.setInitiatorPending(Boolean.TRUE);
+                }
+                else if (task.getEndTime() != null && !isReturnOutcome(ft.getOutcome()))
+                {
+                    // 退回后的重提已完成：消费掉「退回」上下文，避免其后管理员强制收回
+                    // 产生的发起人待办因退回上下文残留而被误判为重提记录展示出来
+                    prevNonInitiatorOutcome = null;
                 }
             }
             else if (task.getEndTime() != null && StringUtils.isNotEmpty(ft.getOutcome()))
