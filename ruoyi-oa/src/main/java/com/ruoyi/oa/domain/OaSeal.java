@@ -41,11 +41,20 @@ public class OaSeal extends BaseEntity
     @Excel(name = "启用日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date enableDate;
 
-    @Excel(name = "状态", readConverterExp = "0=正常,1=停用,2=已注销")
+    @Excel(name = "状态", readConverterExp = "0=正常,1=停用,2=已注销,3=外带使用中")
     private String status;
 
-    /** 关联流程实例ID（预留，后续与印章流程关联） */
+    /** 关联流程实例ID（用印申请流程写回） */
     private String flowInstanceId;
+
+    /** 关联流程标题（列表联查展示，不入库） */
+    private String flowTitle;
+
+    /** 关联流程运行状态（列表联查展示：1进行中 0已结束） */
+    private String flowRunning;
+
+    /** 关联用印流程的预计归还时间（列表联查展示，不入库） */
+    private Date useReturnTime;
 
     private String attachment;
 
@@ -73,6 +82,18 @@ public class OaSeal extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getFlowInstanceId() { return flowInstanceId; }
     public void setFlowInstanceId(String flowInstanceId) { this.flowInstanceId = flowInstanceId; }
+    public String getFlowTitle() { return flowTitle; }
+    public void setFlowTitle(String flowTitle) { this.flowTitle = flowTitle; }
+    public String getFlowRunning() { return flowRunning; }
+    public void setFlowRunning(String flowRunning) { this.flowRunning = flowRunning; }
+    public Date getUseReturnTime() { return useReturnTime; }
+    public void setUseReturnTime(Date useReturnTime) { this.useReturnTime = useReturnTime; }
+
+    /** 是否外带逾期：外带使用中且预计归还时间已过 */
+    public boolean isOverdue()
+    {
+        return "3".equals(status) && useReturnTime != null && useReturnTime.before(new Date());
+    }
     public String getAttachment() { return attachment; }
     public void setAttachment(String attachment) { this.attachment = attachment; }
     public String getDelFlag() { return delFlag; }

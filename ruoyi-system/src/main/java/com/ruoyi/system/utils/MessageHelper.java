@@ -110,6 +110,49 @@ public class MessageHelper
     }
 
     /**
+     * 发送指定接收人的消息（如流程待办：谁办理发给谁）
+     *
+     * @param recipientId 接收人用户ID
+     */
+    public void sendMessageToUser(String title, String content, String type,
+            String level, String bizSource, Long bizId,
+            String redirectUrl, Long recipientId, String bizEntryName)
+    {
+        try
+        {
+            SysMessage message = new SysMessage();
+            message.setMessageTitle(title);
+            message.setMessageContent(content);
+            message.setMessageType(type);
+            message.setMessageLevel(level);
+            message.setBizSource(bizSource);
+            message.setBizId(bizId);
+            message.setRedirectUrl(redirectUrl);
+            message.setRecipientId(recipientId);
+            message.setBizEntryName(bizEntryName);
+            message.setStatus("1");
+            String username;
+            try
+            {
+                username = SecurityUtils.getUsername();
+            }
+            catch (Exception ex)
+            {
+                username = "system";
+            }
+            message.setCreateBy(username);
+            messageService.insertMessage(message);
+            log.info("消息已发送（指定接收人）：[{}] bizSource={}, recipientId={}, entry={}",
+                    title, bizSource, recipientId, bizEntryName);
+        }
+        catch (Exception e)
+        {
+            // 消息发送失败不影响主业务流程
+            log.error("消息发送失败：title={}, bizSource={}, recipientId={}", title, bizSource, recipientId, e);
+        }
+    }
+
+    /**
      * 发送全员消息（无角色权限限制）
      */
     public void sendMessageToAll(String title, String content, String type,

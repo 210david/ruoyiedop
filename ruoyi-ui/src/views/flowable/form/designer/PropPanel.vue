@@ -64,7 +64,7 @@
             <el-option value="note" label="说明" /><el-option value="field" label="字段" />
           </el-select>
         </div>
-        <div class="wm-pp-prop" v-if="['title', 'text', 'note'].includes(activeCell.type)">
+        <div class="wm-pp-prop" v-if="['title', 'text', 'note', 'group'].includes(activeCell.type)">
           <label>文本内容</label>
           <el-input v-model="textModel" type="textarea" :rows="2" placeholder="输入单元格文本" @change="v => $emit('patch', { text: v })" />
         </div>

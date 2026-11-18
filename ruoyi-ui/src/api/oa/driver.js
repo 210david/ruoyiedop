@@ -9,6 +9,15 @@ export function listOaDriver(query) {
   })
 }
 
+// 浏览框选择司机分页列表
+export function pickerDriverList(query) {
+  return request({
+    url: '/oa/driver/pickerList',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询司机台账详细
 export function getOaDriver(driverId) {
   return request({

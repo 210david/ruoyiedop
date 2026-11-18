@@ -22,6 +22,7 @@
         <result property="auditBy" column="audit_by"/>
         <result property="auditTime" column="audit_time"/>
         <result property="auditRemark" column="audit_remark"/>
+        <result property="flowInstanceId" column="flow_instance_id"/>
         <result property="status" column="status"/>
         <result property="delFlag" column="del_flag"/>
         <result property="createBy" column="create_by"/>
@@ -32,7 +33,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT overtime_id, overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT overtime_id, overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, flow_instance_id, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_overtime
     </sql>
 
@@ -77,9 +78,9 @@
 
     <insert id="insertHrOvertime" parameterType="HrOvertime" useGeneratedKeys="true" keyProperty="overtimeId">
         INSERT INTO biz_hr_overtime (
-            overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+            overtime_no, employee_id, employee_name, employee_no, dept_id, dept_name, overtime_date, overtime_type, start_time, end_time, overtime_hours, multiplier, compensation_type, reason, audit_status, audit_by, audit_time, audit_remark, flow_instance_id, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{overtimeNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{overtimeDate}, #{overtimeType}, #{startTime}, #{endTime}, #{overtimeHours}, #{multiplier}, #{compensationType}, #{reason}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{overtimeNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{overtimeDate}, #{overtimeType}, #{startTime}, #{endTime}, #{overtimeHours}, #{multiplier}, #{compensationType}, #{reason}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{flowInstanceId}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 

@@ -8,37 +8,39 @@
     @update:model-value="(v) => emit('update:open', v)"
   >
     <template #header>
-      <div class="rd-detail-header">
-        <div class="rd-detail-header-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+      <div class="fd-header">
+        <!-- 第一行：标题 + 单号 + 操作按钮（与流程发起页 launch-header 同一口径） -->
+        <div class="fd-titlebar">
+          <div class="fd-title">
+            <span class="fd-glyph"></span>
+            <span class="fd-name">{{ detailData.processDefinitionName || '流程详情' }}</span>
+            <span class="fd-no" v-if="detailData.requestId || detailData.instanceId">
+              <el-icon><Document /></el-icon>单号 {{ detailData.requestId || detailData.instanceId }}
+            </span>
+          </div>
+          <slot name="header-extra"></slot>
+          <!-- 头部右侧操作：打印（两种模式都提供） + 关闭（独立页唯一出口，不再另占一条底部操作条） -->
+          <div class="fd-actions">
+            <el-button icon="Printer" @click="doPrint">打 印</el-button>
+            <el-button v-if="standalone" type="primary" icon="Close" @click="emit('update:open', false)">关 闭</el-button>
+          </div>
         </div>
-        <span class="rd-detail-header-title">流程详情</span>
-        <div class="rd-detail-header-sub" v-if="detailData.processDefinitionName">
-          <div class="rd-detail-header-divider"></div>
-          <span class="rd-detail-header-no">{{ detailData.processDefinitionName }}（{{ detailData.requestId || detailData.instanceId }}）</span>
-        </div>
-        <slot name="header-extra"></slot>
-        <!-- 头部右侧操作：打印（两种模式都提供） + 关闭（独立页唯一出口，不再另占一条底部操作条） -->
-        <div class="rd-detail-header-ops">
-          <el-button size="small" icon="Printer" @click="doPrint">打 印</el-button>
-          <el-button v-if="standalone" size="small" icon="Close" @click="emit('update:open', false)">关 闭</el-button>
+        <!-- 第二行：页签（下划线风格，与流程发起页 / 办理页一致） -->
+        <div class="detail-tabs">
+          <button class="detail-tab" :class="{ 'is-active': detailTab === 'form' }" @click="detailTab = 'form'">流程表单</button>
+          <button class="detail-tab" :class="{ 'is-active': detailTab === 'diagram' }" @click="detailTab = 'diagram'">流程图</button>
+          <button class="detail-tab" :class="{ 'is-active': detailTab === 'status' }" @click="detailTab = 'status'">流程状态</button>
+          <button class="detail-tab" :class="{ 'is-active': detailTab === 'resource' }" @click="detailTab = 'resource'">相关资源</button>
         </div>
       </div>
     </template>
 
-    <div class="detail-tabs">
-      <button class="detail-tab" :class="{ 'is-active': detailTab === 'form' }" @click="detailTab = 'form'">流程表单</button>
-      <button class="detail-tab" :class="{ 'is-active': detailTab === 'diagram' }" @click="detailTab = 'diagram'">流程图</button>
-      <button class="detail-tab" :class="{ 'is-active': detailTab === 'status' }" @click="detailTab = 'status'">流程状态</button>
-      <button class="detail-tab" :class="{ 'is-active': detailTab === 'resource' }" @click="detailTab = 'resource'">相关资源</button>
-    </div>
-
     <!-- 页签：流程表单 -->
     <div class="rd-page" v-show="detailTab === 'form'">
       <section class="rd-card">
+        <div class="rd-card-header">
+          <div class="rd-card-title"><span class="rd-card-icon">▤</span>申请表单</div>
+        </div>
         <div class="rd-card-body" style="display: block">
           <FormGridRender v-if="gridLayout" :grid="gridLayout" :fields="formFields" :values="detailData.variables" />
           <template v-else-if="formGroups.length">
@@ -481,35 +483,94 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+/* ===== 顶部：标题行 + 页签行（与流程发起页 launch-header / 办理页 hd-header 同一口径） ===== */
+.fd-header {
+  padding: 12px 20px 0;
+  background: #fff;
+}
+.fd-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 2px 0 10px;
+}
+.fd-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.fd-glyph {
+  width: 4px;
+  height: 18px;
+  background: var(--brand-600, #4f46e5);
+  border-radius: 2px;
+  flex: none;
+}
+.fd-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-900, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fd-no {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--ink-500, #64748b);
+  padding-left: 10px;
+  border-left: 1px solid var(--ink-200, #e2e8f0);
+  white-space: nowrap;
+}
+.fd-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 1 auto;
+}
+.fd-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+/* 页签行：下划线风格（对齐开发规范第12章 详情页签） */
 .detail-tabs {
   display: flex;
+  align-items: center;
   gap: 4px;
-  border-bottom: 1px solid var(--rd-border, #e5e7eb);
-  margin-bottom: 12px;
-  .form-section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #0f172a;
-    border-left: 3px solid var(--el-color-primary);
-    padding-left: 8px;
-    margin: 8px 0 4px;
-  }
+  border-bottom: 1px solid var(--ink-200, #e2e8f0);
   .detail-tab {
+    position: relative;
     background: none;
     border: none;
-    padding: 10px 16px;
+    padding: 9px 16px;
     font-size: 14px;
-    color: var(--rd-muted, #6b7280);
+    color: var(--ink-500, #64748b);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s;
+    transition: color 0.15s cubic-bezier(0.16, 0.84, 0.44, 1);
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--brand-600, #4f46e5);
     }
     &.is-active {
-      color: var(--el-color-primary);
+      color: var(--brand-600, #4f46e5);
       font-weight: 600;
-      border-bottom-color: var(--el-color-primary);
+    }
+    &.is-active::after {
+      content: '';
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -1px;
+      height: 2px;
+      background: var(--brand-600, #4f46e5);
+      border-radius: 2px;
     }
   }
 }
@@ -567,11 +628,11 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: auto;
+  /* 留白与发起页 launch-body 一致：白色底 + 10px 顶距 */
+  padding: 10px 20px 24px;
 }
-/* 头部右侧的关闭出口（独立页唯一出口，替代原来的底部操作条） */
-.flow-detail-dialog .rd-detail-header-ops {
-  margin-left: auto;
-  flex: none;
+:global(.flow-detail-dialog .el-dialog__body) {
+  background: #fff !important;
 }
 
 /* 各页签都是弹窗正文的 flex 子项：全局 .rd-page 的 margin:0 auto 会让它们缩成内容宽度

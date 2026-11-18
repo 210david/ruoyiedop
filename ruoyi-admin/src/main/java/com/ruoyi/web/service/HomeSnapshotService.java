@@ -2,8 +2,10 @@ package com.ruoyi.web.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.common.core.domain.entity.SysMenu;
@@ -18,6 +20,7 @@ import com.ruoyi.dms.mapper.DmsSparePartMapper;
 import com.ruoyi.dms.mapper.DmsWorkOrderMapper;
 import com.ruoyi.hr.domain.HrEmployee;
 import com.ruoyi.hr.mapper.HrEmployeeMapper;
+import com.ruoyi.flowable.service.IFlowProcessService;
 import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.domain.MkLead;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
@@ -32,7 +35,9 @@ import com.ruoyi.qms.domain.QmsNcr;
 import com.ruoyi.qms.mapper.QmsNcrMapper;
 import com.ruoyi.safety.domain.SafetyHazard;
 import com.ruoyi.safety.mapper.SafetyHazardMapper;
+import com.ruoyi.system.domain.SysModule;
 import com.ruoyi.system.mapper.SysMenuMapper;
+import com.ruoyi.system.service.ISysModuleService;
 import com.ruoyi.system.service.ISysUserService;
 import com.ruoyi.wms.domain.vo.WmsStatisticsVO;
 import com.ruoyi.wms.service.IWmsStatisticsService;
@@ -86,6 +91,15 @@ public class HomeSnapshotService
     private HrEmployeeMapper hrEmployeeMapper;
     @Autowired
     private SysMenuMapper menuMapper;
+    /** 流程待办计数（Flowable）：首页待办第一条「流程待办」 */
+    @Autowired(required = false)
+    private IFlowProcessService flowProcessService;
+    @Autowired
+    private HomeKpiService homeKpiService;
+
+    /** 模块开关（sys_module）：首页预警/模块概览/待办/动态统一按开关显隐 */
+    @Autowired
+    private ISysModuleService moduleService;
 
     /** 业务模块编码 → 顶层菜单ID（用于按菜单停用状态过滤首页模块） */
     private static final Map<String, Long> MODULE_MENU_IDS = new HashMap<>();
@@ -100,6 +114,7 @@ public class HomeSnapshotService
         MODULE_MENU_IDS.put("fin", 905938L);
         MODULE_MENU_IDS.put("hr", 905538L);
         MODULE_MENU_IDS.put("mms", 5000L);
+        MODULE_MENU_IDS.put("flow", 905824L);
     }
 
     /**
@@ -143,6 +158,54 @@ public class HomeSnapshotService
     }
 
     /**
+     * 查询后台「模块开关」中已停用的模块标识集合（sys_module.status = '1'）
+     *
+     * 一次请求内只查一次，供预警汇总 / 模块概览 / 待办 / 动态统一过滤；
+     * 查询异常时返回空集合（退化为"全部启用"），不影响首页可用性。
+     */
+    private Set<String> disabledModuleKeys()
+    {
+        Set<String> keys = new HashSet<>();
+        try
+        {
+            SysModule query = new SysModule();
+            query.setStatus("1");
+            List<SysModule> list = moduleService.selectModuleList(query);
+            if (list != null)
+            {
+                for (SysModule m : list)
+                {
+                    if (m.getModuleKey() != null)
+                    {
+                        keys.add(m.getModuleKey());
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            // 模块开关查询失败时不做过滤，避免误隐藏正常业务
+        }
+        return keys;
+    }
+
+    /**
+     * 模块是否处于启用状态：模块开关（sys_module）与模块顶层菜单状态任一为停用即视为关闭
+     */
+    private boolean moduleOn(String code, Set<String> offModules)
+    {
+        if (code == null)
+        {
+            return true;
+        }
+        if (offModules != null && offModules.contains(code))
+        {
+            return false;
+        }
+        return isModuleEnabled(code);
+    }
+
+    /**
      * 首页聚合数据（原 HomeController./dashboard 方法体原样搬入，
      * 接口 URL /home/dashboard 与响应结构不变，前端零改动）
      *
@@ -173,17 +236,33 @@ public class HomeSnapshotService
         // 2. 跨模块数据单次拉取（预警汇总/模块概览/待办三处共享）
         HomeSnapshot snap = loadSnapshot();
 
+        // 2.1 后台「模块开关」中已停用的模块：预警/概览/待办/动态统一不再出现
+        Set<String> offModules = disabledModuleKeys();
+
         // 3. 预警汇总
-        Map<String, Object> alerts = buildAlertSummary(snap);
+        Map<String, Object> alerts = buildAlertSummary(snap, offModules);
         result.put("alerts", alerts);
 
         // 4. 业务模块概览
-        List<Map<String, Object>> modules = buildModules(snap);
+        List<Map<String, Object>> modules = buildModules(snap, offModules);
         result.put("modules", modules);
 
         // 5. 待办事项
-        Map<String, Object> todos = buildTodos(snap);
+        Map<String, Object> todos = buildTodos(snap, offModules);
         result.put("todos", todos);
+
+        // 5.1 岗位化 KPI（sys_role_kpi 配置；未配置岗位返回空列表，前端回退到按模块卡片）
+        try
+        {
+            Map<String, Object> roleKpis = homeKpiService.buildRoleKpis(alerts, todos);
+            result.put("kpiRoleName", roleKpis.get("roleName"));
+            result.put("coreKpis", roleKpis.get("items"));
+        }
+        catch (Exception e)
+        {
+            result.put("kpiRoleName", "");
+            result.put("coreKpis", new ArrayList<>());
+        }
 
         // 6. WMS出入库趋势（近7天）
         try
@@ -276,109 +355,137 @@ public class HomeSnapshotService
     /**
      * 构建预警汇总
      */
-    public Map<String, Object> buildAlertSummary(HomeSnapshot snap)
+    public Map<String, Object> buildAlertSummary(HomeSnapshot snap, Set<String> offModules)
     {
         Map<String, Object> alerts = new HashMap<>();
         int total = 0;
 
-        // WMS 预警
+        // WMS 预警（模块关闭时只保留 total=0 的结构，避免前端取不到字段）
         Map<String, Object> wmsAlerts = new HashMap<>();
-        try
-        {
-            List<WmsStatisticsVO> summary = wmsStatisticsService.selectStockAlertSummary();
-            int lowStock = 0, overstock = 0, nearExpiry = 0, expired = 0;
-            if (summary != null)
-            {
-                for (WmsStatisticsVO s : summary)
-                {
-                    String type = s.getAlertType();
-                    int cnt = s.getCount() != null ? s.getCount() : 0;
-                    if ("low_stock".equals(type)) lowStock = cnt;
-                    else if ("overstock".equals(type)) overstock = cnt;
-                    else if ("near_expiry".equals(type)) nearExpiry = cnt;
-                    else if ("expired".equals(type)) expired = cnt;
-                }
-            }
-            wmsAlerts.put("lowStock", lowStock);
-            wmsAlerts.put("overstock", overstock);
-            wmsAlerts.put("nearExpiry", nearExpiry);
-            wmsAlerts.put("expired", expired);
-            wmsAlerts.put("total", lowStock + overstock + nearExpiry + expired);
-            total += lowStock + overstock + nearExpiry + expired;
-        }
-        catch (Exception e)
+        if (!moduleOn("wms", offModules))
         {
             wmsAlerts.put("total", 0);
+        }
+        else
+        {
+            try
+            {
+                List<WmsStatisticsVO> summary = wmsStatisticsService.selectStockAlertSummary();
+                int lowStock = 0, overstock = 0, nearExpiry = 0, expired = 0;
+                if (summary != null)
+                {
+                    for (WmsStatisticsVO s : summary)
+                    {
+                        String type = s.getAlertType();
+                        int cnt = s.getCount() != null ? s.getCount() : 0;
+                        if ("low_stock".equals(type)) lowStock = cnt;
+                        else if ("overstock".equals(type)) overstock = cnt;
+                        else if ("near_expiry".equals(type)) nearExpiry = cnt;
+                        else if ("expired".equals(type)) expired = cnt;
+                    }
+                }
+                wmsAlerts.put("lowStock", lowStock);
+                wmsAlerts.put("overstock", overstock);
+                wmsAlerts.put("nearExpiry", nearExpiry);
+                wmsAlerts.put("expired", expired);
+                wmsAlerts.put("total", lowStock + overstock + nearExpiry + expired);
+                total += lowStock + overstock + nearExpiry + expired;
+            }
+            catch (Exception e)
+            {
+                wmsAlerts.put("total", 0);
+            }
         }
         alerts.put("wms", wmsAlerts);
 
         // DMS 预警（复用快照，口径：备件预警 + 故障设备(状态4) + 待处理工单(状态0/1)）
         Map<String, Object> dmsAlerts = new HashMap<>();
-        try
-        {
-            int partAlertCount = snap.dmsSpareAlerts.size();
-
-            int faultEquipment = 0;
-            for (DmsEquipment eq : snap.dmsEquipments)
-            {
-                if ("4".equals(eq.getEquipmentStatus())) faultEquipment++;
-            }
-
-            int pendingWorkOrders = countPendingDmsOrders(snap);
-
-            dmsAlerts.put("partAlert", partAlertCount);
-            dmsAlerts.put("faultEquipment", faultEquipment);
-            dmsAlerts.put("pendingWorkOrder", pendingWorkOrders);
-            dmsAlerts.put("total", partAlertCount + faultEquipment + pendingWorkOrders);
-            total += partAlertCount + faultEquipment + pendingWorkOrders;
-        }
-        catch (Exception e)
+        if (!moduleOn("dms", offModules))
         {
             dmsAlerts.put("total", 0);
+        }
+        else
+        {
+            try
+            {
+                int partAlertCount = snap.dmsSpareAlerts.size();
+
+                int faultEquipment = 0;
+                for (DmsEquipment eq : snap.dmsEquipments)
+                {
+                    if ("4".equals(eq.getEquipmentStatus())) faultEquipment++;
+                }
+
+                int pendingWorkOrders = countPendingDmsOrders(snap);
+
+                dmsAlerts.put("partAlert", partAlertCount);
+                dmsAlerts.put("faultEquipment", faultEquipment);
+                dmsAlerts.put("pendingWorkOrder", pendingWorkOrders);
+                dmsAlerts.put("total", partAlertCount + faultEquipment + pendingWorkOrders);
+                total += partAlertCount + faultEquipment + pendingWorkOrders;
+            }
+            catch (Exception e)
+            {
+                dmsAlerts.put("total", 0);
+            }
         }
         alerts.put("dms", dmsAlerts);
 
         // QMS 预警（未闭环NCR，口径与 QmsStatsProvider.QMS_NCR_OPEN 一致：状态≠4 关闭）
         Map<String, Object> qmsAlerts = new HashMap<>();
-        try
-        {
-            int open = 0, pendingVerify = 0;
-            for (QmsNcr n : snap.qmsNcrs)
-            {
-                String s = n.getNcrStatus();
-                if ("0".equals(s) || "1".equals(s) || "2".equals(s) || "3".equals(s)) open++;
-                if ("3".equals(s)) pendingVerify++;
-            }
-            qmsAlerts.put("openNcr", open);
-            qmsAlerts.put("pendingVerify", pendingVerify);
-            qmsAlerts.put("total", open);
-            total += open;
-        }
-        catch (Exception e)
+        if (!moduleOn("qms", offModules))
         {
             qmsAlerts.put("total", 0);
+        }
+        else
+        {
+            try
+            {
+                int open = 0, pendingVerify = 0;
+                for (QmsNcr n : snap.qmsNcrs)
+                {
+                    String s = n.getNcrStatus();
+                    if ("0".equals(s) || "1".equals(s) || "2".equals(s) || "3".equals(s)) open++;
+                    if ("3".equals(s)) pendingVerify++;
+                }
+                qmsAlerts.put("openNcr", open);
+                qmsAlerts.put("pendingVerify", pendingVerify);
+                qmsAlerts.put("total", open);
+                total += open;
+            }
+            catch (Exception e)
+            {
+                qmsAlerts.put("total", 0);
+            }
         }
         alerts.put("qms", qmsAlerts);
 
         // Safety 预警（未闭环隐患，口径与 SafetyStatsProvider 一致：状态 3/4/5/7）
         Map<String, Object> safetyAlerts = new HashMap<>();
-        try
-        {
-            int open = 0, overdue = 0;
-            for (SafetyHazard h : snap.safetyHazards)
-            {
-                String s = h.getHazardStatus();
-                if ("3".equals(s) || "4".equals(s) || "5".equals(s) || "7".equals(s)) open++;
-                if ("7".equals(s)) overdue++;
-            }
-            safetyAlerts.put("openHazard", open);
-            safetyAlerts.put("overdue", overdue);
-            safetyAlerts.put("total", open);
-            total += open;
-        }
-        catch (Exception e)
+        if (!moduleOn("safety", offModules))
         {
             safetyAlerts.put("total", 0);
+        }
+        else
+        {
+            try
+            {
+                int open = 0, overdue = 0;
+                for (SafetyHazard h : snap.safetyHazards)
+                {
+                    String s = h.getHazardStatus();
+                    if ("3".equals(s) || "4".equals(s) || "5".equals(s) || "7".equals(s)) open++;
+                    if ("7".equals(s)) overdue++;
+                }
+                safetyAlerts.put("openHazard", open);
+                safetyAlerts.put("overdue", overdue);
+                safetyAlerts.put("total", open);
+                total += open;
+            }
+            catch (Exception e)
+            {
+                safetyAlerts.put("total", 0);
+            }
         }
         alerts.put("safety", safetyAlerts);
 
@@ -389,19 +496,19 @@ public class HomeSnapshotService
     /**
      * 构建业务模块概览
      */
-    public List<Map<String, Object>> buildModules(HomeSnapshot snap)
+    public List<Map<String, Object>> buildModules(HomeSnapshot snap, Set<String> offModules)
     {
         List<Map<String, Object>> modules = new ArrayList<>();
 
-        // 仅返回菜单处于启用状态的模块（临时关闭的模块不再出现在首页）
-        if (isModuleEnabled("wms")) modules.add(buildWmsModule());
-        if (isModuleEnabled("dms")) modules.add(buildDmsModule(snap));
-        if (isModuleEnabled("pms")) modules.add(buildPmsModule(snap));
-        if (isModuleEnabled("mk")) modules.add(buildMkModule(snap));
-        if (isModuleEnabled("mms")) modules.add(buildMmsModule(snap));
-        if (isModuleEnabled("qms")) modules.add(buildQmsModule(snap));
-        if (isModuleEnabled("safety")) modules.add(buildSafetyModule(snap));
-        if (isModuleEnabled("hr")) modules.add(buildHrModule(snap));
+        // 仅返回启用中的模块（后台模块开关关闭或菜单停用的模块不再出现在首页）
+        if (moduleOn("wms", offModules)) modules.add(buildWmsModule());
+        if (moduleOn("dms", offModules)) modules.add(buildDmsModule(snap));
+        if (moduleOn("pms", offModules)) modules.add(buildPmsModule(snap));
+        if (moduleOn("mk", offModules)) modules.add(buildMkModule(snap));
+        if (moduleOn("mms", offModules)) modules.add(buildMmsModule(snap));
+        if (moduleOn("qms", offModules)) modules.add(buildQmsModule(snap));
+        if (moduleOn("safety", offModules)) modules.add(buildSafetyModule(snap));
+        if (moduleOn("hr", offModules)) modules.add(buildHrModule(snap));
 
         return modules;
     }
@@ -708,84 +815,139 @@ public class HomeSnapshotService
     /**
      * 构建待办事项（全部复用快照，不再重复拉取）
      */
-    public Map<String, Object> buildTodos(HomeSnapshot snap)
+    public Map<String, Object> buildTodos(HomeSnapshot snap, Set<String> offModules)
     {
         Map<String, Object> todos = new HashMap<>();
 
+        // 模块开关状态（关闭的模块其待办一律按 0 返回，前端自动不展示）
+        boolean flowOn = moduleOn("flow", offModules);
+        boolean dmsOn = moduleOn("dms", offModules);
+        boolean wmsOn = moduleOn("wms", offModules);
+        boolean pmsOn = moduleOn("pms", offModules);
+        boolean mkOn = moduleOn("mk", offModules);
+        boolean mmsOn = moduleOn("mms", offModules);
+        boolean qmsOn = moduleOn("qms", offModules);
+        boolean safetyOn = moduleOn("safety", offModules);
+
+        // 流程中心待办（Flowable：指派给我 + 我作为候选人/候选组的任务），首页待办置顶项
+        if (flowOn)
+        {
+            try
+            {
+                todos.put("flowTodo", flowProcessService != null ? flowProcessService.countTodo() : 0L);
+            }
+            catch (Exception e)
+            {
+                todos.put("flowTodo", 0L);
+            }
+        }
+        else
+        {
+            todos.put("flowTodo", 0L);
+        }
+
         // 设备待处理工单
-        todos.put("workOrders", countPendingDmsOrders(snap));
+        todos.put("workOrders", dmsOn ? countPendingDmsOrders(snap) : 0);
 
         // WMS 库存预警
-        try
+        if (wmsOn)
         {
-            List<WmsStatisticsVO> wmsAlerts = wmsStatisticsService.selectStockAlert();
-            todos.put("stockAlerts", wmsAlerts != null ? wmsAlerts.size() : 0);
+            try
+            {
+                List<WmsStatisticsVO> wmsAlerts = wmsStatisticsService.selectStockAlert();
+                todos.put("stockAlerts", wmsAlerts != null ? wmsAlerts.size() : 0);
+            }
+            catch (Exception e)
+            {
+                todos.put("stockAlerts", 0);
+            }
         }
-        catch (Exception e)
+        else
         {
             todos.put("stockAlerts", 0);
         }
 
         // DMS 备件预警
-        todos.put("partAlerts", snap.dmsSpareAlerts.size());
+        todos.put("partAlerts", dmsOn ? snap.dmsSpareAlerts.size() : 0);
 
         // DMS 故障设备
         int fault = 0;
-        for (DmsEquipment eq : snap.dmsEquipments)
+        if (dmsOn)
         {
-            if ("4".equals(eq.getEquipmentStatus())) fault++;
+            for (DmsEquipment eq : snap.dmsEquipments)
+            {
+                if ("4".equals(eq.getEquipmentStatus())) fault++;
+            }
         }
         todos.put("faultEquipment", fault);
 
         // 采购申请待审批
         int pendingRequests = 0;
-        for (PmsPurchaseRequest r : snap.pmsRequests)
+        if (pmsOn)
         {
-            if ("1".equals(r.getStatus())) pendingRequests++;
+            for (PmsPurchaseRequest r : snap.pmsRequests)
+            {
+                if ("1".equals(r.getStatus())) pendingRequests++;
+            }
         }
         todos.put("purchaseRequests", pendingRequests);
 
         // 采购订单待审批
         int pendingOrders = 0;
-        for (PmsPurchaseOrder o : snap.pmsOrders)
+        if (pmsOn)
         {
-            if ("1".equals(o.getStatus())) pendingOrders++;
+            for (PmsPurchaseOrder o : snap.pmsOrders)
+            {
+                if ("1".equals(o.getStatus())) pendingOrders++;
+            }
         }
         todos.put("purchaseOrders", pendingOrders);
 
         // 营销待跟进线索
         int activeLeads = 0;
-        for (MkLead l : snap.mkLeads)
+        if (mkOn)
         {
-            String s = l.getLeadStatus();
-            if (!"4".equals(s) && !"5".equals(s)) activeLeads++;
+            for (MkLead l : snap.mkLeads)
+            {
+                String s = l.getLeadStatus();
+                if (!"4".equals(s) && !"5".equals(s)) activeLeads++;
+            }
         }
         todos.put("mkLeads", activeLeads);
 
         // 生产执行中工单
         int inProgress = 0;
-        for (MmsWorkOrder o : snap.mmsWorkOrders)
+        if (mmsOn)
         {
-            String s = o.getStatus();
-            if ("1".equals(s) || "2".equals(s)) inProgress++;
+            for (MmsWorkOrder o : snap.mmsWorkOrders)
+            {
+                String s = o.getStatus();
+                if ("1".equals(s) || "2".equals(s)) inProgress++;
+            }
         }
         todos.put("mmsWorkOrders", inProgress);
 
         // 质量未闭环NCR（口径与 QmsStatsProvider.QMS_NCR_OPEN 一致）
         int openNcrs = 0;
-        for (QmsNcr n : snap.qmsNcrs)
+        if (qmsOn)
         {
-            String s = n.getNcrStatus();
-            if ("0".equals(s) || "1".equals(s) || "2".equals(s) || "3".equals(s)) openNcrs++;
+            for (QmsNcr n : snap.qmsNcrs)
+            {
+                String s = n.getNcrStatus();
+                if ("0".equals(s) || "1".equals(s) || "2".equals(s) || "3".equals(s)) openNcrs++;
+            }
         }
         todos.put("qmsNcrs", openNcrs);
 
         // 安全未闭环隐患（口径与 SafetyStatsProvider 一致）
         int openHazards = 0;
-        for (SafetyHazard h : snap.safetyHazards)
+        if (safetyOn)
         {
-            String s = h.getHazardStatus();
-            if ("3".equals(s) || "4".equals(s) || "5".equals(s) || "7".equals(s)) openHazards++;
+            for (SafetyHazard h : snap.safetyHazards)
+            {
+                String s = h.getHazardStatus();
+                if ("3".equals(s) || "4".equals(s) || "5".equals(s) || "7".equals(s)) openHazards++;
+            }
         }
         todos.put("safetyHazards", openHazards);
 

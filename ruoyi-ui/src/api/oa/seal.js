@@ -9,6 +9,15 @@ export function listOaSeal(query) {
   })
 }
 
+// 浏览框选择印章分页列表
+export function pickerSealList(query) {
+  return request({
+    url: '/oa/seal/pickerList',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询印章台账详细
 export function getOaSeal(sealId) {
   return request({

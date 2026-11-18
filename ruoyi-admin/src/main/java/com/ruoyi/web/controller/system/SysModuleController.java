@@ -57,6 +57,22 @@ public class SysModuleController extends BaseController
     }
 
     /**
+     * 查询全部停用模块的标识列表（登录用户即可访问）
+     *
+     * 用途：前端工作台「自定义常用功能」弹窗、业务子系统卡片按模块开关过滤，
+     * 模块关闭后其功能不再出现在可选列表里（与菜单状态形成双保险）。
+     */
+    @GetMapping("/disabled")
+    public AjaxResult disabledKeys()
+    {
+        SysModule query = new SysModule();
+        query.setStatus("1");
+        List<String> keys = moduleService.selectModuleList(query).stream()
+                .map(SysModule::getModuleKey).collect(java.util.stream.Collectors.toList());
+        return success(keys);
+    }
+
+    /**
      * 模块详情
      */
     @PreAuthorize("@ss.hasPermi('system:module:list')")

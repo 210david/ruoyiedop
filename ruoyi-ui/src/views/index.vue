@@ -1,14 +1,18 @@
 <template>
   <div class="app-container home-portal">
-    <!-- ========== 1. KPI 指标带 ========== -->
-    <section class="kpi-ribbon">
+    <!-- ========== 1. KPI 指标带（固定 5 张：物料 / 设备 / 销售订单 / 采购订单 / 工单） ========== -->
+    <div class="kpi-scope" v-if="kpiRoleName">
+      <span class="kpi-scope__dot"></span>
+      按「{{ kpiRoleName }}」岗位显示核心指标
+    </div>
+    <section class="kpi-ribbon" :style="{ '--kpi-cols': Math.max(kpiCards.length, 1) }">
       <div
         class="kpi-card"
         v-for="(kpi, idx) in kpiCards"
         :key="idx"
-        :class="{ 'is-clickable': !!kpi.path }"
+        :class="{ 'is-clickable': !!kpi.path && !kpi.disabled, 'is-disabled': kpi.disabled }"
         :style="{ '--kpi-accent': kpi.color, '--kpi-bg': kpi.bgColor, 'animation-delay': `${0.15 + idx * 0.08}s` }"
-        @click="goPath(kpi.path)"
+        @click="onKpiClick(kpi)"
       >
         <div class="kpi-card__bars" aria-hidden="true">
           <span v-for="b in 12" :key="b" :style="{ height: barHeight(b, idx) }"></span>
@@ -33,63 +37,27 @@
       </div>
     </section>
 
-    <!-- ========== 3. 业务子系统 ========== -->
-    <section class="module-section" v-if="allSystemList.length > 0">
-      <div class="section-header">
-        <div class="section-header__left">
-          <span class="section-header__bar"></span>
-          <h2 class="section-header__title">业务子系统</h2>
-          <span class="section-header__badge">{{ systemList.length }} / {{ allSystemList.length }} 已启用</span>
-        </div>
-        <div class="section-header__right">
-          <el-button size="small" text bg icon="Setting" @click="openLayoutDialog">自定义模块</el-button>
-        </div>
-      </div>
+    <!-- ========== 2. 新手上路 + 常用功能 ========== -->
+    <OnboardCard
+      v-if="!loading"
+      :menus="flatMenus"
+      :tasks="onboard.tasks"
+      :role-name="onboard.roleName"
+      :enabled="onboardVisible"
+      @close="setOnboardEnabled(false)"
+    />
+    <ShortcutBar
+      v-if="!loading"
+      :menus="flatMenus"
+      :limit="8"
+      :disabled-modules="offModuleList"
+      :onboard-enabled="onboard.userEnabled"
+      :onboard-global-enabled="onboard.globalEnabled"
+      @toggle-onboard="setOnboardEnabled"
+    />
 
-      <!-- 已启用模块 -->
-      <div class="module-grid module-grid--active">
-        <article
-          class="module-tile"
-          v-for="(sys, sIdx) in systemList"
-          :key="sys.path"
-          :style="{ '--tile-accent': sys.color, 'animation-delay': `${0.1 + sIdx * 0.08}s` }"
-        >
-          <span class="module-tile__sheen"></span>
-
-          <!-- 卡片头部 -->
-          <div class="module-tile__header">
-            <div class="module-tile__title-wrap">
-              <div class="module-tile__icon">
-                <svg-icon :icon-class="sys.icon" />
-              </div>
-              <div>
-                <h3 class="module-tile__name">{{ sys.title }}</h3>
-                <span class="module-tile__count">{{ sys.menus.length }} 项功能</span>
-              </div>
-            </div>
-            <span class="module-tile__arrow" @click="goSystemFirst(sys)" title="进入系统">
-              <el-icon><ArrowRight /></el-icon>
-            </span>
-          </div>
-
-          <!-- 功能入口网格 -->
-          <div class="module-tile__menu-grid">
-            <a
-              v-for="menu in sys.menus"
-              :key="menu.path"
-              class="menu-chip"
-              @click="goPath(menu.path)"
-            >
-              <svg-icon :icon-class="menu.icon" v-if="menu.icon" />
-              <span>{{ menu.title }}</span>
-            </a>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- ========== 4. 待办事项 + 最近动态 ========== -->
-    <section class="bottom-section" v-if="systemList.length > 0">
+    <!-- ========== 3. 待办事项 + 最近动态 ========== -->
+    <section class="bottom-section" v-if="allSystemList.length > 0">
       <!-- 待办事项 -->
       <div class="todo-panel">
         <div class="panel-header">
@@ -159,55 +127,40 @@
 
     <!-- ========== 空状态 ========== -->
     <el-empty
-      v-if="systemList.length === 0 && !loading"
+      v-if="allSystemList.length === 0 && !loading"
       description="暂无可访问的系统，请联系管理员分配权限"
       :image-size="120"
       style="padding: 80px 0"
-    >
-      <el-button v-if="allSystemList.length > 0" type="primary" icon="Setting" @click="openLayoutDialog">自定义模块</el-button>
-    </el-empty>
-
-    <!-- ========== 自定义模块弹窗 ========== -->
-    <el-dialog v-model="layoutDialog.visible" title="自定义首页模块" width="580px" append-to-body class="home-layout-dialog">
-      <div class="layout-tip">
-        <el-icon><InfoFilled /></el-icon>
-        勾选需要在首页展示的业务模块，保存后立即生效。不同岗位/企业可按实际使用的模块组合自己的工作台。
-      </div>
-      <el-checkbox-group v-model="layoutDialog.checked">
-        <div class="layout-grid">
-          <el-checkbox v-for="sys in allSystemList" :key="sys.path" :label="sys.path" class="layout-item">
-            <span class="layout-item__dot" :style="{ background: sys.color }"></span>
-            <span class="layout-item__name">{{ sys.title }}</span>
-            <span class="layout-item__count">{{ sys.menus.length }} 项功能</span>
-          </el-checkbox>
-        </div>
-      </el-checkbox-group>
-      <div class="layout-actions">
-        <el-button link type="primary" @click="checkAllModules">全选</el-button>
-        <el-button link @click="layoutDialog.checked = []">清空</el-button>
-      </div>
-      <template #footer>
-        <el-button @click="layoutDialog.visible = false">取 消</el-button>
-        <el-button type="primary" :loading="layoutDialog.saving" @click="saveLayoutConfig">保 存</el-button>
-      </template>
-    </el-dialog>
+    />
   </div>
 </template>
 
 <script setup name="Index">
-import { ArrowRight, Calendar, Right, Setting, InfoFilled } from '@element-plus/icons-vue'
+import { ArrowRight, Calendar, Right } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import usePermissionStore from '@/store/modules/permission'
 import { getNormalPath } from '@/utils/ruoyi'
 import { isExternal } from '@/utils/validate'
-import { getDashboard, getHomeLayout, saveHomeLayout } from '@/api/home'
+import { ElMessage } from 'element-plus'
+import { getDashboard, getOnboardTasks, saveOnboardSetting } from '@/api/home'
+import { getDisabledModules } from '@/api/system/module'
+import OnboardCard from './components/OnboardCard.vue'
+import ShortcutBar from './components/ShortcutBar.vue'
 
-const { proxy } = getCurrentInstance()
 const router = useRouter()
 const permissionStore = usePermissionStore()
 
 const loading = ref(true)
 const dashData = ref({})
+
+/**
+ * 后台「模块开关」中已停用的模块标识。
+ * null 表示未取到（接口异常），此时不做过滤，避免把正常模块误隐藏。
+ */
+const disabledModuleKeys = ref(null)
+
+/** 命中的岗位名称（后端按 sys_role_kpi 匹配，未配置时为空） */
+const kpiRoleName = computed(() => dashData.value?.kpiRoleName || '')
 
 /** 系统样式映射 — 各业务子系统主题色 */
 const systemStyles = {
@@ -286,6 +239,11 @@ const allSystemList = computed(() => {
       if (route.hidden) return false
       if (route.path === '' || route.path === '/index' || route.path === '/user') return false
       if (route.path === '/system' || route.path === '/monitor' || route.path === '/tool') return false
+      // 业务全景图本身是导航页，不参与"业务子系统"统计，避免出现在自己的模块列表里
+      if (route.path === '/business-map') return false
+      // 后台「模块开关」已关闭的模块，其功能不进入工作台与「自定义常用功能」弹窗
+      const moduleCode = route.path.replace(/^\//, '')
+      if (disabledModuleKeys.value && disabledModuleKeys.value.has(moduleCode)) return false
       if (!route.meta || !route.meta.title) return false
       const visibleChildren = (route.children || []).filter(c => !c.hidden)
       return visibleChildren.length > 0
@@ -308,22 +266,23 @@ const allSystemList = computed(() => {
     .filter(sys => sys.menus.length > 0)
 })
 
-/** 用户自定义模块布局（逗号分隔的模块路径；空 = 显示全部） */
-const layoutCodes = ref('')
-
-/** 当前生效的模块集合（null = 不限制） */
-const enabledKeys = computed(() => {
-  if (!layoutCodes.value) return null
-  const set = new Set(layoutCodes.value.split(',').map(s => s.trim()).filter(Boolean))
-  return set.size > 0 ? set : null
-})
-
-/** 按用户配置过滤后的系统列表 */
-const systemList = computed(() => {
-  const all = allSystemList.value
-  const set = enabledKeys.value
-  if (!set) return all
-  return all.filter(sys => set.has(sys.path))
+/** 全量叶子菜单扁平化 — 供「常用功能」与「新手上路」使用 */
+const flatMenus = computed(() => {
+  const arr = []
+  allSystemList.value.forEach(sys => {
+    const moduleCode = sys.path.replace('/', '')
+    sys.fullMenus.forEach(menu => {
+      if (!menu.path || !menu.title) return
+      arr.push({
+        path: menu.path,
+        title: menu.title,
+        icon: menu.icon || '',
+        module: moduleCode,
+        moduleTitle: sys.title
+      })
+    })
+  })
+  return arr
 })
 
 /** 菜单标题 → 路径 映射（用于待办事项跳转，基于完整菜单列表） */
@@ -345,16 +304,74 @@ function findMenuPath(titles, fallback) {
   return fallback
 }
 
-/** KPI 指标卡片 — 按启用模块动态生成（每模块主指标一张卡 + 预警总数） */
+/** KPI 指标卡片 — 顶部固定 5 张（一屏一行），超出截断 */
+const KPI_LIMIT = 5
+
+/**
+ * 菜单路径首段 → 模块标识。
+ * 绝大多数模块两者一致（/wms/xxx → wms），个别例外单独登记：
+ * 消息中心菜单路径是 /message，但 sys_module.module_key 为 msg。
+ */
+const MODULE_PATH_ALIAS = { message: 'msg' }
+
+function moduleCodeOfPath(path) {
+  const seg = String(path || '').split('?')[0].split('/').filter(Boolean)[0]
+  if (!seg) return ''
+  return MODULE_PATH_ALIAS[seg] || seg
+}
+
+/** 菜单路径所属模块是否被后台「模块开关」关闭 */
+function pathModuleOff(path) {
+  const set = disabledModuleKeys.value
+  if (!set || set.size === 0 || !path) return false
+  const seg = moduleCodeOfPath(path)
+  return !!seg && set.has(seg)
+}
+
+/** 已停用模块标识列表（传给常用功能栏，过滤掉指向已关模块的固定项） */
+const offModuleList = computed(() => (disabledModuleKeys.value ? Array.from(disabledModuleKeys.value) : []))
+
+/**
+ * 给卡片补 disabled 标记。
+ * 顶部 5 张卡不随模块开关消失（少一张会留白很难看），但模块关闭后目标页面不可达，
+ * 因此保留卡片、仅取消跳转，点击时提示去模块开关开启。
+ */
+function withModuleState(cards) {
+  return cards.map(c => ({ ...c, disabled: pathModuleOff(c.path) }))
+}
+
 const kpiCards = computed(() => {
   const modules = dashData.value?.modules || []
   const alerts = dashData.value?.alerts || {}
-  const set = enabledKeys.value
 
   const cards = []
-  // 后端模块顺序即为卡片顺序
+
+  // 后端下发的核心指标卡（当前统一为 sys_role_kpi 的 __default__ 五张固定卡；
+  // 岗位差异化配置已下线，后续改由「门户卡片自定义维护」在后台统一配置）
+  // 接口返回空数组时走下方原「按模块」逻辑兜底，保证界面不空白
+  const roleKpis = dashData.value?.coreKpis || []
+  if (roleKpis.length > 0) {
+    roleKpis.forEach(k => {
+      const titles = String(k.targetTitles || '').split(',').map(s => s.trim()).filter(Boolean)
+      const color = k.color || '#4f46e5'
+      cards.push({
+        label: k.label,
+        value: k.value,
+        unit: k.unit || '',
+        icon: k.icon || 'chart',
+        color,
+        bgColor: hexToRgba(color, 0.1),
+        sub: k.sub || '',
+        subText: k.subText || '',
+        trendClass: 'trend--neutral',
+        trendIcon: '',
+        path: findMenuPath(titles, k.targetPath || ''),
+      })
+    })
+    return withModuleState(cards).slice(0, KPI_LIMIT)
+  }
+
   modules.forEach(mod => {
-    if (set && !set.has('/' + mod.code)) return
     if (mod.status !== 'active') return
     const conf = kpiConfig[mod.code]
     if (!conf || !Array.isArray(mod.metrics) || mod.metrics.length === 0) return
@@ -393,8 +410,17 @@ const kpiCards = computed(() => {
     path: findMenuPath(['库存预警'], '/wms/inv/alert'),
   })
 
-  return cards
+  return withModuleState(cards).slice(0, KPI_LIMIT)
 })
+
+/** KPI 卡片点击：模块已关闭时只提示不跳转（避免跳到 404 页面） */
+function onKpiClick(kpi) {
+  if (kpi.disabled) {
+    ElMessage.info(`「${kpi.label}」所属模块已关闭，可在「系统管理 → 模块开关」中重新开启`)
+    return
+  }
+  goPath(kpi.path)
+}
 
 /** 十六进制色值转 rgba */
 function hexToRgba(hex, alpha) {
@@ -438,16 +464,23 @@ watch(kpiCards, (cards) => {
   })
 }, { immediate: true })
 
-/** 待办事项列表 — 覆盖全模块，并按用户启用的模块过滤 */
+/** 模块是否启用：后台「模块开关」关闭后，其待办与动态一律不展示（接口异常时按启用处理） */
+function isModuleOn(code) {
+  if (!code) return true
+  return !(disabledModuleKeys.value && disabledModuleKeys.value.has(code))
+}
+
+/** 待办事项列表 — 覆盖全模块 */
 const todoItems = computed(() => {
   const todos = dashData.value?.todos || {}
   const alerts = dashData.value?.alerts || {}
-  const set = enabledKeys.value
 
   const items = []
 
   /** 待办定义：模块路径 / 取数字段 / 文案 / 优先级 / 菜单标题匹配 / 兜底路径 */
   const definitions = [
+    // 流程中心待办置顶：有则排第一，无则不占位（流转到我这里的审批最需要先处理）
+    { module: '/flow',  count: todos.flowTodo,           text: c => `流程待办 ${c} 条待我审批`,         priority: 'high',   titles: ['待办流程'], fallback: '/flow/todo' },
     { module: '/safety', count: todos.safetyHazards,    text: c => `安全隐患 ${c} 项待整改闭环`,       priority: 'high',   titles: ['隐患管理', '隐患排查', '隐患排查治理'], fallback: '/safety/dualcontrol/hazard' },
     { module: '/qms',    count: todos.qmsNcrs,           text: c => `质量NCR ${c} 项未闭环`,            priority: 'high',   titles: ['NCR台账'], fallback: '/qms/ncr/ncrlist' },
     { module: '/dms',    count: todos.workOrders,         text: c => `待处理设备工单 ${c} 张`,           priority: 'high',   titles: ['工单列表'], fallback: '/dms/workorder/list' },
@@ -462,7 +495,8 @@ const todoItems = computed(() => {
 
   definitions.forEach(def => {
     if (!def.count || def.count <= 0) return
-    if (set && !set.has(def.module)) return
+    // 模块已关闭：不展示该模块的待办
+    if (!isModuleOn(def.module.replace(/^\//, ''))) return
     items.push({
       text: def.text(def.count),
       priority: def.priority,
@@ -480,26 +514,25 @@ const activityItems = computed(() => {
   const items = []
   const modules = dashData.value?.modules || []
   const todos = dashData.value?.todos || {}
-  const set = enabledKeys.value
 
-  // 置顶预警类动态
-  if (todos.safetyHazards > 0 && (!set || set.has('/safety'))) {
+  // 置顶预警类动态（模块关闭后不再推送该类提醒）
+  if (todos.safetyHazards > 0 && isModuleOn('safety')) {
     items.push({ text: `安全生产：${todos.safetyHazards} 项隐患治理进行中`, time: '实时', icon: 'warning', color: '#e9423a', bgColor: 'rgba(233, 66, 58, 0.1)', path: findMenuPath(['隐患管理', '隐患排查'], '/safety/dualcontrol/hazard') })
   }
-  if (todos.qmsNcrs > 0 && (!set || set.has('/qms'))) {
+  if (todos.qmsNcrs > 0 && isModuleOn('qms')) {
     items.push({ text: `质量管理：${todos.qmsNcrs} 项NCR处置流程中`, time: '实时', icon: 'shield', color: '#e8900f', bgColor: 'rgba(232, 144, 15, 0.1)', path: findMenuPath(['NCR台账'], '/qms/ncr/ncrlist') })
   }
-  if (todos.stockAlerts > 0 && (!set || set.has('/wms'))) {
+  if (todos.stockAlerts > 0 && isModuleOn('wms')) {
     items.push({ text: `仓库管理：${todos.stockAlerts} 项物料库存预警`, time: '实时', icon: 'shopping', color: '#4f46e5', bgColor: 'rgba(79, 70, 229, 0.1)', path: findMenuPath(['库存预警'], '/wms/inv/alert') })
   }
-  if (todos.workOrders > 0 && (!set || set.has('/dms'))) {
+  if (todos.workOrders > 0 && isModuleOn('dms')) {
     items.push({ text: `设备管理：${todos.workOrders} 张工单待处理`, time: '实时', icon: 'clipboard', color: '#2c8af5', bgColor: 'rgba(44, 138, 245, 0.1)', path: findMenuPath(['工单列表'], '/dms/workorder/list') })
   }
 
   // 各模块业务概览动态（仅展示有数据的模块，全 0 模块不推送动态）
   modules.forEach(mod => {
     if (items.length >= 8) return
-    if (set && !set.has('/' + mod.code)) return
+    if (!isModuleOn(mod.code)) return
     if (mod.status !== 'active' || !Array.isArray(mod.metrics) || mod.metrics.length === 0) return
     const hasData = mod.metrics.some(m => parseFloat(m.value) > 0)
     if (!hasData) return
@@ -544,13 +577,6 @@ function goPath(path) {
   }
 }
 
-/** 点击系统箭头 - 跳转到该系统的第一个菜单 */
-function goSystemFirst(sys) {
-  if (sys.menus.length > 0) {
-    goPath(sys.menus[0].path)
-  }
-}
-
 /** 加载首页数据 */
 function loadDashboard() {
   loading.value = true
@@ -562,49 +588,65 @@ function loadDashboard() {
   })
 }
 
-/** 加载用户模块布局配置 */
-function loadLayout() {
-  getHomeLayout().then(res => {
-    layoutCodes.value = (res.data || res.msg || '') + ''
-  }).catch(() => {})
-}
-
-/** 自定义模块弹窗 */
-const layoutDialog = reactive({
-  visible: false,
-  checked: [],
-  saving: false,
+/** 新手上路：任务列表 + 双层开关状态 */
+const onboard = ref({
+  tasks: [],
+  roleName: '',
+  globalEnabled: true,
+  userEnabled: true
 })
 
-function openLayoutDialog() {
-  // 以当前生效模块为初始勾选
-  layoutDialog.checked = systemList.value.map(sys => sys.path)
-  layoutDialog.visible = true
+/** 系统级与用户级开关同时开启时才展示 */
+const onboardVisible = computed(() => onboard.value.globalEnabled && onboard.value.userEnabled)
+
+function loadOnboard() {
+  getOnboardTasks().then(res => {
+    const data = res.data || {}
+    onboard.value = {
+      tasks: Array.isArray(data.tasks) ? data.tasks : [],
+      roleName: data.roleName || '',
+      globalEnabled: data.globalEnabled !== false,
+      userEnabled: data.userEnabled !== false
+    }
+  }).catch(() => {
+    // 接口异常时静默降级，不打扰用户
+  })
 }
 
-function checkAllModules() {
-  layoutDialog.checked = allSystemList.value.map(sys => sys.path)
+/** 保存用户级开关（关闭后可在「常用功能 → 自定义」里重新开启） */
+function setOnboardEnabled(enabled) {
+  const next = !!enabled
+  saveOnboardSetting(next).then(() => {
+    onboard.value = { ...onboard.value, userEnabled: next }
+    if (next) {
+      ElMessage.success('已开启新手上路')
+    } else {
+      ElMessage.success('已关闭新手上路，可在「常用功能 → 自定义」里重新开启')
+    }
+  }).catch(() => {
+    ElMessage.error('操作失败，请稍后重试')
+  })
 }
 
-function saveLayoutConfig() {
-  if (layoutDialog.checked.length === 0) {
-    proxy.$modal.msgWarning('请至少选择一个模块，或选择后保存')
-    return
-  }
-  layoutDialog.saving = true
-  const codes = layoutDialog.checked.join(',')
-  saveHomeLayout(codes).then(() => {
-    layoutCodes.value = codes
-    layoutDialog.visible = false
-    proxy.$modal.msgSuccess('首页模块配置已保存')
-  }).finally(() => {
-    layoutDialog.saving = false
+/** 加载后台已停用模块（工作台按模块开关过滤功能入口） */
+function loadDisabledModules() {
+  getDisabledModules().then(res => {
+    disabledModuleKeys.value = Array.isArray(res.data) ? new Set(res.data) : null
+  }).catch(() => {
+    // 接口异常时不阻塞页面，按不过滤处理
+    disabledModuleKeys.value = null
   })
 }
 
 onMounted(() => {
   loadDashboard()
-  loadLayout()
+  loadOnboard()
+  loadDisabledModules()
+})
+
+// 从菜单页返回时（keep-alive 缓存），刷新任务完成状态：刚走完的步骤应立刻打勾
+onActivated(() => {
+  loadOnboard()
 })
 </script>
 
@@ -641,10 +683,29 @@ onMounted(() => {
 }
 
 /* ========== 1. KPI 指标带 ========== */
+.kpi-scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--hp-muted-fg);
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--hp-primary);
+    flex-shrink: 0;
+  }
+}
+
+/* 固定 5 列：一屏一行铺满，卡片数超出的截断（见 kpiCards 里的 KPI_LIMIT） */
 .kpi-ribbon {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-  gap: 16px;
+  /* 列数随卡片数变化：岗位只配了 3-4 张卡时铺满一行，不留空位（默认为 5 张固定卡） */
+  grid-template-columns: repeat(var(--kpi-cols, 5), minmax(0, 1fr));
+  gap: 14px;
 }
 
 .kpi-card {
@@ -653,7 +714,7 @@ onMounted(() => {
   background: var(--hp-card);
   border: 1px solid var(--hp-border);
   border-radius: 16px;
-  padding: 20px 22px;
+  padding: 18px;
   box-shadow: var(--hp-shadow-1);
   animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.3s;
@@ -666,6 +727,17 @@ onMounted(() => {
     transform: translateY(-4px);
     box-shadow: var(--hp-shadow-2);
     border-color: color-mix(in srgb, var(--kpi-accent) 38%, var(--hp-border));
+  }
+
+  /* 所属模块已关闭：卡片保留占位，但不做可点击反馈 */
+  &.is-disabled {
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      box-shadow: var(--hp-shadow-1);
+      border-color: var(--hp-border);
+    }
   }
 
   /* 顶部渐变描边 */
@@ -684,17 +756,17 @@ onMounted(() => {
 /* 迷你柱状图装饰 */
 .kpi-card__bars {
   position: absolute;
-  right: 16px;
-  bottom: 40px;
+  right: 12px;
+  bottom: 38px;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 52px;
-  opacity: 0.55;
+  gap: 3px;
+  height: 46px;
+  opacity: 0.45;
   pointer-events: none;
 
   span {
-    width: 6px;
+    width: 5px;
     border-radius: 3px 3px 0 0;
     background: linear-gradient(to top, color-mix(in srgb, var(--kpi-accent) 18%, transparent), color-mix(in srgb, var(--kpi-accent) 62%, transparent));
     transform-origin: bottom;
@@ -719,13 +791,14 @@ onMounted(() => {
 }
 
 .kpi-card__icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
+  flex-shrink: 0;
   background: var(--kpi-bg);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kpi-accent) 14%, transparent);
 }
@@ -739,8 +812,8 @@ onMounted(() => {
 }
 
 .kpi-card__value {
-  margin: 0 0 14px;
-  font-size: 32px;
+  margin: 0 0 12px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
   color: var(--hp-foreground);
@@ -748,17 +821,18 @@ onMounted(() => {
   letter-spacing: -0.01em;
 
   .kpi-card__unit {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--hp-muted-fg);
-    margin-left: 4px;
+    margin-left: 3px;
   }
 }
 
 .kpi-card__bottom {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   position: relative;
   z-index: 1;
 }
@@ -769,8 +843,9 @@ onMounted(() => {
   gap: 3px;
   font-size: 12px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 999px;
+  white-space: nowrap;
 
   &.trend--up { color: #12a65c; background: #e6f7ee; }
   &.trend--down { color: #e9423a; background: #fdecec; }
@@ -780,186 +855,6 @@ onMounted(() => {
 .kpi-card__sub-text {
   font-size: 12px;
   color: var(--hp-muted-fg);
-}
-
-/* ========== 3. 业务子系统 ========== */
-.module-section {
-  animation: fadeUp 0.6s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-
-  &__left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  &__right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__bar {
-    width: 4px;
-    height: 18px;
-    border-radius: 2px;
-    background: linear-gradient(180deg, var(--hp-primary), #38bdf8);
-  }
-
-  &__title {
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--hp-foreground);
-    margin: 0;
-  }
-
-  &__badge {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--hp-primary);
-    background: color-mix(in srgb, var(--hp-primary) 10%, #fff);
-    border: 1px solid color-mix(in srgb, var(--hp-primary) 22%, transparent);
-    padding: 2px 10px;
-    border-radius: 999px;
-  }
-}
-
-.module-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 16px;
-}
-
-.module-tile {
-  position: relative;
-  overflow: hidden;
-  background: var(--hp-card);
-  border: 1px solid var(--hp-border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: var(--hp-shadow-1);
-  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-color 0.3s;
-
-  &:hover {
-    transform: translateY(-5px);
-    border-color: color-mix(in srgb, var(--tile-accent) 40%, var(--hp-border));
-    box-shadow:
-      var(--hp-shadow-2),
-      0 14px 34px -14px color-mix(in srgb, var(--tile-accent) 45%, transparent);
-
-    .module-tile__sheen { transform: translateX(220%) skewX(-18deg); }
-    .module-tile__arrow { background: var(--tile-accent); color: #fff; border-color: var(--tile-accent); }
-  }
-}
-
-/* 悬停扫光 */
-.module-tile__sheen {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -60%;
-  width: 45%;
-  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.5), transparent);
-  transform: translateX(-120%) skewX(-18deg);
-  transition: transform 0.7s ease;
-  pointer-events: none;
-}
-
-.module-tile__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.module-tile__title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.module-tile__icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  color: #fff;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--tile-accent) 82%, #fff 0%), color-mix(in srgb, var(--tile-accent) 58%, #38bdf8));
-  box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--tile-accent) 55%, transparent);
-}
-
-.module-tile__name {
-  font-size: 15.5px;
-  font-weight: 700;
-  color: var(--hp-foreground);
-  margin: 0 0 3px;
-}
-
-.module-tile__count {
-  font-size: 12px;
-  color: var(--hp-muted-fg);
-}
-
-.module-tile__arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  font-size: 14px;
-  color: var(--hp-muted-fg);
-  background: var(--hp-bg);
-  border: 1px solid var(--hp-border);
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover { transform: translateX(2px); }
-}
-
-.module-tile__menu-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.menu-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
-  border-radius: 9px;
-  font-size: 12.5px;
-  color: #3f4658;
-  background: #f6f7fb;
-  border: 1px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.22s;
-
-  .svg-icon { font-size: 14px; color: var(--hp-muted-fg); flex-shrink: 0; }
-
-  &:hover {
-    color: var(--tile-accent);
-    background: color-mix(in srgb, var(--tile-accent) 8%, #fff);
-    border-color: color-mix(in srgb, var(--tile-accent) 25%, transparent);
-    transform: translateY(-1px);
-
-    .svg-icon { color: var(--tile-accent); }
-  }
 }
 
 /* ========== 4. 待办 + 动态 ========== */
@@ -1207,8 +1102,8 @@ onMounted(() => {
 }
 
 /* ========== 响应式 ========== */
-@media (max-width: 1400px) {
-  .kpi-ribbon { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1366px) {
+  .kpi-ribbon { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1200px) {
@@ -1216,7 +1111,10 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .module-grid { grid-template-columns: 1fr; }
+  .kpi-ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
   .kpi-ribbon { grid-template-columns: 1fr; }
 }
 </style>

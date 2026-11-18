@@ -42,12 +42,3 @@ export function delHrClockRepair(clockRepairId) {
     method: 'delete'
   })
 }
-
-// 补卡审批
-export function auditHrClockRepair(clockRepairId, auditAction, auditRemark) {
-  return request({
-    url: '/hr/clockRepair/audit/' + clockRepairId,
-    method: 'put',
-    params: { auditAction, auditRemark }
-  })
-}

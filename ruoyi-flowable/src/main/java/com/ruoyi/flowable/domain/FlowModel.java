@@ -93,10 +93,19 @@ public class FlowModel extends BaseEntity
     private Long instanceCount;
 
     /**
+     * 是否系统流程（考勤/车辆/印章等已与业务模块联动的流程）
+     * 系统流程不允许删除，只允许修改或调整流程模型
+     */
+    private Boolean systemFlow;
+
+    /**
      * 查询开关：是否按流程 key 聚合、每 key 只返回 1 条（活动版本优先）
      * 不传默认为 true（前台流程发起页据此展示）
      */
     private Boolean onlyActive;
+
+    public Boolean getSystemFlow() { return systemFlow; }
+    public void setSystemFlow(Boolean systemFlow) { this.systemFlow = systemFlow; }
 
     public String getModelId() { return modelId; }
     public void setModelId(String modelId) { this.modelId = modelId; }

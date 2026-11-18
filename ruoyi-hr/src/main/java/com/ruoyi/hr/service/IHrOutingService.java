@@ -10,7 +10,4 @@ public interface IHrOutingService {
     public int updateHrOuting(HrOuting hrOuting);
     public int deleteHrOutingByIds(Long[] outingIds);
     public int deleteHrOutingById(Long outingId);
-
-    /** 外出审批（auditAction: 1=通过, 2=驳回） */
-    public int auditHrOuting(Long outingId, String auditAction, String auditRemark);
 }

@@ -125,7 +125,7 @@
         <el-button @click="handleClose">关 闭</el-button>
         <el-button type="primary" v-if="detail?.redirectUrl" @click="handleRedirect">
           <el-icon style="margin-right: 4px"><Position /></el-icon>
-          前往{{ detail.bizEntryName || '处理' }}
+          {{ redirectButtonText }}
         </el-button>
       </div>
     </template>
@@ -181,6 +181,16 @@ const hasContent = computed(() => {
   return content != null && String(content).trim() !== ''
 })
 
+/** 流程消息是否已办理（任务已办结，只能查看流程详情，不能再进办理页） */
+const flowHandled = computed(() => String(detail.value?.bizHandled || '0') === '1')
+
+const isFlowMessage = computed(() => detail.value?.bizSource === 'flow' && !!detail.value?.redirectUrl)
+
+const redirectButtonText = computed(() => {
+  if (isFlowMessage.value && flowHandled.value) return '查看流程详情'
+  return '前往' + (detail.value?.bizEntryName || '处理')
+})
+
 function open(payload) {
   let id = null
   let preset = null
@@ -224,11 +234,9 @@ function handleClose() {
   loading.value = false
 }
 
-function handleRedirect() {
-  if (!detail.value?.redirectUrl) return
-  const raw = detail.value.redirectUrl
-  // 解析 path 和 query 参数
-  const [path, queryString] = raw.split('?')
+/** 解析 redirectUrl 的 path 与 query 参数 */
+function parseRedirectQuery(raw) {
+  const [path, queryString] = String(raw || '').split('?')
   const query = {}
   if (queryString) {
     queryString.split('&').forEach(pair => {
@@ -236,6 +244,12 @@ function handleRedirect() {
       if (k) query[decodeURIComponent(k)] = v ? decodeURIComponent(v) : ''
     })
   }
+  return { path, query }
+}
+
+function handleRedirect() {
+  if (!detail.value?.redirectUrl) return
+  const { path, query } = parseRedirectQuery(detail.value.redirectUrl)
   // 检查路由是否存在：catch-all 404 路由（/:pathMatch(.*)*）解析后 matched 数组非空，
   // 但属于通配兜底，需通过比对解析出的完整路径与输入路径是否一致来识别
   const resolved = router.resolve(path)
@@ -247,6 +261,28 @@ function handleRedirect() {
     return
   }
   visible.value = false
+  // 流程页面是独立全屏页（与待办列表打开办理页口径一致），新标签页打开
+  if (path.startsWith('/flow/'))
+  {
+    // 已办理的流程消息：任务已办结，办理页会提示“任务不存在或已办理”，改为打开流程详情
+    if (path === '/flow/task/handle' && flowHandled.value)
+    {
+      if (!query.instanceId)
+      {
+        ElMessage.warning('该流程已办理，请前往流程中心查看')
+        return
+      }
+      const detailHref = router.resolve({
+        path: '/flow/detail/create',
+        query: { instanceId: query.instanceId, defName: query.defName || query.title || '' }
+      }).href
+      window.open(detailHref, '_blank')
+      return
+    }
+    const { href } = router.resolve({ path, query })
+    window.open(href, '_blank')
+    return
+  }
   router.push({ path, query })
 }
 
