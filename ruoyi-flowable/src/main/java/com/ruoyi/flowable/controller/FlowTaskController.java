@@ -39,6 +39,7 @@ import com.ruoyi.common.core.domain.entity.SysUser;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.ExtensionAttribute;
@@ -82,6 +83,9 @@ public class FlowTaskController extends BaseController
 
     @Autowired
     private HistoryService historyService;
+
+    @Autowired
+    private RuntimeService runtimeService;
 
     @Autowired
     private com.ruoyi.flowable.service.FlowRuntimeModelService flowRuntimeModelService;
@@ -310,6 +314,17 @@ public class FlowTaskController extends BaseController
     }
 
     /**
+     * 暂存表单修改（退回发起人场景）：只保存可编辑字段到流程变量，不办理、不流转
+     */
+    @Log(title = "流程任务", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('flowable:task:complete')")
+    @PutMapping("/saveForm")
+    public AjaxResult saveForm(@RequestBody FlowCompleteDTO dto)
+    {
+        return toAjax(flowProcessService.saveTaskForm(dto));
+    }
+
+    /**
      * 任务办理页：节点字段权限 + 绑定表单 + 当前值
      * 权限来源：流程定义 BPMN 中该节点（taskDefinitionKey）的 flowable:fieldPerms 扩展属性
      */
@@ -326,6 +341,7 @@ public class FlowTaskController extends BaseController
         String permJson = "";
         String opMenuJson = "";
         String signOpinionAttr = "";
+        String signOpinionJson = "";
         // 发起人（申请）节点：退回后由发起人修改表单重新提交，字段默认全部可编辑。
         // 该节点部署时才注入，设计器模型里没有，先按固定节点ID兜底识别
         boolean initiatorNode = com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID
@@ -340,6 +356,7 @@ public class FlowTaskController extends BaseController
                 permJson = readNodeAttr(el, "fieldPerms");
                 opMenuJson = readNodeAttr(el, "operationMenus");
                 signOpinionAttr = readNodeAttr(el, "signOpinion");
+                signOpinionJson = readNodeAttr(el, "signOpinionJson");
                 if (el instanceof UserTask)
                 {
                     String initiatorAttr = readNodeAttr(el, com.ruoyi.flowable.config.FlowReturnConstants.ATTR_INITIATOR_NODE);
@@ -352,6 +369,7 @@ public class FlowTaskController extends BaseController
             permJson = "";
             opMenuJson = "";
             signOpinionAttr = "";
+            signOpinionJson = "";
         }
         // 绑定表单 + 流程变量当前值
         ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
@@ -362,7 +380,7 @@ public class FlowTaskController extends BaseController
         String templateNodeId = resolveTemplateNodeId(task, task.getTaskDefinitionKey());
         FlowNodeForm nodeForm = pd == null ? null
                 : flowNodeFormService.selectByModelKeyAndNodeId(pd.getKey(), templateNodeId);
-        FlowForm form = pd == null ? null : flowFormService.selectFlowFormByProcessKey(pd.getKey());
+        FlowForm form = pd == null ? null : resolveBoundForm(pd.getKey());
         java.util.Map<String, Object> variables = taskService.getVariables(taskId);
         com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
         data.put("fieldPerms", permJson);
@@ -383,14 +401,57 @@ public class FlowTaskController extends BaseController
             data.put("layoutJson", form == null ? "" : (form.getLayoutJson() == null ? "" : form.getLayoutJson()));
         }
         data.put("variables", variables == null ? new java.util.HashMap<>() : variables);
+        // 表单规则/脚本：跟随表单定义，办理页据此做联动、动态必填与校验
+        data.put("extJson", form == null ? "" : (form.getExtJson() == null ? "" : form.getExtJson()));
         // 节点操作菜单：设计器勾选的按钮（提交/退回/转办/加签/终止/打印/抄送），
         // 未配置时返回空数组，由前端回退到默认菜单（提交/退回/打印/抄送）
         java.util.List<String> menus = parseMenuConfig(opMenuJson);
         data.put("opMenus", menus);
+        // 按钮明细（对标泛微）：自定义名称 / 默认审批意见，前端按此渲染按钮文案与预填意见
+        data.put("opMenuDetails", parseMenuDetails(opMenuJson));
         // 节点是否启用签字意见（默认启用；表单里已放「签字意见」字段时由前端自行去重）
-        data.put("signOpinion", resolveSignOpinion(signOpinionAttr, menus));
+        data.put("signOpinion", resolveSignOpinion(signOpinionAttr, menus, signOpinionJson));
+        // 签字意见完整设置：必填 / 默认意见（未配置时必填=false、默认意见为空）
+        com.alibaba.fastjson2.JSONObject signCfg = parseSignOpinionConfig(signOpinionJson);
+        data.put("signOpinionRequired", signCfg.getBooleanValue("required"));
+        data.put("signOpinionDefault", signCfg.getString("defaultValue") == null ? "" : signCfg.getString("defaultValue"));
         data.put("assignee", task.getAssignee());
         return AjaxResult.success(data);
+    }
+
+    /**
+     * 解析流程绑定的表单：优先 flow_form.process_key 直查；
+     * 老数据未回写时按流程模型 metaInfo 的 formId 兜底反查（模型绑定表单的正式链路）
+     */
+    private FlowForm resolveBoundForm(String processKey)
+    {
+        if (StringUtils.isEmpty(processKey))
+        {
+            return null;
+        }
+        FlowForm form = flowFormService.selectFlowFormByProcessKey(processKey);
+        if (form != null)
+        {
+            return form;
+        }
+        try
+        {
+            org.flowable.engine.repository.Model model = repositoryService.createModelQuery()
+                    .modelKey(processKey).latestVersion().singleResult();
+            if (model != null && StringUtils.isNotEmpty(model.getMetaInfo()))
+            {
+                com.alibaba.fastjson2.JSONObject meta = com.alibaba.fastjson2.JSON.parseObject(model.getMetaInfo());
+                Long formId = meta == null ? null : meta.getLong("formId");
+                if (formId != null)
+                {
+                    return flowFormService.selectFlowFormByFormId(formId);
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return null;
     }
 
     /**
@@ -457,6 +518,101 @@ public class FlowTaskController extends BaseController
         {
             meta.put("title", "");
         }
+        try
+        {
+            com.ruoyi.common.core.domain.entity.SysUser user = getLoginUser().getUser();
+            meta.put("printUser", user == null ? getUsername()
+                    : (StringUtils.isNotEmpty(user.getNickName()) ? user.getNickName() : user.getUserName()));
+        }
+        catch (Exception e)
+        {
+            meta.put("printUser", getUsername());
+        }
+        data.put("meta", meta);
+        return AjaxResult.success(data);
+    }
+
+    /**
+     * 实例详情打印模板：按实例当前所在节点（运行中）或最后办理节点（已结束）解析节点打印模板。
+     * 已办/查询/我的请求等详情页没有「当前任务」，用实例维度取模板。
+     */
+    @PreAuthorize("@ss.hasPermi('flowable:task:todo')")
+    @GetMapping("/printTemplateByInstance/{instanceId}")
+    public AjaxResult printTemplateByInstance(@PathVariable("instanceId") String instanceId)
+    {
+        org.flowable.engine.history.HistoricProcessInstance hpi = historyService
+                .createHistoricProcessInstanceQuery().processInstanceId(instanceId).singleResult();
+        if (hpi == null)
+        {
+            return AjaxResult.error("流程实例不存在");
+        }
+        // 解析模板节点：运行中取第一个活动任务节点；已结束取最后办理完成的节点
+        String taskDefinitionKey = null;
+        String nodeName = null;
+        String definitionId = hpi.getProcessDefinitionId();
+        long runningCount = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(instanceId).count();
+        if (runningCount > 0)
+        {
+            org.flowable.task.api.Task active = taskService.createTaskQuery()
+                    .processInstanceId(instanceId).orderByTaskCreateTime().asc().listPage(0, 1).stream()
+                    .findFirst().orElse(null);
+            if (active != null)
+            {
+                taskDefinitionKey = active.getTaskDefinitionKey();
+                nodeName = active.getName();
+                definitionId = active.getProcessDefinitionId();
+            }
+        }
+        if (taskDefinitionKey == null)
+        {
+            org.flowable.task.api.history.HistoricTaskInstance last = historyService
+                    .createHistoricTaskInstanceQuery().processInstanceId(instanceId).finished()
+                    .orderByHistoricTaskInstanceEndTime().desc().listPage(0, 1).stream()
+                    .findFirst().orElse(null);
+            if (last != null)
+            {
+                taskDefinitionKey = last.getTaskDefinitionKey();
+                nodeName = last.getName();
+            }
+        }
+        ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionId(definitionId).singleResult();
+        String modelKey = pd == null ? null : pd.getKey();
+        // 发起人（申请）节点的模板挂在开始事件上，与任务级打印同一解析口径
+        String templateNodeId = taskDefinitionKey;
+        if (com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID.equals(taskDefinitionKey))
+        {
+            StartEvent start = findStartEvent(repositoryService.getBpmnModel(definitionId));
+            if (start != null && StringUtils.isNotEmpty(start.getId()))
+            {
+                templateNodeId = start.getId();
+                if (StringUtils.isEmpty(nodeName))
+                {
+                    nodeName = start.getName();
+                }
+            }
+        }
+        com.ruoyi.flowable.domain.FlowNodePrint print = templateNodeId == null ? null
+                : flowNodePrintService.selectByModelKeyAndNodeId(modelKey, templateNodeId);
+
+        com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
+        boolean configured = print != null && StringUtils.isNotEmpty(print.getLayoutJson());
+        data.put("configured", configured);
+        if (configured)
+        {
+            data.put("templateName", print.getTemplateName());
+            data.put("fieldsJson", print.getFieldsJson());
+            data.put("layoutJson", print.getLayoutJson());
+        }
+
+        // 打印抬头信息
+        com.alibaba.fastjson2.JSONObject meta = new com.alibaba.fastjson2.JSONObject();
+        meta.put("processName", pd == null ? "" : pd.getName());
+        meta.put("nodeName", StringUtils.isEmpty(nodeName)
+                ? (hpi.getEndTime() == null ? "进行中" : "流程结束") : nodeName);
+        meta.put("instanceId", instanceId);
+        meta.put("title", hpi.getName() == null ? "" : hpi.getName());
         try
         {
             com.ruoyi.common.core.domain.entity.SysUser user = getLoginUser().getUser();
@@ -551,7 +707,10 @@ public class FlowTaskController extends BaseController
         return value == null ? "" : value;
     }
 
-    /** 解析操作菜单 JSON 数组（解析失败按未配置处理） */
+    /**
+     * 解析操作菜单 JSON 数组（兼容两种格式：旧格式字符串数组、新格式对象数组 [{key,name,defaultOpinion}]）
+     * 解析失败按未配置处理
+     */
     private java.util.List<String> parseMenuConfig(String json)
     {
         java.util.List<String> menus = new ArrayList<>();
@@ -564,10 +723,21 @@ public class FlowTaskController extends BaseController
             com.alibaba.fastjson2.JSONArray arr = com.alibaba.fastjson2.JSON.parseArray(json);
             for (int i = 0; i < arr.size(); i++)
             {
-                String v = arr.getString(i);
-                if (StringUtils.isNotEmpty(v))
+                Object v = arr.get(i);
+                if (v instanceof String)
                 {
-                    menus.add(v);
+                    if (StringUtils.isNotEmpty((String) v))
+                    {
+                        menus.add((String) v);
+                    }
+                }
+                else if (v instanceof com.alibaba.fastjson2.JSONObject)
+                {
+                    String key = ((com.alibaba.fastjson2.JSONObject) v).getString("key");
+                    if (StringUtils.isNotEmpty(key))
+                    {
+                        menus.add(key);
+                    }
                 }
             }
         }
@@ -579,12 +749,102 @@ public class FlowTaskController extends BaseController
     }
 
     /**
-     * 节点是否启用签字意见：
-     * 1) 节点属性 flowable:signOpinion 明确写了值 → 以其为准（false/0/否 为关闭）；
-     * 2) 未配置（老流程）→ 默认启用（签字意见已从操作菜单独立出来）。
+     * 解析操作菜单按钮明细（对标泛微：自定义名称 / 默认审批意见）
+     * 返回 [{key, name, defaultOpinion}]；旧格式（字符串数组）只含 key，name/defaultOpinion 为空串
      */
-    private boolean resolveSignOpinion(String attr, java.util.List<String> menus)
+    private com.alibaba.fastjson2.JSONArray parseMenuDetails(String json)
     {
+        com.alibaba.fastjson2.JSONArray details = new com.alibaba.fastjson2.JSONArray();
+        if (StringUtils.isEmpty(json))
+        {
+            return details;
+        }
+        try
+        {
+            com.alibaba.fastjson2.JSONArray arr = com.alibaba.fastjson2.JSON.parseArray(json);
+            for (int i = 0; i < arr.size(); i++)
+            {
+                Object v = arr.get(i);
+                if (v instanceof String)
+                {
+                    com.alibaba.fastjson2.JSONObject o = new com.alibaba.fastjson2.JSONObject();
+                    o.put("key", v);
+                    o.put("name", "");
+                    o.put("defaultOpinion", "");
+                    details.add(o);
+                }
+                else if (v instanceof com.alibaba.fastjson2.JSONObject)
+                {
+                    com.alibaba.fastjson2.JSONObject src = (com.alibaba.fastjson2.JSONObject) v;
+                    if (StringUtils.isEmpty(src.getString("key")))
+                    {
+                        continue;
+                    }
+                    com.alibaba.fastjson2.JSONObject o = new com.alibaba.fastjson2.JSONObject();
+                    o.put("key", src.getString("key"));
+                    o.put("name", src.getString("name") == null ? "" : src.getString("name"));
+                    o.put("defaultOpinion", src.getString("defaultOpinion") == null ? "" : src.getString("defaultOpinion"));
+                    details.add(o);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            return new com.alibaba.fastjson2.JSONArray();
+        }
+        return details;
+    }
+
+    /**
+     * 解析签字意见完整设置（flowable:signOpinionJson：{enabled, required, defaultValue}）
+     * 未配置或解析失败返回仅含默认值的对象（required=false、defaultValue 空串）
+     */
+    private com.alibaba.fastjson2.JSONObject parseSignOpinionConfig(String json)
+    {
+        com.alibaba.fastjson2.JSONObject cfg = new com.alibaba.fastjson2.JSONObject();
+        cfg.put("required", false);
+        cfg.put("defaultValue", "");
+        if (StringUtils.isEmpty(json))
+        {
+            return cfg;
+        }
+        try
+        {
+            com.alibaba.fastjson2.JSONObject obj = com.alibaba.fastjson2.JSON.parseObject(json);
+            if (obj != null)
+            {
+                cfg.put("required", obj.getBooleanValue("required"));
+                cfg.put("defaultValue", obj.getString("defaultValue") == null ? "" : obj.getString("defaultValue"));
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return cfg;
+    }
+
+    /**
+     * 节点是否启用签字意见：
+     * 1) 完整配置 flowable:signOpinionJson 存在且写了 enabled → 以其为准；
+     * 2) 节点属性 flowable:signOpinion 明确写了值 → 以其为准（false/0/否 为关闭）；
+     * 3) 未配置（老流程）→ 默认启用（签字意见已从操作菜单独立出来）。
+     */
+    private boolean resolveSignOpinion(String attr, java.util.List<String> menus, String signOpinionJson)
+    {
+        if (StringUtils.isNotEmpty(signOpinionJson))
+        {
+            try
+            {
+                com.alibaba.fastjson2.JSONObject obj = com.alibaba.fastjson2.JSON.parseObject(signOpinionJson);
+                if (obj != null && obj.containsKey("enabled"))
+                {
+                    return obj.getBooleanValue("enabled");
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
         if (StringUtils.isNotEmpty(attr))
         {
             String v = attr.trim();
