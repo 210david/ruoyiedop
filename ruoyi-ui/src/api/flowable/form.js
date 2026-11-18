@@ -36,3 +36,8 @@ export function launch(data) {
   return request({ url: '/flowable/form/launch', method: 'post', data: data })
 }
 
+
+/** AI 生成表单规则草稿（后端白名单校验，前端确认后才应用） */
+export function aiFormRules(data) {
+  return request({ url: '/flowable/form/rules/ai', method: 'post', data: data, timeout: 120000 })
+}

@@ -212,6 +212,7 @@ function slimCell(x) {
   const c = { id: x.id, r: x.r, c: x.c, rs: x.rs || 1, cs: x.cs || 1, type: x.type || 'text' }
   if (c.type === 'field' && x.field) c.field = x.field
   if (['title', 'text', 'note', 'detail'].includes(c.type)) c.text = x.text || ''
+  if (x.group) c.group = true
   if (c.type === 'image' && x.src) c.src = x.src
   if (x.labelField) c.labelField = x.labelField
   if (x.attr) c.attr = x.attr
@@ -273,6 +274,7 @@ export function normalizeGrid(obj) {
     const cell = { id: raw.id || uid(), r, c, rs, cs, type: raw.type || 'text', style: hydrateStyle(raw.style) }
     if (cell.type === 'field') cell.field = raw.field
     if (['title', 'text', 'note', 'detail'].includes(cell.type)) cell.text = raw.text || ''
+    if (raw.group) cell.group = true
     if (cell.type === 'image' && raw.src) cell.src = raw.src
     if (raw.labelField) cell.labelField = raw.labelField
     if (raw.attr) cell.attr = raw.attr

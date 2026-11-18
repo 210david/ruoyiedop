@@ -13,15 +13,17 @@
         </div>
         <!-- 操作按钮由设计器「操作菜单」驱动：节点配置了哪些就显示哪些，未配置时回退默认菜单 -->
         <div class="hd-actions">
+          <!-- 退回发起人（申请）节点：表单可编辑，提供保存（暂存修改，不提交流转） -->
+          <el-button v-if="initiatorNode" icon="Finished" :loading="saving" v-hasPermi="['flowable:task:complete']" @click="onSaveTaskForm">保 存</el-button>
           <template v-for="m in menuList" :key="m">
-            <el-button v-if="m === 'submit'" type="primary" icon="Check" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('approved')">提 交</el-button>
-            <el-button v-else-if="m === 'reject' && canReturn" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">退 回</el-button>
-            <el-button v-else-if="m === 'transfer'" icon="Switch" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('transfer')">转 办</el-button>
-            <el-button v-else-if="m === 'addSign'" icon="EditPen" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('addSign')">加 签</el-button>
-            <el-button v-else-if="m === 'cc'" icon="Promotion" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('cc')">抄 送</el-button>
+            <el-button v-if="m === 'submit'" type="primary" icon="Check" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('approved')">{{ menuLabel('submit') }}</el-button>
+            <el-button v-else-if="m === 'reject' && canReturn" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">{{ menuLabel('reject') }}</el-button>
+            <el-button v-else-if="m === 'transfer'" icon="Switch" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('transfer')">{{ menuLabel('transfer') }}</el-button>
+            <el-button v-else-if="m === 'addSign'" icon="EditPen" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('addSign')">{{ menuLabel('addSign') }}</el-button>
+            <el-button v-else-if="m === 'cc'" icon="Promotion" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('cc')">{{ menuLabel('cc') }}</el-button>
             <el-button v-else-if="m === 'attach'" icon="Paperclip" @click="openAttachDialog">附 件</el-button>
-            <el-button v-else-if="m === 'print'" icon="Printer" @click="doPrint">打 印</el-button>
-            <el-button v-else-if="m === 'terminate'" type="danger" plain icon="CircleClose" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="doTerminate">终 止</el-button>
+            <el-button v-else-if="m === 'print'" icon="Printer" @click="doPrint">{{ menuLabel('print') }}</el-button>
+            <el-button v-else-if="m === 'terminate'" type="danger" plain icon="CircleClose" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="doTerminate">{{ menuLabel('terminate') }}</el-button>
           </template>
         </div>
       </div>
@@ -46,13 +48,13 @@
           <div class="rd-card-body" style="display: block">
             <!-- 与「流程发起」页一致：按表单设计器布局（网格布局）渲染后台 HTML 表单；无布局时回退字段列表 -->
             <div class="hd-form-wrap">
-              <FormGridRender v-if="gridLayout" ref="gridRenderRef" :grid="gridLayout" :fields="gridFields" :values="formData" :editable="gridEditable" />
+              <FormGridRender v-if="gridLayout" ref="gridRenderRef" :grid="gridLayout" :fields="gridFields" :values="formData" :overrides="ruleOverrides" :rule-errors="ruleErrors" :rule-detail-errors="ruleDetailErrors" :editable="gridEditable" @detail-change="runFormRules" />
               <el-form v-else :model="formData" label-width="130px" size="default" class="hd-form">
                 <el-row :gutter="0">
                   <el-col v-for="f in visibleFields" :key="f.field" :span="columnSpan(f)">
                     <el-form-item :label="f.label">
                       <dyn-field v-if="f._perm === 'edit'" :f="f" v-model="formData[f.field]" v-model:model-ids="formData[f.field + '__id']" />
-                      <FileUpload v-else-if="f.rtype === 'attach'" :model-value="formData[f.field]" disabled :limit="f.attachLimit || 5" />
+                      <FileUpload v-else-if="f.rtype === 'attach' || isAttachLikeValue(formData[f.field])" :model-value="formData[f.field]" disabled :limit="f.attachLimit || 5" />
                       <span v-else class="hd-ro">{{ displayValue(formData[f.field]) }}</span>
                     </el-form-item>
                   </el-col>
@@ -74,7 +76,7 @@
  表单已放该字段时直接填表单里的那个，避免出现两个意见框 -->
         <section class="rd-card" v-if="showCommentCard">
           <div class="rd-card-header">
-            <div class="rd-card-title"><span class="rd-card-icon">✎</span>签字意见</div>
+            <div class="rd-card-title"><span class="rd-card-icon">✎</span>签字意见<span v-if="signOpinionRequired" class="hd-required-mark">*</span><span v-if="signOpinionRequired" class="hd-required-tip">必填</span></div>
             <div class="hd-opinion-tools">
               <span class="hd-opinion-count" v-if="commentText">{{ commentText.length }} 字</span>
               <el-button link type="primary" size="small" :disabled="!commentText" @click="comment = ''">清 空</el-button>
@@ -138,23 +140,25 @@
               <el-table :data="resourceList" v-loading="attachLoading" border size="small" class="app-table">
                 <el-table-column label="资源名称" min-width="240">
                   <template #default="{ row }">
-                    <el-link type="primary" :href="fileHref(row.fileUrl)" target="_blank" :underline="false">
+                    <el-link type="primary" @click.prevent="handlePreview(row)" :underline="false">
                       {{ row.fileName }}
                     </el-link>
                     <span class="hd-attach-size">{{ fileSizeText(row.fileSize) }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="taskName" label="上传环节" width="140" show-overflow-tooltip />
                 <el-table-column label="上传人" width="120">
                   <template #default="{ row }">{{ row.uploaderName || '-' }}</template>
                 </el-table-column>
                 <el-table-column label="上传时间" width="170" align="center">
                   <template #default="{ row }">{{ row.createTime || '-' }}</template>
                 </el-table-column>
-                <el-table-column label="操作" width="80" align="center">
+                <el-table-column label="操作" width="130" align="center">
                   <template #default="{ row }">
-                    <el-button v-if="row.attachId" link type="danger" icon="Delete" @click="removeAttach(row)">删除</el-button>
-                    <span v-else class="hd-attach-size">—</span>
+                    <span class="hd-attach-ops">
+                      <el-link type="success" underline="never" @click="handlePreview(row)">预览</el-link>
+                      <el-link type="primary" underline="never" @click="handleDownload(row)">下载</el-link>
+                      <el-button v-if="row.attachId" link type="danger" icon="Delete" @click="removeAttach(row)">删除</el-button>
+                    </span>
                   </template>
                 </el-table-column>
                 <template #empty>
@@ -166,6 +170,9 @@
         </section>
       </div>
     </div>
+
+    <!-- 文件预览弹窗（相关资源页签：图片/PDF/Word/Excel/视频/文本） -->
+    <file-preview ref="filePreviewRef" />
 
     <!-- 提交审批弹窗（与发起页同一套「后续任务」样式）：确认下一环节与办理人 -->
     <el-dialog v-model="nextPickOpen" append-to-body width="840px" draggable :close-on-click-modal="false" class="submit-dialog">
@@ -342,13 +349,15 @@
 
 <script setup name="FlowTaskHandle">
 import request from '@/utils/request';
-import { completeTask, delegateTask, addSignTask, terminateTask, sendTaskCc, getReturnNodes, getTaskPrintTemplate, getOrgPickerDepts } from '@/api/flowable/flow';
+import { completeTask, saveTaskForm, delegateTask, addSignTask, terminateTask, sendTaskCc, getReturnNodes, getTaskPrintTemplate, getOrgPickerDepts } from '@/api/flowable/flow';
 import { listFlowAttach, addFlowAttach, delFlowAttach } from '@/api/flowable/attach';
 import { listCcByInstance } from '@/api/flowable/cc';
 import { listOpinionPresets } from '@/api/flowable/opinionPreset';
 import { DynField } from './dyn-field';
 import { normalizeHandleField, handleDisplayValue } from './field-norm';
 import FormGridRender from '@/components/FormGridRender.vue';
+import { parseExt } from '@/views/flowable/common/form-rules/constants';
+import { runRules, runFormScripts } from '@/views/flowable/common/form-rules/engine';
 import FileUpload from '@/components/FileUpload/index.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
@@ -381,6 +390,8 @@ const task = ref({
 
 const loading = ref(true);
 const submitting = ref(false);
+/** 保存（暂存表单修改）loading */
+const saving = ref(false);
 /** 转办/加签/抄送/终止 等操作的统一 loading */
 const acting = ref(false);
 const activeTab = ref('form');
@@ -439,6 +450,136 @@ const canReturn = ref(false);
 const formFields = ref([]);
 const formData = ref({});
 
+// ===== 交互规则引擎（flow_form.ext_json，办理页同样生效）=====
+const ruleOverrides = ref({});
+/** 规则实时校验错误：{ [field]: 提示文案 }，随字段变化即时刷新（不用等提交） */
+const ruleErrors = ref({});
+/** 明细行规则校验错误：{ '表名|行号|字段': 提示文案 }，传 FormGridRender 行内标红 */
+const ruleDetailErrors = ref({});
+const activeFormRules = computed(() => (taskExtJson.value ? parseExt(taskExtJson.value).rules : []));
+/** 初载标志（对标泛微「值变化才触发」机制）：
+ *  打开办理页只应用字段状态（必填/显隐/只读/动态选项），不重算 derive——
+ *  计算值已随流程变量落库，直接回显存量值；之后字段/明细值变化才全量触发规则 */
+let formInitDone = false;
+/** 节点编辑上下文门控（对标泛微「节点表单设计器内实现联动」）：
+ *  发起人（申请填单）节点始终执行；普通办理节点仅在节点字段权限配置了可编辑字段时执行；
+ *  节点自定义模板模式由模板单元格控制编辑/只读，规则不叠加；
+ *  纯审批只读节点一律不执行——后续节点是否可编辑/必填由「节点表单设置」控制 */
+function ruleEditableCtx() {
+  return initiatorNode.value || (!nodeFormMode.value && formFields.value.some((f) => f._perm === 'edit'));
+}
+/** 高级脚本执行：phase=load/change/submit；仅发起人/可编辑节点执行（审批只读节点改值无意义） */
+function runScriptsPhase(phase) {
+  if (!ruleEditableCtx() || !taskExtJson.value) return '';
+  const scripts = parseExt(taskExtJson.value).scripts || [];
+  if (!scripts.length) return '';
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  try {
+    runFormScripts(scripts, phase, {
+      get: (f) => formData.value[f],
+      set: (f, v) => {
+        if (formData.value[f] !== v) formData.value[f] = v;
+      },
+      detailData,
+      rows: (t) => detailData[t] || [],
+      fail: (msg) => {
+        throw new Error(msg);
+      },
+    });
+    return '';
+  } catch (e) {
+    return (e && e.message) || '高级脚本执行出错';
+  }
+}
+/** change 脚本防重入：脚本 set → watch → runFormRules → 脚本，一轮内只执行一次 */
+let scriptRunning = false;
+function runChangeScripts() {
+  if (scriptRunning) return;
+  scriptRunning = true;
+  try {
+    runScriptsPhase('change');
+  } finally {
+    scriptRunning = false;
+  }
+}
+function runFormRules() {
+  if (!activeFormRules.value.length) {
+    ruleOverrides.value = {};
+    ruleErrors.value = {};
+    ruleDetailErrors.value = {};
+    return;
+  }
+  // 初载回显：只应用字段状态（required/visible/readonly/options），不执行 derive 重算——
+  // 计算值（合计、大写等）已随流程变量落库，直接回显存量值；避免每次打开都全量重算浪费资源
+  if (!formInitDone) {
+    const result0 = runRules(
+      activeFormRules.value.filter((r) => r && r.enabled !== false && r.type !== 'derive' && r.type !== 'validate' && r.type !== 'script'),
+      formFields.value || [],
+      formData.value || {},
+      (formData.value && formData.value.detailData) || {},
+      {}
+    );
+    ruleOverrides.value = result0.states || {};
+    ruleErrors.value = {};
+    ruleDetailErrors.value = {};
+    return;
+  }
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  // 只读审批节点：仅执行展示型规则——derive（明细合计、大写等随明细数据回显）
+  // 与 visible（字段显隐，审批人看到的界面与填写态一致）；
+  // 不产生「解除只读/必填」覆盖与校验提示——是否可编辑/必填由节点表单设置控制
+  if (!ruleEditableCtx()) {
+    // 初载时 FormGridRender 可能尚未挂载，明细数据兜底取变量里的 detailData
+    const dd = detailData && Object.keys(detailData).length ? detailData : ((formData.value && formData.value.detailData) || {});
+    const result = runRules(activeFormRules.value.filter((r) => r && r.enabled !== false && (r.type === 'derive' || r.type === 'visible')), formFields.value || [], formData.value || {}, dd, {});
+    ruleOverrides.value = result.states || {}; // 只含 visible 覆盖（derive 不产生 states）
+    ruleErrors.value = {};
+    ruleDetailErrors.value = {};
+    for (const [k, v] of Object.entries(result.values || {})) {
+      if (formData.value[k] !== v) formData.value[k] = v;
+    }
+    return;
+  }
+  // 可编辑节点同样要兜底：初载时 FormGridRender 尚未挂载，getDetailData() 为空，
+  // derive（明细合计）会用空明细算出 0 覆盖变量里的存量值（保存后刷新合计变空就是这个原因）
+  const dd2 = detailData && Object.keys(detailData).length ? detailData : ((formData.value && formData.value.detailData) || {});
+  const result = runRules(activeFormRules.value, formFields.value || [], formData.value || {}, dd2, {});
+  ruleOverrides.value = result.states || {};
+  // 校验类规则实时提示：引擎每次重算都会执行 validate 规则，把错误映射到字段格内联展示
+  const errs = {};
+  const dErrs = {};
+  for (const e of result.errors || []) {
+    if (e.table) {
+      const key = e.table + '|' + e.rowIndex + '|' + e.field;
+      if (!dErrs[key]) dErrs[key] = e.message;
+    } else if (!errs[e.field]) {
+      errs[e.field] = e.message;
+    }
+  }
+  ruleErrors.value = errs;
+  ruleDetailErrors.value = dErrs;
+  for (const [k, v] of Object.entries(result.values || {})) {
+    if (formData.value[k] !== v) formData.value[k] = v;
+  }
+  // 高级脚本（字段变化时机）：仅可编辑节点，脚本写回的值经 watch 再触发一轮校验收敛
+  runChangeScripts();
+}
+watch(
+  () => formData.value,
+  () => runFormRules(),
+  { deep: true }
+);
+/** 提交前校验：可编辑节点先跑高级脚本（submit 时机可拦截），再跑规则校验。返回错误文案，无错误返回空串 */
+function validateFormRules() {
+  if (!ruleEditableCtx()) return '';
+  const scriptErr = runScriptsPhase('submit');
+  if (scriptErr) return scriptErr;
+  if (!activeFormRules.value.length) return '';
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  const { errors } = runRules(activeFormRules.value, formFields.value || [], formData.value || {}, detailData, { validate: true });
+  return errors && errors.length ? (formFields.value.find((f) => f.field === errors[0].field)?.label || errors[0].field) + ' ' + errors[0].message : '';
+}
+
 /** 当前节点使用节点表单模板（字段编辑/只读由模板网格属性控制，实时生效） */
 const nodeFormMode = ref(false);
 const visibleFields = computed(() => formFields.value.filter((f) => f._perm !== 'hidden' && !isFlowSysField(f.field)));
@@ -447,12 +588,20 @@ const hasEditFields = computed(() => nodeFormMode.value || formFields.value.some
 const gridEditable = computed(() => nodeFormMode.value || hasEditFields.value);
 /** 网格字段：无节点模板时把字段权限映射为 readonly，保证只读字段仍按纯文本回显 */
 const gridFields = computed(() => (nodeFormMode.value ? formFields.value : formFields.value.map((f) => ({ ...f, readonly: f._perm !== 'edit' }))));
+/** 附件值兜底：历史表单 rtype 丢失时，值本身是 /profile/ 文件路径（逗号分隔）也按附件回显 */
+function isAttachLikeValue(v) {
+  if (!v) return false;
+  const s = Array.isArray(v) ? v.join(',') : String(v).trim();
+  return /(^|,)\s*\/?profile\//i.test(s);
+}
 function displayValue(v) {
   return handleDisplayValue(v);
 }
 
 /** 表单设计器布局（grid 模式 → 与「流程发起」页同一渲染口径，展示后台 HTML 表单） */
 const gridLayout = ref(null);
+/** 任务表单的交互规则（ext_json）：规则引擎运行态用 */
+const taskExtJson = ref('');
 /** 网格实例：办理时取走明细行数据（明细不在 formFields 里，需单独回写流程变量） */
 const gridRenderRef = ref(null);
 
@@ -473,6 +622,16 @@ const INITIATOR_MENUS = ['submit', 'print', 'cc'];
 /** 当前节点是否为发起人（申请）节点：退回后由申请人重新提交 */
 const initiatorNode = ref(false);
 const opMenus = ref([]);
+/** 按钮明细（设计器配置的自定义名称 / 默认审批意见）：key → {name, defaultOpinion} */
+const opMenuDetails = ref({});
+/** 按钮默认文案（未配置自定义名称时使用） */
+const MENU_LABELS = { submit: '提 交', reject: '退 回', transfer: '转 办', addSign: '加 签', terminate: '终 止', print: '打 印', cc: '抄 送' };
+/** 按钮显示文案：设计器配置了自定义名称就用自定义名称 */
+function menuLabel(key) {
+  const d = opMenuDetails.value[key];
+  const name = d && d.name ? String(d.name).trim() : '';
+  return name || MENU_LABELS[key] || key;
+}
 const menuConfigured = computed(() => opMenus.value.length > 0);
 const menuList = computed(() => {
   if (menuConfigured.value) {
@@ -487,6 +646,10 @@ const menuList = computed(() => {
 /* ===== 签字意见：节点级开关 + 与表单字段去重 ===== */
 /** 节点是否启用签字意见（设计器节点属性「签字意见」开关，默认启用） */
 const signOpinionEnabled = ref(true);
+/** 节点是否要求签字意见必填（设计器「操作菜单」弹窗里的签字意见设置） */
+const signOpinionRequired = ref(false);
+/** 节点默认签字意见：进入办理页自动预填 */
+const signOpinionDefault = ref('');
 
 /** 网格布局里是否真的摆了某个字段（字段未拖入布局时，即使表单定义了也填不到） */
 function gridHasField(field) {
@@ -530,8 +693,15 @@ const userPickTitle = computed(() => {
 /* ===== 流程附件（相关资源） ===== */
 /** 各环节上传并登记到流程实例的附件（含签字意见环节附件） */
 const attachList = ref([]);
-/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录） */
-const formAttachList = computed(() => collectFormAttachments(formFields.value, formData.value));
+/** 统一文件预览弹窗（相关资源页签预览用） */
+const filePreviewRef = ref(null);
+/** 表单附件字段里已上传的文件（随流程变量保存，没有附件登记记录；上传人/时间取流程发起人 + 发起时间） */
+const formAttachList = computed(() =>
+  collectFormAttachments(formFields.value, formData.value, {
+    uploaderName: task.value.startUserName || '',
+    createTime: task.value.createTime || '',
+  })
+);
 /** 相关资源页签展示口径：表单附件 + 各环节附件 */
 const resourceList = computed(() => (attachList.value || []).concat(formAttachList.value));
 const attachLoading = ref(false);
@@ -579,6 +749,7 @@ async function loadTaskForm() {
     } catch (e) {}
     const variables = d.variables || {};
     nodeFormMode.value = !!d.nodeForm;
+    taskExtJson.value = d.extJson || '';
     // 发起人（申请）节点不受节点字段权限配置约束：未配权限的字段默认按“可编辑”处理，
     // 否则退回发起人后申请人改不了表单，等于白退。
     const editableAll = !!d.editableAll;
@@ -586,8 +757,23 @@ async function loadTaskForm() {
     initiatorNode.value = editableAll;
     // 节点操作菜单：设计器勾选的按钮，未配置（空数组）时前端回退默认菜单
     opMenus.value = Array.isArray(d.opMenus) ? d.opMenus : [];
+    // 按钮明细：自定义名称 / 默认审批意见（key → 明细对象）
+    const detailMap = {};
+    if (Array.isArray(d.opMenuDetails)) {
+      d.opMenuDetails.forEach((it) => {
+        if (it && it.key) detailMap[it.key] = { name: it.name || '', defaultOpinion: it.defaultOpinion || '' };
+      });
+    }
+    opMenuDetails.value = detailMap;
     // 节点「签字意见」开关：后端已按节点属性返回，未返回时默认启用
     signOpinionEnabled.value = typeof d.signOpinion === 'boolean' ? d.signOpinion : true;
+    // 签字意见必填与默认意见（设计器签字意见设置）
+    signOpinionRequired.value = d.signOpinionRequired === true;
+    signOpinionDefault.value = (d.signOpinionDefault || '').trim();
+    // 默认意见自动预填（意见框未被表单字段替代时）
+    if (showCommentCard.value && signOpinionDefault.value && !comment.value) {
+      comment.value = signOpinionDefault.value;
+    }
     formFields.value = fields.map((f) => normalizeHandleField(f, resolvePerm(f, perms, editableAll)));
     const data = {};
     for (const f of formFields.value) data[f.field] = variables[f.field];
@@ -595,17 +781,29 @@ async function loadTaskForm() {
     // （不放进去的话，办理页/详情页的明细表永远是空白行）
     data.detailData = variables.detailData;
     formData.value = data;
+    // 初载本轮 watch 只应用字段状态不重算 derive，执行完（nextTick 后）再放行「值变化触发」
+    formInitDone = false;
     // 与「流程发起」页统一：解析表单设计器布局，grid 模式用 FormGridRender 还原后台 HTML 表单
     const parsed = parseLayout(d.layoutJson);
     gridLayout.value = parsed.mode === 'grid' && parsed.grid ? parsed.grid : null;
+    // 高级脚本（打开表单时机）：表单数据就位后执行一次（仅可编辑节点生效），
+    // 同时标记初载完成——之后字段/明细值变化才全量触发交互规则
+    nextTick(() => {
+      formInitDone = true;
+      runScriptsPhase('load');
+    });
   } catch (e) {
+    formInitDone = true;
     formFields.value = [];
     formData.value = {};
     gridLayout.value = null;
     nodeFormMode.value = false;
     opMenus.value = [];
+    opMenuDetails.value = {};
     initiatorNode.value = false;
     signOpinionEnabled.value = true;
+    signOpinionRequired.value = false;
+    signOpinionDefault.value = '';
   } finally {
     loading.value = false;
   }
@@ -671,6 +869,29 @@ function switchTab(tab) {
 function submitApprove(outcome) {
   if (!task.value.taskId) {
     proxy.$modal.msgWarning('缺少任务标识，无法办理');
+    return;
+  }
+  // 按钮级默认审批意见（设计器配置）：意见为空时点击按钮自动预填
+  const menuKey = outcome === 'approved' ? 'submit' : 'reject';
+  const btnDetail = opMenuDetails.value[menuKey] || {};
+  const btnDefaultOpinion = (btnDetail.defaultOpinion || '').trim();
+  if (showCommentCard.value && btnDefaultOpinion && !commentText.value) {
+    comment.value = btnDefaultOpinion;
+  }
+  // 签字意见必填校验（设计器节点级设置）：默认意见框或表单意见字段为空时拦截
+  if (signOpinionRequired.value) {
+    const opinionEmpty = showCommentCard.value
+      ? !commentText.value
+      : formSignOpinionField.value && !htmlToText(formData.value.signOpinion || '').trim();
+    if (opinionEmpty) {
+      proxy.$modal.msgWarning('请填写签字意见');
+      return;
+    }
+  }
+  // 规则引擎校验（validate 规则）：先于明细校验，命中直接拦截
+  const ruleMsg = validateFormRules();
+  if (ruleMsg) {
+    proxy.$modal.msgWarning(ruleMsg);
     return;
   }
   // 可编辑节点：先校验明细表必填列（明细行不在 el-form 模型里，需单独校验）
@@ -1008,6 +1229,32 @@ function doComplete(outcome, extra, targetActivityId) {
   });
 }
 
+/** 保存（暂存表单修改，退回发起人场景）：只回写可编辑字段，不办理、不流转 */
+function onSaveTaskForm() {
+  const variables = {};
+  for (const f of formFields.value) {
+    if (f._perm === 'edit') variables[f.field] = formData.value[f.field];
+  }
+  // 明细行一并回写（未改动时原样带回，保证变量里始终是完整明细）
+  const detail = gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : null;
+  if (detail && Object.keys(detail).length) variables.detailData = detail;
+  if (!Object.keys(variables).length) {
+    proxy.$modal.msgWarning('当前没有可保存的表单修改');
+    return;
+  }
+  saving.value = true;
+  saveTaskForm({ taskId: task.value.taskId, variables })
+    .then(() => {
+      proxy.$modal.msgSuccess('已保存，表单修改已更新到流程');
+    })
+    .catch((e) => {
+      proxy.$modal.msgError('保存失败：' + (e?.message || e));
+    })
+    .finally(() => {
+      saving.value = false;
+    });
+}
+
 /** 办理完成后的统一处理（加签回流 / 正常提示） */
 function handleCompleteResult(res, outcome, returnToName) {
   // 加签（委派）任务：办理后回到原办理人，流程未推进
@@ -1297,6 +1544,33 @@ function fileHref(url) {
   return import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(url) + '&token=' + getToken();
 }
 
+/** 预览：图片/PDF/Word/Excel/视频/文本统一走文件预览弹窗（与流程详情相关资源一致） */
+function handlePreview(row) {
+  if (!row || !row.fileUrl) return;
+  filePreviewRef.value?.open(row.fileUrl, row.fileName);
+}
+
+/** 下载：<a> 无法携带 Authorization，带 Token 取 Blob 后触发下载 */
+function handleDownload(row) {
+  if (!row || !row.fileUrl) return;
+  fetch(fileHref(row.fileUrl), { headers: { Authorization: 'Bearer ' + getToken() } })
+    .then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.blob();
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = row.fileName || '附件';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+    })
+    .catch(() => proxy.$modal.msgError('下载失败，请稍后重试'));
+}
+
 function fileSizeText(size) {
   const n = Number(size || 0);
   if (!n) return '';
@@ -1411,6 +1685,21 @@ loadOpinionPresets();
 .hd-opinion-count {
   font-size: 12px;
   color: var(--ink-400, #94a3b8);
+}
+/* 签字意见必填标记（设计器节点级「意见必填」） */
+.hd-required-mark {
+  margin-left: 2px;
+  color: var(--el-color-danger);
+  font-weight: 600;
+}
+.hd-required-tip {
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--el-color-danger);
+  background: var(--el-color-danger-light-9, #fef0f0);
+  border-radius: 3px;
 }
 
 /* 常用意见：快捷短语 chips */
@@ -1562,6 +1851,12 @@ loadOpinionPresets();
   margin-left: 8px;
   font-size: 12px;
   color: var(--ink-400, #94a3b8);
+}
+/* 相关资源操作列：预览 / 下载 / 删除 之间留间距 */
+.hd-attach-ops {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 .hd-attach-tip {
   margin-top: 10px;
