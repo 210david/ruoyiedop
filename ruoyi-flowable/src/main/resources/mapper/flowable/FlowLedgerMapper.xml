@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowLedgerMapper">
+
+    <resultMap type="FlowLedger" id="FlowLedgerResult">
+        <id     property="ledgerId"    column="ledger_id"/>
+        <result property="ledgerKey"   column="ledger_key"/>
+        <result property="ledgerName"  column="ledger_name"/>
+        <result property="ledgerDesc"  column="ledger_desc"/>
+        <result property="category"    column="category"/>
+        <result property="formId"      column="form_id"/>
+        <result property="formKey"     column="form_key"/>
+        <result property="formName"    column="form_name"/>
+        <result property="processKey"  column="process_key"/>
+        <result property="tableName"   column="table_name"/>
+        <result property="columnsJson" column="columns_json"/>
+        <result property="queryJson"   column="query_json"/>
+        <result property="exportFlag"  column="export_flag"/>
+        <result property="status"      column="status"/>
+        <result property="orderNum"    column="order_num"/>
+        <result property="menuId"      column="menu_id"/>
+        <result property="delFlag"     column="del_flag"/>
+        <result property="createBy"    column="create_by"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateBy"    column="update_by"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="remark"      column="remark"/>
+    </resultMap>
+
+    <resultMap type="FlowLedgerGrant" id="FlowLedgerGrantResult">
+        <id     property="grantId"    column="grant_id"/>
+        <result property="ledgerId"   column="ledger_id"/>
+        <result property="grantType"  column="grant_type"/>
+        <result property="targetId"   column="target_id"/>
+        <result property="scopeType"  column="scope_type"/>
+        <result property="scopeJson"  column="scope_json"/>
+        <result property="canExport"  column="can_export"/>
+        <result property="grantName"  column="grant_name"/>
+        <result property="createBy"   column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy"   column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectFlowLedgerVo">
+        select ledger_id, ledger_key, ledger_name, ledger_desc, category, form_id, form_key, process_key,
+               table_name, columns_json, query_json, export_flag, status, order_num, menu_id, del_flag,
+               create_by, create_time, update_by, update_time, remark,
+               (select f.form_name from flow_form f where f.form_id = flow_ledger.form_id) as form_name
+          from flow_ledger
+    </sql>
+
+    <select id="selectFlowLedgerList" parameterType="FlowLedger" resultMap="FlowLedgerResult">
+        <include refid="selectFlowLedgerVo"/>
+        where del_flag = '0'
+        <if test="ledgerName != null and ledgerName != ''"> AND ledger_name LIKE CONCAT('%', #{ledgerName}, '%')</if>
+        <if test="category != null and category != ''"> AND category = #{category}</if>
+        <if test="status != null and status != ''"> AND status = #{status}</if>
+        <if test="formId != null"> AND form_id = #{formId}</if>
+        order by order_num asc, ledger_id asc
+    </select>
+
+    <select id="selectFlowLedgerById" parameterType="Long" resultMap="FlowLedgerResult">
+        <include refid="selectFlowLedgerVo"/>
+        where ledger_id = #{ledgerId} and del_flag = '0'
+    </select>
+
+    <select id="selectFlowLedgerByKey" parameterType="String" resultMap="FlowLedgerResult">
+        <include refid="selectFlowLedgerVo"/>
+        where ledger_key = #{ledgerKey} and del_flag = '0' limit 1
+    </select>
+
+    <select id="countByLedgerKey" parameterType="String" resultType="int">
+        select count(1) from flow_ledger where ledger_key = #{ledgerKey}
+    </select>
+
+    <select id="selectActiveLedgerList" resultMap="FlowLedgerResult">
+        <include refid="selectFlowLedgerVo"/>
+        where del_flag = '0' and status = '0'
+        order by order_num asc, ledger_id asc
+    </select>
+
+    <insert id="insertFlowLedger" parameterType="FlowLedger" useGeneratedKeys="true" keyProperty="ledgerId">
+        insert into flow_ledger
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ledgerKey != null">ledger_key,</if>
+            <if test="ledgerName != null">ledger_name,</if>
+            <if test="ledgerDesc != null">ledger_desc,</if>
+            <if test="category != null">category,</if>
+            <if test="formId != null">form_id,</if>
+            <if test="formKey != null">form_key,</if>
+            <if test="processKey != null">process_key,</if>
+            <if test="tableName != null">table_name,</if>
+            <if test="columnsJson != null">columns_json,</if>
+            <if test="queryJson != null">query_json,</if>
+            <if test="exportFlag != null">export_flag,</if>
+            <if test="status != null">status,</if>
+            <if test="orderNum != null">order_num,</if>
+            <if test="menuId != null">menu_id,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="ledgerKey != null">#{ledgerKey},</if>
+            <if test="ledgerName != null">#{ledgerName},</if>
+            <if test="ledgerDesc != null">#{ledgerDesc},</if>
+            <if test="category != null">#{category},</if>
+            <if test="formId != null">#{formId},</if>
+            <if test="formKey != null">#{formKey},</if>
+            <if test="processKey != null">#{processKey},</if>
+            <if test="tableName != null">#{tableName},</if>
+            <if test="columnsJson != null">#{columnsJson},</if>
+            <if test="queryJson != null">#{queryJson},</if>
+            <if test="exportFlag != null">#{exportFlag},</if>
+            <if test="status != null">#{status},</if>
+            <if test="orderNum != null">#{orderNum},</if>
+            <if test="menuId != null">#{menuId},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFlowLedger" parameterType="FlowLedger">
+        update flow_ledger
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="ledgerKey != null">ledger_key = #{ledgerKey},</if>
+            <if test="ledgerName != null">ledger_name = #{ledgerName},</if>
+            <if test="ledgerDesc != null">ledger_desc = #{ledgerDesc},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="formId != null">form_id = #{formId},</if>
+            <if test="formKey != null">form_key = #{formKey},</if>
+            <if test="processKey != null">process_key = #{processKey},</if>
+            <if test="tableName != null">table_name = #{tableName},</if>
+            <if test="columnsJson != null">columns_json = #{columnsJson},</if>
+            <if test="queryJson != null">query_json = #{queryJson},</if>
+            <if test="exportFlag != null">export_flag = #{exportFlag},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="menuId != null">menu_id = #{menuId},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where ledger_id = #{ledgerId}
+    </update>
+
+    <update id="updateLedgerMenuId">
+        update flow_ledger set menu_id = #{menuId} where ledger_id = #{ledgerId}
+    </update>
+
+    <update id="deleteFlowLedgerByIds" parameterType="Long">
+        update flow_ledger set del_flag = '2' where ledger_id in
+        <foreach item="ledgerId" collection="array" open="(" separator="," close=")">#{ledgerId}</foreach>
+    </update>
+
+    <select id="selectGrantList" parameterType="FlowLedgerGrant" resultMap="FlowLedgerGrantResult">
+        select g.grant_id, g.ledger_id, g.grant_type, g.target_id, g.scope_type, g.scope_json, g.can_export,
+               g.create_by, g.create_time, g.update_by, g.update_time,
+               case g.grant_type
+                    when 'company' then (select d.dept_name from sys_dept d where d.dept_id = g.target_id)
+                    when 'dept'    then (select d.dept_name from sys_dept d where d.dept_id = g.target_id)
+                    when 'role'    then (select r.role_name from sys_role r where r.role_id = g.target_id)
+                    when 'user'    then (select u.nick_name from sys_user u where u.user_id = g.target_id)
+                    else '全员'
+               end as grant_name
+          from flow_ledger_grant g
+        <where>
+            <if test="ledgerId != null"> AND g.ledger_id = #{ledgerId}</if>
+            <if test="grantType != null and grantType != ''"> AND g.grant_type = #{grantType}</if>
+        </where>
+        order by g.grant_id asc
+    </select>
+
+    <insert id="insertGrant" parameterType="FlowLedgerGrant" useGeneratedKeys="true" keyProperty="grantId">
+        insert into flow_ledger_grant
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ledgerId != null">ledger_id,</if>
+            <if test="grantType != null">grant_type,</if>
+            <if test="targetId != null">target_id,</if>
+            <if test="scopeType != null">scope_type,</if>
+            <if test="scopeJson != null">scope_json,</if>
+            <if test="canExport != null">can_export,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="ledgerId != null">#{ledgerId},</if>
+            <if test="grantType != null">#{grantType},</if>
+            <if test="targetId != null">#{targetId},</if>
+            <if test="scopeType != null">#{scopeType},</if>
+            <if test="scopeJson != null">#{scopeJson},</if>
+            <if test="canExport != null">#{canExport},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateGrant" parameterType="FlowLedgerGrant">
+        update flow_ledger_grant
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="grantType != null">grant_type = #{grantType},</if>
+            <if test="targetId != null">target_id = #{targetId},</if>
+            <if test="scopeType != null">scope_type = #{scopeType},</if>
+            <!-- scopeJson 由服务层校验后置空，这里始终写入，避免从自定义范围切回其他范围时残留旧值 -->
+            scope_json = #{scopeJson},
+            <if test="canExport != null">can_export = #{canExport},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where grant_id = #{grantId}
+    </update>
+
+    <delete id="deleteGrantByIds">
+        delete from flow_ledger_grant where grant_id in
+        <foreach item="grantId" collection="grantIds" open="(" separator="," close=")">#{grantId}</foreach>
+    </delete>
+
+    <delete id="deleteGrantByLedgerId" parameterType="Long">
+        delete from flow_ledger_grant where ledger_id = #{ledgerId}
+    </delete>
+</mapper>

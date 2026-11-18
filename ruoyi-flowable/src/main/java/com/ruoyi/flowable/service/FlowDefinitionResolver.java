@@ -2,9 +2,11 @@ package com.ruoyi.flowable.service;
 
 import java.util.List;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.repository.Model;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.flowable.domain.FlowProcdefExt;
 import com.ruoyi.flowable.mapper.FlowProcdefExtMapper;
@@ -72,6 +74,7 @@ public class FlowDefinitionResolver
         {
             return null;
         }
+        ProcessDefinition target;
         ProcessDefinition active = activeFlagged(defs);
         if (active != null)
         {
@@ -80,14 +83,52 @@ public class FlowDefinitionResolver
                 throw new ServiceException("当前活动版本 V" + active.getVersion()
                         + " 已挂起，无法发起：请先激活该版本，或在版本管理中把其他版本设为活动版本");
             }
-            return active;
+            target = active;
         }
-        ProcessDefinition usable = highestUsable(defs);
-        if (usable == null)
+        else
         {
-            throw new ServiceException("流程[" + processKey + "]所有版本均已挂起，无法发起：请先在版本管理中激活其中一个版本");
+            target = highestUsable(defs);
+            if (target == null)
+            {
+                throw new ServiceException("流程[" + processKey + "]所有版本均已挂起，无法发起：请先在版本管理中激活其中一个版本");
+            }
         }
-        return usable;
+        // 高级设置「流程锁定」：锁定即视为停止对外受理，遍历所有发起入口（通用表单/请假/预演）统一拦截
+        if (isModelLocked(processKey))
+        {
+            throw new ServiceException("流程「" + target.getName() + "」已在高级设置中锁定，前台不可发起");
+        }
+        return target;
+    }
+
+    /**
+     * 流程模型是否开启「高级设置 → 流程锁定」
+     *
+     * <p>锁定标志存在 act_re_model.META_INFO 的 locked 字段上（按流程 Key 作用于该流程的全部版本），
+     * 未部署或模型已删除时视为未锁定。</p>
+     *
+     * @param processKey 流程定义 Key
+     * @return true=已锁定，不可发起新流程
+     */
+    public boolean isModelLocked(String processKey)
+    {
+        List<Model> models = repositoryService.createModelQuery().modelKey(processKey).list();
+        for (Model model : models)
+        {
+            try
+            {
+                JSONObject meta = JSONObject.parseObject(model.getMetaInfo() == null ? "{}" : model.getMetaInfo());
+                if (Boolean.TRUE.equals(meta.getBoolean("locked")))
+                {
+                    return true;
+                }
+            }
+            catch (Exception ignored)
+            {
+                // 历史脏数据解析失败按未锁定处理，不影响发起
+            }
+        }
+        return false;
     }
 
     /** 版本倒序列表中第一个未挂起的版本；全部挂起时返回 null */

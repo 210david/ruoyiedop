@@ -144,4 +144,10 @@ public class SysMessageServiceImpl implements ISysMessageService
     {
         messageMapper.updateBizHandled(bizSource, bizId);
     }
+
+    @Override
+    public void markHandledByUrl(String bizSource, String urlKeyword)
+    {
+        messageMapper.updateBizHandledByUrl(bizSource, urlKeyword);
+    }
 }

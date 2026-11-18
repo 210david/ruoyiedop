@@ -93,6 +93,32 @@ const FUNCS = {
     dt.setDate(dt.getDate() + numOf(n));
     return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
   },
+  /** 相差小时（加班时长等；支持 yyyy-MM-dd HH:mm，纯日期按 00:00 计）；与后端 hoursDiff 口径一致 */
+  hoursDiff: (a, b) => {
+    const ta = new Date(String(a).replace(' ', 'T'));
+    const tb = new Date(String(b).replace(' ', 'T'));
+    if (isNaN(ta) || isNaN(tb)) return undefined;
+    return Math.round(((tb - ta) / 3600000) * 100) / 100;
+  },
+  /** 工作日天数（含首尾，跳过休息日/法定节假日、含调休补班；用于请假天数）。
+   *  日历数据由 workday.js 预加载（setWorkdayMap），区间内无日历数据的日期按「剔除周六日」回退；
+   *  与后端 FlowFormRuleService.workDays 口径一致 */
+  workDays: (a, b) => {
+    const da = new Date(String(a).replace(' ', 'T'));
+    const db = new Date(String(b).replace(' ', 'T'));
+    if (isNaN(da) || isNaN(db)) return 0;
+    if (db < da) return 0;
+    da.setHours(0, 0, 0, 0);
+    db.setHours(0, 0, 0, 0);
+    let n = 0;
+    for (const d = new Date(da); d <= db; d.setDate(d.getDate() + 1)) {
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const t = workdayMap[key];
+      if (t === '0') n++;
+      else if (t !== '1' && t !== '2' && d.getDay() !== 0 && d.getDay() !== 6) n++; // 无日历数据回退：剔除周六日
+    }
+    return n;
+  },
   sum: (...xs) => xs.reduce((s, x) => s + (isNaN(numOf(x)) ? 0 : numOf(x)), 0),
   /** 金额 → 人民币中文大写（合计大写自动生成；后端不执行该函数，derive 结果由前端算出后随表单数据提交） */
   rmbUpper: (v) => (v === undefined || v === null || v === '' ? '' : toRmbUpper(numOf(v))),
@@ -108,6 +134,14 @@ const FUNCS = {
 };
 /** evalNode 内部使用的 ctx 引用（detailSum/detailCount 需要明细数据） */
 let ctx = { detailData: {} };
+
+/** 企业工作日历 { 'yyyy-MM-dd': '0|1|2' }（0=工作日 1=休息日 2=法定节假日），由 workday.js 预加载 */
+let workdayMap = {};
+/** 合并注入日历数据（重叠区间累积），供 workDays 使用 */
+export function setWorkdayMap(map) {
+  if (!map || typeof map !== 'object') return;
+  workdayMap = { ...workdayMap, ...map };
+}
 
 /** 条件比较（与后端 FlowFormRuleService.compare 一致） */
 export function compare(op, left, right) {

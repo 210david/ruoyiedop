@@ -73,11 +73,4 @@ public class HrBusinessTripController extends BaseController
         return toAjax(hrBusinessTripService.deleteHrBusinessTripByIds(tripIds));
     }
 
-    @PreAuthorize("@ss.hasPermi('hr:businessTrip:audit')")
-    @Log(title = "出差审批", businessType = BusinessType.UPDATE)
-    @PutMapping("/audit/{tripId}")
-    public AjaxResult audit(@PathVariable Long tripId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
-    {
-        return toAjax(hrBusinessTripService.auditHrBusinessTrip(tripId, auditAction, auditRemark));
-    }
 }

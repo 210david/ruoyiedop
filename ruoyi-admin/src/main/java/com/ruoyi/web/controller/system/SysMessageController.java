@@ -248,6 +248,11 @@ public class SysMessageController extends BaseController
             // admin用户全量可见
             return true;
         }
+        // 指定接收人的消息（如流程待办）仅接收人本人可见
+        if (message.getRecipientId() != null)
+        {
+            return message.getRecipientId().equals(SecurityUtils.getUserId());
+        }
         String rk = message.getRecipientRoleKey();
         if (rk == null || rk.isEmpty())
         {

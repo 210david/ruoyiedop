@@ -1,6 +1,7 @@
 package com.ruoyi.hr.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.hr.domain.HrWorkdayCalendar;
 import org.apache.ibatis.annotations.Param;
 
@@ -30,6 +31,9 @@ public interface HrWorkdayCalendarMapper
 
     /** 查询某年已存在的日期数量 */
     public int countByYear(@Param("year") Integer year);
+
+    /** 区间内日历标记列表（表单规则引擎 workDays 用）：[{dt, dateType}] */
+    public List<Map<String, Object>> selectDateTypeRange(@Param("startDate") String startDate, @Param("endDate") String endDate);
 
     /** 删除某年的所有日历数据（物理删除，用于重新生成） */
     public int deleteByYear(@Param("year") Integer year);

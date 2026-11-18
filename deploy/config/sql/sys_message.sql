@@ -116,6 +116,10 @@ insert into sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_cla
 select 8, '系统管理', 'system', 'sys_message_biz_source', '', 'info', 'N', '0', 'admin', sysdate(), null
 where not exists (select 1 from sys_dict_data where dict_type = 'sys_message_biz_source' and dict_value = 'system');
 
+insert into sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+select 9, '流程审批', 'flow', 'sys_message_biz_source', '', 'primary', 'N', '0', 'admin', sysdate(), null
+where not exists (select 1 from sys_dict_data where dict_type = 'sys_message_biz_source' and dict_value = 'flow');
+
 -- ----------------------------
 -- 6、字典数据 - 阅读状态（已读/未读）
 -- ----------------------------

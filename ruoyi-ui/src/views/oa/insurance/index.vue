@@ -94,6 +94,9 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon><span>业务操作说明</span>
+        </button>
       </div>
       <div class="toolbar">
         <div class="left">
@@ -109,34 +112,34 @@
         </div>
       </div>
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="insuranceList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="insuranceList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" type="index" width="55" align="center" />
-          <el-table-column label="保单号" prop="policyNo" align="center" min-width="160" show-overflow-tooltip v-if="columns.policyNo.visible">
+          <el-table-column label="保单号" prop="policyNo" key="policyNo" align="center" :min-width="colWidth('policyNo', 160)" show-overflow-tooltip resizable v-if="columns.policyNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.policyNo }}</span></template>
           </el-table-column>
-          <el-table-column label="车牌号" prop="plateNo" align="center" width="120" v-if="columns.plateNo.visible">
+          <el-table-column label="车牌号" prop="plateNo" key="plateNo" align="center" :width="colWidth('plateNo', 120)" resizable v-if="columns.plateNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.plateNo || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="保险类型" prop="insuranceType" align="center" width="130" v-if="columns.insuranceType.visible">
+          <el-table-column label="保险类型" prop="insuranceType" key="insuranceType" align="center" :width="colWidth('insuranceType', 130)" resizable v-if="columns.insuranceType.visible">
             <template #default="scope">
               <span v-if="scope.row.insuranceType" class="badge blue"><span class="dot"></span>{{ dictLabel(insuranceTypeOptions, scope.row.insuranceType) }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="保险公司" prop="insurer" align="center" min-width="150" show-overflow-tooltip v-if="columns.insurer.visible" />
-          <el-table-column label="起保日期" prop="startDate" align="center" width="110" v-if="columns.startDate.visible" />
-          <el-table-column label="到期日期" prop="endDate" align="center" width="110" v-if="columns.endDate.visible" />
-          <el-table-column label="保费(元)" prop="premium" align="center" width="110" v-if="columns.premium.visible" />
-          <el-table-column label="保额(元)" prop="insuredAmount" align="center" width="120" v-if="columns.insuredAmount.visible" />
-          <el-table-column label="联系人" prop="contactName" align="center" width="100" v-if="columns.contactName.visible" />
-          <el-table-column label="联系电话" prop="contactPhone" align="center" width="120" v-if="columns.contactPhone.visible" />
-          <el-table-column label="状态" prop="status" align="center" width="100" v-if="columns.status.visible">
+          <el-table-column label="保险公司" prop="insurer" key="insurer" align="center" :min-width="colWidth('insurer', 150)" show-overflow-tooltip resizable v-if="columns.insurer.visible" />
+          <el-table-column label="起保日期" prop="startDate" key="startDate" align="center" :width="colWidth('startDate', 110)" resizable v-if="columns.startDate.visible" />
+          <el-table-column label="到期日期" prop="endDate" key="endDate" align="center" :width="colWidth('endDate', 110)" resizable v-if="columns.endDate.visible" />
+          <el-table-column label="保费(元)" prop="premium" key="premium" align="center" :width="colWidth('premium', 110)" resizable v-if="columns.premium.visible" />
+          <el-table-column label="保额(元)" prop="insuredAmount" key="insuredAmount" align="center" :width="colWidth('insuredAmount', 120)" resizable v-if="columns.insuredAmount.visible" />
+          <el-table-column label="联系人" prop="contactName" key="contactName" align="center" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
+          <el-table-column label="联系电话" prop="contactPhone" key="contactPhone" align="center" :width="colWidth('contactPhone', 120)" resizable v-if="columns.contactPhone.visible" />
+          <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="statusBadgeClass(scope.row.status)"><span class="dot"></span>{{ dictLabel(insuranceStatusOptions, scope.row.status) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center" fixed="right">
+          <el-table-column label="操作" :width="colWidth('操作', 190)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['oa:insurance:query']">详情</el-button>
@@ -284,24 +287,36 @@
               <div class="rd-item"><span class="rd-label">保险类型</span><div class="rd-value"><dict-tag :options="insuranceTypeOptions" :value="viewData.insuranceType" /></div></div>
               <div class="rd-item"><span class="rd-label">保险公司</span><div class="rd-value">{{ viewData.insurer || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="insuranceStatusOptions" :value="viewData.status" /></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>保期与费用</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">起保日期</span><div class="rd-value">{{ viewData.startDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ viewData.endDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保费(元)</span><div class="rd-value">{{ viewData.premium ?? '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保额(元)</span><div class="rd-value">{{ viewData.insuredAmount ?? '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewData.contactName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ viewData.contactPhone || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowInstanceId || '未关联' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.attachment">
-          <div class="rd-card-header" @click="toggleCard('v1')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>附件</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>附件与备注</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
-            <div class="rd-file-links">
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowInstanceId || '未关联' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+            <div class="rd-file-links" v-if="viewData.attachment">
               <a class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx" :href="url" target="_blank" rel="noopener">
                 <span class="rd-file-name">{{ url }}</span>
               </a>
@@ -311,6 +326,49 @@
       </div>
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 业务操作说明 -->
+    <el-dialog v-model="showStatusHelp" title="车辆保险业务操作说明" width="760px" append-to-body>
+      <div class="oa-status-help-content">
+        <h4>一、保险台账说明</h4>
+        <div class="help-card help-card-primary">
+          <div class="help-card-title">车辆保单统一管理</div>
+          <div class="help-card-body">
+            车辆保险台账用于记录各车辆的保单信息、保障期限与费用。保险台账仅做资料管理和到期提醒，不参与流程状态联动。
+          </div>
+        </div>
+
+        <h4>二、状态说明</h4>
+        <div class="help-status-list">
+          <div class="help-status-item">
+            <span class="badge green"><span class="dot"></span>有效</span>
+            <p>保单处于保障期内，车辆可正常使用。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge amber"><span class="dot"></span>即将到期</span>
+            <p>保单临近到期，建议提前办理续保，避免车辆脱保。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge red"><span class="dot"></span>已过期</span>
+            <p>保单已超出保障期，请尽快续保并更新台账信息。</p>
+          </div>
+        </div>
+        <ul class="help-tips" style="margin-top:12px">
+          <li>以上状态由管理员根据保单实际到期情况手工维护，系统不会自动变更。</li>
+        </ul>
+
+        <h4>三、常见操作</h4>
+        <ul class="help-tips">
+          <li><strong>新增 / 修改：</strong>维护保单号、关联车辆、保险公司、险种、保额、生效日期、到期日期等信息。</li>
+          <li><strong>详情：</strong>查看保单完整信息及附件。</li>
+          <li><strong>导入 / 导出：</strong>批量维护车辆保险台账。</li>
+          <li><strong>删除：</strong>仅删除台账数据，不影响车辆信息和历史流程记录。</li>
+        </ul>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
 
@@ -335,11 +393,14 @@
 <script setup name="OaInsurance">
 import { listOaInsurance, getOaInsurance, addOaInsurance, updateOaInsurance, delOaInsurance } from '@/api/oa/insurance'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
+import { QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
-const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1'])
+const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1', 'v2'])
+const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('oa_insurance_index')
 const { oa_insurance_type: insuranceTypeOptions } = proxy.useDict('oa_insurance_type')
 const { oa_insurance_status: insuranceStatusOptions } = proxy.useDict('oa_insurance_status')
 
@@ -353,6 +414,7 @@ const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const showStatusHelp = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)

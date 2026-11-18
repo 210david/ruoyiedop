@@ -39,8 +39,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.event.FlowFormSubmitEvent;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.spring.SpringUtils;
+import com.ruoyi.flowable.service.FlowArchiveHandler;
 import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.flowable.config.FlowReturnConstants;
@@ -1098,7 +1101,12 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         {
             taskService.addComment(null, instanceId, "comment", comment);
         }
+        String processKey = instance.getProcessDefinitionKey();
+        String businessKey = instance.getBusinessKey();
         runtimeService.deleteProcessInstance(instanceId, prefix + msg);
+        // 主动分发终止回调：Flowable 的 PROCESS_CANCELLED 事件在删除实例时并不总会触发，
+        // 只靠事件会导致台账停在「审批中」、请假冻结额度不释放
+        dispatchCancelled(processKey, instanceId, businessKey);
         writeBackLeaveStatus(instanceId, "4", msg);
         return 1;
     }
@@ -1118,9 +1126,13 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             throw new ServiceException("流程实例不存在");
         }
         // 运行中先停止，再连历史一起删除（否则历史表残留、流程图仍能找到实例）
-        if (runtimeService.createProcessInstanceQuery().processInstanceId(instanceId).count() > 0)
+        ProcessInstance running = runtimeService.createProcessInstanceQuery().processInstanceId(instanceId)
+                .singleResult();
+        if (running != null)
         {
             runtimeService.deleteProcessInstance(instanceId, "【adminDelete】管理员删除流程实例");
+            // 删除实例同样要通知业务台账关闭，否则台账会永远停在「审批中」
+            dispatchCancelled(running.getProcessDefinitionKey(), instanceId, running.getBusinessKey());
         }
         historyService.deleteHistoricProcessInstance(instanceId);
         // 抄送记录随流程一起清理，避免「待阅」里留下打不开的死链
@@ -1218,9 +1230,42 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         String msg = StringUtils.isNotEmpty(reason) ? reason : "办理人终止";
         // 意见需在删除实例前写入历史（删除后任务已不存在，写不进去）
         taskService.addComment(taskId, instanceId, "comment", "【terminate】" + msg);
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(instanceId).singleResult();
+        String processKey = processInstance == null ? null : processInstance.getProcessDefinitionKey();
+        String businessKey = processInstance == null ? null : processInstance.getBusinessKey();
         runtimeService.deleteProcessInstance(instanceId, msg);
+        // 流程终止后同步业务台账状态（Flowable 的 PROCESS_CANCELLED 事件在部分场景不触发，这里主动分发）
+        dispatchCancelled(processKey, instanceId, businessKey);
         writeBackLeaveStatus(instanceId, "4", msg);
         return 1;
+    }
+
+    /**
+     * 主动分发「流程终止」回调给所有业务归档处理器
+     *
+     * Flowable 的 PROCESS_CANCELLED 事件在删除实例的多种路径下不会触发，
+     * 因此凡是由我们主动删除流程实例的地方，都在删除后调用本方法兜底，
+     * 保证台账状态（已撤销）与冻结额度能同步释放。业务处理器需自行保证幂等。
+     */
+    private void dispatchCancelled(String processKey, String instanceId, String businessKey)
+    {
+        if (StringUtils.isEmpty(processKey))
+        {
+            return;
+        }
+        for (FlowArchiveHandler handler : SpringUtils.getBeansOfType(FlowArchiveHandler.class).values())
+        {
+            try
+            {
+                handler.cancelled(processKey, instanceId, businessKey);
+            }
+            catch (Exception e)
+            {
+                log.error("流程终止归档失败：processKey={}, instanceId={}, handler={}, error={}", processKey,
+                        instanceId, handler.getClass().getSimpleName(), e.getMessage(), e);
+            }
+        }
     }
 
     @Override
@@ -1707,6 +1752,15 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         }
         // 表单规则：办理提交前按同一份规则复算 + 校验，防止绕过前端
         applyFormRules(task, dto, false);
+        // 联动事件数据准备：合并任务变量与本次提交变量快照（办理后任务变量随实例清空）
+        Map<String, Object> mergedVars = new HashMap<>(taskService.getVariables(task.getId()));
+        if (dto.getVariables() != null)
+        {
+            mergedVars.putAll(dto.getVariables());
+        }
+        org.flowable.engine.runtime.ProcessInstance runningPi = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(task.getProcessInstanceId()).singleResult();
+        String businessKey = runningPi == null ? null : runningPi.getBusinessKey();
         // 记录审批意见：type 必须为 "comment"（Flowable 默认查询仅返回该类型），
         // outcome 编码进 FULL_MSG_ 前缀【outcome:xxx】便于读取
         taskService.addComment(dto.getTaskId(), task.getProcessInstanceId(),
@@ -1766,6 +1820,10 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             {
             }
         }
+        // 发布表单提交事件：业务模块（OA车辆/司机/印章等）监听后写回关联关系，失败不影响办理
+        publishFormSubmitEvent(FlowFormSubmitEvent.PHASE_COMPLETE, task.getProcessDefinitionId(),
+                task.getProcessInstanceId(), businessKey, mergedVars,
+                task.getTaskDefinitionKey(), task.getName());
         return 1;
     }
 
@@ -1801,7 +1859,49 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         // 但跳过必填与校验拦截——暂存允许未填完，提交时才做完整校验
         applyFormRules(task, dto, true);
         taskService.setVariables(dto.getTaskId(), dto.getVariables());
+        // 暂存也发布联动事件（调度指派车辆/驾驶员暂存后即可写回关联），失败不影响暂存
+        Map<String, Object> savedVars = new HashMap<>(taskService.getVariables(task.getId()));
+        org.flowable.engine.runtime.ProcessInstance savePi = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(task.getProcessInstanceId()).singleResult();
+        publishFormSubmitEvent(FlowFormSubmitEvent.PHASE_SAVE, task.getProcessDefinitionId(),
+                task.getProcessInstanceId(), savePi == null ? null : savePi.getBusinessKey(), savedVars,
+                task.getTaskDefinitionKey(), task.getName());
         return 1;
+    }
+
+    /**
+     * 发布流程表单提交联动事件。
+     * 业务模块（如 OA 车辆/司机/印章台账）通过 AFTER_COMMIT 监听写回关联关系，
+     * flowable 模块不反向依赖业务模块；事件发布/监听链路任何异常都不影响流程主流程。
+     */
+    private void publishFormSubmitEvent(String phase, String processDefinitionId, String processInstanceId,
+            String businessKey, Map<String, Object> variables)
+    {
+        publishFormSubmitEvent(phase, processDefinitionId, processInstanceId, businessKey, variables, null, null);
+    }
+
+    /**
+     * 发布流程表单提交联动事件（携带当前办理节点信息，供业务侧按节点判定状态流转）。
+     */
+    private void publishFormSubmitEvent(String phase, String processDefinitionId, String processInstanceId,
+            String businessKey, Map<String, Object> variables, String taskDefinitionKey, String taskName)
+    {
+        try
+        {
+            org.flowable.engine.repository.ProcessDefinition pd = repositoryService.getProcessDefinition(processDefinitionId);
+            if (pd == null)
+            {
+                return;
+            }
+            com.ruoyi.flowable.domain.FlowForm form = flowFormService.selectFlowFormByProcessKey(pd.getKey());
+            SpringUtils.publishEvent(new FlowFormSubmitEvent(this, phase, pd.getKey(),
+                    form == null ? null : form.getFormId(), processInstanceId, businessKey,
+                    form == null ? null : form.getTableName(), variables, taskDefinitionKey, taskName));
+        }
+        catch (Exception e)
+        {
+            log.warn("流程表单提交联动事件发布失败：{}", e.getMessage());
+        }
     }
 
     /**
@@ -4069,7 +4169,7 @@ public class FlowProcessServiceImpl implements IFlowProcessService
             }
             if ("all".equals(s))
             {
-                // 「全部」页签 = 待办 + 未读待阅 + 我的草稿（与 allList 合并口径一致）
+                // 「全部」页签 = 待办 + 未读待阅 + 我的草稿（与 pendingList 合并口径一致）
                 FlowCc ccQuery = new FlowCc();
                 ccQuery.setReadFlag("0");
                 for (FlowCc cc : flowCcService.selectMyCcList(ccQuery))
@@ -4244,6 +4344,20 @@ public class FlowProcessServiceImpl implements IFlowProcessService
         Map<String, Object> vars = readHistoricVariables(instanceId);
         vars.put("reviveFromInstanceId", instanceId);
 
+        // 复活前先回滚业务台账：已办结的台账回到「审批中」，并回滚考勤/余额副作用
+        for (FlowArchiveHandler handler : SpringUtils.getBeansOfType(FlowArchiveHandler.class).values())
+        {
+            try
+            {
+                handler.rollback(definition.getKey(), instanceId, hpi.getBusinessKey());
+            }
+            catch (Exception e)
+            {
+                log.error("流程复活回滚台账失败：processKey={}, instanceId={}, handler={}, error={}",
+                        definition.getKey(), instanceId, handler.getClass().getSimpleName(), e.getMessage(), e);
+            }
+        }
+
         String title = StringUtils.isNotEmpty(hpi.getName()) ? hpi.getName() : hpi.getProcessDefinitionName();
         org.flowable.engine.runtime.ProcessInstanceBuilder builder = runtimeService.createProcessInstanceBuilder()
                 .processDefinitionId(definition.getId())
@@ -4317,6 +4431,20 @@ public class FlowProcessServiceImpl implements IFlowProcessService
 
         // 业务数据行继续沿用（同一单继续走），实例ID指向新实例，详情页从新实例取数据
         rebindBusinessInstanceId(definition.getKey(), hpi.getBusinessKey(), instanceId, revived.getId());
+        // 业务台账的 flow_instance_id 同步切到新实例，否则后续办结/终止找不到台账
+        for (FlowArchiveHandler handler : SpringUtils.getBeansOfType(FlowArchiveHandler.class).values())
+        {
+            try
+            {
+                handler.rebind(definition.getKey(), instanceId, revived.getId());
+            }
+            catch (Exception e)
+            {
+                log.error("流程复活回写台账实例ID失败：processKey={}, old={}, new={}, handler={}, error={}",
+                        definition.getKey(), instanceId, revived.getId(), handler.getClass().getSimpleName(),
+                        e.getMessage(), e);
+            }
+        }
 
         Map<String, Object> data = new java.util.LinkedHashMap<>();
         data.put("instanceId", revived.getId());
