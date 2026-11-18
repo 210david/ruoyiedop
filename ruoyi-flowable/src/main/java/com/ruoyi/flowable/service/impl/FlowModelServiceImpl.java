@@ -1142,6 +1142,7 @@ public class FlowModelServiceImpl implements IFlowModelService
             appendRawAttr(startAttrs, "flowable:fieldPerms", node);
             appendRawAttr(startAttrs, "flowable:operationMenus", node);
             appendRawAttr(startAttrs, "flowable:signOpinion", node);
+            appendRawAttr(startAttrs, "flowable:signOpinionJson", node);
             appendRawAttr(startAttrs, "flowable:allowRecall", node);
             appendRawAttr(startAttrs, "flowable:ccConfig", node);
             node.append("/>");

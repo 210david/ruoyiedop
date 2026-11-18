@@ -16,14 +16,14 @@
           <!-- 退回发起人（申请）节点：表单可编辑，提供保存（暂存修改，不提交流转） -->
           <el-button v-if="initiatorNode" icon="Finished" :loading="saving" v-hasPermi="['flowable:task:complete']" @click="onSaveTaskForm">保 存</el-button>
           <template v-for="m in menuList" :key="m">
-            <el-button v-if="m === 'submit'" type="primary" icon="Check" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('approved')">提 交</el-button>
-            <el-button v-else-if="m === 'reject' && canReturn" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">退 回</el-button>
-            <el-button v-else-if="m === 'transfer'" icon="Switch" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('transfer')">转 办</el-button>
-            <el-button v-else-if="m === 'addSign'" icon="EditPen" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('addSign')">加 签</el-button>
-            <el-button v-else-if="m === 'cc'" icon="Promotion" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('cc')">抄 送</el-button>
+            <el-button v-if="m === 'submit'" type="primary" icon="Check" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('approved')">{{ menuLabel('submit') }}</el-button>
+            <el-button v-else-if="m === 'reject' && canReturn" type="danger" icon="CloseBold" :loading="submitting" v-hasPermi="['flowable:task:complete']" @click="submitApprove('rejected')">{{ menuLabel('reject') }}</el-button>
+            <el-button v-else-if="m === 'transfer'" icon="Switch" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('transfer')">{{ menuLabel('transfer') }}</el-button>
+            <el-button v-else-if="m === 'addSign'" icon="EditPen" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('addSign')">{{ menuLabel('addSign') }}</el-button>
+            <el-button v-else-if="m === 'cc'" icon="Promotion" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="pickUser('cc')">{{ menuLabel('cc') }}</el-button>
             <el-button v-else-if="m === 'attach'" icon="Paperclip" @click="openAttachDialog">附 件</el-button>
-            <el-button v-else-if="m === 'print'" icon="Printer" @click="doPrint">打 印</el-button>
-            <el-button v-else-if="m === 'terminate'" type="danger" plain icon="CircleClose" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="doTerminate">终 止</el-button>
+            <el-button v-else-if="m === 'print'" icon="Printer" @click="doPrint">{{ menuLabel('print') }}</el-button>
+            <el-button v-else-if="m === 'terminate'" type="danger" plain icon="CircleClose" :loading="acting" v-hasPermi="['flowable:task:complete']" @click="doTerminate">{{ menuLabel('terminate') }}</el-button>
           </template>
         </div>
       </div>
@@ -76,7 +76,7 @@
  表单已放该字段时直接填表单里的那个，避免出现两个意见框 -->
         <section class="rd-card" v-if="showCommentCard">
           <div class="rd-card-header">
-            <div class="rd-card-title"><span class="rd-card-icon">✎</span>签字意见</div>
+            <div class="rd-card-title"><span class="rd-card-icon">✎</span>签字意见<span v-if="signOpinionRequired" class="hd-required-mark">*</span><span v-if="signOpinionRequired" class="hd-required-tip">必填</span></div>
             <div class="hd-opinion-tools">
               <span class="hd-opinion-count" v-if="commentText">{{ commentText.length }} 字</span>
               <el-button link type="primary" size="small" :disabled="!commentText" @click="comment = ''">清 空</el-button>
@@ -457,6 +457,10 @@ const ruleErrors = ref({});
 /** 明细行规则校验错误：{ '表名|行号|字段': 提示文案 }，传 FormGridRender 行内标红 */
 const ruleDetailErrors = ref({});
 const activeFormRules = computed(() => (taskExtJson.value ? parseExt(taskExtJson.value).rules : []));
+/** 初载标志（对标泛微「值变化才触发」机制）：
+ *  打开办理页只应用字段状态（必填/显隐/只读/动态选项），不重算 derive——
+ *  计算值已随流程变量落库，直接回显存量值；之后字段/明细值变化才全量触发规则 */
+let formInitDone = false;
 /** 节点编辑上下文门控（对标泛微「节点表单设计器内实现联动」）：
  *  发起人（申请填单）节点始终执行；普通办理节点仅在节点字段权限配置了可编辑字段时执行；
  *  节点自定义模板模式由模板单元格控制编辑/只读，规则不叠加；
@@ -505,6 +509,21 @@ function runFormRules() {
     ruleDetailErrors.value = {};
     return;
   }
+  // 初载回显：只应用字段状态（required/visible/readonly/options），不执行 derive 重算——
+  // 计算值（合计、大写等）已随流程变量落库，直接回显存量值；避免每次打开都全量重算浪费资源
+  if (!formInitDone) {
+    const result0 = runRules(
+      activeFormRules.value.filter((r) => r && r.enabled !== false && r.type !== 'derive' && r.type !== 'validate' && r.type !== 'script'),
+      formFields.value || [],
+      formData.value || {},
+      (formData.value && formData.value.detailData) || {},
+      {}
+    );
+    ruleOverrides.value = result0.states || {};
+    ruleErrors.value = {};
+    ruleDetailErrors.value = {};
+    return;
+  }
   const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
   // 只读审批节点：仅执行展示型规则——derive（明细合计、大写等随明细数据回显）
   // 与 visible（字段显隐，审批人看到的界面与填写态一致）；
@@ -521,7 +540,10 @@ function runFormRules() {
     }
     return;
   }
-  const result = runRules(activeFormRules.value, formFields.value || [], formData.value || {}, detailData, {});
+  // 可编辑节点同样要兜底：初载时 FormGridRender 尚未挂载，getDetailData() 为空，
+  // derive（明细合计）会用空明细算出 0 覆盖变量里的存量值（保存后刷新合计变空就是这个原因）
+  const dd2 = detailData && Object.keys(detailData).length ? detailData : ((formData.value && formData.value.detailData) || {});
+  const result = runRules(activeFormRules.value, formFields.value || [], formData.value || {}, dd2, {});
   ruleOverrides.value = result.states || {};
   // 校验类规则实时提示：引擎每次重算都会执行 validate 规则，把错误映射到字段格内联展示
   const errs = {};
@@ -600,6 +622,16 @@ const INITIATOR_MENUS = ['submit', 'print', 'cc'];
 /** 当前节点是否为发起人（申请）节点：退回后由申请人重新提交 */
 const initiatorNode = ref(false);
 const opMenus = ref([]);
+/** 按钮明细（设计器配置的自定义名称 / 默认审批意见）：key → {name, defaultOpinion} */
+const opMenuDetails = ref({});
+/** 按钮默认文案（未配置自定义名称时使用） */
+const MENU_LABELS = { submit: '提 交', reject: '退 回', transfer: '转 办', addSign: '加 签', terminate: '终 止', print: '打 印', cc: '抄 送' };
+/** 按钮显示文案：设计器配置了自定义名称就用自定义名称 */
+function menuLabel(key) {
+  const d = opMenuDetails.value[key];
+  const name = d && d.name ? String(d.name).trim() : '';
+  return name || MENU_LABELS[key] || key;
+}
 const menuConfigured = computed(() => opMenus.value.length > 0);
 const menuList = computed(() => {
   if (menuConfigured.value) {
@@ -614,6 +646,10 @@ const menuList = computed(() => {
 /* ===== 签字意见：节点级开关 + 与表单字段去重 ===== */
 /** 节点是否启用签字意见（设计器节点属性「签字意见」开关，默认启用） */
 const signOpinionEnabled = ref(true);
+/** 节点是否要求签字意见必填（设计器「操作菜单」弹窗里的签字意见设置） */
+const signOpinionRequired = ref(false);
+/** 节点默认签字意见：进入办理页自动预填 */
+const signOpinionDefault = ref('');
 
 /** 网格布局里是否真的摆了某个字段（字段未拖入布局时，即使表单定义了也填不到） */
 function gridHasField(field) {
@@ -721,8 +757,23 @@ async function loadTaskForm() {
     initiatorNode.value = editableAll;
     // 节点操作菜单：设计器勾选的按钮，未配置（空数组）时前端回退默认菜单
     opMenus.value = Array.isArray(d.opMenus) ? d.opMenus : [];
+    // 按钮明细：自定义名称 / 默认审批意见（key → 明细对象）
+    const detailMap = {};
+    if (Array.isArray(d.opMenuDetails)) {
+      d.opMenuDetails.forEach((it) => {
+        if (it && it.key) detailMap[it.key] = { name: it.name || '', defaultOpinion: it.defaultOpinion || '' };
+      });
+    }
+    opMenuDetails.value = detailMap;
     // 节点「签字意见」开关：后端已按节点属性返回，未返回时默认启用
     signOpinionEnabled.value = typeof d.signOpinion === 'boolean' ? d.signOpinion : true;
+    // 签字意见必填与默认意见（设计器签字意见设置）
+    signOpinionRequired.value = d.signOpinionRequired === true;
+    signOpinionDefault.value = (d.signOpinionDefault || '').trim();
+    // 默认意见自动预填（意见框未被表单字段替代时）
+    if (showCommentCard.value && signOpinionDefault.value && !comment.value) {
+      comment.value = signOpinionDefault.value;
+    }
     formFields.value = fields.map((f) => normalizeHandleField(f, resolvePerm(f, perms, editableAll)));
     const data = {};
     for (const f of formFields.value) data[f.field] = variables[f.field];
@@ -730,19 +781,29 @@ async function loadTaskForm() {
     // （不放进去的话，办理页/详情页的明细表永远是空白行）
     data.detailData = variables.detailData;
     formData.value = data;
+    // 初载本轮 watch 只应用字段状态不重算 derive，执行完（nextTick 后）再放行「值变化触发」
+    formInitDone = false;
     // 与「流程发起」页统一：解析表单设计器布局，grid 模式用 FormGridRender 还原后台 HTML 表单
     const parsed = parseLayout(d.layoutJson);
     gridLayout.value = parsed.mode === 'grid' && parsed.grid ? parsed.grid : null;
-    // 高级脚本（打开表单时机）：表单数据就位后执行一次（仅可编辑节点生效）
-    nextTick(() => runScriptsPhase('load'));
+    // 高级脚本（打开表单时机）：表单数据就位后执行一次（仅可编辑节点生效），
+    // 同时标记初载完成——之后字段/明细值变化才全量触发交互规则
+    nextTick(() => {
+      formInitDone = true;
+      runScriptsPhase('load');
+    });
   } catch (e) {
+    formInitDone = true;
     formFields.value = [];
     formData.value = {};
     gridLayout.value = null;
     nodeFormMode.value = false;
     opMenus.value = [];
+    opMenuDetails.value = {};
     initiatorNode.value = false;
     signOpinionEnabled.value = true;
+    signOpinionRequired.value = false;
+    signOpinionDefault.value = '';
   } finally {
     loading.value = false;
   }
@@ -809,6 +870,23 @@ function submitApprove(outcome) {
   if (!task.value.taskId) {
     proxy.$modal.msgWarning('缺少任务标识，无法办理');
     return;
+  }
+  // 按钮级默认审批意见（设计器配置）：意见为空时点击按钮自动预填
+  const menuKey = outcome === 'approved' ? 'submit' : 'reject';
+  const btnDetail = opMenuDetails.value[menuKey] || {};
+  const btnDefaultOpinion = (btnDetail.defaultOpinion || '').trim();
+  if (showCommentCard.value && btnDefaultOpinion && !commentText.value) {
+    comment.value = btnDefaultOpinion;
+  }
+  // 签字意见必填校验（设计器节点级设置）：默认意见框或表单意见字段为空时拦截
+  if (signOpinionRequired.value) {
+    const opinionEmpty = showCommentCard.value
+      ? !commentText.value
+      : formSignOpinionField.value && !htmlToText(formData.value.signOpinion || '').trim();
+    if (opinionEmpty) {
+      proxy.$modal.msgWarning('请填写签字意见');
+      return;
+    }
   }
   // 规则引擎校验（validate 规则）：先于明细校验，命中直接拦截
   const ruleMsg = validateFormRules();
@@ -1607,6 +1685,21 @@ loadOpinionPresets();
 .hd-opinion-count {
   font-size: 12px;
   color: var(--ink-400, #94a3b8);
+}
+/* 签字意见必填标记（设计器节点级「意见必填」） */
+.hd-required-mark {
+  margin-left: 2px;
+  color: var(--el-color-danger);
+  font-weight: 600;
+}
+.hd-required-tip {
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--el-color-danger);
+  background: var(--el-color-danger-light-9, #fef0f0);
+  border-radius: 3px;
 }
 
 /* 常用意见：快捷短语 chips */

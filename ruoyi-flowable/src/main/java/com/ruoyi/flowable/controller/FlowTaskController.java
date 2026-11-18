@@ -340,6 +340,7 @@ public class FlowTaskController extends BaseController
         String permJson = "";
         String opMenuJson = "";
         String signOpinionAttr = "";
+        String signOpinionJson = "";
         // 发起人（申请）节点：退回后由发起人修改表单重新提交，字段默认全部可编辑。
         // 该节点部署时才注入，设计器模型里没有，先按固定节点ID兜底识别
         boolean initiatorNode = com.ruoyi.flowable.config.FlowReturnConstants.INITIATOR_NODE_ID
@@ -354,6 +355,7 @@ public class FlowTaskController extends BaseController
                 permJson = readNodeAttr(el, "fieldPerms");
                 opMenuJson = readNodeAttr(el, "operationMenus");
                 signOpinionAttr = readNodeAttr(el, "signOpinion");
+                signOpinionJson = readNodeAttr(el, "signOpinionJson");
                 if (el instanceof UserTask)
                 {
                     String initiatorAttr = readNodeAttr(el, com.ruoyi.flowable.config.FlowReturnConstants.ATTR_INITIATOR_NODE);
@@ -366,6 +368,7 @@ public class FlowTaskController extends BaseController
             permJson = "";
             opMenuJson = "";
             signOpinionAttr = "";
+            signOpinionJson = "";
         }
         // 绑定表单 + 流程变量当前值
         ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
@@ -403,8 +406,14 @@ public class FlowTaskController extends BaseController
         // 未配置时返回空数组，由前端回退到默认菜单（提交/退回/打印/抄送）
         java.util.List<String> menus = parseMenuConfig(opMenuJson);
         data.put("opMenus", menus);
+        // 按钮明细（对标泛微）：自定义名称 / 默认审批意见，前端按此渲染按钮文案与预填意见
+        data.put("opMenuDetails", parseMenuDetails(opMenuJson));
         // 节点是否启用签字意见（默认启用；表单里已放「签字意见」字段时由前端自行去重）
-        data.put("signOpinion", resolveSignOpinion(signOpinionAttr, menus));
+        data.put("signOpinion", resolveSignOpinion(signOpinionAttr, menus, signOpinionJson));
+        // 签字意见完整设置：必填 / 默认意见（未配置时必填=false、默认意见为空）
+        com.alibaba.fastjson2.JSONObject signCfg = parseSignOpinionConfig(signOpinionJson);
+        data.put("signOpinionRequired", signCfg.getBooleanValue("required"));
+        data.put("signOpinionDefault", signCfg.getString("defaultValue") == null ? "" : signCfg.getString("defaultValue"));
         data.put("assignee", task.getAssignee());
         return AjaxResult.success(data);
     }
@@ -697,7 +706,10 @@ public class FlowTaskController extends BaseController
         return value == null ? "" : value;
     }
 
-    /** 解析操作菜单 JSON 数组（解析失败按未配置处理） */
+    /**
+     * 解析操作菜单 JSON 数组（兼容两种格式：旧格式字符串数组、新格式对象数组 [{key,name,defaultOpinion}]）
+     * 解析失败按未配置处理
+     */
     private java.util.List<String> parseMenuConfig(String json)
     {
         java.util.List<String> menus = new ArrayList<>();
@@ -710,10 +722,21 @@ public class FlowTaskController extends BaseController
             com.alibaba.fastjson2.JSONArray arr = com.alibaba.fastjson2.JSON.parseArray(json);
             for (int i = 0; i < arr.size(); i++)
             {
-                String v = arr.getString(i);
-                if (StringUtils.isNotEmpty(v))
+                Object v = arr.get(i);
+                if (v instanceof String)
                 {
-                    menus.add(v);
+                    if (StringUtils.isNotEmpty((String) v))
+                    {
+                        menus.add((String) v);
+                    }
+                }
+                else if (v instanceof com.alibaba.fastjson2.JSONObject)
+                {
+                    String key = ((com.alibaba.fastjson2.JSONObject) v).getString("key");
+                    if (StringUtils.isNotEmpty(key))
+                    {
+                        menus.add(key);
+                    }
                 }
             }
         }
@@ -725,12 +748,102 @@ public class FlowTaskController extends BaseController
     }
 
     /**
-     * 节点是否启用签字意见：
-     * 1) 节点属性 flowable:signOpinion 明确写了值 → 以其为准（false/0/否 为关闭）；
-     * 2) 未配置（老流程）→ 默认启用（签字意见已从操作菜单独立出来）。
+     * 解析操作菜单按钮明细（对标泛微：自定义名称 / 默认审批意见）
+     * 返回 [{key, name, defaultOpinion}]；旧格式（字符串数组）只含 key，name/defaultOpinion 为空串
      */
-    private boolean resolveSignOpinion(String attr, java.util.List<String> menus)
+    private com.alibaba.fastjson2.JSONArray parseMenuDetails(String json)
     {
+        com.alibaba.fastjson2.JSONArray details = new com.alibaba.fastjson2.JSONArray();
+        if (StringUtils.isEmpty(json))
+        {
+            return details;
+        }
+        try
+        {
+            com.alibaba.fastjson2.JSONArray arr = com.alibaba.fastjson2.JSON.parseArray(json);
+            for (int i = 0; i < arr.size(); i++)
+            {
+                Object v = arr.get(i);
+                if (v instanceof String)
+                {
+                    com.alibaba.fastjson2.JSONObject o = new com.alibaba.fastjson2.JSONObject();
+                    o.put("key", v);
+                    o.put("name", "");
+                    o.put("defaultOpinion", "");
+                    details.add(o);
+                }
+                else if (v instanceof com.alibaba.fastjson2.JSONObject)
+                {
+                    com.alibaba.fastjson2.JSONObject src = (com.alibaba.fastjson2.JSONObject) v;
+                    if (StringUtils.isEmpty(src.getString("key")))
+                    {
+                        continue;
+                    }
+                    com.alibaba.fastjson2.JSONObject o = new com.alibaba.fastjson2.JSONObject();
+                    o.put("key", src.getString("key"));
+                    o.put("name", src.getString("name") == null ? "" : src.getString("name"));
+                    o.put("defaultOpinion", src.getString("defaultOpinion") == null ? "" : src.getString("defaultOpinion"));
+                    details.add(o);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            return new com.alibaba.fastjson2.JSONArray();
+        }
+        return details;
+    }
+
+    /**
+     * 解析签字意见完整设置（flowable:signOpinionJson：{enabled, required, defaultValue}）
+     * 未配置或解析失败返回仅含默认值的对象（required=false、defaultValue 空串）
+     */
+    private com.alibaba.fastjson2.JSONObject parseSignOpinionConfig(String json)
+    {
+        com.alibaba.fastjson2.JSONObject cfg = new com.alibaba.fastjson2.JSONObject();
+        cfg.put("required", false);
+        cfg.put("defaultValue", "");
+        if (StringUtils.isEmpty(json))
+        {
+            return cfg;
+        }
+        try
+        {
+            com.alibaba.fastjson2.JSONObject obj = com.alibaba.fastjson2.JSON.parseObject(json);
+            if (obj != null)
+            {
+                cfg.put("required", obj.getBooleanValue("required"));
+                cfg.put("defaultValue", obj.getString("defaultValue") == null ? "" : obj.getString("defaultValue"));
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return cfg;
+    }
+
+    /**
+     * 节点是否启用签字意见：
+     * 1) 完整配置 flowable:signOpinionJson 存在且写了 enabled → 以其为准；
+     * 2) 节点属性 flowable:signOpinion 明确写了值 → 以其为准（false/0/否 为关闭）；
+     * 3) 未配置（老流程）→ 默认启用（签字意见已从操作菜单独立出来）。
+     */
+    private boolean resolveSignOpinion(String attr, java.util.List<String> menus, String signOpinionJson)
+    {
+        if (StringUtils.isNotEmpty(signOpinionJson))
+        {
+            try
+            {
+                com.alibaba.fastjson2.JSONObject obj = com.alibaba.fastjson2.JSON.parseObject(signOpinionJson);
+                if (obj != null && obj.containsKey("enabled"))
+                {
+                    return obj.getBooleanValue("enabled");
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
         if (StringUtils.isNotEmpty(attr))
         {
             String v = attr.trim();

@@ -784,8 +784,11 @@
                     <el-form-item v-if="selectedElement.isUserTask" label="签字意见">
                       <div class="props-link-row">
                         <el-switch v-model="selectedElement.signOpinion" inline-prompt active-text="启用" inactive-text="关闭" @change="setSignOpinion" />
+                        <el-button v-if="!selectedElement.isStart" link type="primary" class="props-link-gear" title="签字意见详细设置（必填 / 默认意见）" @click="openNodeOpMenu(selectedElement)">
+                          <el-icon><Setting /></el-icon>
+                        </el-button>
                       </div>
-                      <div class="props-tip">默认启用；关闭后该节点办理页不显示签字意见。表单里已放「签字意见」字段时不会重复显示</div>
+                      <div class="props-tip">默认启用；必填、默认意见等详细设置在「操作菜单」弹窗底部。表单里已放「签字意见」字段时不会重复显示</div>
                     </el-form-item>
                     <el-form-item v-if="!selectedElement.isEnd" label="操作菜单">
                       <div class="props-link-row">
@@ -795,7 +798,11 @@
                         <el-button link type="primary" icon="Setting" class="props-link-gear" title="配置操作菜单" @click="openNodeOpMenu(selectedElement)" />
                       </div>
                       <div class="props-tip">
-                        {{ selectedElement.isStart ? '申请节点只保留发起场景按钮（提交 / 打印 / 抄送）' : '审批节点默认勾选提交、退回、打印、抄送' }}
+                        {{
+                          selectedElement.isStart
+                            ? '申请节点只保留发起场景按钮（提交 / 打印 / 抄送）'
+                            : '可启用/停用按钮、自定义按钮名称、配置默认审批意见与签字意见（必填 / 默认意见）'
+                        }}
                       </div>
                     </el-form-item>
                     <el-form-item v-if="!selectedElement.isEnd" label="强制收回">
@@ -1495,8 +1502,8 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 节点操作菜单配置弹窗（勾选节点办理页显示的操作按钮） ===== -->
-    <el-dialog v-model="opMenuOpen" width="560px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+    <!-- ===== 节点操作菜单配置弹窗（对标泛微：启用 / 自定义名称 / 默认审批意见 + 签字意见设置） ===== -->
+    <el-dialog v-model="opMenuOpen" width="700px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon">
@@ -1506,11 +1513,54 @@
         </div>
       </template>
       <div class="props-tip" style="margin-bottom: 10px">
-        {{ opMenuDraft.isStart ? '申请节点只提供发起场景按钮（提交 / 打印 / 抄送）' : '勾选该节点办理页显示的操作菜单按钮，默认提交、退回、打印、抄送' }}
+        {{ opMenuDraft.isStart ? '申请节点只提供发起场景按钮（提交 / 打印 / 抄送）' : '设置该节点办理页显示的操作按钮：可启用/停用、自定义按钮名称、配置点击按钮时预填的默认审批意见' }}
       </div>
-      <el-checkbox-group v-model="opMenuDraft.items" class="op-menu-group">
-        <el-checkbox v-for="m in opMenuOptions" :key="m.value" :value="m.value">{{ m.label }}</el-checkbox>
-      </el-checkbox-group>
+      <el-table :data="opMenuDraft.rows" size="small" class="op-menu-table" border>
+        <el-table-column label="启用" width="60" align="center">
+          <template #default="{ row }">
+            <el-checkbox v-model="row.enabled" />
+          </template>
+        </el-table-column>
+        <el-table-column label="默认名称" width="100" align="center">
+          <template #default="{ row }">{{ row.label }}</template>
+        </el-table-column>
+        <el-table-column label="自定义名称" min-width="150">
+          <template #default="{ row }">
+            <el-input v-model="row.name" size="small" maxlength="10" :placeholder="row.label" :disabled="!row.enabled" @input="row.name = row.name.replace(/\s/g, '')" />
+          </template>
+        </el-table-column>
+        <el-table-column label="默认审批意见" min-width="170">
+          <template #default="{ row }">
+            <el-input
+              v-if="row.hasOpinion"
+              v-model="row.defaultOpinion"
+              size="small"
+              maxlength="100"
+              placeholder="点击该按钮时预填的意见"
+              :disabled="!row.enabled"
+            />
+            <span v-else class="op-menu-na">—</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <!-- 签字意见设置（申请节点无独立意见框设置，仅审批节点提供） -->
+      <div v-if="!opMenuDraft.isStart" class="op-menu-sign">
+        <div class="op-menu-sign-title">
+          <span class="op-menu-sign-name">签字意见设置</span>
+          <span class="op-menu-sign-tip">控制该节点办理页签字意见框的显示与填写要求</span>
+        </div>
+        <div class="op-menu-sign-row">
+          <el-checkbox v-model="opMenuDraft.sign.enabled">启用签字意见</el-checkbox>
+          <el-checkbox v-model="opMenuDraft.sign.required" :disabled="!opMenuDraft.sign.enabled">意见必填</el-checkbox>
+        </div>
+        <el-input
+          v-model="opMenuDraft.sign.defaultValue"
+          size="small"
+          maxlength="100"
+          placeholder="默认签字意见：进入办理页时自动预填（可留空）"
+          :disabled="!opMenuDraft.sign.enabled"
+        />
+      </div>
       <template #footer>
         <el-button size="small" @click="resetOpMenuDefault">恢复默认</el-button>
         <el-button size="small" @click="opMenuOpen = false">取 消</el-button>
@@ -3117,7 +3167,9 @@ function loadSelectedElement(el) {
     nodeFormName: nodeFormMap.value[bo.id] ? nodeFormMap.value[bo.id].formName || '' : (bo.get && bo.get('flowable:nodeFormName')) || (bo.$attrs && bo.$attrs['flowable:nodeFormName']) || '',
     nodeFormSnapshot: nodeFormMap.value[bo.id] ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null } : readNodeFormSnapshot(bo),
     opMenus: parseOpMenus(bo),
+    opMenuDetails: parseOpMenuDetails(bo),
     signOpinion: parseSignOpinion(bo),
+    signOpinionJson: parseSignOpinionJson(bo),
     allowRecall: parseAllowRecall(bo),
     fieldPerms: parseFieldPerms(bo),
     multiInstance: !!bo.loopCharacteristics,
@@ -4362,7 +4414,7 @@ const nodeFormDraft = reactive({
   grid: null,
 });
 const opMenuOpen = ref(false);
-const opMenuDraft = reactive({ nodeId: '', nodeName: '', isStart: false, items: [] });
+const opMenuDraft = reactive({ nodeId: '', nodeName: '', isStart: false, rows: [], sign: { enabled: true, required: false, defaultValue: '' } });
 /** 办理节点可配置的操作按钮（签字意见有独立开关、附件走「相关资源」，不再放进操作菜单） */
 const OP_MENU_OPTIONS = [
   { value: 'submit', label: '提交' },
@@ -4373,16 +4425,14 @@ const OP_MENU_OPTIONS = [
   { value: 'print', label: '打印' },
   { value: 'cc', label: '抄送' },
 ];
+/** 支持配置「默认审批意见」的按钮：提交 / 退回（办理动作类按钮，点击时可预填意见） */
+const OP_MENU_OPINION_KEYS = ['submit', 'reject'];
 /** 历史配置可能仍带「签字意见/附件上传」，仅用于摘要文案展示 */
 const OP_MENU_LEGACY_LABELS = { comment: '签字意见', attach: '附件上传' };
 /** 审批/办理节点默认菜单 */
 const DEFAULT_OP_MENUS = ['submit', 'reject', 'print', 'cc'];
 /** 申请（开始）节点默认菜单：发起场景不需要退回/转办/加签/终止 */
 const START_OP_MENUS = ['submit', 'print', 'cc'];
-/** 操作菜单弹窗可勾选的按钮：申请节点只保留发起场景按钮 */
-const opMenuOptions = computed(() =>
-  opMenuDraft.isStart ? OP_MENU_OPTIONS.filter((m) => START_OP_MENUS.includes(m.value)) : OP_MENU_OPTIONS
-);
 
 /** 右侧「操作人员」行摘要 */
 const participantSummaryText = computed(() => {
@@ -4503,15 +4553,55 @@ const filteredNodeFormOptions = computed(() => {
   return flowNodeFormOptions.value.filter((f) => f.formName.includes(kw) || f.fromNodeNames.join('、').includes(kw));
 });
 
-/** 解析节点扩展属性 flowable:operationMenus（JSON 数组） */
+/**
+ * 解析节点扩展属性 flowable:operationMenus
+ * 兼容两种格式：旧格式字符串数组 ["submit","reject"]；新格式对象数组 [{key,name,defaultOpinion}]
+ */
 function parseOpMenus(bo) {
   const raw = (bo && bo.get && bo.get('flowable:operationMenus')) || (bo && bo.$attrs && bo.$attrs['flowable:operationMenus']) || '';
   if (!raw) return [];
   try {
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+    return arr.map((v) => (typeof v === 'string' ? v : v && v.key)).filter(Boolean);
   } catch (e) {
     return [];
+  }
+}
+
+/**
+ * 解析节点扩展属性 flowable:operationMenus 中的按钮明细（自定义名称 / 默认审批意见）
+ * 返回 [{key, name, defaultOpinion}]；旧格式（字符串数组）只有 key
+ */
+function parseOpMenuDetails(bo) {
+  const raw = (bo && bo.get && bo.get('flowable:operationMenus')) || (bo && bo.$attrs && bo.$attrs['flowable:operationMenus']) || '';
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((v) => {
+        if (typeof v === 'string') return { key: v, name: '', defaultOpinion: '' };
+        return v && v.key ? { key: v.key, name: v.name || '', defaultOpinion: v.defaultOpinion || '' } : null;
+      })
+      .filter(Boolean);
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * 解析节点扩展属性 flowable:signOpinionJson（签字意见完整设置：启用/必填/默认意见）
+ * 未配置时返回 null（调用方回退 flowable:signOpinion 开关或默认值）
+ */
+function parseSignOpinionJson(bo) {
+  const raw = (bo && bo.get && bo.get('flowable:signOpinionJson')) || (bo && bo.$attrs && bo.$attrs['flowable:signOpinionJson']) || '';
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === 'object' ? obj : null;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -4806,6 +4896,17 @@ function nodeFormText(node) {
 }
 
 function nodeOpMenuText(node) {
+  // 新格式：按钮明细里有自定义名称时一并展示，例如「提交(批准)、退回、打印」
+  const details = (node && node.opMenuDetails) || [];
+  if (details.length) {
+    return details
+      .map((d) => {
+        const hit = OP_MENU_OPTIONS.find((m) => m.value === d.key);
+        const label = hit ? hit.label : OP_MENU_LEGACY_LABELS[d.key] || d.key;
+        return d.name ? label + '（' + d.name + '）' : label;
+      })
+      .join('、');
+  }
   const items = (node && node.opMenus) || [];
   if (!items.length) {
     // 未配置时展示按节点类型给出的默认菜单
@@ -5169,23 +5270,53 @@ async function onNodeFieldsSaved() {
   await refreshNodeFieldsFromForm();
 }
 
-/** 打开节点操作菜单配置 */
+/** 打开节点操作菜单配置（含自定义名称 / 默认审批意见 / 签字意见设置） */
 function openNodeOpMenu(node) {
   if (!node || (!node.isUserTask && !node.isStart)) return;
   opMenuDraft.nodeId = node.id;
   opMenuDraft.nodeName = node.name || node.id;
   opMenuDraft.isStart = !!node.isStart;
-  // 弹窗勾选状态 = 该节点实际生效的按钮：已配置取配置值，未配置取默认菜单
+  // 申请节点只保留发起场景按钮；审批节点全量可配
   const allowed = opMenuDraft.isStart ? START_OP_MENUS : OP_MENU_OPTIONS.map((m) => m.value);
-  const items = (node.opMenus || []).filter((v) => allowed.includes(v));
+  // 已配置的按钮明细（自定义名称 / 默认审批意见），旧格式只有 key
+  const detailMap = {};
+  (node.opMenuDetails || []).forEach((d) => {
+    if (d && d.key) detailMap[d.key] = d;
+  });
+  // 实际生效的按钮：已配置取配置值，未配置取默认菜单
+  const keys = (node.opMenus || []).filter((v) => allowed.includes(v));
   const defaults = opMenuDraft.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS;
-  opMenuDraft.items = (items.length ? items : defaults).slice();
+  const effective = keys.length ? keys : defaults;
+  opMenuDraft.rows = OP_MENU_OPTIONS.filter((m) => allowed.includes(m.value)).map((m) => {
+    const d = detailMap[m.value] || {};
+    return {
+      key: m.value,
+      label: m.label,
+      enabled: effective.includes(m.value),
+      name: d.name || '',
+      defaultOpinion: d.defaultOpinion || '',
+      hasOpinion: !opMenuDraft.isStart && OP_MENU_OPINION_KEYS.includes(m.value),
+    };
+  });
+  // 签字意见设置：完整配置优先，回退节点开关（默认启用 / 非必填 / 无默认意见）
+  const sj = (node.signOpinionJson && typeof node.signOpinionJson === 'object') ? node.signOpinionJson : {};
+  opMenuDraft.sign = {
+    enabled: sj.enabled !== undefined ? !!sj.enabled : node.signOpinion !== false,
+    required: !!sj.required,
+    defaultValue: sj.defaultValue || '',
+  };
   opMenuOpen.value = true;
 }
 
 function resetOpMenuDefault() {
-  // 申请节点只保留发起场景按钮；审批节点默认提交、退回、打印、抄送
-  opMenuDraft.items = (opMenuDraft.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS).slice();
+  // 申请节点只保留发起场景按钮；审批节点默认提交、退回、打印、抄送；明细清空
+  const defaults = opMenuDraft.isStart ? START_OP_MENUS : DEFAULT_OP_MENUS;
+  opMenuDraft.rows.forEach((r) => {
+    r.enabled = defaults.includes(r.key);
+    r.name = '';
+    r.defaultOpinion = '';
+  });
+  opMenuDraft.sign = { enabled: true, required: false, defaultValue: '' };
 }
 
 /**
@@ -5201,9 +5332,23 @@ function setSignOpinion(v) {
     return;
   }
   const val = v ? 'true' : 'false';
-  graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:signOpinion': val });
+  const props = { 'flowable:signOpinion': val };
+  // 已保存过完整签字意见配置（操作菜单弹窗）时，同步 enabled，避免两处开关打架
+  const rawJson =
+    (el.businessObject.get && el.businessObject.get('flowable:signOpinionJson')) ||
+    (el.businessObject.$attrs && el.businessObject.$attrs['flowable:signOpinionJson']) ||
+    '';
+  if (rawJson) {
+    try {
+      const obj = JSON.parse(rawJson) || {};
+      obj.enabled = !!v;
+      props['flowable:signOpinionJson'] = JSON.stringify(obj);
+    } catch (e) {}
+  }
+  graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, props);
   try {
     el.businessObject.$attrs['flowable:signOpinion'] = val;
+    if (props['flowable:signOpinionJson']) el.businessObject.$attrs['flowable:signOpinionJson'] = props['flowable:signOpinionJson'];
   } catch (e) {}
   se.signOpinion = !!v;
   refreshGraphicData();
@@ -5241,17 +5386,51 @@ function saveNodeOpMenu() {
   }
   // 申请节点只保存发起场景按钮：历史配置里的退回/转办/加签/终止一并丢弃
   const allowed = opMenuDraft.isStart ? START_OP_MENUS : OP_MENU_OPTIONS.map((m) => m.value);
-  const items = opMenuDraft.items.filter((v) => allowed.includes(v));
-  const json = items.length ? JSON.stringify(items) : undefined;
+  const rows = opMenuDraft.rows.filter((r) => r.enabled && allowed.includes(r.key));
+  // 新格式：对象数组 [{key, name, defaultOpinion}]，与默认一致的自定义名称/空意见不存，保持 XML 精简
+  const json = rows.length
+    ? JSON.stringify(
+        rows.map((r) => {
+          const o = { key: r.key };
+          const name = (r.name || '').trim();
+          if (name && name !== r.label) o.name = name;
+          const op = (r.defaultOpinion || '').trim();
+          if (r.hasOpinion && op) o.defaultOpinion = op;
+          return o;
+        })
+      )
+    : undefined;
   graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, { 'flowable:operationMenus': json });
   try {
     if (json) el.businessObject.$attrs['flowable:operationMenus'] = json;
     else delete el.businessObject.$attrs['flowable:operationMenus'];
   } catch (e) {}
+  // 签字意见设置（申请节点无独立意见框，不写）：完整 JSON + 旧开关属性保持同步
+  if (!opMenuDraft.isStart) {
+    const sign = opMenuDraft.sign;
+    const signJson = JSON.stringify({ enabled: !!sign.enabled, required: !!sign.required, defaultValue: (sign.defaultValue || '').trim() });
+    graphicModeler.get('modeling').updateModdleProperties(el, el.businessObject, {
+      'flowable:signOpinionJson': signJson,
+      'flowable:signOpinion': sign.enabled ? 'true' : 'false',
+    });
+    try {
+      el.businessObject.$attrs['flowable:signOpinionJson'] = signJson;
+      el.businessObject.$attrs['flowable:signOpinion'] = sign.enabled ? 'true' : 'false';
+    } catch (e) {}
+  }
   if (selectedElement.value && selectedElement.value.id === opMenuDraft.nodeId) {
-    selectedElement.value.opMenus = items.slice();
-    // 签字意见已独立成开关：未显式配置时默认启用
-    selectedElement.value.signOpinion = parseSignOpinion(el.businessObject);
+    const details = rows.map((r) => ({
+      key: r.key,
+      name: (r.name || '').trim() === r.label ? '' : (r.name || '').trim(),
+      defaultOpinion: r.hasOpinion ? (r.defaultOpinion || '').trim() : '',
+    }));
+    selectedElement.value.opMenus = details.map((d) => d.key);
+    selectedElement.value.opMenuDetails = details;
+    // 签字意见开关随弹窗保存（申请节点仍取节点属性）
+    selectedElement.value.signOpinion = opMenuDraft.isStart ? parseSignOpinion(el.businessObject) : !!opMenuDraft.sign.enabled;
+    selectedElement.value.signOpinionJson = opMenuDraft.isStart
+      ? parseSignOpinionJson(el.businessObject)
+      : { enabled: !!opMenuDraft.sign.enabled, required: !!opMenuDraft.sign.required, defaultValue: (opMenuDraft.sign.defaultValue || '').trim() };
   }
   refreshGraphicData();
   opMenuOpen.value = false;
@@ -5404,7 +5583,9 @@ function refreshGraphicData() {
           nodeFormName: nodeFormMap.value[bo.id] ? nodeFormMap.value[bo.id].formName || '' : (bo.get && bo.get('flowable:nodeFormName')) || (bo.$attrs && bo.$attrs['flowable:nodeFormName']) || '',
           nodeFormSnapshot: nodeFormMap.value[bo.id] ? { fields: nodeFormMap.value[bo.id].fields || [], grid: nodeFormMap.value[bo.id].grid || null } : readNodeFormSnapshot(bo),
           opMenus: parseOpMenus(bo),
+          opMenuDetails: parseOpMenuDetails(bo),
           signOpinion: parseSignOpinion(bo),
+          signOpinionJson: parseSignOpinionJson(bo),
           allowRecall: parseAllowRecall(bo),
           participants: parseParticipantConfig(bo).participants || [],
           operatorGroups: parseOperatorGroups(bo),
@@ -7341,15 +7522,45 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .node-field-edit-footer .el-button {
   margin-left: auto;
 }
-/* 操作菜单弹窗 */
-.op-menu-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
+/* 操作菜单弹窗（对标泛微：按钮表格 + 签字意见设置） */
+.op-menu-table {
+  width: 100%;
 }
-.op-menu-group :deep(.el-checkbox) {
+.op-menu-table :deep(.el-input__inner) {
+  text-align: left;
+}
+.op-menu-na {
+  color: var(--el-text-color-placeholder);
+}
+.op-menu-sign {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: var(--el-fill-color-lighter);
+}
+.op-menu-sign-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.op-menu-sign-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+.op-menu-sign-tip {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.op-menu-sign-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+.op-menu-sign-row :deep(.el-checkbox) {
   margin-right: 0;
-  width: 30%;
 }
 
 /* 四页签：基本信息 / 表单管理 / 流转设置 / 高级设置 */
@@ -8033,12 +8244,12 @@ watch([graphicTab, graphicMode, filteredGraphicExits], () => {
 .designer-tabs.flow-active :deep(.el-tab-pane) {
   height: 100%;
 }
-/* 收紧页签横线到工具条之间的距离（原来 15px 页签外边距 + 14px 内容内边距 = 29px 空白带） */
+/* 收紧页签横线到工具条之间的距离（页签外边距 + 内容内边距合计 6px，约为原来 18px 的 1/3） */
 .designer-tabs.flow-active :deep(.el-tabs__header) {
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 .designer-tabs.flow-active :deep(.el-tab-pane) {
-  padding-top: 8px;
+  padding-top: 2px;
 }
 /* 单一模式容器：直接撑满 graphic-body（不再有二级 el-tabs 包裹层） */
 .graphic-pane,
