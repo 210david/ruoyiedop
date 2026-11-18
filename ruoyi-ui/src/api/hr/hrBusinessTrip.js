@@ -42,12 +42,3 @@ export function delHrBusinessTrip(tripId) {
     method: 'delete'
   })
 }
-
-// 出差审批
-export function auditHrBusinessTrip(tripId, auditAction, auditRemark) {
-  return request({
-    url: '/hr/businessTrip/audit/' + tripId,
-    method: 'put',
-    params: { auditAction, auditRemark }
-  })
-}

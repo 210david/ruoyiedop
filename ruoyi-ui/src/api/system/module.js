@@ -8,6 +8,14 @@ export function getEnabledModules() {
   })
 }
 
+// 查询全部停用模块的标识列表（工作台按模块开关过滤已关闭模块的功能入口）
+export function getDisabledModules() {
+  return request({
+    url: '/system/module/disabled',
+    method: 'get'
+  })
+}
+
 // 查询模块开关列表（含关联角色/任务统计）
 export function listModule(query) {
   return request({

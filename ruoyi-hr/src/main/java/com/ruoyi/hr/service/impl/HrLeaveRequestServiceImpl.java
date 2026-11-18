@@ -133,6 +133,16 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
         }
         try
         {
+            // 该时间段没有任何排班记录（未维护排班）时，保留表单规则自动计算的天数，
+            // 否则会被下面的排班算法一律按最低 0.5 天记，与表单显示不一致
+            SimpleDateFormat rangeFmt = new SimpleDateFormat("yyyy-MM-dd");
+            List<HrSchedule> existing = hrScheduleMapper.selectExistingSchedule(leave.getEmployeeId(),
+                    rangeFmt.format(leave.getStartTime()), rangeFmt.format(leave.getEndTime()));
+            if ((existing == null || existing.isEmpty()) && leave.getLeaveDays() != null
+                    && leave.getLeaveDays().compareTo(BigDecimal.ZERO) > 0)
+            {
+                return;
+            }
             BigDecimal days = computeLeaveDaysWithSchedule(leave.getEmployeeId(), leave.getStartTime(), leave.getEndTime());
             leave.setLeaveDays(days);
         }
@@ -314,64 +324,128 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
     }
 
     /**
-     * 请假审批
-     * auditAction: 1=通过, 2=驳回
+     * 流程办结：解冻发起时占用的额度，并转为已休天数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int auditLeaveRequest(Long leaveReqId, String auditAction, String auditRemark)
+    public void settleLeaveBalanceByFlow(String instanceId)
     {
-        HrLeaveRequest leave = hrLeaveRequestMapper.selectHrLeaveRequestById(leaveReqId);
-        if (leave == null)
+        HrLeaveRequest leave = selectByFlowInstance(instanceId);
+        if (leave == null || leave.getLeaveDays() == null || leave.getLeaveDays().compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("请假单不存在");
+            return;
         }
-        if (!"1".equals(auditAction) && !"2".equals(auditAction))
+        unfreezeLeaveBalance(leave, "请假流程办结解冻");
+        deductLeaveBalance(leave, "请假流程办结自动扣减");
+    }
+
+    /**
+     * 流程终止/撤销：解冻发起时占用的额度
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelLeaveBalanceByFlow(String instanceId)
+    {
+        HrLeaveRequest leave = selectByFlowInstance(instanceId);
+        // 仅解冻仍处于审批中的单据，已办结的不能再回退
+        if (leave == null || !"0".equals(leave.getAuditStatus()))
         {
-            throw new ServiceException("审核动作不合法");
+            return;
         }
-        if (!"0".equals(leave.getAuditStatus()))
+        unfreezeLeaveBalance(leave, "流程终止/撤销解冻");
+    }
+
+    /**
+     * 流程复活：把办结时扣减的额度退回，并重新冻结，台账回到审批中后可再次办结/撤销
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rollbackLeaveBalanceByFlow(String instanceId)
+    {
+        HrLeaveRequest leave = selectByFlowInstance(instanceId);
+        if (leave == null || leave.getLeaveDays() == null || leave.getLeaveDays().compareTo(BigDecimal.ZERO) <= 0)
         {
-            throw new ServiceException("该请假单已审批，不可重复审批" + ("2".equals(leave.getAuditStatus()) ? "，请修改后重新提交" : ""));
+            return;
         }
-
-        String username = SecurityUtils.getUsername();
-        Date auditTime = new Date();
-        leave.setAuditStatus("1".equals(auditAction) ? "1" : "2");
-        leave.setAuditBy(username);
-        leave.setAuditTime(auditTime);
-        leave.setAuditRemark(auditRemark);
-
-        int rows = hrLeaveRequestMapper.updateHrLeaveRequest(leave);
-
-        // 写入审核日志
-        if (rows > 0)
+        // 已办结：退回办结时扣减的额度并重新冻结；已撤销：冻结在撤销时已释放，只需重新冻结
+        boolean completed = "1".equals(leave.getAuditStatus());
+        boolean cancelled = "3".equals(leave.getAuditStatus());
+        if (!completed && !cancelled)
         {
-            HrLeaveRequestAuditLog log = new HrLeaveRequestAuditLog();
-            log.setLeaveReqId(leaveReqId);
-            log.setAuditAction(auditAction);
-            log.setAuditBy(username);
-            log.setAuditTime(auditTime);
-            log.setAuditRemark(auditRemark);
-            hrLeaveRequestAuditLogMapper.insertHrLeaveRequestAuditLog(log);
+            return;
         }
-
-        // 审批通过：解冻并扣减假期余额
-        if (rows > 0 && "1".equals(auditAction))
+        HrLeaveBalance query = new HrLeaveBalance();
+        query.setEmployeeId(leave.getEmployeeId());
+        query.setLeaveType(leave.getLeaveType());
+        query.setYear(Calendar.getInstance().get(Calendar.YEAR));
+        List<HrLeaveBalance> balances = hrLeaveBalanceMapper.selectHrLeaveBalanceList(query);
+        if (balances == null || balances.isEmpty())
         {
-            // 先解冻待审批期间的冻结额
-            unfreezeLeaveBalance(leave);
-            // 再扣减实际已休天数
-            deductLeaveBalance(leave);
+            return;
         }
+        HrLeaveBalance balance = balances.get(0);
+        BigDecimal beforeUsed = balance.getUsedDays() != null ? balance.getUsedDays() : BigDecimal.ZERO;
+        BigDecimal beforeFrozen = balance.getFrozenDays() != null ? balance.getFrozenDays() : BigDecimal.ZERO;
 
-        // 审批驳回：解冻假期余额
-        if (rows > 0 && "2".equals(auditAction))
+        BigDecimal afterUsed = completed ? beforeUsed.subtract(leave.getLeaveDays()) : beforeUsed;
+        if (afterUsed.compareTo(BigDecimal.ZERO) < 0)
         {
-            unfreezeLeaveBalance(leave);
+            afterUsed = BigDecimal.ZERO;
         }
+        BigDecimal afterFrozen = beforeFrozen.add(leave.getLeaveDays());
+        BigDecimal afterRemaining = balance.getTotalDays() != null ? balance.getTotalDays().subtract(afterUsed) : BigDecimal.ZERO;
 
-        return rows;
+        balance.setUsedDays(afterUsed);
+        balance.setFrozenDays(afterFrozen);
+        balance.setRemainingDays(afterRemaining);
+        hrLeaveBalanceMapper.updateHrLeaveBalance(balance);
+
+        // 记录回退明细
+        HrLeaveBalanceLog log = new HrLeaveBalanceLog();
+        log.setBalanceId(balance.getBalanceId());
+        log.setLeaveReqId(leave.getLeaveReqId());
+        log.setLeaveReqNo(leave.getLeaveReqNo());
+        log.setEmployeeId(leave.getEmployeeId());
+        log.setEmployeeName(leave.getEmployeeName());
+        log.setLeaveType(leave.getLeaveType());
+        log.setYear(Calendar.getInstance().get(Calendar.YEAR));
+        log.setChangeDays(leave.getLeaveDays());
+        log.setBeforeUsed(beforeUsed);
+        log.setAfterUsed(afterUsed);
+        log.setBeforeFrozen(beforeFrozen);
+        log.setAfterFrozen(afterFrozen);
+        log.setChangeType(completed ? "rollback" : "freeze");
+        log.setChangeReason(completed ? "流程复活回退" : "流程复活重新冻结");
+        log.setOperator(operator());
+        log.setCreateBy(operator());
+        hrLeaveBalanceLogMapper.insertHrLeaveBalanceLog(log);
+    }
+
+    /** 按流程实例查请假台账 */
+    private HrLeaveRequest selectByFlowInstance(String instanceId)
+    {
+        if (StringUtils.isEmpty(instanceId))
+        {
+            return null;
+        }
+        HrLeaveRequest query = new HrLeaveRequest();
+        query.setFlowInstanceId(instanceId);
+        List<HrLeaveRequest> list = hrLeaveRequestMapper.selectHrLeaveRequestList(query);
+        return list == null || list.isEmpty() ? null : list.get(0);
+    }
+
+    /** 当前操作人：流程引擎线程无登录上下文时回退为「流程归档」 */
+    private String operator()
+    {
+        try
+        {
+            String username = SecurityUtils.getUsername();
+            return StringUtils.isEmpty(username) ? "流程归档" : username;
+        }
+        catch (Exception e)
+        {
+            return "流程归档";
+        }
     }
 
     /**
@@ -403,16 +477,21 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
         log.setAfterFrozen(afterFrozen);
         log.setChangeType("freeze");
         log.setChangeReason("请假发起冻结");
-        log.setOperator(SecurityUtils.getUsername());
-        log.setCreateBy(SecurityUtils.getUsername());
+        log.setOperator(operator());
+        log.setCreateBy(operator());
         hrLeaveBalanceLogMapper.insertHrLeaveBalanceLog(log);
     }
 
     /**
-     * 解冻假期余额（审批驳回/删除时调用）
+     * 解冻假期余额（流程撤销/删除时调用）
      * 将请假天数从 frozenDays 中扣除
      */
     private void unfreezeLeaveBalance(HrLeaveRequest leave)
+    {
+        unfreezeLeaveBalance(leave, "请假单删除解冻");
+    }
+
+    private void unfreezeLeaveBalance(HrLeaveRequest leave, String reason)
     {
         HrLeaveBalance balance = getLeaveBalance(leave);
         if (balance == null) return;
@@ -439,9 +518,9 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
         log.setBeforeFrozen(beforeFrozen);
         log.setAfterFrozen(afterFrozen);
         log.setChangeType("unfreeze");
-        log.setChangeReason("请假驳回/删除解冻");
-        log.setOperator(SecurityUtils.getUsername());
-        log.setCreateBy(SecurityUtils.getUsername());
+        log.setChangeReason(reason);
+        log.setOperator(operator());
+        log.setCreateBy(operator());
         hrLeaveBalanceLogMapper.insertHrLeaveBalanceLog(log);
     }
 
@@ -460,9 +539,9 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
     }
 
     /**
-     * 扣减假期余额（审批通过时调用）
+     * 扣减假期余额（流程办结时调用）
      */
-    private void deductLeaveBalance(HrLeaveRequest leave)
+    private void deductLeaveBalance(HrLeaveRequest leave, String reason)
     {
         // 查询对应假别的假期余额
         HrLeaveBalance query = new HrLeaveBalance();
@@ -504,9 +583,9 @@ public class HrLeaveRequestServiceImpl implements IHrLeaveRequestService
         log.setBeforeRemaining(beforeRemaining);
         log.setAfterRemaining(afterRemaining);
         log.setChangeType("deduct");
-        log.setChangeReason("请假审批通过自动扣减");
-        log.setOperator(SecurityUtils.getUsername());
-        log.setCreateBy(SecurityUtils.getUsername());
+        log.setChangeReason(reason);
+        log.setOperator(operator());
+        log.setCreateBy(operator());
         hrLeaveBalanceLogMapper.insertHrLeaveBalanceLog(log);
     }
 }

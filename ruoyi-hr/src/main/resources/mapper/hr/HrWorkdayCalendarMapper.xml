@@ -116,6 +116,15 @@
         SELECT COUNT(*) FROM biz_hr_workday_calendar WHERE year = #{year} AND (del_flag IS NULL OR del_flag = '0')
     </select>
 
+    <!-- 区间内日历标记（仅启用记录；date_type: 0=工作日 1=休息日 2=法定节假日） -->
+    <select id="selectDateTypeRange" resultType="java.util.HashMap">
+        SELECT date_format(calendar_date, '%Y-%m-%d') AS dt, date_type AS dateType
+        FROM biz_hr_workday_calendar
+        WHERE calendar_date BETWEEN #{startDate} AND #{endDate}
+          AND status = '0'
+          AND (del_flag IS NULL OR del_flag = '0')
+    </select>
+
     <delete id="deleteByYear">
         DELETE FROM biz_hr_workday_calendar WHERE year = #{year}
     </delete>

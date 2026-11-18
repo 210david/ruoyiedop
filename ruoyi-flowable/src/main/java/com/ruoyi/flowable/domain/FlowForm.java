@@ -44,6 +44,9 @@ public class FlowForm extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 是否系统流程表单（考勤/车辆/印章等）：不允许删除表单与已有字段，只能新增或修改字段 */
+    private Boolean systemFlow;
+
     public Long getFormId() { return formId; }
     public void setFormId(Long formId) { this.formId = formId; }
     public String getFormKey() { return formKey; }
@@ -66,4 +69,6 @@ public class FlowForm extends BaseEntity
     public void setTableName(String tableName) { this.tableName = tableName; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public Boolean getSystemFlow() { return systemFlow; }
+    public void setSystemFlow(Boolean systemFlow) { this.systemFlow = systemFlow; }
 }

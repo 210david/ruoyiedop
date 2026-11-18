@@ -42,12 +42,3 @@ export function delHrOuting(outingId) {
     method: 'delete'
   })
 }
-
-// 外出审批
-export function auditHrOuting(outingId, auditAction, auditRemark) {
-  return request({
-    url: '/hr/outing/audit/' + outingId,
-    method: 'put',
-    params: { auditAction, auditRemark }
-  })
-}

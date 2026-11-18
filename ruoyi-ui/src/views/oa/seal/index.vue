@@ -94,6 +94,9 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon><span>业务操作说明</span>
+        </button>
       </div>
       <div class="toolbar">
         <div class="left">
@@ -109,30 +112,40 @@
         </div>
       </div>
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="sealList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="sealList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" type="index" width="55" align="center" />
-          <el-table-column label="印章名称" prop="sealName" align="center" min-width="140" show-overflow-tooltip v-if="columns.sealName.visible" />
-          <el-table-column label="印章编号" prop="sealCode" align="center" width="130" v-if="columns.sealCode.visible">
+          <el-table-column label="印章名称" prop="sealName" key="sealName" align="center" :min-width="colWidth('sealName', 140)" show-overflow-tooltip resizable v-if="columns.sealName.visible" />
+          <el-table-column label="印章编号" prop="sealCode" key="sealCode" align="center" :width="colWidth('sealCode', 130)" resizable v-if="columns.sealCode.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.sealCode || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="印章类型" prop="sealType" align="center" width="120" v-if="columns.sealType.visible">
+          <el-table-column label="印章类型" prop="sealType" key="sealType" align="center" :width="colWidth('sealType', 120)" resizable v-if="columns.sealType.visible">
             <template #default="scope">
               <span v-if="scope.row.sealType" class="badge blue"><span class="dot"></span>{{ dictLabel(sealTypeOptions, scope.row.sealType) }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="保管人" prop="keeperName" align="center" width="100" v-if="columns.keeperName.visible" />
-          <el-table-column label="保管部门" prop="keeperDept" align="center" min-width="130" show-overflow-tooltip v-if="columns.keeperDept.visible" />
-          <el-table-column label="联系电话" prop="keeperPhone" align="center" width="120" v-if="columns.keeperPhone.visible" />
-          <el-table-column label="存放地点" prop="keepPlace" align="center" min-width="130" show-overflow-tooltip v-if="columns.keepPlace.visible" />
-          <el-table-column label="启用日期" prop="enableDate" align="center" width="110" v-if="columns.enableDate.visible" />
-          <el-table-column label="状态" prop="status" align="center" width="100" v-if="columns.status.visible">
+          <el-table-column label="保管人" prop="keeperName" key="keeperName" align="center" :width="colWidth('keeperName', 100)" resizable v-if="columns.keeperName.visible" />
+          <el-table-column label="保管部门" prop="keeperDept" key="keeperDept" align="center" :min-width="colWidth('keeperDept', 130)" show-overflow-tooltip resizable v-if="columns.keeperDept.visible" />
+          <el-table-column label="联系电话" prop="keeperPhone" key="keeperPhone" align="center" :width="colWidth('keeperPhone', 120)" resizable v-if="columns.keeperPhone.visible" />
+          <el-table-column label="存放地点" prop="keepPlace" key="keepPlace" align="center" :min-width="colWidth('keepPlace', 130)" show-overflow-tooltip resizable v-if="columns.keepPlace.visible" />
+          <el-table-column label="启用日期" prop="enableDate" key="enableDate" align="center" :width="colWidth('enableDate', 110)" resizable v-if="columns.enableDate.visible" />
+          <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="statusBadgeClass(scope.row.status)"><span class="dot"></span>{{ dictLabel(sealStatusOptions, scope.row.status) }}</span>
+              <span v-if="scope.row.overdue" class="badge red" style="margin-left:4px"><span class="dot"></span>逾期</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center" fixed="right">
+          <el-table-column label="关联流程" prop="flowLink" key="flowLink" align="center" :width="colWidth('flowLink', 200)" resizable v-if="columns.flowLink.visible">
+            <template #default="scope">
+              <template v-if="scope.row.flowInstanceId">
+                <el-link type="primary" :underline="false" @click="openFlowDetail(scope.row)">{{ scope.row.flowTitle || '查看流程' }}</el-link>
+                <el-tag size="small" :type="scope.row.flowRunning === '1' ? 'warning' : 'info'" style="margin-left: 4px">{{ scope.row.flowRunning === '1' ? '进行中' : '已结束' }}</el-tag>
+              </template>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" :width="colWidth('操作', 190)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['oa:seal:query']">详情</el-button>
@@ -267,23 +280,35 @@
               <div class="rd-item"><span class="rd-label">印章编号</span><div class="rd-value">{{ viewData.sealCode || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">印章类型</span><div class="rd-value"><dict-tag :options="sealTypeOptions" :value="viewData.sealType" /></div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="sealStatusOptions" :value="viewData.status" /></div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>保管信息</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">保管人</span><div class="rd-value">{{ viewData.keeperName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保管部门</span><div class="rd-value">{{ viewData.keeperDept || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ viewData.keeperPhone || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">存放地点</span><div class="rd-value">{{ viewData.keepPlace || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">启用日期</span><div class="rd-value">{{ viewData.enableDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowInstanceId || '未关联' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.attachment">
-          <div class="rd-card-header" @click="toggleCard('v1')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>附件</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>附件与备注</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
-            <div class="rd-file-links">
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowTitle || viewData.flowInstanceId || '未关联' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+            <div class="rd-file-links" v-if="viewData.attachment">
               <a class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx" :href="url" target="_blank" rel="noopener">
                 <span class="rd-file-name">{{ url }}</span>
               </a>
@@ -293,6 +318,65 @@
       </div>
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 业务操作说明 -->
+    <el-dialog v-model="showStatusHelp" title="印章台账业务操作说明" width="780px" append-to-body>
+      <div class="oa-status-help-content">
+        <h4>一、印章台账说明</h4>
+        <div class="help-card help-card-primary">
+          <div class="help-card-title">印章资源统一管理</div>
+          <div class="help-card-body">
+            印章台账用于维护公司各类印章的基本信息、保管人、存放地点与使用状态。用印申请流程会与台账自动联动，无需手工修改占用状态。
+          </div>
+        </div>
+
+        <h4>二、状态说明</h4>
+        <div class="help-status-list">
+          <div class="help-status-item">
+            <span class="badge green"><span class="dot"></span>正常</span>
+            <p>印章在库，可正常申请使用；现场盖章只做用印留痕，不会改变该状态。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge blue"><span class="dot"></span>外带使用中</span>
+            <p>“携出盖章”申请在综合管理部审核并盖章办理完成后自动置为该状态；流程办结或终止后自动恢复正常。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge gray"><span class="dot"></span>停用 / 已注销</span>
+            <p>由管理员手工维护，流程联动不会覆盖停用、已注销等状态。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge red"><span class="dot"></span>逾期</span>
+            <p>外带使用中且已超过表单约定的预计归还时间，列表会显示红色逾期标识，请及时催还并完成流程。</p>
+          </div>
+        </div>
+
+        <h4>三、用印流程与状态联动</h4>
+        <div class="help-flow">
+          <span class="help-flow-node">发起用印申请</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">部门负责人审批</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">公司负责人审批<small>合同协议 / 对外担保</small></span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node is-key">综合管理部审核并盖章<small>携出盖章：此时占用</small></span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">盖章登记 / 归还登记</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node is-end">流程办结<small>自动归还</small></span>
+        </div>
+
+        <h4>四、常见操作</h4>
+        <ul class="help-tips">
+          <li><strong>新增 / 修改：</strong>维护印章名称、编号、类型、保管人、存放地点等基础信息。</li>
+          <li><strong>详情：</strong>查看完整台账信息及当前关联流程，点击流程标题可打开流程详情。</li>
+          <li><strong>导入 / 导出：</strong>支持批量维护印章台账，导入时按印章编号识别重复数据。</li>
+          <li><strong>删除：</strong>仅删除台账数据，不会删除历史流程记录。</li>
+        </ul>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
 
@@ -317,11 +401,15 @@
 <script setup name="OaSeal">
 import { listOaSeal, getOaSeal, addOaSeal, updateOaSeal, delOaSeal } from '@/api/oa/seal'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
+import { QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
-const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1'])
+const router = useRouter()
+const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1', 'v2'])
+const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('oa_seal_index')
 const { oa_seal_type: sealTypeOptions } = proxy.useDict('oa_seal_type')
 const { oa_seal_status: sealStatusOptions } = proxy.useDict('oa_seal_status')
 
@@ -335,13 +423,14 @@ const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const showStatusHelp = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const enableDateRange = ref([])
 const activeStatusTab = ref('all')
-const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
+const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
 
 const columns = ref({
   sealName: { label: '印章名称', visible: true },
@@ -352,7 +441,8 @@ const columns = ref({
   keeperPhone: { label: '联系电话', visible: false },
   keepPlace: { label: '存放地点', visible: true },
   enableDate: { label: '启用日期', visible: true },
-  status: { label: '状态', visible: true }
+  status: { label: '状态', visible: true },
+  flowLink: { label: '关联流程', visible: true }
 })
 
 const statusTabList = computed(() => sealStatusOptions.value)
@@ -422,7 +512,7 @@ function handleStatusTabClick(status) {
 function loadStatusCounts() {
   const query = { ...queryParams.value, pageNum: 1, pageSize: 9999, status: undefined, params: { ...queryParams.value.params } }
   listOaSeal(query).then(res => {
-    const counts = { all: 0, '0': 0, '1': 0, '2': 0 }
+    const counts = { all: 0, '0': 0, '1': 0, '2': 0, '3': 0 }
     const rows = res.rows || []
     rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++ })
     counts.all = rows.length
@@ -430,8 +520,8 @@ function loadStatusCounts() {
   }).catch(() => {})
 }
 
-function statusTabClass(value) { return { '0': 'tab-green', '1': 'tab-amber', '2': 'tab-red' }[value] || '' }
-function statusBadgeClass(value) { return { '0': 'green', '1': 'amber', '2': 'red' }[value] || 'gray' }
+function statusTabClass(value) { return { '0': 'tab-green', '1': 'tab-amber', '2': 'tab-red', '3': 'tab-blue' }[value] || '' }
+function statusBadgeClass(value) { return { '0': 'green', '1': 'amber', '2': 'red', '3': 'blue' }[value] || 'gray' }
 function dictLabel(options, v) {
   if (v === undefined || v === null || v === '') return '-'
   const d = (options || []).find(o => String(o.value) === String(v))
@@ -523,6 +613,15 @@ function handleImport() {
 
 function handleExport() {
   proxy.download('oa/seal/export', proxy.addDateRange({ ...queryParams.value }, enableDateRange.value, 'EnableDate'), `印章台账_${new Date().getTime()}.xlsx`)
+}
+
+/** 查看关联流程：新标签页打开流程详情页（与流程任务列表同一跳转方式） */
+function openFlowDetail(row) {
+  const href = router.resolve({
+    path: '/flow/detail/create',
+    query: { instanceId: row.flowInstanceId || '', defName: row.flowTitle || '' }
+  }).href
+  window.open(href, '_blank')
 }
 
 getList()

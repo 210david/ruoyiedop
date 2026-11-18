@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.flowable.mapper.FlowWorkdayMapper">
+
+    <!-- 区间内日历标记（仅启用记录；date_type: 0=工作日 1=休息日 2=法定节假日） -->
+    <select id="selectDateTypeRange" resultType="java.util.HashMap">
+        SELECT date_format(calendar_date, '%Y-%m-%d') AS dt, date_type AS dateType
+        FROM biz_hr_workday_calendar
+        WHERE calendar_date BETWEEN #{startDate} AND #{endDate}
+          AND status = '0'
+          AND (del_flag IS NULL OR del_flag = '0')
+    </select>
+</mapper>

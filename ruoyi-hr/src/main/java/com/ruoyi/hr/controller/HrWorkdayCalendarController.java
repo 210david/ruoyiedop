@@ -35,6 +35,13 @@ public class HrWorkdayCalendarController extends BaseController
         return getDataTable(list);
     }
 
+    /** 区间内日历标记映射 {日期: 类型}（表单规则引擎 workDays 函数用，所有登录用户可查） */
+    @GetMapping("/map")
+    public AjaxResult dateTypeMap(String startDate, String endDate)
+    {
+        return AjaxResult.success(hrWorkdayCalendarService.selectDateTypeMap(startDate, endDate));
+    }
+
     /** 导出工作日历 */
     @Log(title = "工作日期维护", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('hr:workdayCalendar:export')")

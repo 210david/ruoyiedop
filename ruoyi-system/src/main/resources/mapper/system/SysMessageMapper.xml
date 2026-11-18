@@ -59,14 +59,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </when>
                 <otherwise>
                     and (
-                        m.recipient_role_key is null
-                        or m.recipient_role_key = ''
-                        <if test='roleKeys.size() > 0'>
-                            or m.recipient_role_key in
-                            <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
-                                #{rk}
-                            </foreach>
-                        </if>
+                        /* 指定接收人（流程待办）只看自己的；角色消息按权限过滤 */
+                        m.recipient_id = #{userId}
+                        or (
+                            (m.recipient_id is null or m.recipient_id = 0)
+                            and (
+                                m.recipient_role_key is null
+                                or m.recipient_role_key = ''
+                                <if test='roleKeys.size() > 0'>
+                                    or m.recipient_role_key in
+                                    <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
+                                        #{rk}
+                                    </foreach>
+                                </if>
+                            )
+                        )
                     )
                 </otherwise>
             </choose>
@@ -125,14 +132,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 </when>
                 <otherwise>
                     and (
-                        m.recipient_role_key is null
-                        or m.recipient_role_key = ''
-                        <if test='roleKeys.size() > 0'>
-                            or m.recipient_role_key in
-                            <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
-                                #{rk}
-                            </foreach>
-                        </if>
+                        /* 指定接收人（流程待办）只看自己的；角色消息按权限过滤 */
+                        m.recipient_id = #{userId}
+                        or (
+                            (m.recipient_id is null or m.recipient_id = 0)
+                            and (
+                                m.recipient_role_key is null
+                                or m.recipient_role_key = ''
+                                <if test='roleKeys.size() > 0'>
+                                    or m.recipient_role_key in
+                                    <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
+                                        #{rk}
+                                    </foreach>
+                                </if>
+                            )
+                        )
                     )
                 </otherwise>
             </choose>
@@ -230,14 +244,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </when>
             <otherwise>
                 and (
-                    m.recipient_role_key is null
-                    or m.recipient_role_key = ''
-                    <if test='roleKeys.size() > 0'>
-                        or m.recipient_role_key in
-                        <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
-                            #{rk}
-                        </foreach>
-                    </if>
+                    /* 指定接收人（流程待办）只看自己的；角色消息按权限过滤 */
+                    m.recipient_id = #{userId}
+                    or (
+                        (m.recipient_id is null or m.recipient_id = 0)
+                        and (
+                            m.recipient_role_key is null
+                            or m.recipient_role_key = ''
+                            <if test='roleKeys.size() > 0'>
+                                or m.recipient_role_key in
+                                <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
+                                    #{rk}
+                                </foreach>
+                            </if>
+                        )
+                    )
                 )
             </otherwise>
         </choose>
@@ -281,14 +302,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             </when>
             <otherwise>
                 and (
-                    m.recipient_role_key is null
-                    or m.recipient_role_key = ''
-                    <if test='roleKeys.size() > 0'>
-                        or m.recipient_role_key in
-                        <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
-                            #{rk}
-                        </foreach>
-                    </if>
+                    /* 指定接收人（流程待办）只看自己的；角色消息按权限过滤 */
+                    m.recipient_id = #{userId}
+                    or (
+                        (m.recipient_id is null or m.recipient_id = 0)
+                        and (
+                            m.recipient_role_key is null
+                            or m.recipient_role_key = ''
+                            <if test='roleKeys.size() > 0'>
+                                or m.recipient_role_key in
+                                <foreach collection="roleKeys" item="rk" open="(" separator="," close=")">
+                                    #{rk}
+                                </foreach>
+                            </if>
+                        )
+                    )
                 )
             </otherwise>
         </choose>
@@ -315,6 +343,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateBizHandled">
         update sys_message set biz_handled = '1', update_time = sysdate()
         where biz_source = #{bizSource} and biz_id = #{bizId}
+        and (biz_handled is null or biz_handled = '0')
+    </update>
+
+    <!-- 按跳转链接关键字标记消息为已处理（流程任务办结：redirect_url 携带 taskId / instanceId） -->
+    <update id="updateBizHandledByUrl">
+        update sys_message set biz_handled = '1', update_time = sysdate()
+        where biz_source = #{bizSource}
+        and redirect_url like concat('%', #{urlKeyword}, '%')
         and (biz_handled is null or biz_handled = '0')
     </update>
 

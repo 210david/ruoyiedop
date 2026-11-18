@@ -10,7 +10,4 @@ public interface IHrBusinessTripService {
     public int updateHrBusinessTrip(HrBusinessTrip hrBusinessTrip);
     public int deleteHrBusinessTripByIds(Long[] tripIds);
     public int deleteHrBusinessTripById(Long tripId);
-
-    /** 出差审批（auditAction: 1=通过, 2=驳回） */
-    public int auditHrBusinessTrip(Long tripId, String auditAction, String auditRemark);
 }

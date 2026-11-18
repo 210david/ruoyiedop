@@ -53,6 +53,8 @@ public class HrClockRepair extends BaseEntity
     private Date auditTime;
     @Excel(name = "审批意见")
     private String auditRemark;
+    @Excel(name = "关联流程")
+    private String flowInstanceId;
     @Excel(name = "状态", dictType = "hr_audit_status")
     private String status;
     @Excel(name = "删除标志", readConverterExp = "0=正常,2=已删除")
@@ -92,6 +94,8 @@ public class HrClockRepair extends BaseEntity
     public void setAuditTime(Date auditTime) { this.auditTime = auditTime; }
     public String getAuditRemark() { return auditRemark; }
     public void setAuditRemark(String auditRemark) { this.auditRemark = auditRemark; }
+    public String getFlowInstanceId() { return flowInstanceId; }
+    public void setFlowInstanceId(String flowInstanceId) { this.flowInstanceId = flowInstanceId; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

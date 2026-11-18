@@ -1,13 +1,9 @@
 package com.ruoyi.hr.service.impl;
 
 import com.ruoyi.common.annotation.DataScope;
-import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.ruoyi.common.exception.ServiceException;
-import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 import com.ruoyi.hr.domain.HrOvertime;
@@ -99,38 +95,5 @@ public class HrOvertimeServiceImpl implements IHrOvertimeService
     {
         hrOvertimeAuditLogMapper.deleteHrOvertimeAuditLogByOvertimeId(overtimeId);
         return hrOvertimeMapper.deleteHrOvertimeById(overtimeId);
-    }
-
-    @Override
-    @Transactional
-    public int auditHrOvertime(Long overtimeId, String auditAction, String auditRemark)
-    {
-        HrOvertime exist = hrOvertimeMapper.selectHrOvertimeById(overtimeId);
-        if (exist == null) { throw new ServiceException("加班单不存在"); }
-        if (!"1".equals(auditAction) && !"2".equals(auditAction)) { throw new ServiceException("审核动作不合法"); }
-        if (!"0".equals(exist.getAuditStatus())) { throw new ServiceException("当前状态不允许审批" + ("2".equals(exist.getAuditStatus()) ? "，请修改后重新提交" : "")); }
-
-        String username = SecurityUtils.getUsername();
-        Date auditTime = new Date();
-
-        HrOvertime update = new HrOvertime();
-        update.setOvertimeId(overtimeId);
-        update.setAuditStatus(auditAction);
-        update.setAuditBy(username);
-        update.setAuditTime(auditTime);
-        update.setAuditRemark(auditRemark);
-        int rows = hrOvertimeMapper.updateHrOvertime(update);
-
-        if (rows > 0)
-        {
-            HrOvertimeAuditLog log = new HrOvertimeAuditLog();
-            log.setOvertimeId(overtimeId);
-            log.setAuditAction(auditAction);
-            log.setAuditBy(username);
-            log.setAuditTime(auditTime);
-            log.setAuditRemark(auditRemark);
-            hrOvertimeAuditLogMapper.insertHrOvertimeAuditLog(log);
-        }
-        return rows;
     }
 }

@@ -42,6 +42,7 @@ const usePermissionStore = defineStore(
             const rdata = JSON.parse(JSON.stringify(filteredData))
             const defaultData = JSON.parse(JSON.stringify(filteredData))
             const sidebarRoutes = filterAsyncRouter(sdata)
+            collapseSingleChild(sidebarRoutes)
             const rewriteRoutes = filterAsyncRouter(rdata, false, true)
             const defaultRoutes = filterAsyncRouter(defaultData)
             const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
@@ -56,6 +57,22 @@ const usePermissionStore = defineStore(
       }
     }
   })
+
+/**
+ * 目录下只有一个可见子菜单时，折叠为一条菜单直接指向该子菜单。
+ *
+ * RuoYi 侧边栏的 hasOneShowingChild 依赖 alwaysShow 为 false 才会折叠，
+ * 而后端对有子菜单的目录一律返回 alwaysShow = true。
+ * 这里放开折叠，避免出现「业务全景图 > 业务全景图」这种同名双层菜单。
+ */
+function collapseSingleChild(routes) {
+  routes.forEach(route => {
+    const visible = (route.children || []).filter(child => !child.hidden)
+    if (visible.length === 1) {
+      route.alwaysShow = false
+    }
+  })
+}
 
 // 过滤掉大屏路由（已在 constantRoutes 中注册为独立全屏页面，防止动态路由覆盖）
 function filterScreenRoute(routes) {

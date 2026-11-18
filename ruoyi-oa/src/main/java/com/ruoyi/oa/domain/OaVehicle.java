@@ -61,8 +61,14 @@ public class OaVehicle extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=可用,1=使用中,2=维修中,3=停用,4=已报废")
     private String status;
 
-    /** 关联流程实例ID（预留，后续与车辆流程关联） */
+    /** 关联流程实例ID（公车使用申请流程写回） */
     private String flowInstanceId;
+
+    /** 关联流程标题（列表联查展示，不入库） */
+    private String flowTitle;
+
+    /** 关联流程运行状态（列表联查展示：1进行中 0已结束） */
+    private String flowRunning;
 
     private String attachment;
 
@@ -100,6 +106,10 @@ public class OaVehicle extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getFlowInstanceId() { return flowInstanceId; }
     public void setFlowInstanceId(String flowInstanceId) { this.flowInstanceId = flowInstanceId; }
+    public String getFlowTitle() { return flowTitle; }
+    public void setFlowTitle(String flowTitle) { this.flowTitle = flowTitle; }
+    public String getFlowRunning() { return flowRunning; }
+    public void setFlowRunning(String flowRunning) { this.flowRunning = flowRunning; }
     public String getAttachment() { return attachment; }
     public void setAttachment(String attachment) { this.attachment = attachment; }
     public String getDelFlag() { return delFlag; }

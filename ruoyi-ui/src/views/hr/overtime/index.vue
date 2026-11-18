@@ -92,13 +92,7 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:overtime:add']">新增</el-button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['hr:overtime:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['hr:overtime:remove']">
-            <el-icon><Delete /></el-icon> 删除
-          </button>
+          <el-button type="primary" plain icon="Plus" @click="handleLaunchFlow" v-hasPermi="['flowable:process:start']">发起加班申请</el-button>
           <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:overtime:export']">
             <el-icon><Download /></el-icon> 导出
@@ -126,7 +120,7 @@
           </el-table-column>
           <el-table-column label="开始时间" prop="startTime" key="startTime" align="center" :width="colWidth('startTime', 130)" resizable v-if="columns.startTime.visible" />
           <el-table-column label="结束时间" prop="endTime" key="endTime" align="center" :width="colWidth('endTime', 130)" resizable v-if="columns.endTime.visible" />
-          <el-table-column label="审批状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 110)" resizable v-if="columns.auditStatus.visible">
+          <el-table-column label="流程状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 110)" resizable v-if="columns.auditStatus.visible">
             <template #default="scope">
               <span class="badge" :class="auditStatusClass(scope.row.auditStatus)"><span class="dot"></span>{{ auditStatusLabel(scope.row.auditStatus) }}</span>
             </template>
@@ -135,9 +129,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:overtime:query']">详情</el-button>
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:overtime:edit']">修改</el-button>
-                <el-button link type="warning" icon="Finished" @click="handleAudit(scope.row)" v-if="scope.row.auditStatus === '0'" v-hasPermi="['hr:overtime:audit']">审批</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:overtime:remove']">删除</el-button>
+                <el-button link type="primary" icon="Connection" @click="handleViewFlow(scope.row)" v-if="scope.row.flowInstanceId">关联流程</el-button>
               </div>
             </template>
           </el-table-column>
@@ -337,34 +329,16 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c2')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>流程信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
-            <el-alert v-if="viewData.auditStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
-              <template #title>该记录已被驳回，请根据审核意见修改后重新提交</template>
-            </el-alert>
-            <div class="rd-timeline" v-if="viewAuditLogs().length">
-              <div class="rd-timeline-item" v-for="(log, idx) in viewAuditLogs()" :key="idx">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">
-                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
-                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
-                    </span>
-                    <span class="rd-timeline-time">{{ log.auditTime || '-' }}</span>
-                  </div>
-                  <div class="rd-timeline-body">
-                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
-                  </div>
-                  <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="rd-empty" v-else>
-              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              <p class="rd-empty-text">暂无审核记录</p>
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">流程状态</span><div class="rd-value"><span class="badge" :class="auditStatusClass(viewData.auditStatus)"><span class="dot"></span>{{ auditStatusLabel(viewData.auditStatus) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">
+                <el-button v-if="viewData.flowInstanceId" link type="primary" @click="openFlow(viewData.flowInstanceId)">查看审批流程</el-button>
+                <span v-else>-</span>
+              </div></div>
             </div>
           </div>
         </section>
@@ -374,73 +348,13 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 审批弹窗 ===== -->
-    <el-dialog v-model="auditOpen" width="912px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-          <div class="rd-detail-header-main">
-            <div class="rd-detail-header-title">加班审批</div>
-            <div class="rd-detail-header-sub" v-if="auditData.overtimeNo">
-              <div class="rd-detail-header-divider"></div>
-              <span class="rd-detail-header-no">加班单号：{{ auditData.overtimeNo }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-      <div class="rd-page">
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">加班单号</span><div class="rd-value">{{ auditData.overtimeNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">姓名</span><div class="rd-value">{{ auditData.employeeName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ auditData.employeeNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ auditData.deptName || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>加班信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">加班类型</span><div class="rd-value"><dict-tag :options="overtimeTypeOptions" :value="auditData.overtimeType"/></div></div>
-              <div class="rd-item"><span class="rd-label">加班日期</span><div class="rd-value">{{ auditData.overtimeDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ auditData.startTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ auditData.endTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">加班小时</span><div class="rd-value">{{ auditData.overtimeHours != null ? auditData.overtimeHours : '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>其他信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item rd-item--full"><span class="rd-label">加班原因</span><div class="rd-value">{{ auditData.reason || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>审批意见</div></div>
-          <div class="rd-card-body" style="display:block">
-            <el-input v-model="auditData.auditRemark" type="textarea" :rows="4" maxlength="500" show-word-limit placeholder="请输入审批意见，驳回时建议填写驳回原因" />
-          </div>
-        </section>
-      </div>
-      <template #footer>
-        <el-button type="success" :loading="auditSubmitting" @click="submitAudit('1')">通 过</el-button>
-        <el-button type="danger" :loading="auditSubmitting" @click="submitAudit('2')">驳 回</el-button>
-        <el-button @click="auditOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 人员选择弹窗 -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
   </div>
 </template>
 
 <script setup name="HrOvertime">
-import { listHrOvertime, getHrOvertime, addHrOvertime, updateHrOvertime, delHrOvertime, auditHrOvertime } from '@/api/hr/hrOvertime'
+import { listHrOvertime, getHrOvertime, addHrOvertime, updateHrOvertime, delHrOvertime } from '@/api/hr/hrOvertime'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker';
 
@@ -453,9 +367,6 @@ const hrOvertimeList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
-const auditOpen = ref(false)
-const auditSubmitting = ref(false)
-const auditData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -502,12 +413,12 @@ const columns = ref(loadColumnVisibility())
 
 /** 审批状态徽章映射（兼容字典编码与历史中文值） */
 function auditStatusClass(v) {
-  const map = { '0': 'amber', '待审批': 'amber', '待审': 'amber', '1': 'green', '审批中': 'blue', '通过': 'green', '已通过': 'green', '2': 'red', '驳回': 'red', '已驳回': 'red', '3': 'red', '已作废': 'gray', '4': 'gray' }
+  const map = { '0': 'blue', '1': 'green', '2': 'red', '3': 'gray', '待审批': 'blue', '审批中': 'blue', '通过': 'green', '已通过': 'green', '驳回': 'red', '已驳回': 'red', '已撤销': 'gray' }
   return map[v] || 'gray'
 }
 function auditStatusLabel(v) {
-  if (v === undefined || v === null || v === '') return '-'
-  const map = { '0': '待审', '1': '通过', '2': '驳回', '待审批': '待审批', '审批中': '审批中', '已通过': '已通过', '已驳回': '已驳回', '已作废': '已作废' }
+  if (v === undefined || v === null || v === '') return '审批中'
+  const map = { '0': '审批中', '1': '已通过', '2': '已驳回', '3': '已撤销', '待审批': '审批中', '审批中': '审批中', '已通过': '已通过', '已驳回': '已驳回', '已撤销': '已撤销' }
   return map[v] || String(v)
 }
 
@@ -706,10 +617,6 @@ function handleView(row) {
 }
 
 /** 详情弹窗：获取审核日志列表（安全访问，防止 viewData 为空时报错） */
-function viewAuditLogs() {
-  return viewData.value && viewData.value.auditLogList ? viewData.value.auditLogList : []
-}
-
 function submitForm() {
   proxy.$refs['hrOvertimeRef'].validate(valid => {
     if (valid) {
@@ -768,42 +675,23 @@ function cancel() {
   reset()
 }
 
-/** 审批 */
-function handleAudit(row) {
-  getHrOvertime(row.overtimeId).then(response => {
-    const d = response.data || {}
-    auditData.value = {
-      overtimeId: d.overtimeId,
-      overtimeNo: d.overtimeNo,
-      employeeName: d.employeeName,
-      employeeNo: d.employeeNo,
-      deptName: d.deptName,
-      overtimeType: d.overtimeType,
-      overtimeDate: d.overtimeDate,
-      startTime: d.startTime,
-      endTime: d.endTime,
-      overtimeHours: d.overtimeHours,
-      reason: d.reason,
-      auditStatus: d.auditStatus,
-      auditRemark: '',
-  auditLogList: d.auditLogList || []
-    }
-    auditOpen.value = true
-  })
+/** 发起加班流程 */
+function handleLaunchFlow() {
+  const url = proxy.$router.resolve({ path: '/flow/launch/create', query: { key: 'overtimeApply', name: '加班申请' } }).href
+  window.open(url, '_blank')
 }
-function submitAudit(action) {
-  if (action === '2' && !auditData.value.auditRemark) {
-    proxy.$modal.msgWarning('驳回时请填写审批意见')
+
+/** 查看关联流程 */
+function handleViewFlow(row) {
+  if (!row.flowInstanceId) {
+    proxy.$modal.msgWarning('该记录未关联流程')
     return
   }
-  auditSubmitting.value = true
-  auditHrOvertime(auditData.value.overtimeId, action, auditData.value.auditRemark).then(() => {
-    proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
-    auditOpen.value = false
-    getList()
-  }).finally(() => {
-    auditSubmitting.value = false
-  })
+  openFlow(row.flowInstanceId)
+}
+function openFlow(instanceId) {
+  const url = proxy.$router.resolve({ path: '/flow/detail/create', query: { instanceId } }).href
+  window.open(url, '_blank')
 }
 
 getList()

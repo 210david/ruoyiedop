@@ -681,9 +681,9 @@ function commitEdit() {
   const cell = findAnchorCell(grid.value, r, c)
   const val = editText.value
   pushUndo()
-  if (cell && ['title', 'text', 'note'].includes(cell.type)) cell.text = val
+  if (cell && ['title', 'text', 'note', 'group'].includes(cell.type)) cell.text = val
   else if (!cell && val.trim()) grid.value.cells.push(makeCell(r, c, { type: 'text', text: val }))
-  else if (cell && !['title', 'text', 'note'].includes(cell.type) && !cell.field) { cell.type = 'text'; cell.text = val }
+  else if (cell && !['title', 'text', 'note', 'group'].includes(cell.type) && !cell.field) { cell.type = 'text'; cell.text = val }
   editing.value = null
 }
 function patchActive(patch) {

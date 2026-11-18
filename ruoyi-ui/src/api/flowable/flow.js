@@ -74,9 +74,9 @@ export function listTodoTask(query) {
   return request({ url: '/flowable/task/todoList', method: 'get', params: query })
 }
 
-// 我的全部未结事项（待办任务 + 草稿，行上用 bizType 区分）
-export function listAllTask(query) {
-  return request({ url: '/flowable/task/allList', method: 'get', params: query })
+// 我的全部未办结事项（待办 + 退回 + 未读待阅 + 草稿，行上用 bizType 区分）
+export function listPendingTask(query) {
+  return request({ url: '/flowable/task/pendingList', method: 'get', params: query })
 }
 
 // 流程分类树（待办/已办/查询/我的请求页左侧树）

@@ -1,6 +1,7 @@
 package com.ruoyi.hr.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ruoyi.hr.domain.HrWorkdayCalendar;
 
 /**
@@ -11,6 +12,9 @@ public interface IHrWorkdayCalendarService
     public HrWorkdayCalendar selectHrWorkdayCalendarById(Long calendarId);
 
     public List<HrWorkdayCalendar> selectHrWorkdayCalendarList(HrWorkdayCalendar hrWorkdayCalendar);
+
+    /** 区间内日历标记映射 {日期: 类型}（0=工作日 1=休息日 2=法定节假日），表单规则引擎 workDays 用 */
+    public Map<String, String> selectDateTypeMap(String startDate, String endDate);
 
     public int insertHrWorkdayCalendar(HrWorkdayCalendar hrWorkdayCalendar);
 
