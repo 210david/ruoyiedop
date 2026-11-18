@@ -495,6 +495,10 @@
             :active="open && activeTab === 'layout'" fullscreen
             @update:model-value="v => (layout.grid = v)" @save="submitForm(true)" />
         </el-tab-pane>
+
+        <el-tab-pane label="交互规则" name="rules">
+          <RulePanel v-model="extJson" :fields="fields" :form-id="form.formId" />
+        </el-tab-pane>
       </el-tabs>
     </el-dialog>
 
@@ -717,6 +721,7 @@ import { parseLayout, sectionsToGrid, fieldsToGrid, serializeLayout, isFlowSysFi
 import { BROWSE_TYPES, browseSupportsMultiple, browseForceMultiple } from '@/components/FormBrowse/sources.js'
 import { defaultModeLabel, defaultModesOf, sourceFieldOptions, defaultSummary, isEmptyValue } from '@/views/flowable/common/field-defaults'
 import FormBrowse from '@/components/FormBrowse/index.vue'
+import RulePanel from '@/views/flowable/common/form-rules/RulePanel.vue'
 import Sortable from 'sortablejs'
 
 /** 中文名称 → 拼音首字母字段名（小写字母开头，仅含字母/数字/下划线），如：合同名称 → htmc */
@@ -746,6 +751,8 @@ const showSearch = ref(true)
 const total = ref(0)
 const open = ref(false)
 const activeTab = ref('basic')
+/** 交互规则（ext_json）：规则面板与提交校验共用同一份规则定义 */
+const extJson = ref('')
 /** 进入弹窗的入口：layout=从列表「页面设计」直接进设计器（只看设计器，不显示页签）， form=从「设计」/新建进入（显示三个页签） */
 const designEntry = ref('form')
 const layoutOnly = computed(() => designEntry.value === 'layout' && activeTab.value === 'layout')
@@ -1088,6 +1095,7 @@ function submitAdd(enterDesign) {
       form.value = detail.data
       fields.value = ensureSystemFields(normalizeFields(safeParse(detail.data.fieldsJson)))
       layout.value = normalizeLayout(detail.data.layoutJson)
+      extJson.value = detail.data.extJson || ''
       rebuildDetailTables()
       pruneMissingLayoutFields()
       activeTab.value = 'fields'
@@ -1105,6 +1113,7 @@ async function handleDesign(row, tab = 'basic') {
   form.value = res.data
   fields.value = ensureSystemFields(normalizeFields(safeParse(res.data.fieldsJson)))
   layout.value = normalizeLayout(res.data.layoutJson)
+  extJson.value = res.data.extJson || ''
   undoStack.value = []
   redoStack.value = []
   rebuildDetailTables()
@@ -1866,7 +1875,8 @@ function submitForm(keepOpen) {
     formDesc: form.value.formDesc || undefined,
     processKey: form.value.processKey || undefined,
     fieldsJson: JSON.stringify(fields.value.map(({ rowKey, ...rest }) => rest)),
-    layoutJson: serializeLayout({ mode: layout.value.mode, sections: layout.value.sections.map(s => ({ title: s.title, rows: s.rows })), grid: layout.value.grid })
+    layoutJson: serializeLayout({ mode: layout.value.mode, sections: layout.value.sections.map(s => ({ title: s.title, rows: s.rows })), grid: layout.value.grid }),
+    extJson: extJson.value || undefined
   }
   if (form.value.formId) {
     updateForm(payload).then(() => {

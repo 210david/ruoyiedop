@@ -65,6 +65,10 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Autowired
     private com.ruoyi.flowable.service.FlowDefinitionResolver flowDefinitionResolver;
 
+    /** 表单规则引擎：保存校验 + 提交复算 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowFormRuleService formRuleService;
+
     /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
     @Override
@@ -128,6 +132,7 @@ public class FlowFormServiceImpl implements IFlowFormService
             throw new ServiceException("表单Key已存在：" + form.getFormKey());
         }
         validateFields(form.getFieldsJson());
+        validateRuleExtension(form);
         SysUser user = userService.selectUserById(SecurityUtils.getUserId());
         form.setCreateBy(user.getUserName());
         int rows = flowFormMapper.insertFlowForm(form);
@@ -144,8 +149,25 @@ public class FlowFormServiceImpl implements IFlowFormService
     public int updateFlowForm(FlowForm form)
     {
         validateFields(form.getFieldsJson());
+        validateRuleExtension(form);
         form.setUpdateBy(SecurityUtils.getUsername());
         return flowFormMapper.updateFlowForm(form);
+    }
+
+    /** 表单规则/脚本保存前校验，避免脏规则进入运行态 */
+    private void validateRuleExtension(FlowForm form)
+    {
+        if (form.getExtJson() == null)
+        {
+            return;
+        }
+        String fieldsJson = form.getFieldsJson();
+        if (StringUtils.isEmpty(fieldsJson) && form.getFormId() != null)
+        {
+            FlowForm db = flowFormMapper.selectFlowFormByFormId(form.getFormId());
+            fieldsJson = db == null ? null : db.getFieldsJson();
+        }
+        form.setExtJson(formRuleService.validateForSave(form.getExtJson(), fieldsJson));
     }
 
     @Override
@@ -790,6 +812,8 @@ public class FlowFormServiceImpl implements IFlowFormService
             {
                 ensureProcessNoColumn(form.getTableName());
             }
+            // 服务端按同一份表单规则复算 + 校验，防止绕过前端提交脏数据
+            formRuleService.applyAndValidate(form.getExtJson(), form.getFieldsJson(), vars);
             businessKey = insertFormData(form, vars);
         }
         Long userId = SecurityUtils.getUserId();

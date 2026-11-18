@@ -293,8 +293,124 @@ public class FlowModelServiceImpl implements IFlowModelService
         {
             repositoryService.addModelEditorSource(model.getId(),
                     flowModel.getBpmnXml().getBytes(StandardCharsets.UTF_8));
+            // 轻量修改即时生效：结构未变、数据表未换时，同步已部署定义的 BPMN 资源
+            syncDeployedResourceIfStructureUnchanged(model);
         }
         return 1;
+    }
+
+    /**
+     * 轻量修改即时生效（分级部署策略补全）。
+     *
+     * 背景：设计器「保存」只写模型编辑源（act_re_model），而前台发起页流程图预览、
+     * 流程实例流程图都读取「已部署流程定义」的资源字节（act_ge_bytearray），
+     * 若不重新部署，调整节点间距/位置、节点显示名、参与者配置等非结构修改前台永远看不到。
+     *
+     * 策略：保存 BPMN 后，对比新编辑源与每个已部署定义的结构指纹（节点+流转线）：
+     *  - 结构一致且未更换绑定数据表 → 视为轻量修改，按部署期注入（namespace/formId/发起人节点）
+     *    生成部署产物字节，直接覆盖该定义的资源，并驱逐引擎的流程定义缓存，前台立即生效、不产生新版本；
+     *  - 结构指纹不一致（增删节点/流转线）或换了数据表 → 属重大变更，不同步，仍需走「部署」流程。
+     *
+     * 仅同步与当前编辑源结构一致的版本：结构不同的历史版本保持原样，避免运行中实例被改结构。
+     *
+     * @param model 已保存编辑源的模型
+     */
+    private void syncDeployedResourceIfStructureUnchanged(Model model)
+    {
+        byte[] editorBytes = repositoryService.getModelEditorSource(model.getId());
+        if (editorBytes == null || editorBytes.length == 0)
+        {
+            return;
+        }
+        List<ProcessDefinition> defs = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(model.getKey()).list();
+        if (defs.isEmpty())
+        {
+            return;
+        }
+        TreeSet<String> current = fingerprintOfBytes(editorBytes);
+        if (current.isEmpty())
+        {
+            return;
+        }
+        Long formId = parseMetaInfo(model.getMetaInfo()).getLong("formId");
+        for (ProcessDefinition def : defs)
+        {
+            try
+            {
+                byte[] deployedBytes;
+                try (java.io.InputStream in = repositoryService.getResourceAsStream(
+                        def.getDeploymentId(), def.getResourceName()))
+                {
+                    deployedBytes = in == null ? null : in.readAllBytes();
+                }
+                TreeSet<String> deployed = fingerprintOfBytes(deployedBytes);
+                if (deployed.isEmpty() || !deployed.equals(current))
+                {
+                    // 结构有差异：需要正式部署出新版本，不做资源覆盖
+                    continue;
+                }
+                // 历史版本未写 formId 标记（deployedFormId 为 null）时不做数据表判断
+                Long deployedFormId = readDeployedFormId(def);
+                if (deployedFormId != null && formId != null && !deployedFormId.equals(formId))
+                {
+                    continue;
+                }
+                // 与部署期同一套注入，保证部署产物口径一致
+                byte[] synced = normalizeBpmnNamespace(editorBytes, model.getCategory());
+                synced = injectFormId(synced, formId);
+                synced = injectInitiatorNode(synced);
+                if (java.util.Arrays.equals(synced, deployedBytes))
+                {
+                    continue;
+                }
+                flowProcdefExtMapper.updateDefinitionResourceBytes(
+                        def.getDeploymentId(), def.getResourceName(), synced);
+                evictDefinitionCache(def.getId());
+                log.info("流程[{}]轻量修改已同步到部署版本 v{}（{}）",
+                        model.getKey(), def.getVersion(), def.getId());
+            }
+            catch (Exception e)
+            {
+                // 单个版本同步失败不影响保存，可走正式部署兜底
+                log.warn("流程[{}]同步部署版本 v{} 失败：{}", model.getKey(), def.getVersion(), e.getMessage());
+            }
+        }
+    }
+
+    /** 从 BPMN XML 字节解析结构指纹（解析失败返回空集合） */
+    private TreeSet<String> fingerprintOfBytes(byte[] xml)
+    {
+        if (xml == null || xml.length == 0)
+        {
+            return new TreeSet<>();
+        }
+        try
+        {
+            BpmnXMLConverter converter = new BpmnXMLConverter();
+            XMLStreamReader reader = javax.xml.stream.XMLInputFactory.newInstance()
+                    .createXMLStreamReader(new ByteArrayInputStream(xml));
+            return fingerprint(converter.convertToBpmnModel(reader));
+        }
+        catch (Exception e)
+        {
+            return new TreeSet<>();
+        }
+    }
+
+    /** 驱逐引擎的流程定义缓存，使新资源字节（图形/节点配置）立即生效 */
+    private void evictDefinitionCache(String processDefinitionId)
+    {
+        try
+        {
+            org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl cfg =
+                    (org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl) processEngineConfiguration;
+            cfg.getDeploymentManager().getProcessDefinitionCache().remove(processDefinitionId);
+        }
+        catch (Exception e)
+        {
+            log.warn("驱逐流程定义缓存失败（{}）：{}", processDefinitionId, e.getMessage());
+        }
     }
 
     /**

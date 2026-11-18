@@ -7,6 +7,7 @@ import { defineComponent, h, resolveComponent } from 'vue'
 import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker } from 'element-plus'
 import FormBrowse from '@/components/FormBrowse/index.vue'
 import { htmlToText } from '@/utils'
+import { toRmbUpper } from '@/utils/rmb'
 
 /**
  * 系统字段固定渲染类型：
@@ -31,8 +32,12 @@ export function rtypeOf(f) {
   return 'text'
 }
 
-/** 字段定义 → 选项列表 [{label,value}]（selectOptions 键值对优先，options 串兼容） */
-export function optionListOf(f) {
+/** 字段定义 → 选项列表 [{label,value}]（selectOptions 键值对优先，options 串兼容；
+ *  override 为交互规则「动态选项」覆盖，非空时整体替换字段原始选项） */
+export function optionListOf(f, override) {
+  if (Array.isArray(override) && override.length) {
+    return override.map(o => typeof o === 'object' ? { label: o.label !== undefined ? o.label : String(o.value), value: o.value !== undefined ? o.value : o.label } : { label: String(o), value: o })
+  }
   if (!f) return []
   if (Array.isArray(f.selectOptions) && f.selectOptions.length) {
     return f.selectOptions.map(o => typeof o === 'object' ? { label: o.label, value: o.value !== undefined ? o.value : o.label } : { label: o, value: o })
@@ -78,7 +83,9 @@ export default defineComponent({
     extraValue: { type: Object, default: null },
     styleObj: { type: Object, default: null },
     disabled: { type: Boolean, default: false },
-    required: { type: Boolean, default: false }
+    required: { type: Boolean, default: false },
+    /** 交互规则「动态选项」覆盖：非空时替换下拉/单选/复选的原始选项 */
+    optionsOverride: { type: Array, default: null }
   },
   emits: ['update:modelValue', 'update:idValue', 'update:extraValue', 'browse'],
   setup(props, { emit }) {
@@ -90,6 +97,7 @@ export default defineComponent({
       const v = props.modelValue
       const fmt = props.styleObj && props.styleObj.fmt
       const rt = rtypeOf(f)
+      const opts = () => optionListOf(f, props.optionsOverride)
       // 日期格式：单元格格式弹窗选择的 pattern → valueFormat；时间分类 → datetime
       const DATE_VF = { '2013/3/14': 'YYYY/M/D', '2013-3-14': 'YYYY-M-D', '2013年3月14日': 'YYYY年M月D日', '2013年3月': 'YYYY年M月', '3月14日': 'M月D日', '2013/3/14 10:13 AM': 'YYYY/M/D hh:mm A', '2013/3/14 10:13': 'YYYY/M/D HH:mm' }
       const dateVf = (fmt && fmt.pattern && DATE_VF[fmt.pattern]) || 'YYYY-MM-DD'
@@ -98,9 +106,9 @@ export default defineComponent({
       const dis = props.disabled
       switch (rt) {
         case 'select': return h(ElSelect, { modelValue: v, 'onUpdate:modelValue': set, style: 'width:100%', placeholder: f.placeholder || '请选择', disabled: dis },
-          () => optionListOf(f).map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
+          () => opts().map(o => h(ElOption, { key: o.value, label: o.label, value: o.value })))
         case 'radio': return h(ElRadioGroup, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis },
-          () => optionListOf(f).map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
+          () => opts().map(o => h(ElRadio, { key: o.value, value: o.value }, () => o.label)))
         case 'editor': return h(resolveComponent('Editor'), {
           modelValue: v || '',
           'onUpdate:modelValue': set,
@@ -111,7 +119,7 @@ export default defineComponent({
           modelValue: v ? String(v).split(',').filter(Boolean) : [],
           'onUpdate:modelValue': arr => set((arr || []).join(',')),
           disabled: dis
-        }, () => optionListOf(f).map(o => h(ElCheckbox, { key: o.value, value: o.value }, () => o.label)))
+        }, () => opts().map(o => h(ElCheckbox, { key: o.value, value: o.value }, () => o.label)))
         case 'check': return h(ElCheckbox, { modelValue: v, 'onUpdate:modelValue': set, trueValue: '1', falseValue: '0', disabled: dis })
         case 'switch': return h(ElSwitch, { modelValue: v, 'onUpdate:modelValue': set, activeValue: '1', inactiveValue: '0', disabled: dis })
         case 'rate': return h(ElRate, { modelValue: v, 'onUpdate:modelValue': set, disabled: dis })
@@ -129,7 +137,15 @@ export default defineComponent({
         case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis, inlineTip: true, reqStar: props.required })
         case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder, disabled: dis })
         // 数字框默认居中（el-input-number 自带样式），这里跟随单元格对齐方式，未设置时居左
-        case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', align: (props.styleObj && props.styleObj.align) || 'left', placeholder: f.placeholder || '请输入', disabled: dis })
+        // 空串/ null 归一为 undefined：ElInputNumber 收到空串会显示并回写 0，误触发「必须大于0」类校验
+        // 人民币大写格式：金额格只读展示中文大写（值仍为数字，随数字实时转换）
+        case 'number':
+          if (fmt && fmt.cat === 'rmb') {
+            const al = (props.styleObj && props.styleObj.align) || 'left'
+            return h('div', { style: 'width:100%;text-align:' + al, class: 'rmb-upper-text' },
+              v === undefined || v === null || v === '' ? '' : toRmbUpper(v))
+          }
+          return h(ElInputNumber, { modelValue: (v === '' || v === null ? undefined : v), 'onUpdate:modelValue': set, controls: false, precision: numPrec, style: 'width:100%', align: (props.styleObj && props.styleObj.align) || 'left', placeholder: f.placeholder || '请输入', disabled: dis })
         case 'date': return isTime
           ? h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择时间', style: 'width:100%', disabled: dis })
           : h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: dateVf, placeholder: f.placeholder || '选择日期', style: 'width:100%', disabled: dis })
