@@ -54,6 +54,25 @@
       </div>
     </template>
 
+    <!-- ===== 独立发起页引导态：弹窗打开前页面为空，必须有可见的加载/失败兜底，否则就是「白板」 ===== -->
+    <div v-if="isStandaloneLaunch && !open && (launchBooting || launchError)" class="launch-boot">
+      <div v-if="launchError" class="boot-card boot-error">
+        <el-icon class="boot-icon"><WarningFilled /></el-icon>
+        <div class="boot-title">流程发起页加载失败</div>
+        <div class="boot-desc">{{ launchError }}</div>
+        <div class="boot-sub">流程：{{ route.query.name || current.modelName || route.query.key || '-' }}</div>
+        <div class="boot-ops">
+          <el-button type="primary" icon="Refresh" @click="retryLaunch">重新加载</el-button>
+          <el-button icon="Back" @click="backFromLaunchError">返回待办列表</el-button>
+        </div>
+      </div>
+      <div v-else class="boot-card">
+        <el-icon class="boot-icon is-loading"><Loading /></el-icon>
+        <div class="boot-title">正在加载流程表单…</div>
+        <div class="boot-desc">{{ route.query.name || '请稍候，正在取流程定义与绑定表单' }}</div>
+      </div>
+    </div>
+
     <!-- ===== 发起流程：全屏页面（顶部：标题 + 页签 + 操作按钮；下方：内容区） ===== -->
     <el-dialog v-model="open" fullscreen append-to-body class="launch-dialog" :close-on-click-modal="false" destroy-on-close :show-close="false">
       <template #header>
@@ -98,9 +117,14 @@
 
         <!-- 页签：流程表单 -->
         <div class="launch-pane" v-show="launchTab === 'form'">
-          <div v-if="boundForm && boundForm.fields && boundForm.fields.length">
-            <el-form ref="dynRef" :model="dynData" label-width="120px">
-              <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid" :fields="boundForm.fields" :values="dynData" :editable-fields="noRuleEditableFields" editable />
+          <!-- 与费用报销单等办理页一致：整个表单包在「申请表单」卡片里 -->
+          <section class="launch-card" v-if="boundForm && boundForm.fields && boundForm.fields.length">
+            <div class="launch-card-head">
+              <span class="lc-icon">▤</span>申请表单
+            </div>
+            <div class="launch-card-body">
+              <el-form ref="dynRef" :model="dynData" label-width="120px">
+              <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid" :fields="boundForm.fields" :values="dynData" :editable-fields="noRuleEditableFields" :overrides="ruleOverrides" :rule-errors="ruleErrors" :rule-detail-errors="ruleDetailErrors" editable @detail-change="runFormRules" />
               <template v-else>
                 <!-- 简易模式顶部流程名称：与分组标题一起构成表单层级 -->
                 <div class="dyn-form-title">{{ boundForm.formName }}</div>
@@ -152,7 +176,7 @@
                       <div v-else-if="c.note" class="dyn-note" :style="dynCellStyle(c)">{{ c.note }}</div>
                       <div v-else-if="c.style && (c.style.bgColor || c.style.border)" class="dyn-cell-wrap" :style="dynCellStyle(c)">
                         <el-form-item :label="c.f.label" :prop="c.f.field" :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur', 'change'] }] : []">
-                          <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || c.f.placeholder || '' }}</span>
+                          <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || '' }}</span>
                           <dyn-field v-else :f="c.f" v-model="dynData[c.f.field]" v-model:model-ids="dynData[c.f.field + '__id']" v-model:model-extra="dynData[c.f.field + '__extra']" />
                         </el-form-item>
                       </div>
@@ -163,7 +187,7 @@
                         :style="dynCellStyle(c)"
                         :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur', 'change'] }] : []"
                       >
-                        <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || c.f.placeholder || '' }}</span>
+                        <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || '' }}</span>
                         <dyn-field v-else :f="c.f" v-model="dynData[c.f.field]" v-model:model-ids="dynData[c.f.field + '__id']" v-model:model-extra="dynData[c.f.field + '__extra']" />
                       </el-form-item>
                     </el-col>
@@ -171,7 +195,8 @@
                 </template>
               </template>
             </el-form>
-          </div>
+            </div>
+          </section>
           <div v-else>
             <el-alert
               type="info"
@@ -401,13 +426,15 @@ import request from '@/utils/request';
 import { parseTime } from '@/utils/ruoyi';
 import { getToken } from '@/utils/auth';
 import useUserStore from '@/store/modules/user';
-import { Search, Promotion, ArrowRight, Files, CircleCheck, Loading, InfoFilled } from '@element-plus/icons-vue';
+import { Search, Promotion, ArrowRight, Files, CircleCheck, Loading, InfoFilled, WarningFilled } from '@element-plus/icons-vue';
 import FormGridRender from '@/components/FormGridRender.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
 import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
 import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
 import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults';
+import { parseExt } from '@/views/flowable/common/form-rules/constants';
+import { runRules, runFormScripts } from '@/views/flowable/common/form-rules/engine';
 import { useRoute, useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance();
@@ -422,8 +449,110 @@ const activeCategory = ref('all');
 const open = ref(false);
 const current = ref({});
 const boundForm = ref(null);
+/**
+ * 独立发起页（新标签页 /flow/launch/create）的引导状态。
+ * 该页面没有流程列表，唯一的可视内容就是发起弹窗：弹窗打开前页面是一片空白，
+ * 接口一慢/一报错用户就只看到「白板」且无从判断原因，所以必须有加载态与失败态兜底。
+ */
+const launchBooting = ref(false);
+const launchError = ref('');
+let launchSeq = 0;
+
+// ===== 交互规则引擎（flow_form.ext_json）=====
+// 运行态：字段变化 → 引擎重算 → states 传 FormGridRender（必填/显隐/只读）+ 计算值回填 dynData
+// 注意：dynData 必须在下方 watch 之前声明，否则 watch 注册时读取 dynData 会触发
+// 「Cannot access 'dynData' before initialization」，整个组件挂载失败 → 页面白板。
 const dynData = ref({});
-/** 当前用户上下文（ID / 姓名 / 所属部门）：字段默认值“当前用户/当前部门”取用 */
+const ruleOverrides = ref({});
+/** 规则实时校验错误：{ [field]: 提示文案 }，随字段变化即时刷新（不用等提交） */
+const ruleErrors = ref({});
+/** 明细行规则校验错误：{ '表名|行号|字段': 提示文案 }，传 FormGridRender 行内标红 */
+const ruleDetailErrors = ref({});
+const activeFormRules = computed(() => (boundForm.value ? parseExt(boundForm.value.extJson).rules : []));
+/** 高级脚本执行：phase=load/change/submit；发起页始终是可编辑上下文。返回错误文案（submit 拦截用） */
+function runScriptsPhase(phase) {
+  if (!boundForm.value) return '';
+  const scripts = parseExt(boundForm.value.extJson).scripts || [];
+  if (!scripts.length) return '';
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  try {
+    runFormScripts(scripts, phase, {
+      get: (f) => dynData.value[f],
+      set: (f, v) => {
+        if (dynData.value[f] !== v) dynData.value[f] = v;
+      },
+      detailData,
+      rows: (t) => detailData[t] || [],
+      fail: (msg) => {
+        throw new Error(msg);
+      },
+    });
+    return '';
+  } catch (e) {
+    return (e && e.message) || '高级脚本执行出错';
+  }
+}
+/** change 脚本防重入：脚本 set → watch → runFormRules → 脚本，一轮内只执行一次 */
+let scriptRunning = false;
+function runChangeScripts() {
+  if (scriptRunning) return;
+  scriptRunning = true;
+  try {
+    runScriptsPhase('change');
+  } finally {
+    scriptRunning = false;
+  }
+}
+function runFormRules(changedField, detailField) {
+  if (!activeFormRules.value.length) {
+    ruleOverrides.value = {};
+    ruleErrors.value = {};
+    ruleDetailErrors.value = {};
+    runChangeScripts();
+    return;
+  }
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  // 明细变化时传 [表名, 字段名]，trigger 含任一即命中；主表变化传字段名
+  const cf = detailField ? [changedField, detailField] : changedField;
+  const result = runRules(activeFormRules.value, boundForm.value.fields || [], dynData.value || {}, detailData, { changedField: cf });
+  ruleOverrides.value = result.states || {};
+  // 校验类规则实时提示：引擎每次重算都会执行 validate 规则，把错误映射到字段格内联展示
+  const errs = {};
+  const dErrs = {};
+  for (const e of result.errors || []) {
+    if (e.table) {
+      const key = e.table + '|' + e.rowIndex + '|' + e.field;
+      if (!dErrs[key]) dErrs[key] = e.message;
+    } else if (!errs[e.field]) {
+      errs[e.field] = e.message;
+    }
+  }
+  ruleErrors.value = errs;
+  ruleDetailErrors.value = dErrs;
+  // 计算/带出结果回填：值相同不写，写不发生变化时 watch 链自然收敛
+  for (const [k, v] of Object.entries(result.values || {})) {
+    if (dynData.value[k] !== v) dynData.value[k] = v;
+  }
+  // 高级脚本（字段变化时机）：规则重算后执行，脚本写回的值经 watch 再触发一轮校验收敛
+  runChangeScripts();
+}
+watch(
+  () => dynData.value,
+  () => runFormRules(),
+  { deep: true }
+);
+/** 提交前校验：先跑高级脚本（submit 时机可拦截），再跑规则校验。返回第一条错误文案，无错误返回空串 */
+function validateFormRules() {
+  const scriptErr = runScriptsPhase('submit');
+  if (scriptErr) return scriptErr;
+  if (!activeFormRules.value.length) return '';
+  const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  const { errors } = runRules(activeFormRules.value, boundForm.value.fields || [], dynData.value || {}, detailData, { validate: true });
+  if (!errors || !errors.length) return '';
+  const e0 = errors[0];
+  const label = boundForm.value.fields.find((f) => f.field === e0.field)?.label || e0.field;
+  return (e0.table ? label + ' 第' + (e0.rowIndex + 1) + '行 ' : label + ' ') + e0.message;
+}
 const userCtx = ref({});
 const userOptions = ref([]);
 const submitting = ref(false);
@@ -735,31 +864,61 @@ async function handleLaunch(d) {
 
 /** 独立发起页初始化：按 URL 参数加载流程定义与绑定表单 */
 async function initLaunchFromRoute() {
+  // 每次引导递增序号：重试与快速切换流程时，旧的一轮回来不要再改动状态
+  const seq = ++launchSeq;
+  launchError.value = '';
   const key = route.query.key;
   if (!key) {
+    // 缺少流程标识（例如手动粘贴地址打开）：给出可操作提示，而不是停在白板
+    launchBooting.value = false;
+    launchError.value = '缺少流程标识，无法发起，请从「流程发起」列表中选择流程';
     proxy.$modal.msgWarning('缺少流程标识，无法发起');
     return;
   }
+  launchBooting.value = true;
   loading.value = false;
-  // 独立页没有列表数据：按 key 反查流程定义，补齐流程名称/版本（标题默认值依赖流程名称）
-  let hit = defs.value.find((x) => x.modelKey === key);
-  if (!hit) {
-    try {
-      const res = await listDefinition({ modelKey: key, pageNum: 1, pageSize: 10 });
-      defs.value = res.rows || [];
-      hit = defs.value.find((x) => x.modelKey === key);
-    } catch (e) {
-      /* 取不到时退回 URL 参数 */
+  try {
+    // 独立页没有列表数据：按 key 反查流程定义，补齐流程名称/版本（标题默认值依赖流程名称）
+    let hit = defs.value.find((x) => x.modelKey === key);
+    if (!hit) {
+      try {
+        const res = await listDefinition({ modelKey: key, pageNum: 1, pageSize: 10 });
+        if (seq !== launchSeq) return;
+        defs.value = res.rows || [];
+        hit = defs.value.find((x) => x.modelKey === key);
+      } catch (e) {
+        /* 取不到时退回 URL 参数 */
+      }
     }
+    if (seq !== launchSeq) return;
+    const target = hit || {
+      modelKey: key,
+      modelName: route.query.name || '',
+      version: route.query.version ? Number(route.query.version) : undefined,
+    };
+    // prepareLaunch 内部已有 try/finally，保证即使加载失败也会打开弹窗并给出提示
+    await prepareLaunch(target);
+    if (seq !== launchSeq) return;
+    // 草稿续填：从「待办流程-草稿」点「继续填写」进入时，回填上次保存的内容
+    if (route.query.draftId) await restoreDraft(route.query.draftId);
+  } catch (e) {
+    // 兜底：任何未预料的异常都要留下可读的失败提示，不允许静默白板
+    if (seq !== launchSeq) return;
+    launchError.value = (e && (e.message || e.msg)) || '表单加载异常，请重试';
+  } finally {
+    if (seq === launchSeq) launchBooting.value = false;
   }
-  const target = hit || {
-    modelKey: key,
-    modelName: route.query.name || '',
-    version: route.query.version ? Number(route.query.version) : undefined,
-  };
-  await prepareLaunch(target);
-  // 草稿续填：从「待办流程-草稿」点「继续填写」进入时，回填上次保存的内容
-  if (route.query.draftId) await restoreDraft(route.query.draftId);
+}
+
+/** 独立发起页失败后重试：清掉错误重新引导一次 */
+function retryLaunch() {
+  launchError.value = '';
+  initLaunchFromRoute();
+}
+
+/** 独立发起页放弃引导：返回待办列表（被浏览器拦截 window.close 时也能有去处） */
+function backFromLaunchError() {
+  router.push('/flow/todo');
 }
 
 /** 草稿回填：恢复主表字段与明细行 */
@@ -875,20 +1034,41 @@ async function prepareLaunch(d) {
       let fields = [];
       try {
         fields = (JSON.parse(res.data.fieldsJson) || []).map(normalizeField);
-      } catch (e) {}
+      } catch (e) {
+        // 字段定义坏了：仍然要打开空表单，并明确告诉用户原因，不能白板
+        proxy.$modal.msgError('表单字段定义解析失败，请联系管理员检查表单设计');
+      }
       layoutParsed.value = parseLayout(res.data.layoutJson);
       boundForm.value = { ...res.data, fields, layoutJson: res.data.layoutJson };
-      await loadNoRule(d.modelKey);
-      initDetailRows();
-      applyDefaultTitle();
-      // 字段默认值：固定值 / 当天日期同步填；当前用户、当前部门需异步取，拿到后再补一次（取不到就不填）
-      applyDefaultsAll(null);
+      // 以下每一步都单独隔离：编号规则、默认值、明细行、规则引擎任一环抛错，
+      // 都不能把已经拿到的表单丢掉，更不能让 open 永远为 false 停在白板
+      try {
+        await loadNoRule(d.modelKey);
+      } catch (e) {
+        /* 编号规则不可用时按无规则处理 */
+      }
+      try {
+        initDetailRows();
+        applyDefaultTitle();
+        // 字段默认值：固定值 / 当天日期同步填；当前用户、当前部门需异步取，拿到后再补一次（取不到就不填）
+        applyDefaultsAll(null);
+        // 规则引擎首跑：带出默认值相关的计算/显隐/必填状态
+        runFormRules();
+        // 高级脚本（打开表单时机）：默认值就位后执行一次
+        nextTick(() => runScriptsPhase('load'));
+      } catch (e) {
+        /* 默认值与规则初始化失败：保留空表单可填 */
+      }
       // 默认值填好后重算一次编号：编号里的表单字段段要用这些值
-      refreshNoRulePreview(d.modelKey).then(() => applyAutoNo());
-      currentUserCtx().then((ctx) => {
-        userCtx.value = ctx;
-        applyDefaultsAll(ctx);
-      });
+      refreshNoRulePreview(d.modelKey)
+        .then(() => applyAutoNo())
+        .catch(() => {});
+      currentUserCtx()
+        .then((ctx) => {
+          userCtx.value = ctx;
+          applyDefaultsAll(ctx);
+        })
+        .catch(() => {});
     }
   } catch (e) {
     /* 无绑定表单 */
@@ -898,9 +1078,23 @@ async function prepareLaunch(d) {
   // 导致每次新发起都会把上一次填的值（文本、选择、勾选、附件）带出来，
   // 看起来像"新表单怎么已有值"。草稿恢复现在统一走「保存草稿 + draftId + 后端接口」，
   // 新建流程必须是全空表单。
-  loadUsers();
-  loadPreviewDiagram();
-  open.value = true;
+  try {
+    loadUsers();
+  } catch (e) {
+    /* 人员列表失败不阻塞发起 */
+  }
+  try {
+    loadPreviewDiagram();
+  } catch (e) {
+    /* 流程图失败不阻塞发起 */
+  }
+  // finally 语义：无论上面哪一步出问题，发起弹窗都必须打开，
+  // 打开后用户至少能看到「该流程未绑定表单」等明确内容，而不是空页面
+  try {
+    open.value = true;
+  } finally {
+    launchBooting.value = false;
+  }
 }
 
 // ===== 页面布局渲染（按表单 layoutJson 分组分栏；无布局回退单栏） =====
@@ -1153,6 +1347,14 @@ function validateForm() {
     }
     formRef.validate((valid) => {
       if (!valid) {
+        resolve(false);
+        return;
+      }
+      // 规则引擎校验（validate 规则）：先于明细校验，命中直接拦截
+      const ruleMsg = validateFormRules();
+      if (ruleMsg) {
+        launchTab.value = 'form';
+        proxy.$modal.msgWarning(ruleMsg);
         resolve(false);
         return;
       }
@@ -1743,6 +1945,8 @@ const isStandaloneLaunch = computed(() => route.path === '/flow/launch/create');
 
 if (isStandaloneLaunch.value) {
   // 独立发起页：直接加载表单详情，不展示流程列表
+  // 先立起引导态，避免首个 await 之前的那一帧仍是纯白页面
+  launchBooting.value = true;
   initLaunchFromRoute();
 } else {
   // 列表页：加载可发起流程
@@ -1837,6 +2041,58 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
 
 <style lang="scss" scoped>
 @use '../model/flow-model.scss';
+
+/* ===== 独立发起页引导态（加载中 / 加载失败）：撑满视口居中，杜绝白板 ===== */
+.launch-boot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 84px);
+  padding: 24px;
+  background: #f8fafc;
+}
+.launch-boot .boot-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.launch-boot .boot-icon {
+  font-size: 30px;
+  color: var(--brand-600, #4f46e5);
+  margin-bottom: 12px;
+}
+.launch-boot .boot-error .boot-icon {
+  color: #ef4444;
+}
+.launch-boot .boot-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.launch-boot .boot-desc {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #475569;
+  word-break: break-all;
+}
+.launch-boot .boot-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.launch-boot .boot-ops {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 
 /* 系统只读字段（流程编号等）：纯文本回显，不带输入框边框 */
 .dyn-ro {

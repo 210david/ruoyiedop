@@ -102,6 +102,11 @@ export function completeTask(data) {
   return request({ url: '/flowable/task/complete', method: 'put', data: data })
 }
 
+// 暂存表单修改（退回发起人场景）：只保存可编辑字段，不办理、不流转
+export function saveTaskForm(data) {
+  return request({ url: '/flowable/task/saveForm', method: 'put', data: data })
+}
+
 // 驳回（退回）时可选的节点：本人当前节点之前走过的环节 + 提交申请节点
 export function getReturnNodes(taskId) {
   return request({ url: '/flowable/task/prevNodes/' + taskId, method: 'get' })
