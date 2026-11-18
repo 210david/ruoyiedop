@@ -39,6 +39,13 @@ public class FlowFormController extends BaseController
     @Autowired
     private IFlowNodeFormService flowNodeFormService;
 
+    @Autowired
+    private org.flowable.engine.RepositoryService repositoryService;
+
+    /** 表单规则引擎 */
+    @Autowired
+    private com.ruoyi.flowable.service.FlowFormRuleService formRuleService;
+
     /**
      * 查询表单列表
      */
@@ -66,12 +73,35 @@ public class FlowFormController extends BaseController
     @GetMapping("/byProcess/{processKey}")
     public AjaxResult byProcess(@PathVariable("processKey") String processKey)
     {
+        // 兜底：老数据 flow_form.process_key 可能未回写（模型绑定表单只写 metaInfo + BPMN 标记），
+        // 此时按模型 metaInfo 里的 formId 反查表单，保证发起页能拿到 ext_json 交互规则
+        FlowForm boundByKey = flowFormService.selectFlowFormByProcessKey(processKey);
+        FlowForm bound = boundByKey;
+        if (bound == null)
+        {
+            try
+            {
+                org.flowable.engine.repository.Model model = repositoryService.createModelQuery()
+                        .modelKey(processKey).latestVersion().singleResult();
+                if (model != null && StringUtils.isNotEmpty(model.getMetaInfo()))
+                {
+                    com.alibaba.fastjson2.JSONObject meta = com.alibaba.fastjson2.JSON.parseObject(model.getMetaInfo());
+                    Long formId = meta == null ? null : meta.getLong("formId");
+                    if (formId != null)
+                    {
+                        bound = flowFormService.selectFlowFormByFormId(formId);
+                    }
+                }
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
         // 发起节点模板：只覆盖「显示布局」与模板名称；字段定义始终取表单管理里的那一份，
         // 这样在表单管理增删字段后，所有节点（含发起节点）立即同步，无需重新部署
         FlowNodeForm nodeForm = flowNodeFormService.selectStartByModelKey(processKey);
         if (nodeForm != null)
         {
-            FlowForm bound = flowFormService.selectFlowFormByProcessKey(processKey);
             com.alibaba.fastjson2.JSONObject data = new com.alibaba.fastjson2.JSONObject();
             data.put("formId", bound == null ? null : bound.getFormId());
             data.put("formKey", nodeForm.getFormKey() != null ? nodeForm.getFormKey() : (bound == null ? null : bound.getFormKey()));
@@ -82,10 +112,12 @@ public class FlowFormController extends BaseController
             // 布局：节点布局优先（节点可裁剪显示哪些字段），没有则用表单布局
             data.put("layoutJson", StringUtils.isNotEmpty(nodeForm.getLayoutJson())
                     ? nodeForm.getLayoutJson() : (bound == null ? null : bound.getLayoutJson()));
+            // 扩展规则始终跟随表单定义，节点模板不单独维护脚本
+            data.put("extJson", bound == null ? null : bound.getExtJson());
             data.put("nodeForm", true);
             return success(data);
         }
-        return success(flowFormService.selectFlowFormByProcessKey(processKey));
+        return success(bound);
     }
 
     /**
@@ -180,5 +212,28 @@ public class FlowFormController extends BaseController
         Map<String, Object> data = new HashMap<>();
         data.put("instanceId", instanceId);
         return AjaxResult.success("流程发起成功", data);
+    }
+
+    /**
+     * AI 生成表单规则（设计态辅助）
+     *
+     * 只返回规则草稿，前端必须由管理员确认后才写入 extJson；
+     * 输出经过与保存期相同的字段/类型/依赖环校验。
+     */
+    @Log(title = "表单规则AI生成", businessType = BusinessType.OTHER)
+    @PreAuthorize("@ss.hasPermi('flowable:form:rule')")
+    @PostMapping("/rules/ai")
+    public AjaxResult aiRules(@RequestBody com.alibaba.fastjson2.JSONObject body)
+    {
+        Long formId = body.getLong("formId");
+        String requirement = body.getString("requirement");
+        FlowForm form = formId == null ? null : flowFormService.selectFlowFormByFormId(formId);
+        if (form == null)
+        {
+            return AjaxResult.error("请先保存表单后再使用 AI 生成规则");
+        }
+        com.alibaba.fastjson2.JSONObject data = formRuleService.aiGenerate(
+                form.getFieldsJson(), form.getExtJson(), requirement);
+        return AjaxResult.success("生成成功，请确认后应用", data);
     }
 }

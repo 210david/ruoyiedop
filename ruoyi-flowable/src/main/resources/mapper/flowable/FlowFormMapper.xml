@@ -13,6 +13,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="processKey" column="process_key"/>
         <result property="fieldsJson" column="fields_json"/>
         <result property="layoutJson" column="layout_json"/>
+        <result property="extJson"    column="ext_json"/>
         <result property="tableName"  column="table_name"/>
         <result property="delFlag"    column="del_flag"/>
         <result property="createBy"   column="create_by"/>
@@ -23,12 +24,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFlowFormVo">
+        select form_id, form_key, form_name, form_desc, category, process_key, fields_json, layout_json, ext_json, table_name, del_flag,
+               create_by, create_time, update_by, update_time, remark from flow_form
+    </sql>
+
+    <!-- 列表不返回 ext_json，避免规则内容随列表接口放大 -->
+    <sql id="selectFlowFormListVo">
         select form_id, form_key, form_name, form_desc, category, process_key, fields_json, layout_json, table_name, del_flag,
                create_by, create_time, update_by, update_time, remark from flow_form
     </sql>
 
     <select id="selectFlowFormList" parameterType="FlowForm" resultMap="FlowFormResult">
-        <include refid="selectFlowFormVo"/>
+        <include refid="selectFlowFormListVo"/>
         where del_flag = '0'
         <if test="formName != null and formName != ''"> AND form_name LIKE CONCAT('%', #{formName}, '%')</if>
         <if test="category != null and category != ''"> AND category = #{category}</if>
@@ -61,6 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processKey != null">process_key,</if>
             <if test="fieldsJson != null">fields_json,</if>
             <if test="layoutJson != null">layout_json,</if>
+            <if test="extJson != null">ext_json,</if>
             <if test="tableName != null">table_name,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
@@ -75,6 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processKey != null">#{processKey},</if>
             <if test="fieldsJson != null">#{fieldsJson},</if>
             <if test="layoutJson != null">#{layoutJson},</if>
+            <if test="extJson != null">#{extJson},</if>
             <if test="tableName != null">#{tableName},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
@@ -93,6 +102,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="processKey != null">process_key = #{processKey},</if>
             <if test="fieldsJson != null">fields_json = #{fieldsJson},</if>
             <if test="layoutJson != null">layout_json = #{layoutJson},</if>
+            <if test="extJson != null">ext_json = #{extJson},</if>
             <if test="tableName != null">table_name = #{tableName},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>

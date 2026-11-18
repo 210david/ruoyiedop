@@ -30,7 +30,7 @@
                 <div class="cf-tip">{{ curCat === 'percent' ? '详情/预览按 ×100 显示为百分比' : '详情/预览按千分位+小数位显示' }}</div>
               </div>
             </template>
-            <div v-else class="cf-tip">该分类无附加设置：{{ curCat === 'general' ? '按原值显示' : curCat === 'time' ? '按时间显示（HH:mm:ss）' : curCat === 'text' ? '按文本原样显示' : '' }}</div>
+            <div v-else class="cf-tip">该分类无附加设置：{{ curCat === 'general' ? '按原值显示' : curCat === 'time' ? '按时间显示（HH:mm:ss）' : curCat === 'text' ? '按文本原样显示' : curCat === 'rmb' ? '金额显示为中文大写（如：壹万贰仟圆整），库中仍存数字值' : '' }}</div>
           </div>
         </div>
       </el-tab-pane>
@@ -140,7 +140,8 @@ const tab = ref('num')
 const fonts = ['Microsoft YaHei', 'SimSun', 'SimHei', 'KaiTi', 'FangSong', 'DengXian']
 const numCats = [
   { v: 'general', l: '常规' }, { v: 'number', l: '数值' }, { v: 'date', l: '日期' },
-  { v: 'time', l: '时间' }, { v: 'percent', l: '百分比' }, { v: 'text', l: '文本' }
+  { v: 'time', l: '时间' }, { v: 'percent', l: '百分比' }, { v: 'text', l: '文本' },
+  { v: 'rmb', l: '人民币大写' }
 ]
 const datePatterns = ['2013/3/14', '2013-3-14', '2013年3月14日', '2013年3月', '3月14日', '2013/3/14 10:13 AM', '2013/3/14 10:13']
 const borderStyles = [
