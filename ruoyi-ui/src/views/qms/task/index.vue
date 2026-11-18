@@ -120,7 +120,17 @@
           <el-table-column label="物料名称" prop="materialName" key="materialName" :min-width="colWidth('materialName', 180)" resizable show-overflow-tooltip v-if="columns.materialName.visible" />
           <el-table-column label="供应商" prop="supplierName" key="supplierName" :min-width="colWidth('supplierName', 140)" resizable show-overflow-tooltip v-if="columns.supplierName.visible" />
           <el-table-column label="批次号" prop="batchNo" key="batchNo" :width="colWidth('batchNo', 120)" resizable show-overflow-tooltip v-if="columns.batchNo.visible" />
-          <el-table-column label="送检数量" prop="inspectQty" key="inspectQty" :width="colWidth('inspectQty', 100)" resizable align="center" v-if="columns.inspectQty.visible" />
+          <el-table-column label="送检数量" prop="inspectQty" key="inspectQty" :width="colWidth('inspectQty', 100)" resizable align="center" v-if="columns.inspectQty.visible">
+            <template #default="scope">{{ scope.row.inspectQty != null ? scope.row.inspectQty + (scope.row.qtyUnit || '') : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="生产日期" prop="produceDate" key="produceDate" :width="colWidth('produceDate', 110)" resizable align="center" v-if="columns.produceDate.visible">
+            <template #default="scope">{{ formatDay(scope.row.produceDate) }}</template>
+          </el-table-column>
+          <el-table-column label="包装规格" prop="packageSpec" key="packageSpec" :width="colWidth('packageSpec', 90)" resizable align="center" v-if="columns.packageSpec.visible" />
+          <el-table-column label="报告日期" prop="reportDate" key="reportDate" :width="colWidth('reportDate', 110)" resizable align="center" v-if="columns.reportDate.visible">
+            <template #default="scope">{{ formatDay(scope.row.reportDate) }}</template>
+          </el-table-column>
+          <el-table-column label="检验结论" prop="conclusion" key="conclusion" :min-width="colWidth('conclusion', 180)" resizable show-overflow-tooltip v-if="columns.conclusion.visible" />
           <el-table-column label="AQL等级" prop="aqlLevel" key="aqlLevel" :width="colWidth('aqlLevel', 90)" resizable align="center" v-if="columns.aqlLevel.visible">
             <template #default="scope">{{ scope.row.aqlLevel != null ? scope.row.aqlLevel + '%' : '-' }}</template>
           </el-table-column>
@@ -147,6 +157,7 @@
             <template #default="scope"><dict-tag :options="qms_defect_level" :value="scope.row.defectLevel" /></template>
           </el-table-column>
           <el-table-column label="检验员" prop="inspectorName" key="inspectorName" :width="colWidth('inspectorName', 100)" resizable align="center" v-if="columns.inspectorName.visible" />
+          <el-table-column label="复核人" prop="reviewerName" key="reviewerName" :width="colWidth('reviewerName', 100)" resizable align="center" v-if="columns.reviewerName.visible" />
           <el-table-column label="检验时间" prop="inspectTime" key="inspectTime" :width="colWidth('inspectTime', 160)" resizable align="center" v-if="columns.inspectTime.visible" />
           <el-table-column label="量检具" prop="gaugeName" key="gaugeName" :width="colWidth('gaugeName', 140)" resizable show-overflow-tooltip v-if="columns.gaugeName.visible">
             <template #default="scope">{{ scope.row.gaugeNo ? scope.row.gaugeNo + ' - ' + (scope.row.gaugeName || '') : (scope.row.gaugeName || '-') }}</template>
@@ -225,6 +236,22 @@
             </div>
           </section>
           <section class="rd-card">
+            <div class="rd-card-header" @click="toggleCard('e_report')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>检验报告</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_report }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+            <div class="rd-card-body" v-show="!collapsedCards.e_report">
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="报告编号" prop="reportNo"><el-input v-model="form.reportNo" placeholder="第三方报告编号，如 CTT26041202361" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="检验机构" prop="inspectOrg"><el-input v-model="form.inspectOrg" placeholder="如：国鼎检测技术（重庆）有限公司" /></el-form-item></el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12"><el-form-item label="报告日期" prop="reportDate"><el-date-picker v-model="form.reportDate" type="date" value-format="YYYY-MM-DD" placeholder="选择报告日期" style="width: 100%" /></el-form-item></el-col>
+                <el-col :span="12"><el-form-item label="检验结论" prop="conclusion"><el-input v-model="form.conclusion" placeholder="如：检验合格达到出厂标准" /></el-form-item></el-col>
+              </el-row>
+              <el-form-item label="报告附件" prop="reportFileUrl">
+                <file-upload v-model="form.reportFileUrl" :limit="5" :file-size="30" :file-type="['pdf', 'png', 'jpg', 'jpeg']" />
+              </el-form-item>
+            </div>
+          </section>
+          <section class="rd-card">
             <div class="rd-card-header" @click="toggleCard('e_other')"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>其他信息</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.e_other }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
             <div class="rd-card-body" v-show="!collapsedCards.e_other">
               <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入" /></el-form-item>
@@ -279,6 +306,9 @@
             <div class="rd-item"><span class="rd-label">检验员</span><div class="rd-value">{{ viewData.inspectorName || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">检验时间</span><div class="rd-value">{{ viewData.inspectTime || '-' }}</div></div>
             <div class="rd-item"><span class="rd-label">是否复检<el-tooltip content="检验结果为不合格时，可发起复检任务对同批次物料重新进行抽样检验" placement="top"><el-icon class="rd-form-tip"><QuestionFilled /></el-icon></el-tooltip></span><div class="rd-value">{{ viewData.isRecheck === '1' ? '是' : '否' }}</div></div>
+            <div class="rd-item"><span class="rd-label">检验机构</span><div class="rd-value">{{ viewData.inspectOrg || '-' }}</div></div>
+            <div class="rd-item"><span class="rd-label">报告日期</span><div class="rd-value">{{ viewData.reportDate || '-' }}</div></div>
+            <div class="rd-item rd-item--full"><span class="rd-label">检验结论</span><div class="rd-value">{{ viewData.conclusion || '-' }}</div></div>
           </div></div>
         </section>
         <section class="rd-card" v-if="viewData.itemList && viewData.itemList.length > 0">
@@ -302,6 +332,23 @@
                 <template #default="scope">{{ scope.row.defectQty != null ? scope.row.defectQty : '-' }}</template>
               </el-table-column>
             </el-table>
+          </div>
+        </section>
+        <section class="rd-card" v-if="viewData.reportNo || reportFiles.length">
+          <div class="rd-card-header" @click="toggleCard('v_report')"><div class="rd-card-title">检验报告</div><button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_report }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button></div>
+          <div class="rd-card-body" v-show="!collapsedCards.v_report" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">报告编号</span><div class="rd-value">{{ viewData.reportNo || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">检验机构</span><div class="rd-value">{{ viewData.inspectOrg || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">报告日期</span><div class="rd-value">{{ viewData.reportDate || '-' }}</div></div>
+            </div>
+            <div v-if="reportFiles.length" style="margin-top: 12px;">
+              <div class="rd-label" style="margin-bottom: 8px;">报告附件（{{ reportFiles.length }}）</div>
+              <div v-for="(f, i) in reportFiles" :key="i" style="margin-bottom: 6px;">
+                <el-link type="primary" :href="reportFileHref(f.url)" target="_blank" underline="never">{{ f.name }}</el-link>
+              </div>
+            </div>
+            <div v-else style="color:#909399;font-size:13px;">暂无报告附件</div>
           </div>
         </section>
         <section class="rd-card" v-if="viewData.remark">
@@ -639,12 +686,16 @@ import MaterialPicker from '@/components/MaterialPicker/index.vue'
 import SupplierPicker from '@/components/SupplierPicker/index.vue'
 import GaugePicker from '@/components/GaugePicker/index.vue'
 import UserPicker from '@/components/UserPicker/index.vue'
+import FileUpload from '@/components/FileUpload/index.vue'
 import { QuestionFilled, ArrowRight, CircleClose } from '@element-plus/icons-vue'
 
-const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_material', 'e_sample', 'e_other', 'v_basic', 'v_aql', 'v_result', 'v_detail', 'v_remark'])
+const { collapsedCards, toggleCard } = useDetailCard(['e_basic', 'e_material', 'e_sample', 'e_report', 'e_other', 'v_basic', 'v_aql', 'v_result', 'v_detail', 'v_report', 'v_remark'])
 
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('qms_task_index')
+
+// 日期显示（后端返回 yyyy-MM-dd 字符串）
+function formatDay(v) { return v ? String(v).slice(0, 10) : '-' }
 
 // 列显隐配置
 const defaultColumns = {
@@ -664,6 +715,11 @@ const defaultColumns = {
   reVal: { label: 'Re', visible: true },
   taskStatus: { label: '任务状态', visible: true },
   inspectResult: { label: '检验结果', visible: true },
+  produceDate: { label: '生产日期', visible: true },
+  packageSpec: { label: '包装规格', visible: true },
+  reportDate: { label: '报告日期', visible: false },
+  conclusion: { label: '检验结论', visible: false },
+  reviewerName: { label: '复核人', visible: true },
   defectLevel: { label: '缺陷等级', visible: false },
   inspectorName: { label: '检验员', visible: true },
   inspectTime: { label: '检验时间', visible: true },
@@ -698,6 +754,20 @@ const list = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
+// 检验报告附件（URL 与文件名逗号分隔，按序一一对应）
+const reportFiles = computed(() => {
+  const urls = String(viewData.value.reportFileUrl || '').split(',').filter(Boolean)
+  const names = String(viewData.value.reportFileName || '').split(',').filter(Boolean)
+  return urls.map((u, i) => ({ url: u, name: names[i] || u.split('/').pop() }))
+})
+function reportFileHref(url) {
+  // 兼容存完整 URL 的历史数据，统一归一化为 /profile/... 相对路径
+  const raw = String(url || '')
+  const i = raw.indexOf('/profile/')
+  const rel = i >= 0 ? raw.slice(i) : raw
+  return import.meta.env.VITE_APP_BASE_API + '/common/file/access?resource=' + encodeURIComponent(rel) + '&token=' + getToken()
+}
+
 const inspectOpen = ref(false)
 const inspectForm = ref({})
 const loading = ref(true)
@@ -847,7 +917,7 @@ function getList() { loading.value = true; listTask(queryParams.value).then(res 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }
 function resetQuery() { queryParams.value.taskNo = undefined; queryParams.value.taskType = undefined; queryParams.value.taskStatus = undefined; queryParams.value.inspectResult = undefined; queryParams.value.materialCode = undefined; queryParams.value.batchNo = undefined; queryParams.value.params = {}; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(selection) { ids.value = selection.map(i => i.taskId); single.value = selection.length !== 1; multiple.value = !selection.length }
-function reset() { form.value = { taskId: undefined, taskNo: undefined, taskType: 'IQC', sourceType: undefined, sourceNo: undefined, materialId: undefined, materialCode: undefined, materialName: undefined, supplierId: undefined, supplierName: undefined, batchNo: undefined, inspectQty: undefined, aqlLevel: '2.5', inspectLevel: '1', inspectMethod: undefined, gaugeId: undefined, gaugeName: undefined, gaugeNo: undefined, inspectorId: undefined, inspectorName: undefined, status: '0', remark: undefined }; proxy.resetForm('taskRef') }
+function reset() { form.value = { taskId: undefined, taskNo: undefined, taskType: 'IQC', sourceType: undefined, sourceNo: undefined, materialId: undefined, materialCode: undefined, materialName: undefined, supplierId: undefined, supplierName: undefined, batchNo: undefined, inspectQty: undefined, aqlLevel: '2.5', inspectLevel: '1', inspectMethod: undefined, gaugeId: undefined, gaugeName: undefined, gaugeNo: undefined, inspectorId: undefined, inspectorName: undefined, status: '0', remark: undefined, reportNo: undefined, inspectOrg: undefined, reportDate: undefined, conclusion: undefined, reportFileUrl: undefined, reportFileName: undefined }; proxy.resetForm('taskRef') }
 function loadDefectOptions() { listDefect({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { defectOptions.value = res.rows || [] }) }
 function loadStdOptions() { listStd({ pageNum: 1, pageSize: 999, status: '0' }).then(res => { stdOptions.value = res.rows || [] }) }
 function onStdChange(row, val) {
@@ -996,6 +1066,8 @@ function handleVoid(row) {
 function submitForm() {
   proxy.$refs['taskRef'].validate(valid => {
     if (valid) {
+      // 报告附件名由 URL 末段自动推导，保证详情页与列表可读
+      form.value.reportFileName = String(form.value.reportFileUrl || '').split(',').filter(Boolean).map(u => u.split('/').pop()).join(',')
       if (form.value.taskId != undefined) {
         updateTask(form.value).then(() => { proxy.$modal.msgSuccess('修改成功'); open.value = false; getList(); loadStatusCounts() })
       } else {

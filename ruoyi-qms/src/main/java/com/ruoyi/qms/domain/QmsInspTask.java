@@ -133,6 +133,50 @@ public class QmsInspTask extends BaseEntity
     /** 状态（0正常 1停用） */
     private String status;
 
+    /** 生产日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "生产日期", dateFormat = "yyyy-MM-dd")
+    private Date produceDate;
+
+    /** 报告日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "报告日期", dateFormat = "yyyy-MM-dd")
+    private Date reportDate;
+
+    /** 数量单位 */
+    @Excel(name = "数量单位")
+    private String qtyUnit;
+
+    /** 包装规格 */
+    @Excel(name = "包装规格")
+    private String packageSpec;
+
+    /** 检验依据 */
+    @Excel(name = "检验依据")
+    private String inspectBasis;
+
+    /** 检验结论 */
+    @Excel(name = "检验结论")
+    private String conclusion;
+
+    /** 检验机构 */
+    @Excel(name = "检验机构")
+    private String inspectOrg;
+
+    /** 复核人 */
+    @Excel(name = "复核人")
+    private String reviewerName;
+
+    /** 第三方报告编号 */
+    @Excel(name = "报告编号")
+    private String reportNo;
+
+    /** 检验报告附件URL（逗号分隔） */
+    private String reportFileUrl;
+
+    /** 检验报告附件名称（逗号分隔） */
+    private String reportFileName;
+
     /** 删除标志 */
     private String delFlag;
 
@@ -206,6 +250,28 @@ public class QmsInspTask extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }
     public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public Date getProduceDate() { return produceDate; }
+    public void setProduceDate(Date produceDate) { this.produceDate = produceDate; }
+    public Date getReportDate() { return reportDate; }
+    public void setReportDate(Date reportDate) { this.reportDate = reportDate; }
+    public String getQtyUnit() { return qtyUnit; }
+    public void setQtyUnit(String qtyUnit) { this.qtyUnit = qtyUnit; }
+    public String getPackageSpec() { return packageSpec; }
+    public void setPackageSpec(String packageSpec) { this.packageSpec = packageSpec; }
+    public String getInspectBasis() { return inspectBasis; }
+    public void setInspectBasis(String inspectBasis) { this.inspectBasis = inspectBasis; }
+    public String getConclusion() { return conclusion; }
+    public void setConclusion(String conclusion) { this.conclusion = conclusion; }
+    public String getInspectOrg() { return inspectOrg; }
+    public void setInspectOrg(String inspectOrg) { this.inspectOrg = inspectOrg; }
+    public String getReviewerName() { return reviewerName; }
+    public void setReviewerName(String reviewerName) { this.reviewerName = reviewerName; }
+    public String getReportNo() { return reportNo; }
+    public void setReportNo(String reportNo) { this.reportNo = reportNo; }
+    public String getReportFileUrl() { return reportFileUrl; }
+    public void setReportFileUrl(String reportFileUrl) { this.reportFileUrl = reportFileUrl; }
+    public String getReportFileName() { return reportFileName; }
+    public void setReportFileName(String reportFileName) { this.reportFileName = reportFileName; }
     public List<QmsInspItem> getItemList() { return itemList; }
     public void setItemList(List<QmsInspItem> itemList) { this.itemList = itemList; }
     public List<QmsEsigRecord> getEsigList() { return esigList; }

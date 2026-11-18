@@ -202,7 +202,7 @@ function handleSortChange(column) {
   }
   getList()
 }
-function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
+function unitLabel(unit) { if (unit == null || unit === '') return '-'; const item = wms_unit.value.find(d => d.value == unit) || wms_unit.value.find(d => d.label == unit); return item ? item.label : String(unit) }
 /** 导出库存（与列表口径一致：含筛选条件，导出全部页数据；仓库/库区/库位为合并列） */
 async function handleExport() {
   let rows = await fetchAllPages(listInventory, proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime'))

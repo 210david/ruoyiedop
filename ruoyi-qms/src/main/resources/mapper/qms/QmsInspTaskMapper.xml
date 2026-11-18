@@ -40,6 +40,17 @@
         <result property="updateBy"       column="update_by"/>
         <result property="updateTime"     column="update_time"/>
         <result property="remark"         column="remark"/>
+        <result property="produceDate"    column="produce_date"/>
+        <result property="reportDate"     column="report_date"/>
+        <result property="qtyUnit"        column="qty_unit"/>
+        <result property="packageSpec"    column="package_spec"/>
+        <result property="inspectBasis"   column="inspect_basis"/>
+        <result property="conclusion"     column="conclusion"/>
+        <result property="inspectOrg"     column="inspect_org"/>
+        <result property="reviewerName"   column="reviewer_name"/>
+        <result property="reportNo"       column="report_no"/>
+        <result property="reportFileUrl"  column="report_file_url"/>
+        <result property="reportFileName" column="report_file_name"/>
     </resultMap>
 
     <sql id="selectInspTaskVo">
@@ -47,7 +58,9 @@
                supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, inspect_method, sample_size,
                ac_val, re_val, task_status, inspect_result, defect_level, inspector_id, inspector_name,
                inspect_time, judge_time, gauge_id, gauge_name, gauge_no, is_recheck, origin_task_id,
-               status, del_flag, create_by, create_time, update_by, update_time, remark
+               status, del_flag, create_by, create_time, update_by, update_time, remark,
+               produce_date, report_date, qty_unit, package_spec, inspect_basis, conclusion, inspect_org, reviewer_name,
+               report_no, report_file_url, report_file_name
         FROM qms_insp_task
     </sql>
 
@@ -92,13 +105,17 @@
             supplier_id, supplier_name, batch_no, inspect_qty, aql_level, inspect_level, inspect_method, sample_size,
             ac_val, re_val, task_status, inspect_result, defect_level, inspector_id, inspector_name,
             inspect_time, judge_time, gauge_id, gauge_name, gauge_no, is_recheck, origin_task_id,
-            status, del_flag, create_by, create_time, remark
+            status, del_flag, create_by, create_time, remark,
+            produce_date, report_date, qty_unit, package_spec, inspect_basis, conclusion, inspect_org, reviewer_name,
+            report_no, report_file_url, report_file_name
         ) VALUES (
             #{taskNo}, #{taskType}, #{sourceType}, #{sourceNo}, #{materialId}, #{materialCode}, #{materialName},
             #{supplierId}, #{supplierName}, #{batchNo}, #{inspectQty}, #{aqlLevel}, #{inspectLevel}, #{inspectMethod}, #{sampleSize},
             #{acVal}, #{reVal}, #{taskStatus}, #{inspectResult}, #{defectLevel}, #{inspectorId}, #{inspectorName},
             #{inspectTime}, #{judgeTime}, #{gaugeId}, #{gaugeName}, #{gaugeNo}, #{isRecheck}, #{originTaskId},
-            #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark},
+            #{produceDate}, #{reportDate}, #{qtyUnit}, #{packageSpec}, #{inspectBasis}, #{conclusion}, #{inspectOrg}, #{reviewerName},
+            #{reportNo}, #{reportFileUrl}, #{reportFileName}
         )
     </insert>
 
@@ -137,6 +154,17 @@
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="produceDate != null">produce_date = #{produceDate},</if>
+            <if test="reportDate != null">report_date = #{reportDate},</if>
+            <if test="qtyUnit != null">qty_unit = #{qtyUnit},</if>
+            <if test="packageSpec != null">package_spec = #{packageSpec},</if>
+            <if test="inspectBasis != null">inspect_basis = #{inspectBasis},</if>
+            <if test="conclusion != null">conclusion = #{conclusion},</if>
+            <if test="inspectOrg != null">inspect_org = #{inspectOrg},</if>
+            <if test="reportNo != null">report_no = #{reportNo},</if>
+            <if test="reportFileUrl != null">report_file_url = #{reportFileUrl},</if>
+            <if test="reportFileName != null">report_file_name = #{reportFileName},</if>
+            <if test="reviewerName != null">reviewer_name = #{reviewerName},</if>
             update_time = sysdate()
         </set>
         WHERE task_id = #{taskId}

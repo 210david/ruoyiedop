@@ -266,17 +266,21 @@
         FROM fin_subject s
         JOIN (
             SELECT acc.account_code,
-                   COALESCE(l.opening_debit, 0) - COALESCE(l.opening_credit, 0)
-                   + COALESCE(t.debitAmount, 0) - COALESCE(t.creditAmount, 0) AS close_balance
+                   CASE WHEN l.ledger_id IS NOT NULL
+                        THEN COALESCE(l.closing_debit, 0) - COALESCE(l.closing_credit, 0)
+                        ELSE COALESCE(t.debitAmount, 0) - COALESCE(t.creditAmount, 0)
+                   END AS close_balance
             FROM (
-                SELECT account_code
+                SELECT account_code FROM fin_ledger
+                WHERE period = #{period} AND del_flag = '0'
+                UNION
+                SELECT e2.account_code
                 FROM fin_voucher_entry e2
                 JOIN fin_voucher v2 ON v2.voucher_id = e2.voucher_id
                 WHERE e2.del_flag = '0'
                   AND v2.del_flag = '0'
                   AND v2.status IN ('AUDITED', 'POSTED')
                   AND e2.period = #{period}
-                GROUP BY account_code
             ) acc
             LEFT JOIN fin_ledger l
                    ON l.account_code = acc.account_code AND l.period = #{period} AND l.del_flag = '0'

@@ -12,19 +12,25 @@
 SET NAMES utf8mb4;
 
 -- ---------- 1. 清理（幂等） ----------
+-- 关掉外键检查：ACT_RE_MODEL.EDITOR_SOURCE_VALUE_ID_ 引用 ACT_GE_BYTEARRAY，
+-- 重复执行时若不关会报 ERROR 1451，导致第二次导入中断。
+SET FOREIGN_KEY_CHECKS=0;
+
 DELETE FROM ACT_RE_PROCDEF WHERE KEY_ IN ('expenseReimburse','sealApply','wf_94663220701','busUseApply');
+DELETE FROM flow_procdef_ext WHERE proc_key IN ('expenseReimburse','sealApply','wf_94663220701','busUseApply');
+DELETE FROM flow_node_form WHERE model_key = 'wf_94663220701';
+DELETE FROM flow_form WHERE form_id IN (17,19);
+DELETE FROM ACT_RE_MODEL WHERE KEY_ IN ('expenseReimburse','sealApply','wf_94663220701','busUseApply');
+DELETE FROM ACT_RE_DEPLOYMENT
+ WHERE ID_ IN ('508cb416-e0ef-11f1-a342-84a938328f53','521068cd-e092-11f1-bac2-84a938328f53',
+               '3361051d-e039-11f1-ab36-84a938328f53','82679c13-e0d5-11f1-b7d2-84a938328f53');
 DELETE FROM ACT_GE_BYTEARRAY
  WHERE DEPLOYMENT_ID_ IN ('508cb416-e0ef-11f1-a342-84a938328f53','521068cd-e092-11f1-bac2-84a938328f53',
                           '3361051d-e039-11f1-ab36-84a938328f53','82679c13-e0d5-11f1-b7d2-84a938328f53')
     OR ID_ IN ('0658c918-e030-11f1-b1d9-84a938328f53','49cf8b75-e0ef-11f1-a342-84a938328f53',
                '4c19012c-e092-11f1-bac2-84a938328f53','91f3de1b-e0ef-11f1-a342-84a938328f53');
-DELETE FROM ACT_RE_DEPLOYMENT
- WHERE ID_ IN ('508cb416-e0ef-11f1-a342-84a938328f53','521068cd-e092-11f1-bac2-84a938328f53',
-               '3361051d-e039-11f1-ab36-84a938328f53','82679c13-e0d5-11f1-b7d2-84a938328f53');
-DELETE FROM ACT_RE_MODEL WHERE KEY_ IN ('expenseReimburse','sealApply','wf_94663220701','busUseApply');
-DELETE FROM flow_form WHERE form_id IN (17,19);
-DELETE FROM flow_node_form WHERE model_key = 'wf_94663220701';
-DELETE FROM flow_procdef_ext WHERE proc_key IN ('expenseReimburse','sealApply','wf_94663220701','busUseApply');
+
+SET FOREIGN_KEY_CHECKS=1;
 
 -- ---------- 2. 动态数据表（表单对应物理表） ----------
 CREATE TABLE IF NOT EXISTS `flow_data_17` (

@@ -602,7 +602,7 @@ function getList() {
 }
 function handleSortChange(column) { if (column.prop && column.order) { queryParams.value.params = queryParams.value.params || {}; queryParams.value.params.orderByColumn = column.prop; queryParams.value.params.isAsc = column.order === 'ascending' ? 'asc' : 'desc' } else { queryParams.value.params = queryParams.value.params || {}; queryParams.value.params.orderByColumn = undefined; queryParams.value.params.isAsc = undefined }; getList() }
 function materialTypeLabel(type) { const item = wms_material_type.value.find(d => d.value == type); return item ? item.label : '-' }
-function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
+function unitLabel(unit) { if (unit == null || unit === '') return '-'; const item = wms_unit.value.find(d => d.value == unit) || wms_unit.value.find(d => d.label == unit); return item ? item.label : String(unit) }
 
 function handleQuery() {
   queryParams.value.pageNum = 1
