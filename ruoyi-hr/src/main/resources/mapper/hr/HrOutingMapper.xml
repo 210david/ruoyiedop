@@ -22,6 +22,7 @@
         <result property="auditBy" column="audit_by"/>
         <result property="auditTime" column="audit_time"/>
         <result property="auditRemark" column="audit_remark"/>
+        <result property="flowInstanceId" column="flow_instance_id"/>
         <result property="status" column="status"/>
         <result property="delFlag" column="del_flag"/>
         <result property="createBy" column="create_by"/>
@@ -32,7 +33,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        SELECT outing_id, outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, update_by, update_time, remark
+        SELECT outing_id, outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, flow_instance_id, status, del_flag, create_by, create_time, update_by, update_time, remark
         FROM biz_hr_outing
     </sql>
 
@@ -66,9 +67,9 @@
 
     <insert id="insertHrOuting" parameterType="HrOuting" useGeneratedKeys="true" keyProperty="outingId">
         INSERT INTO biz_hr_outing (
-            outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, status, del_flag, create_by, create_time, remark
+            outing_no, employee_id, employee_name, employee_no, dept_id, dept_name, outing_date, start_time, end_time, destination, reason, transport_mode, expected_return_time, attachment_url, audit_status, audit_by, audit_time, audit_remark, flow_instance_id, status, del_flag, create_by, create_time, remark
         ) VALUES (
-            #{outingNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{outingDate}, #{startTime}, #{endTime}, #{destination}, #{reason}, #{transportMode}, #{expectedReturnTime}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
+            #{outingNo}, #{employeeId}, #{employeeName}, #{employeeNo}, #{deptId}, #{deptName}, #{outingDate}, #{startTime}, #{endTime}, #{destination}, #{reason}, #{transportMode}, #{expectedReturnTime}, #{attachmentUrl}, #{auditStatus}, #{auditBy}, #{auditTime}, #{auditRemark}, #{flowInstanceId}, #{status}, #{delFlag}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
 

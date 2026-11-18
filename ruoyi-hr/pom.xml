@@ -40,6 +40,12 @@
             <artifactId>ruoyi-mk</artifactId>
         </dependency>
 
+        <!-- 流程模块（考勤类流程归档回写：FlowArchiveHandler / FlowFormOptionsProvider） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-flowable</artifactId>
+        </dependency>
+
         <!-- 单元测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

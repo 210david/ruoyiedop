@@ -14,6 +14,9 @@
         <result property="enableDate"     column="enable_date"/>
         <result property="status"         column="status"/>
         <result property="flowInstanceId" column="flow_instance_id"/>
+        <result property="flowTitle"      column="flow_title"/>
+        <result property="flowRunning"    column="flow_running"/>
+        <result property="useReturnTime"  column="use_return_time"/>
         <result property="attachment"     column="attachment"/>
         <result property="delFlag"        column="del_flag"/>
         <result property="createBy"       column="create_by"/>
@@ -26,7 +29,11 @@
     <sql id="selectOaSealVo">
         SELECT seal_id, seal_name, seal_code, seal_type, keeper_name, keeper_dept, keeper_phone,
                keep_place, enable_date, status, flow_instance_id, attachment, del_flag,
-               create_by, create_time, update_by, update_time, remark
+               create_by, create_time, update_by, update_time, remark,
+               (SELECT f.title FROM flow_data_17 f WHERE f.process_instance_id = flow_instance_id LIMIT 1) AS flow_title,
+               (SELECT f.return_time FROM flow_data_17 f WHERE f.process_instance_id = flow_instance_id LIMIT 1) AS use_return_time,
+               CASE WHEN EXISTS (SELECT 1 FROM ACT_RU_EXECUTION r WHERE r.PROC_INST_ID_ = flow_instance_id COLLATE utf8mb4_general_ci)
+                    THEN '1' ELSE '0' END AS flow_running
         FROM biz_oa_seal
     </sql>
 
@@ -41,6 +48,10 @@
             <if test="keeperDept != null and keeperDept != ''"> AND keeper_dept LIKE CONCAT('%', #{keeperDept}, '%')</if>
             <if test="keepPlace != null and keepPlace != ''"> AND keep_place LIKE CONCAT('%', #{keepPlace}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.statusIn != null and params.statusIn.size() > 0">
+                AND status IN
+                <foreach collection="params.statusIn" item="s" open="(" separator="," close=")">#{s}</foreach>
+            </if>
             <if test="params.beginEnableDate != null and params.beginEnableDate != ''"> AND enable_date &gt;= #{params.beginEnableDate}</if>
             <if test="params.endEnableDate != null and params.endEnableDate != ''"> AND enable_date &lt;= #{params.endEnableDate}</if>
         </where>

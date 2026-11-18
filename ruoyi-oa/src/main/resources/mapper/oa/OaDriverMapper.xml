@@ -15,6 +15,9 @@
         <result property="ownerDept"     column="owner_dept"/>
         <result property="drivingYears"  column="driving_years"/>
         <result property="status"        column="status"/>
+        <result property="flowInstanceId" column="flow_instance_id"/>
+        <result property="flowTitle"     column="flow_title"/>
+        <result property="flowRunning"   column="flow_running"/>
         <result property="attachment"    column="attachment"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="createBy"      column="create_by"/>
@@ -26,8 +29,11 @@
 
     <sql id="selectOaDriverVo">
         SELECT driver_id, driver_name, driver_no, phone, id_card, license_no, license_type,
-               license_expire, entry_date, owner_dept, driving_years, status, attachment, del_flag,
-               create_by, create_time, update_by, update_time, remark
+               license_expire, entry_date, owner_dept, driving_years, status, flow_instance_id, attachment, del_flag,
+               create_by, create_time, update_by, update_time, remark,
+               (SELECT f.title FROM flow_data_bus_use_apply f WHERE f.process_instance_id = flow_instance_id LIMIT 1) AS flow_title,
+               CASE WHEN EXISTS (SELECT 1 FROM ACT_RU_EXECUTION r WHERE r.PROC_INST_ID_ = flow_instance_id COLLATE utf8mb4_general_ci)
+                    THEN '1' ELSE '0' END AS flow_running
         FROM biz_oa_driver
     </sql>
 
@@ -42,6 +48,10 @@
             <if test="licenseType != null and licenseType != ''"> AND license_type LIKE CONCAT('%', #{licenseType}, '%')</if>
             <if test="ownerDept != null and ownerDept != ''"> AND owner_dept LIKE CONCAT('%', #{ownerDept}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
+            <if test="params.statusIn != null and params.statusIn.size() > 0">
+                AND status IN
+                <foreach collection="params.statusIn" item="s" open="(" separator="," close=")">#{s}</foreach>
+            </if>
             <if test="params.beginLicenseExpire != null and params.beginLicenseExpire != ''"> AND license_expire &gt;= #{params.beginLicenseExpire}</if>
             <if test="params.endLicenseExpire != null and params.endLicenseExpire != ''"> AND license_expire &lt;= #{params.endLicenseExpire}</if>
             <if test="params.beginEntryDate != null and params.beginEntryDate != ''"> AND entry_date &gt;= #{params.beginEntryDate}</if>

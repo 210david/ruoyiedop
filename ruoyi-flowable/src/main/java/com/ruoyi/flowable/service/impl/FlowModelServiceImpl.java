@@ -35,6 +35,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.flowable.domain.FlowModel;
 import com.ruoyi.flowable.domain.FlowProcdefExt;
 import com.ruoyi.flowable.config.FlowReturnConstants;
+import com.ruoyi.flowable.config.SystemFlowRegistry;
 import com.ruoyi.flowable.mapper.FlowFormMapper;
 import com.ruoyi.flowable.mapper.FlowProcdefExtMapper;
 import com.ruoyi.flowable.service.IFlowModelService;
@@ -134,6 +135,8 @@ public class FlowModelServiceImpl implements IFlowModelService
             FlowModel fm = convert(model);
             // 已产生的流程实例数（含已办结）：>0 时前端标注「已发起 N 单」，并禁止删除
             fm.setInstanceCount(countInstances(model.getKey()));
+            // 系统流程（考勤/车辆/印章等）：不允许删除，只允许修改或调整模型
+            fm.setSystemFlow(SystemFlowRegistry.isSystemProcess(model.getKey()));
             // 判断是否已部署，并取「最新部署版本」作为列表展示版本
             // 注意：act_re_model.VERSION_ 是模型编辑修订号，不等于流程定义部署版本，
             // 因此列表版本以 act_re_procdef 的最高版本为准（未部署时清空，前端显示为 -）
@@ -474,6 +477,11 @@ public class FlowModelServiceImpl implements IFlowModelService
                 continue;
             }
             String processKey = model.getKey();
+            // 系统流程（考勤/车辆/印章等）与业务模块联动，任何情况下都不允许删除模型
+            if (SystemFlowRegistry.isSystemProcess(processKey))
+            {
+                throw new ServiceException(SystemFlowRegistry.modelDeleteTip(model.getName()));
+            }
             // 防误删：已经跑过的流程（有实例，含已办结）不允许删模型。
             // 否则 deleteDeployment(cascade=true) 会把该流程的单据、审批意见、附件一起删掉，不可恢复。
             long instances = countInstances(processKey);
@@ -864,6 +872,11 @@ public class FlowModelServiceImpl implements IFlowModelService
         if (Boolean.TRUE.equals(query.getOnlyActive()) || query.getOnlyActive() == null)
         {
             list = aggregateByProcessKey(list);
+        }
+        // 高级设置「流程锁定」：发起页据此过滤，避免锁定流程仍出现在可发起列表里
+        for (FlowModel fm : list)
+        {
+            fm.setLocked(flowDefinitionResolver.isModelLocked(fm.getModelKey()));
         }
         return list;
     }

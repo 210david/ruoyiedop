@@ -39,6 +39,8 @@ const useUserStore = defineStore(
           login(username, password, code, uuid).then(res => {
             setToken(res.token)
             this.token = res.token
+            // 新登录后重置密码提示标记，保证每次登录只提示一次
+            cache.session.remove('pwdTipShown')
             useLockStore().unlockScreen()
             resolve()
           }).catch(error => {
@@ -66,17 +68,19 @@ const useUserStore = defineStore(
             this.nickName = user.nickName
             this.avatar = avatar
             cache.session.set('pwrChrtype', res.pwdChrtype)
-            /* 初始密码提示 */
-            if(res.isDefaultModifyPwd) {
-              ElMessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
-                router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
-              }).catch(() => {})
-            }
-            /* 过期密码提示 */
-            if(!res.isDefaultModifyPwd && res.isPasswordExpired) {
-              ElMessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
-                router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
-              }).catch(() => {})
+            /* 初始密码/过期密码提示：仅在本次登录后首次加载时提示一次，刷新页面不再重复弹出 */
+            if (cache.session.get('pwdTipShown') !== '1') {
+              if(res.isDefaultModifyPwd) {
+                cache.session.set('pwdTipShown', '1')
+                ElMessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
+                  router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
+                }).catch(() => {})
+              } else if(res.isPasswordExpired) {
+                cache.session.set('pwdTipShown', '1')
+                ElMessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
+                  router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
+                }).catch(() => {})
+              }
             }
             resolve(res)
           }).catch(error => {
@@ -93,6 +97,7 @@ const useUserStore = defineStore(
             this.permissions = []
             removeToken()
             removeWatermark()
+            cache.session.remove('pwdTipShown')
             resolve()
           }).catch(error => {
             reject(error)

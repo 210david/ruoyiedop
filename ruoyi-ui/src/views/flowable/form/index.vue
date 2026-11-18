@@ -73,7 +73,9 @@
                 <el-button link type="primary" icon="Edit" @click="handleDesign(scope.row)" v-hasPermi="['flowable:form:edit']">设计</el-button>
                 <el-button link type="success" icon="FullScreen" @click="handleDesign(scope.row, 'layout')" v-hasPermi="['flowable:form:edit']">页面设计</el-button>
                 <el-button link type="warning" icon="Coin" @click="handleCreateTable(scope.row)" v-hasPermi="['flowable:form:table']">{{ scope.row.tableName ? '重建数据表' : '生成数据表' }}</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['flowable:form:remove']">删除</el-button>
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['flowable:form:remove']"
+                  :disabled="scope.row.systemFlow"
+                  :title="scope.row.systemFlow ? '系统流程表单已与业务模块关联，不允许删除，只能新增或修改字段' : ''">删除</el-button>
               </div>
             </template>
           </el-table-column>
@@ -1406,6 +1408,8 @@ function confirmBatchAdd() {
 }
 
 function removeCheckedFields() {
+  // 系统流程表单（考勤/车辆/印章等）：已有字段不允许删除，只允许新增或修改
+  if (form.value.systemFlow) { proxy.$modal.msgWarning('该表单属于系统流程，不允许删除已有字段，只能新增或修改字段'); return }
   // 系统内置字段（标题/紧急程度/签字意见/打印次数）不允许删除
   const keys = checkedFields.value.filter(r => !r.sysField).map(r => r.rowKey)
   if (!keys.length) { proxy.$modal.msgWarning('系统内置字段不可删除'); return }
@@ -1438,6 +1442,7 @@ function pruneMissingLayoutFields() {
 }
 
 function removeDetailTable(name) {
+  if (form.value.systemFlow) { proxy.$modal.msgWarning('该表单属于系统流程，不允许删除明细表字段，只能新增或修改字段'); return }
   fields.value = fields.value.filter(f => f.table !== name)
   detailTables.value = detailTables.value.filter(t => t !== name)
   pruneMissingLayoutFields()
@@ -1901,6 +1906,10 @@ function handleCreateTable(row) {
 }
 
 function handleDelete(row) {
+  if (row.systemFlow) {
+    proxy.$modal.msgWarning('表单「' + row.formName + '」属于系统流程，已与考勤/车辆/印章等业务模块关联，不允许删除，只能新增或修改字段')
+    return
+  }
   proxy.$modal.confirm('确认删除表单"' + row.formName + '"？已产生业务数据（表单数据或流程实例）的表单不允许删除；其数据表不会被删除').then(() => delForm(row.formId)).then(() => {
     proxy.$modal.msgSuccess('删除成功'); getList()
   }).catch(e => { if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('删除失败：' + (e?.message || e)) })

@@ -46,11 +46,17 @@ public class FlowableEngineConfig
             // 不再依赖 ACTIVITY/SEQUENCEFLOW 事件的执行时序
             // 抄送监听器：任务到达 / 办理完成时按节点 flowable:ccConfig 生成「待阅」记录
             // 流程请求登记监听器：实例创建时分配短数字流程编号（对标泛微 requestid）
+            // 流程结束监听器：请假示例业务表状态回写
+            // 归档分发监听器：实例办结后按流程 Key 分发给业务模块归档处理器（如 HR 考勤回写）
             configuration.setEventListeners(Arrays.asList(
                     new com.ruoyi.flowable.listener.OperatorGroupTaskListener(),
                     new com.ruoyi.flowable.listener.ParticipantResolveListener(),
+                    // 待办消息监听器：任务到达推送审批消息到消息中心，办结后自动关闭（须在办理人派发之后）
+                    new com.ruoyi.flowable.listener.FlowTaskMessageListener(),
                     new com.ruoyi.flowable.listener.FlowCcListener(),
-                    new com.ruoyi.flowable.listener.FlowRequestRegisterListener()));
+                    new com.ruoyi.flowable.listener.FlowRequestRegisterListener(),
+                    new com.ruoyi.flowable.listener.FlowProcessEndListener(),
+                    new com.ruoyi.flowable.listener.FlowArchiveDispatchListener()));
         };
     }
 }

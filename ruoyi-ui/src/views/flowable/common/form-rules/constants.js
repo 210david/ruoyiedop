@@ -73,6 +73,8 @@ export const EXPR_FUNCTIONS = [
   { name: 'now', label: '当前时间', usage: 'now()' },
   { name: 'dateDiff', label: '日期相差天数', usage: 'dateDiff(开始, 结束)' },
   { name: 'dateAdd', label: '日期加天数', usage: 'dateAdd(日期, 天数)' },
+  { name: 'hoursDiff', label: '相差小时（加班时长）', usage: 'hoursDiff(开始, 结束)' },
+  { name: 'workDays', label: '工作日天数（跳过节假日）', usage: 'workDays(开始, 结束)' },
   { name: 'sum', label: '求和', usage: 'sum(a, b, ...)' },
   { name: 'rmbUpper', label: '人民币大写', usage: 'rmbUpper(金额字段)' },
   { name: 'avg', label: '平均值', usage: 'avg(a, b, ...)' },

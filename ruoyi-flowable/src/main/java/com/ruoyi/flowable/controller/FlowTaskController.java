@@ -165,13 +165,14 @@ public class FlowTaskController extends BaseController
     }
 
     /**
-     * 我的全部未结事项（待办任务 + 草稿）
+     * 我的全部未办结事项（待办任务 + 退回 + 未读待阅 + 草稿）
      *
-     * 对标泛微「待办事宜 → 全部」：一个列表看全当前用户已收到待处理的任务与未提交的草稿，
-     * 行上用 bizType 区分（task=待办任务，draft=草稿），前端据 bizType 决定操作按钮。
+     * 对标泛微「待办事宜 → 全部」：一个列表看全当前用户未办结的事项，包括已收到待处理的任务、
+     * 退回待重新提交的任务、未读待阅与未提交的草稿，行上用 bizType 区分，
+     * 前端据 bizType 决定操作按钮。流程全量查询请使用流程监控接口。
      */
-    @GetMapping("/allList")
-    public TableDataInfo allList(FlowTask query)
+    @GetMapping("/pendingList")
+    public TableDataInfo pendingList(FlowTask query)
     {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (FlowTask t : flowProcessService.selectTodoList(query))

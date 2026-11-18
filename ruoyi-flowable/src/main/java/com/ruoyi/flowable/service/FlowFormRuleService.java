@@ -68,6 +68,10 @@ public class FlowFormRuleService
     @Autowired
     private AiClient aiClient;
 
+    /** 企业工作日历（workDays 规则函数查 biz_hr_workday_calendar，0=工作日 1=休息日 2=法定节假日） */
+    @Autowired
+    private com.ruoyi.flowable.mapper.FlowWorkdayMapper workdayMapper;
+
     // ------------------------------------------------------------------
     // 一、保存期校验
     // ------------------------------------------------------------------
@@ -1049,9 +1053,110 @@ public class FlowFormRuleService
                 BigDecimal n = toNum(arg(args, 0));
                 return n == null ? "" : rmbUpper(n);
             }
+            case "hoursDiff":
+            {
+                // 时间相差小时（支持 yyyy-MM-dd HH:mm / yyyy-MM-dd，日期按 00:00 计）；与前端 engine.js 口径一致
+                LocalDateTime t1 = toDateTime(arg(args, 0));
+                LocalDateTime t2 = toDateTime(arg(args, 1));
+                if (t1 == null || t2 == null)
+                {
+                    return null;
+                }
+                long ms = java.time.Duration.between(t1, t2).toMillis();
+                return BigDecimal.valueOf(ms).divide(BigDecimal.valueOf(3600000L), 2, RoundingMode.HALF_UP);
+            }
+            case "workDays":
+            {
+                // 工作日天数（含首尾两天，跳过休息日/法定节假日、含调休补班日；
+                // 区间无日历数据的日期按「剔除周六日」回退口径处理）；与前端 engine.js 口径一致
+                LocalDate d1 = toDate(arg(args, 0));
+                LocalDate d2 = toDate(arg(args, 1));
+                if (d1 == null || d2 == null)
+                {
+                    return null;
+                }
+                if (d2.isBefore(d1))
+                {
+                    return BigDecimal.ZERO;
+                }
+                Map<String, String> cal = workdayTypeMap(d1, d2);
+                long count = 0;
+                for (LocalDate d = d1; !d.isAfter(d2); d = d.plusDays(1))
+                {
+                    String type = cal.get(d.toString());
+                    if ("0".equals(type))
+                    {
+                        count++;
+                    }
+                    else if (!"1".equals(type) && !"2".equals(type))
+                    {
+                        // 无日历数据回退：周六日不计
+                        int dow = d.getDayOfWeek().getValue(); // 1=周一 ... 7=周日
+                        if (dow <= 5)
+                        {
+                            count++;
+                        }
+                    }
+                }
+                return BigDecimal.valueOf(count);
+            }
             default:
                 log.warn("未知的规则函数：{}", fn);
                 return null;
+        }
+    }
+
+    /** 查询区间内的企业日历标记 {日期: 类型}（查不到/异常时返回空 Map，走回退口径） */
+    private Map<String, String> workdayTypeMap(LocalDate start, LocalDate end)
+    {
+        try
+        {
+            List<Map<String, Object>> rows = workdayMapper.selectDateTypeRange(start.toString(), end.toString());
+            Map<String, String> map = new HashMap<>();
+            if (rows != null)
+            {
+                for (Map<String, Object> r : rows)
+                {
+                    Object dt = r.get("dt");
+                    Object type = r.get("dateType");
+                    if (dt != null && type != null)
+                    {
+                        map.put(String.valueOf(dt), String.valueOf(type));
+                    }
+                }
+            }
+            return map;
+        }
+        catch (Exception e)
+        {
+            log.warn("查询工作日历失败，workDays 按剔除周末口径计算：{}", e.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    /** 宽松解析日期时间：yyyy-MM-dd HH:mm[:ss] 或 yyyy-MM-dd（按 00:00 计） */
+    private static LocalDateTime toDateTime(Object v)
+    {
+        if (v == null)
+        {
+            return null;
+        }
+        String s = String.valueOf(v).trim();
+        if (s.length() < 8)
+        {
+            return null;
+        }
+        try
+        {
+            if (s.length() >= 16)
+            {
+                return LocalDateTime.parse(s.substring(0, s.length() >= 19 ? 19 : 16).replace(' ', 'T'));
+            }
+            return LocalDate.parse(s.substring(0, 10)).atStartOfDay();
+        }
+        catch (Exception e)
+        {
+            return null;
         }
     }
 
@@ -1538,7 +1643,7 @@ public class FlowFormRuleService
                 + "条件格式：{ \"op\": \"and\", \"conditions\": [ { \"left\": {\"field\":\"x\"}, \"cmp\": \"gt\", \"right\": {\"value\": 1} } ] }\n"
                 + "校验类规则（validate）的 action 必须包含 validator 字段，可选值：required（必填）、range（数值范围，配 min/max）、regex（正则，配 pattern）、crossField（两字段比较）、detailSum（明细合计）；禁止省略 validator。\n"
                 + "字段间大小比较必须用 crossField，action 格式：{ \"validator\": \"crossField\", \"cmp\": \"lt|lte|gt|gte|eq|ne\", \"left\": {\"field\":\"字段甲\"}, \"right\": {\"field\":\"字段乙\"} }；与固定值比较时 right 用 {\"value\": 数值}；非负校验用 range 且 min 设为 0。\n"
-                + "表达式格式：{ \"fn\": \"mul\", \"args\": [{\"field\":\"a\"},{\"value\":2}] }，可用函数 add/sub/mul/div/round/sum/if/dateDiff/rmbUpper（金额转人民币大写，如合计大写 = rmbUpper(合计小写)）、detailSum(表名,字段)（明细列求和）、detailCount(表名)（明细行数）。\n"
+                + "表达式格式：{ \"fn\": \"mul\", \"args\": [{\"field\":\"a\"},{\"value\":2}] }，可用函数 add/sub/mul/div/round/sum/if/dateDiff（自然日相差天数）/hoursDiff（相差小时，用于加班时长）/workDays(开始,结束)（工作日天数，自动跳过休息日和法定节假日、含调休补班，用于请假天数，开始晚于结束返回0）/rmbUpper（金额转人民币大写，如合计大写 = rmbUpper(合计小写)）、detailSum(表名,字段)（明细列求和）、detailCount(表名)（明细行数）。\n"
                 + "字段名只能取自上方清单，禁止编造字段；无法确认时返回空数组 []。\n"
                 + "id 为规则唯一标识，必须填写，按 rule_1、rule_2 递增编号，不得重复。";
         AiResult result = aiClient.chat(AI_MODULE, AI_FEATURE, prompt, 2500);
