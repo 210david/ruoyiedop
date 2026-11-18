@@ -166,6 +166,9 @@ public interface IFlowProcessService
     /** 办理任务（同意 / 驳回退回）。驳回时按 targetActivityId 把流程退回到指定节点 */
     public int completeTask(FlowCompleteDTO dto);
 
+    /** 暂存表单修改（退回发起人场景）：只把可编辑字段写入流程变量，不办理、不流转 */
+    public int saveTaskForm(FlowCompleteDTO dto);
+
     /**
      * 流程分类树（按页面数据口径统计，数量与右侧列表保持一致）
      *

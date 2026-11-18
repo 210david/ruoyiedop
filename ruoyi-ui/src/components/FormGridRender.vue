@@ -1,38 +1,50 @@
 <template>
   <div class="fgr-wrap" ref="rootRef">
-    <table class="fgr-table" v-if="gridView">
-      <colgroup>
-        <col v-for="(w, i) in gridView.colWidths" :key="i" :style="{ width: colWStyle(w) }" />
-        <col class="fgr-fill-col" />
-      </colgroup>
-      <tbody>
-        <tr v-for="(row, r) in rowViews" :key="r" :style="{ height: gridView.rowHeights[r] + 'px' }">
-          <template v-for="(e, ci) in row" :key="r + '-' + ci">
-            <td v-if="e.kind !== 'skip'" :rowspan="e.rs || 1" :colspan="e.cs || 1" class="fgr-cell" :class="[e.cell ? 't-' + e.cell.type : '', { 't-label': isLabelCell(e) }]" :style="cellStyle(e.cell && e.cell.style)">
+    <div class="fgr-cards" v-if="gridView" :class="{ 'fgr-cards-mode': hasGroupCell }">
+      <section v-for="b in cardBlocks" :key="b.key" class="fgr-card" :class="{ 'is-plain': !b.title }">
+        <div v-if="b.title" class="fgr-card-head"><i class="fgr-card-icon"></i><span>{{ b.title }}</span></div>
+        <table class="fgr-table">
+          <colgroup>
+            <col v-for="(w, i) in gridView.colWidths" :key="i" :style="{ width: colWStyle(w) }" />
+            <col class="fgr-fill-col" />
+          </colgroup>
+          <tbody>
+            <tr v-for="item in b.rows" :key="item.r" :style="{ height: (gridView.rowHeights[item.r] || 30) + 'px' }">
+              <template v-for="(e, ci) in item.cells" :key="item.r + '-' + ci">
+            <td v-if="e.kind !== 'skip'" :rowspan="e.rs || 1" :colspan="e.cs || 1" class="fgr-cell" :class="[e.cell ? 't-' + e.cell.type : '', { 't-label': isLabelCell(e), 'is-ov-hidden': e.cell && e.cell.type === 'field' && ovHidden(e.cell.field) }]" :style="cellStyle(e.cell && e.cell.style)">
               <template v-if="e.cell">
                 <div v-if="e.cell.type === 'title'" class="fgr-title">{{ e.cell.text || '' }}</div>
                 <div v-else-if="e.cell.type === 'note'" class="fgr-note">{{ e.cell.text || '' }}</div>
                 <div v-else-if="e.cell.type === 'field'" class="fgr-field">
                   <!-- 标签为独立文本格，字段格仅渲染控件/值 -->
                   <template v-if="editable && values">
-                    <!-- 设计器把该列配为「只读」：按只读口径渲染纯文本，不再摆一个置灰的禁用控件 -->
-                    <span v-if="cellAttr(e.cell) === 'ro'" class="val attr-ro" :class="{ ph: displayValue(e.cell.field, e.cell.style) === null }">
-                      <span class="val-text">{{ displayValue(e.cell.field, e.cell.style) || fieldPlaceholder(e.cell.field) }}</span>
+                    <!-- 设计器把该列配为「只读」：按只读口径渲染；
+                         仅只读字段的附件走禁用态卡片（可预览/下载），可编辑附件仍走上传控件 -->
+                    <grid-control
+                      v-if="cellAttr(e.cell) === 'ro' && (isAttach(e.cell.field) || isAttachValue(values?.[e.cell.field])) && hasValue(e.cell.field)"
+                      :f="attachDefOf(e.cell.field)"
+                      :model-value="values?.[e.cell.field]"
+                      disabled
+                    />
+                    <span v-else-if="cellAttr(e.cell) === 'ro'" class="val attr-ro">
+                      <span class="val-text">{{ displayValue(e.cell.field, e.cell.style) || '' }}</span>
                     </span>
                     <el-form-item
                       v-else
                       :prop="e.cell.field"
                       label-width="0"
-                      :rules="fieldReq(e.cell.field) || cellAttr(e.cell) === 'req' ? [{ required: true, message: '请填写' + fieldLabel(e.cell.field), trigger: ['blur', 'change'] }] : []"
+                      :rules="fieldItemRules(e.cell)"
+                      :error="props.ruleErrors[e.cell.field] || ''"
                       class="fgr-fi"
                     >
                       <grid-control
-                        :f="fieldDef(e.cell.field)"
+                        :f="(isAttach(e.cell.field) || isAttachValue(values?.[e.cell.field])) ? attachDefOf(e.cell.field) : fieldDef(e.cell.field)"
                         :style-obj="e.cell.style"
                         :model-value="values[e.cell.field]"
                         :id-value="values[e.cell.field + '__id']"
                         :extra-value="values[e.cell.field + '__extra']"
                         :required="cellAttr(e.cell) === 'req'"
+                        :options-override="(props.overrides[e.cell.field] || {}).options"
                         @update:model-value="(v) => (values[e.cell.field] = v)"
                         @update:id-value="(v) => (values[e.cell.field + '__id'] = v)"
                         @update:extra-value="(v) => (values[e.cell.field + '__extra'] = v)"
@@ -45,8 +57,8 @@
                   <template v-else>
                     <!-- 附件字段：沿用标准附件控件（禁用态），可预览、可下载，不能露出 /profile 路径 -->
                     <grid-control
-                      v-if="isAttach(e.cell.field) && hasValue(e.cell.field)"
-                      :f="fieldDef(e.cell.field)"
+                      v-if="(isAttach(e.cell.field) || isAttachValue(values?.[e.cell.field])) && hasValue(e.cell.field)"
+                      :f="attachDefOf(e.cell.field)"
                       :model-value="values?.[e.cell.field]"
                       disabled
                     />
@@ -57,7 +69,9 @@
                   </template>
                 </div>
                 <div v-else-if="e.cell.type === 'detail'" class="fgr-detail-block">
-                  <div class="fgr-dbar">
+                  <!-- 分组卡片模式下卡片标题已标明明细名，只读态没有「添加明细」按钮，
+                       空标题栏会渲染成一条悬空的灰线，因此仅在确实有内容时才渲染 -->
+                  <div class="fgr-dbar" v-if="!hasGroupCell || (editable && values && (!e.cell.detail.props || e.cell.detail.props.allowAdd))">
                     <span class="fgr-dname"><i class="dot"></i>{{ e.cell.text || '明细表' }}</span>
                     <span v-if="editable && values && (!e.cell.detail.props || e.cell.detail.props.allowAdd)"
                       ><el-button size="small" link type="primary" @click="addDetailRow(e.cell.detail && e.cell.detail.table)">＋ 添加明细</el-button></span
@@ -67,44 +81,51 @@
                     <colgroup>
                       <col style="width: 48px" />
                       <col v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ width: detailColWidth(col) }" />
-                      <col v-if="editable && values" style="width: 48px" />
+                      <col v-if="showDetailOpCol(e)" style="width: 48px" />
                     </colgroup>
                     <thead>
                       <tr>
                         <th style="width: 48px">序号</th>
-                        <th v-for="col in e.cell.detail.columns || []" :key="col.field">{{ col.label || col.field }}<i v-if="editable && values && colAttr(col) === 'req'" class="req">*</i></th>
-                        <th v-if="editable && values" style="width: 48px">操作</th>
+                        <th v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }">{{ col.label || col.field }}<i v-if="editable && values && colAttr(col) === 'req'" class="req">*</i></th>
+                        <th v-if="showDetailOpCol(e)" style="width: 48px">操作</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="(row, ri) in detailRows[e.cell.detail && e.cell.detail.table] || []" :key="row._key">
                         <td style="text-align: center; color: #94a3b8">{{ ri + 1 }}</td>
-                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :class="{ 'fgr-dcell-error': isCellError(e.cell.detail && e.cell.detail.table, ri, col.field) }">
+                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }" :class="{ 'fgr-dcell-error': isCellError(e.cell.detail && e.cell.detail.table, ri, col.field), 'is-ov-hidden': ovHidden(col.field) }" :title="detailRuleErrText(e.cell.detail && e.cell.detail.table, ri, col.field)">
                           <template v-if="editable && values">
-                            <!-- 明细列设为「只读」：同样渲染纯文本（与主表只读列、查看态同一口径） -->
-                            <span v-if="colAttr(col) === 'ro'" class="val-text fgr-dro">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span>
+                            <!-- 明细列设为「只读」：只读附件走禁用态卡片（可预览/下载），其余按只读口径渲染纯文本 -->
+                            <grid-control
+                              v-if="colAttr(col) === 'ro' && (isAttach(col.field) || isAttachValue(row[col.field])) && row[col.field]"
+                              :f="attachDefOf(col.field, e.cell.detail && e.cell.detail.table)"
+                              :model-value="row[col.field]"
+                              disabled
+                            />
+                            <span v-else-if="colAttr(col) === 'ro'" class="val-text fgr-dro">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span>
                             <grid-control
                               v-else
-                              :f="fieldDef(col.field)"
+                              :f="(isAttach(col.field) || isAttachValue(row[col.field])) ? attachDefOf(col.field, e.cell.detail && e.cell.detail.table) : fieldDef(col.field)"
                               :model-value="row[col.field]"
                               :id-value="row[col.field + '__id']"
                               :extra-value="row[col.field + '__extra']"
-                              @update:model-value="(v) => (row[col.field] = v)"
+                              :options-override="(props.overrides[col.field] || {}).options"
+                              @update:model-value="(v) => { row[col.field] = v; emit('detail-change', e.cell.detail && e.cell.detail.table, col.field); }"
                               @update:id-value="(v) => (row[col.field + '__id'] = v)"
                               @update:extra-value="(v) => (row[col.field + '__extra'] = v)"
                             />
                           </template>
                           <template v-else>
                             <grid-control
-                              v-if="isAttach(col.field) && row[col.field]"
-                              :f="fieldDefOfTable(col.field, e.cell.detail && e.cell.detail.table) || fieldDef(col.field)"
+                              v-if="(isAttach(col.field) || isAttachValue(row[col.field])) && row[col.field]"
+                              :f="attachDefOf(col.field, e.cell.detail && e.cell.detail.table)"
                               :model-value="row[col.field]"
                               disabled
                             />
                             <span v-else class="val-text">{{ displayTextOf(fieldDef(col.field), row[col.field], '—') }}</span>
                           </template>
                         </td>
-                        <td v-if="editable && values && (!e.cell.detail.props || e.cell.detail.props.allowDelete)" style="text-align: center">
+                        <td v-if="showDetailOpCol(e)" style="text-align: center">
                           <el-button
                             size="small"
                             link
@@ -124,10 +145,10 @@
                       </tr>
                       <tr v-if="(e.cell.detail.columns || []).some((c) => c.sum) && (detailRows[e.cell.detail && e.cell.detail.table] || []).length" class="fgr-dsum">
                         <td style="text-align: center">合计</td>
-                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" style="text-align: right; color: #7c3aed; font-weight: 600">
+                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'right', color: '#7c3aed', fontWeight: 600 }">
                           <template v-if="col.sum">Σ {{ detailSumValue(e.cell, col.field) }}</template>
                         </td>
-                        <td v-if="editable && values"></td>
+                        <td v-if="showDetailOpCol(e)"></td>
                       </tr>
                     </tbody>
                   </table>
@@ -140,11 +161,13 @@
                 <div v-else class="fgr-text">{{ e.cell.text || '' }}</div>
               </template>
             </td>
-          </template>
-          <td class="fgr-fill-cell"></td>
-        </tr>
-      </tbody>
-    </table>
+              </template>
+              <td class="fgr-fill-cell"></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -162,6 +185,7 @@ import GridControl, { displayTextOf, rtypeOf } from '@/components/FormGridContro
 import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
 import { applyFieldDefaults, currentUserCtx, syncPersonDept } from '@/views/flowable/common/field-defaults';
 import { buildRowsView, cellCss, colWStyle } from '@/views/flowable/form/designer/useGridMatrix.js';
+import { toRmbUpper } from '@/utils/rmb';
 // 渲染态不显示编辑网格默认线框，只显示用户绘制的边框
 const cellStyle = (st) => cellCss(st, true);
 /** 标签格：设计器「插入标签」创建的文本格（labelField 标记），运行态沿用设计器的默认浅蓝底 */
@@ -176,7 +200,22 @@ const props = defineProps({
   editable: { type: Boolean, default: false },
   // 强制可编辑的字段（如编号规则开了「允许手工修改」时的 processNo）
   editableFields: { type: Array, default: () => [] },
+  // 规则引擎状态覆盖：{ [field]: { required, visible, readonly } }
+  overrides: { type: Object, default: () => ({}) },
+  // 规则引擎实时校验错误：{ [field]: 提示文案 }（主表字段格内联展示，随字段变化实时刷新）
+  ruleErrors: { type: Object, default: () => ({}) },
+  // 规则引擎明细行校验错误：{ '表名|行号|字段': 提示文案 }（明细单元格红框 + 悬浮提示）
+  ruleDetailErrors: { type: Object, default: () => ({}) },
 });
+
+/** 明细数据变化事件：单元格编辑 / 行增删时通知父组件（规则引擎据此重算联动） */
+const emit = defineEmits(['detail-change']);
+
+/** 规则引擎显隐覆盖：true = 隐藏（占位不渲染内容，保持表格矩阵不塌） */
+function ovHidden(field) {
+  const ov = props.overrides && props.overrides[field];
+  return !!(ov && ov.visible === false);
+}
 
 const fieldMap = computed(() => {
   const m = {};
@@ -191,6 +230,8 @@ function fieldDef(field) {
   return (field && fieldMap.value[field]) || { field, rtype: 'text' };
 }
 function fieldReq(field) {
+  const ov = props.overrides && props.overrides[field];
+  if (ov && ov.required) return true;
   const f = field && fieldMap.value[field];
   return !!(f && f.required);
 }
@@ -199,19 +240,31 @@ function isAttach(field) {
   const f = field && fieldMap.value[field];
   return !!f && rtypeOf(f) === 'attach';
 }
-/** 字段格展示属性：显式放开的字段（允许改号的流程编号）优先，其次字段自身只读，再次设计器右键设置，最后字段必填定义兜底 */
-function cellAttr(cell) {
+/** 附件兜底渲染字段定义：历史表单 rtype 丢失时也强制走附件控件，保证只读态可预览/下载 */
+function attachDefOf(field, table) {
+  const f = table ? fieldDefOfTable(field, table) : fieldMap.value[field];
+  return f ? { ...f, rtype: 'attach' } : { field, rtype: 'attach' };
+}
+/** 附件值兜底识别：历史表单字段定义可能丢失 rtype（渲染成裸 /profile 路径文本），
+ *  只要值本身是 /profile/ 文件路径（逗号分隔）就按附件回显，保证只读态也能预览/下载 */
+function isAttachValue(v) {
+  if (!v) return false;
+  const s = Array.isArray(v) ? v.join(',') : String(v).trim();
+  return /(^|,)\s*\/?profile\//i.test(s);
+}
+/** 字段格展示属性：显式放开的字段（允许改号的流程编号）优先，其次字段自身只读，再次设计器右键设置，最后字段必填定义兜底 */function cellAttr(cell) {
   const field = cell && cell.field;
   if (field && props.editableFields.includes(field)) return cell && cell.attr === 'req' ? 'req' : 'edit';
   const f = field && fieldMap.value[field];
+  // 规则引擎状态覆盖：显式解除只读 / 只读 / 必填，优先级高于设计器设置
+  // （默认只读字段选「是」冲抵后由 readonly 规则解除只读并出必填星号）
+  const ov = props.overrides && props.overrides[field];
+  if (ov && ov.readonly === false) return fieldReq(field) ? 'req' : 'edit';
+  if (ov && ov.readonly) return 'ro';
+  if (ov && ov.required) return 'req';
   if (f && (f.readonly || isSysReadonlyField(f.field))) return 'ro';
   if (cell && cell.attr) return cell.attr;
   return fieldReq(cell && cell.field) ? 'req' : 'edit';
-}
-/** 只读字段的空值提示（如流程编号「提交后自动生成」） */
-function fieldPlaceholder(field) {
-  const f = field && fieldMap.value[field];
-  return (f && f.placeholder) || '';
 }
 /** 附件类字段是否已有值（只读态决定渲染附件控件还是空值占位） */
 function hasValue(field) {
@@ -231,6 +284,9 @@ function displayValue(field, style) {
     } else if (fmt.cat === 'number') {
       const n = Number(v);
       if (!isNaN(n)) return n.toLocaleString('zh-CN', { minimumFractionDigits: d == null ? 2 : d, maximumFractionDigits: d == null ? 2 : d });
+    } else if (fmt.cat === 'rmb') {
+      // 人民币大写：详情/预览/打印（FlowPrintView 同走本渲染层）统一回显
+      return toRmbUpper(v) || null;
     }
   }
   return displayTextOf(f, v, '—');
@@ -243,9 +299,56 @@ function displayValue(field, style) {
  */
 const gridView = computed(() => props.grid);
 
+/**
+ * 运行态空行过滤：整行都是「无内容」的行（空占位格/空文本格）直接不渲染。
+ * 设计器里拖动产生的空行在运行态只会留出一段空白（如标题上方的大空隙），
+ * 渲染层去掉即可，设计态矩阵不受影响；
+ * 被合并格纵向覆盖的行不能删（rowspan 按 tr 计数，删了会错位）。
+ */
+function isBlankLine(line) {
+  if (!line || !line.length) return true;
+  return line.every((e) => !e || e.kind === 'empty' || !e.cell || (e.cell.type === 'text' && !e.cell.text));
+}
+function rowCoveredByMerge(grid, r) {
+  return (grid.cells || []).some((c) => c.r < r && r < c.r + (c.rs || 1));
+}
+
 const rowViews = computed(() => {
   if (!gridView.value) return [];
-  return buildRowsView(gridView.value);
+  const out = [];
+  buildRowsView(gridView.value).forEach((line) => {
+    if (!line.length) return;
+    // 行条目自带原始行号（隐藏行会被 buildRowsView 跳过，不能按下标当行号）
+    const r = line[0].r;
+    // 空行且未被合并格覆盖：运行态直接不渲染（保留原始行号，行高取值不错位）
+    if (isBlankLine(line) && !rowCoveredByMerge(gridView.value, r)) return;
+    out.push({ r, cells: line });
+  });
+  return out;
+});
+
+/**
+ * 卡片分组：布局中出现 type=group 的单元格时，以该行为界把表格切成多个卡片。
+ * - group 行本身不进入表格，作为卡片标题（与业务模块弹框表单的分组卡片一致）
+ * - 没有 group 单元格时只有一个 is-plain 卡片，保持原有网格外观不变
+ */
+const hasGroupCell = computed(() => !!gridView.value && (gridView.value.cells || []).some((c) => c && (c.group || c.type === 'group')));
+const cardBlocks = computed(() => {
+  const rows = rowViews.value || [];
+  const blocks = [];
+  let cur = { key: 'b0', title: '', rows: [] };
+  rows.forEach((row, idx) => {
+    const cells = row.cells;
+    const g = (cells || []).find((e) => e && e.cell && (e.cell.group || e.cell.type === 'group'));
+    if (g) {
+      if (cur.rows.length) blocks.push(cur);
+      cur = { key: 'b' + idx, title: g.cell.text || '', rows: [] };
+      return;
+    }
+    cur.rows.push(row);
+  });
+  if (cur.rows.length) blocks.push(cur);
+  return blocks;
 });
 
 // ===== 运行时明细表（表单运行态）：行管理 + 表尾 Σ 合计 =====
@@ -322,9 +425,21 @@ watch(
 function detailColWidth(col) {
   return col && col.width ? col.width + '%' : 'auto';
 }
-/** 明细列展示属性：编辑/只读/必填（设计器列配置优先） */
+/** 明细列展示属性：编辑/只读/必填（规则引擎覆盖优先，支持显式解除只读，设计器列配置次之） */
 function colAttr(col) {
+  // 规则引擎覆盖：明细列显式解除只读 / 只读 / 必填
+  const ov = props.overrides && props.overrides[col && col.field];
+  if (ov && ov.readonly === false) return ov.required ? 'req' : 'edit';
+  if (ov && ov.readonly) return 'ro';
+  if (ov && ov.required) return 'req';
   return (col && col.attr) || 'edit';
+}
+/** 明细表「操作」列是否渲染：仅在可编辑且允许删除行时显示，
+    没启用删除功能时操作列没有实际动作，不渲染避免一列空壳 */
+function showDetailOpCol(e) {
+  if (!props.editable || !props.values) return false;
+  const p = (e && e.cell && e.cell.detail && e.cell.detail.props) || {};
+  return p.allowDelete !== false;
 }
 /** 明细列字段清单（columns 自包含，含 field/label/width/sum/required） */
 function blankDetailRow(cols, table) {
@@ -394,10 +509,10 @@ function canDeleteRow(dt) {
   const rows = detailRows.value[dt] || [];
   return !(p.mustAdd && rows.length <= 1);
 }
-/** 空表占位行的跨列数：序号 + 数据列 + 操作列 */
+/** 空表占位行的跨列数：序号 + 数据列 + 操作列（操作列仅在可编辑且允许删除时渲染） */
 function detailColSpan(e) {
   const cols = (e && e.cell && e.cell.detail && e.cell.detail.columns) || [];
-  return 1 + cols.length + (props.editable && props.values ? 1 : 0);
+  return 1 + cols.length + (showDetailOpCol(e) ? 1 : 0);
 }
 function addDetailRow(dt) {
   if (!dt) return;
@@ -408,6 +523,7 @@ function addDetailRow(dt) {
   const block = detailBlockOf(dt);
   if (!detailRows.value[dt]) detailRows.value[dt] = [];
   detailRows.value[dt].push(blankDetailRow((block && block.detail.columns) || [], dt));
+  emit('detail-change', dt);
 }
 /** 删除明细行：mustAdd=false 允许删到 0 行（明细可为空）；mustAdd=true 保留最后一行 */
 function removeDetailRow(dt, idx) {
@@ -418,6 +534,7 @@ function removeDetailRow(dt, idx) {
     return;
   }
   rows.splice(idx, 1);
+  emit('detail-change', dt);
 }
 function detailSumValue(cell, field) {
   const rows = detailRows.value[cell.detail.table] || [];
@@ -494,6 +611,24 @@ function validateDetails() {
   if (msgs.length) nextTick(() => scrollToFirstDetailError());
   return msgs;
 }
+/** 主表字段格的校验规则：设计器必填 + 规则引擎实时校验错误（值变化即提示，无需等提交） */
+function fieldItemRules(cell) {
+  const field = cell && cell.field;
+  const rules = [];
+  if (fieldReq(field) || cellAttr(cell) === 'req') {
+    // 本组件的 el-form-item 无 el-form/model 上下文（Grid 布局自管数据），
+    // Element 的 required 校验会取不到值而误报，改为闭包直读当前表单数据
+    rules.push({
+      validator: (r, v, cb) => cb(isBlankValue(props.values && props.values[field]) ? new Error('请填写' + fieldLabel(field)) : undefined),
+      trigger: ['blur', 'change']
+    });
+  }
+  const msg = props.ruleErrors && props.ruleErrors[field];
+  if (msg) {
+    rules.push({ validator: () => false, message: msg, trigger: ['blur', 'change'] });
+  }
+  return rules;
+}
 /** 明细行是否有任意值（用于判定"是不是真填了"） */
 function rowHasValue(row, cols) {
   if (!row) return false;
@@ -506,9 +641,15 @@ function isBlankValue(v) {
   if (Array.isArray(v)) return v.length === 0;
   return false;
 }
-/** 明细单元格是否被标为错误（模板里加红框） */
+/** 明细单元格是否被标为错误（模板里加红框）：设计器必填 marks ∪ 规则引擎行内错误 */
 function isCellError(table, ri, field) {
-  return !!detailErrors.value[(table || '') + '|' + ri + '|' + field];
+  const key = (table || '') + '|' + ri + '|' + field;
+  return !!detailErrors.value[key] || !!(props.ruleDetailErrors && props.ruleDetailErrors[key]);
+}
+/** 明细单元格的规则引擎错误文案（悬浮提示用；无错误返回空串不显示 title） */
+function detailRuleErrText(table, ri, field) {
+  const key = (table || '') + '|' + ri + '|' + field;
+  return (props.ruleDetailErrors && props.ruleDetailErrors[key]) || '';
 }
 /** 提交校验失败后把第一个错误单元格滚入可视区，避免用户在长表单里找不到哪一行没填 */
 function scrollToFirstDetailError() {
@@ -524,6 +665,138 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
   width: 100%;
   box-sizing: border-box;
 }
+/* ===== 卡片分组（布局含 type=group 时启用，与业务模块弹框表单一致） ===== */
+.fgr-cards {
+  width: 100%;
+}
+.fgr-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 7px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.fgr-card.is-plain {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+.fgr-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+/* 分组卡片内字段表格与卡片头/底留出距离：首行不贴卡片标题、末行不贴卡片底边，
+   与明细块周围的留白一致（is-plain 无卡片外观的布局不受影响） */
+.fgr-card:not(.is-plain) > .fgr-table {
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.fgr-card-icon {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: #eef2ff;
+  flex: none;
+}
+.fgr-card-icon::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 2px;
+  background: #4f46e5;
+}
+.fgr-cards-mode .fgr-cell {
+  /* 规则引擎隐藏：保留占位（表格矩阵不塌），内容不可见 */
+  &.is-ov-hidden { visibility: hidden; }
+  padding: 7px 6px;
+  background: transparent;
+}
+.fgr-cards-mode .fgr-cell.t-label {
+  /* 标签格外观（背景/边框）尽量由表单设计器的单元格样式驱动：
+     cellCss 内联样式优先级最高，设计器里给标签格设置背景色/边框即可生效；
+     这里只保留文字基线样式，不再写死背景与线框 */
+  background: transparent;
+  color: #475569;
+  font-weight: 500;
+}
+.fgr-cards-mode .fgr-fill-cell {
+  background: transparent;
+}
+.fgr-cards-mode .fgr-detail-block {
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+  /* 合计行与明细块下边框留白：避免合计贴边 */
+  padding-bottom: 12px;
+}
+.fgr-cards-mode .fgr-dsum td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+/* 明细块与卡片边框之间留出少量内边距：明细块边框不与卡片边框重合；
+   垂直方向强制贴顶：cellCss 会给每个 td 写内联 vertical-align:middle，
+   行高富余时明细块居中，上方悬出一条空带——这里 !important 压过内联样式 */
+.fgr-cards-mode .fgr-cell.t-detail {
+  padding: 0 2px 6px;
+  vertical-align: top !important;
+}
+.fgr-cards-mode .fgr-dbar {
+  /* 填写态：标题栏正常占一行，右侧放「＋添加明细」按钮。
+     早期用 absolute top:-30px 悬浮到卡片标题行，但 dbar 在卡片模式下
+     高度为 0，明细单元格被压缩时宽度也为 0，right:4px 相对零宽容器定位，
+     按钮会被定位到容器左边界之外而不可见、不可点，因此改为正常布局 */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: transparent;
+  border-bottom: none;
+  padding: 2px 2px 4px;
+}
+.fgr-cards-mode .fgr-dbar > span {
+  position: static;
+}
+/* 「＋添加明细」按钮美化：浅蓝底胶囊样式，与分组卡片浅蓝色系呼应 */
+.fgr-dbar .el-button {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 13px;
+  background: #eef5fd;
+  border: 1px solid #bcd3ec;
+  color: #2469b3;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fgr-dbar .el-button:hover,
+.fgr-dbar .el-button:focus {
+  background: #dceafa;
+  border-color: #8fb6e3;
+  color: #1a4f95;
+}
+.fgr-dbar .el-button:active {
+  background: #cfe1f7;
+  box-shadow: inset 0 1px 2px rgba(26, 79, 149, 0.15);
+}
+/* 分组卡片标题已说明是哪个明细表，块内不再重复标题，只保留「添加明细」操作 */
+.fgr-cards-mode .fgr-dname {
+  display: none;
+}
+.fgr-cards-mode .fgr-dtable th {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #eef2f7;
+}
 .fgr-table {
   width: 100%;
   border-collapse: collapse;
@@ -536,6 +809,8 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
   background: #fbfcfe;
 }
 .fgr-cell {
+  /* 规则引擎隐藏：保留占位（表格矩阵不塌），内容不可见 */
+  &.is-ov-hidden { visibility: hidden; }
   padding: 5px 8px;
   font-size: 13px;
   background: #fff;
@@ -544,6 +819,11 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
 }
 .fgr-cell.t-title {
   text-align: center;
+  /* 标题贴顶：不按行高中对齐，标题上方只留极小间距；
+     cellCss 会写内联 vertical-align:middle，需要 !important 压过；
+     需要更大留白时在设计器里调大标题行高即可（行高全部生效为内容下方空间） */
+  vertical-align: top !important;
+  padding-top: 3px;
 }
 /* 标签格默认浅蓝底：与设计器 .wm-cell.t-text 保持一致；用户自定义背景（cellCss 内联）优先 */
 .fgr-cell.t-label {
@@ -558,6 +838,8 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
 }
 .fgr-title {
   font-weight: 600;
+  margin: 0;
+  line-height: 1.4;
 }
 .fgr-note {
   color: #e0342b;
@@ -724,19 +1006,25 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
   font-size: 12px;
 }
 /* ===== 运行时明细表块（表单运行态） ===== */
+/* 明细格去掉单元格内边距：让明细块边框与主表字段表格的左右边框对齐 */
+.fgr-cell.t-detail {
+  padding: 0;
+}
 .fgr-detail-block {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #c9d9ea;
   border-radius: 6px;
   overflow: hidden;
   width: 100%;
 }
+/* 明细标题栏：与主表标签格同色系（浅蓝底 + 深蓝字），避免深浅反差过大 */
 .fgr-dbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #2f3c8e;
-  color: #fff;
-  padding: 5px 10px;
+  background: #dbe9f6;
+  border-bottom: 1px solid #c9d9ea;
+  color: #24476e;
+  padding: 7px 10px;
 }
 .fgr-dname {
   display: inline-flex;
@@ -744,12 +1032,13 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
   gap: 5px;
   font-size: 13px;
   font-weight: 600;
+  color: #24476e;
 }
 .fgr-dname .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #fbbf24;
+  background: #2f6fd0;
 }
 .fgr-dtable {
   width: 100%;
@@ -776,6 +1065,8 @@ defineExpose({ getDetailData, validateDetails, setDetailData });
 }
 /* 明细必填未填：单元格浅红底 + 输入框红边（提交校验后高亮，编辑即消除） */
 .fgr-dtable td.fgr-dcell-error {
+  /* 明细列规则隐藏：占位不渲染内容（同主表 is-ov-hidden 口径） */
+  &.is-ov-hidden { visibility: hidden; }
   background: #fff5f5;
   box-shadow: inset 0 0 0 1px #f8b4b4;
 }

@@ -21,9 +21,10 @@
           <span class="rd-detail-header-no">{{ detailData.processDefinitionName }}（{{ detailData.requestId || detailData.instanceId }}）</span>
         </div>
         <slot name="header-extra"></slot>
-        <!-- 独立详情页：弹窗自带头部是唯一出口，关闭按钮放这里，不再另占一条底部操作条 -->
-        <div class="rd-detail-header-ops" v-if="standalone">
-          <el-button size="small" icon="Close" @click="emit('update:open', false)">关 闭</el-button>
+        <!-- 头部右侧操作：打印（两种模式都提供） + 关闭（独立页唯一出口，不再另占一条底部操作条） -->
+        <div class="rd-detail-header-ops">
+          <el-button size="small" icon="Printer" @click="doPrint">打 印</el-button>
+          <el-button v-if="standalone" size="small" icon="Close" @click="emit('update:open', false)">关 闭</el-button>
         </div>
       </div>
     </template>
@@ -117,9 +118,6 @@
                 <span class="resource-size" v-if="fileSizeText(scope.row.fileSize)">{{ fileSizeText(scope.row.fileSize) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="所属节点" min-width="140" align="center">
-              <template #default="scope">{{ scope.row.taskName || '-' }}</template>
-            </el-table-column>
             <el-table-column label="上传人" width="120" align="center">
               <template #default="scope">{{ scope.row.uploaderName || '-' }}</template>
             </el-table-column>
@@ -146,6 +144,9 @@
       <el-button @click="emit('update:open', false)">关 闭</el-button>
     </template>
   </el-dialog>
+
+  <!-- 打印专用视图：Teleport 到 body，屏幕上不显示，仅 window.print() 时输出 -->
+  <FlowPrintView v-if="printReady" :meta="printCfg.meta" :fields="printCfg.fields" :grid="printCfg.grid" :values="printCfg.values" :template-name="printCfg.templateName" />
 </template>
 
 <script setup name="FlowDetail">
@@ -156,6 +157,7 @@ import { rtypeOf } from '@/components/FormGridControl.js';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
 import FlowOpinion from '@/components/FlowOpinion/index.vue';
+import FlowPrintView from '@/components/FlowPrintView/index.vue';
 import { listFlowAttach } from '@/api/flowable/attach';
 import { listCcByInstance } from '@/api/flowable/cc';
 import { collectFormAttachments } from '@/views/flowable/common/form-attachments';
@@ -200,9 +202,12 @@ const formAttachList = computed(() => collectFormAttachments(formFields.value, d
 /** 相关资源页签展示口径：表单附件 + 各环节附件 */
 const resourceList = computed(() => (attachList.value || []).concat(formAttachList.value));
 
-/** 是否附件类字段（非网格回退渲染时决定用附件控件还是文本） */
+/** 是否附件类字段（非网格回退渲染时决定用附件控件还是文本；历史表单 rtype 丢失时按值兜底） */
 function isAttachField(f) {
-  return !!f && rtypeOf(f) === 'attach';
+  if (f && rtypeOf(f) === 'attach') return true;
+  const v = f && detailData.value && detailData.value.variables ? detailData.value.variables[f.field] : undefined;
+  const s = Array.isArray(v) ? v.join(',') : String(v || '').trim();
+  return /(^|,)\s*\/?profile\//i.test(s);
 }
 
 /** 表单展示分组：按 layoutJson 分组；无布局时整体单组展示 */
@@ -269,6 +274,56 @@ function formatValue(field, val) {
     return field.options.includes(val) ? val : val;
   }
   return val;
+}
+
+/* ===== 打印：按实例所在节点解析节点打印模板（与办理页同一模板口径） ===== */
+const printReady = ref(false);
+const printCfg = ref({ meta: {}, fields: [], grid: null, values: {}, templateName: '' });
+
+function safeParseJson(text, fallback) {
+  try {
+    const v = JSON.parse(text);
+    return v === null || v === undefined ? fallback : v;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+async function doPrint() {
+  const cfg = {
+    meta: {
+      processName: detailData.value.processDefinitionName || '',
+      title: detailData.value.title || detailData.value.processDefinitionName || '',
+      nodeName: '',
+      instanceId: detailData.value.instanceId || props.instanceId,
+      printUser: '',
+    },
+    fields: formFields.value,
+    grid: gridLayout.value,
+    values: detailData.value.variables || {},
+    templateName: '',
+  };
+  try {
+    const res = await request({ url: '/flowable/task/printTemplateByInstance/' + props.instanceId, method: 'get' });
+    const d = (res && res.data) || {};
+    cfg.meta = Object.assign(cfg.meta, d.meta || {});
+    if (d.configured) {
+      const tplLayout = safeParseJson(d.layoutJson, null);
+      cfg.fields = safeParseJson(d.fieldsJson, formFields.value);
+      cfg.grid = (tplLayout && tplLayout.grid) || (tplLayout && tplLayout.rows ? tplLayout : null) || gridLayout.value;
+      cfg.templateName = d.templateName || '节点打印模板';
+    }
+  } catch (e) {
+    // 模板接口异常不影响打印：继续用当前显示模板
+  }
+  printReady.value = true;
+  await nextTick();
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      printReady.value = false;
+    }, 300);
+  }, 120);
 }
 
 /**

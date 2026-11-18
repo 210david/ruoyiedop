@@ -35,6 +35,9 @@ public class FlowForm extends BaseEntity
     /** 页面布局JSON {sections:[{title,rows:[[ {field,span} ]]}]} */
     private String layoutJson;
 
+    /** 表单扩展JSON {v,rules:[],scripts:[]} */
+    private String extJson;
+
     /** 生成的数据表名 */
     private String tableName;
 
@@ -57,6 +60,8 @@ public class FlowForm extends BaseEntity
     public void setFieldsJson(String fieldsJson) { this.fieldsJson = fieldsJson; }
     public String getLayoutJson() { return layoutJson; }
     public void setLayoutJson(String layoutJson) { this.layoutJson = layoutJson; }
+    public String getExtJson() { return extJson; }
+    public void setExtJson(String extJson) { this.extJson = extJson; }
     public String getTableName() { return tableName; }
     public void setTableName(String tableName) { this.tableName = tableName; }
     public String getDelFlag() { return delFlag; }
