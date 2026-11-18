@@ -1,5 +1,6 @@
 package com.ruoyi.common.utils.spring;
 
+import java.util.Map;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.BeansException;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.stereotype.Component;
 import com.ruoyi.common.utils.StringUtils;
 
@@ -31,9 +33,33 @@ public final class SpringUtils implements BeanFactoryPostProcessor, ApplicationC
     }
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException 
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException
     {
         SpringUtils.applicationContext = applicationContext;
+    }
+
+    /**
+     * 发布应用事件（供模块间解耦联动，如流程表单提交联动业务台账）
+     *
+     * @param event 应用事件
+     */
+    public static void publishEvent(ApplicationEvent event)
+    {
+        if (applicationContext != null)
+        {
+            applicationContext.publishEvent(event);
+        }
+    }
+
+    /**
+     * 获取Spring容器中指定类型的所有Bean
+     *
+     * @param type Bean类型
+     * @return 类型为T的所有Bean，key为beanName
+     */
+    public static <T> Map<String, T> getBeansOfType(Class<T> type)
+    {
+        return beanFactory.getBeansOfType(type);
     }
 
     /**

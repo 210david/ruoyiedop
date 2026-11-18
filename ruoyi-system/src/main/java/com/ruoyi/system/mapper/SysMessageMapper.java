@@ -92,4 +92,13 @@ public interface SysMessageMapper
      * @return 结果
      */
     public int updateBizHandled(@Param("bizSource") String bizSource, @Param("bizId") Long bizId);
+
+    /**
+     * 按跳转链接关键字标记消息为已处理（流程任务办结：redirect_url 携带 taskId / instanceId）
+     *
+     * @param bizSource  业务来源
+     * @param urlKeyword 跳转链接关键字
+     * @return 结果
+     */
+    public int updateBizHandledByUrl(@Param("bizSource") String bizSource, @Param("urlKeyword") String urlKeyword);
 }

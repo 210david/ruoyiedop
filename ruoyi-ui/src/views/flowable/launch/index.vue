@@ -435,6 +435,7 @@ import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
 import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults';
 import { parseExt } from '@/views/flowable/common/form-rules/constants';
 import { runRules, runFormScripts } from '@/views/flowable/common/form-rules/engine';
+import { prepareWorkdayCalendar } from '@/views/flowable/common/form-rules/workday';
 import { useRoute, useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance();
@@ -512,29 +513,32 @@ function runFormRules(changedField, detailField) {
     return;
   }
   const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
-  // 明细变化时传 [表名, 字段名]，trigger 含任一即命中；主表变化传字段名
-  const cf = detailField ? [changedField, detailField] : changedField;
-  const result = runRules(activeFormRules.value, boundForm.value.fields || [], dynData.value || {}, detailData, { changedField: cf });
-  ruleOverrides.value = result.states || {};
-  // 校验类规则实时提示：引擎每次重算都会执行 validate 规则，把错误映射到字段格内联展示
-  const errs = {};
-  const dErrs = {};
-  for (const e of result.errors || []) {
-    if (e.table) {
-      const key = e.table + '|' + e.rowIndex + '|' + e.field;
-      if (!dErrs[key]) dErrs[key] = e.message;
-    } else if (!errs[e.field]) {
-      errs[e.field] = e.message;
+  // workDays 规则函数需要企业日历数据：按当前值区间预加载（已缓存则立即返回），随后同步求值
+  prepareWorkdayCalendar(activeFormRules.value, dynData.value || {}).then(() => {
+    // 明细变化时传 [表名, 字段名]，trigger 含任一即命中；主表变化传字段名
+    const cf = detailField ? [changedField, detailField] : changedField;
+    const result = runRules(activeFormRules.value, boundForm.value.fields || [], dynData.value || {}, detailData, { changedField: cf });
+    ruleOverrides.value = result.states || {};
+    // 校验类规则实时提示：引擎每次重算都会执行 validate 规则，把错误映射到字段格内联展示
+    const errs = {};
+    const dErrs = {};
+    for (const e of result.errors || []) {
+      if (e.table) {
+        const key = e.table + '|' + e.rowIndex + '|' + e.field;
+        if (!dErrs[key]) dErrs[key] = e.message;
+      } else if (!errs[e.field]) {
+        errs[e.field] = e.message;
+      }
     }
-  }
-  ruleErrors.value = errs;
-  ruleDetailErrors.value = dErrs;
-  // 计算/带出结果回填：值相同不写，写不发生变化时 watch 链自然收敛
-  for (const [k, v] of Object.entries(result.values || {})) {
-    if (dynData.value[k] !== v) dynData.value[k] = v;
-  }
-  // 高级脚本（字段变化时机）：规则重算后执行，脚本写回的值经 watch 再触发一轮校验收敛
-  runChangeScripts();
+    ruleErrors.value = errs;
+    ruleDetailErrors.value = dErrs;
+    // 计算/带出结果回填：值相同不写，写不发生变化时 watch 链自然收敛
+    for (const [k, v] of Object.entries(result.values || {})) {
+      if (dynData.value[k] !== v) dynData.value[k] = v;
+    }
+    // 高级脚本（字段变化时机）：规则重算后执行，脚本写回的值经 watch 再触发一轮校验收敛
+    runChangeScripts();
+  });
 }
 watch(
   () => dynData.value,
@@ -542,11 +546,13 @@ watch(
   { deep: true }
 );
 /** 提交前校验：先跑高级脚本（submit 时机可拦截），再跑规则校验。返回第一条错误文案，无错误返回空串 */
-function validateFormRules() {
+async function validateFormRules() {
   const scriptErr = runScriptsPhase('submit');
   if (scriptErr) return scriptErr;
   if (!activeFormRules.value.length) return '';
   const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  // workDays 需要日历数据：预加载后求值（已缓存则立即返回）
+  await prepareWorkdayCalendar(activeFormRules.value, dynData.value || {});
   const { errors } = runRules(activeFormRules.value, boundForm.value.fields || [], dynData.value || {}, detailData, { validate: true });
   if (!errors || !errors.length) return '';
   const e0 = errors[0];
@@ -665,7 +671,8 @@ function getList() {
   loading.value = true;
   listDefinition({ pageNum: 1, pageSize: 100 })
     .then((res) => {
-      defs.value = res.rows || [];
+      // 已挂起 / 高级设置已锁定的流程不可发起，直接不进列表，避免点进去填完表单才被后端拦下
+      defs.value = (res.rows || []).filter((d) => !d.suspended && !d.locked);
       loading.value = false;
     })
     .catch(() => {
@@ -891,6 +898,13 @@ async function initLaunchFromRoute() {
       }
     }
     if (seq !== launchSeq) return;
+    // 锁定 / 挂起的流程即使拿到直链地址也不能发起（后端同样会拦截，这里先给出可读提示）
+    if (hit && (hit.locked || hit.suspended)) {
+      const nm = hit.modelName || hit.modelKey;
+      launchBooting.value = false;
+      launchError.value = hit.locked ? `流程「${nm}」已在高级设置中锁定，暂不可发起` : `流程「${nm}」已挂起，暂不可发起`;
+      return;
+    }
     const target = hit || {
       modelKey: key,
       modelName: route.query.name || '',
@@ -1345,13 +1359,13 @@ function validateForm() {
       resolve(true);
       return;
     }
-    formRef.validate((valid) => {
+    formRef.validate(async (valid) => {
       if (!valid) {
         resolve(false);
         return;
       }
       // 规则引擎校验（validate 规则）：先于明细校验，命中直接拦截
-      const ruleMsg = validateFormRules();
+      const ruleMsg = await validateFormRules();
       if (ruleMsg) {
         launchTab.value = 'form';
         proxy.$modal.msgWarning(ruleMsg);
@@ -2387,9 +2401,17 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
 
 /* 内容区：卡片式，铺满剩余高度 */
 .launch-body {
-  padding: 16px 20px 28px;
-  background: #f8fafc;
+  padding: 10px 20px 24px;
+  background: #fff;
   min-height: 100%;
+}
+
+/* 顶部页签与「申请表单」卡片间距固定 10px：去掉弹窗头部默认下内边距，间距只由 .launch-body 控制 */
+:global(.launch-dialog .el-dialog__header) {
+  padding-bottom: 0;
+}
+:global(.launch-dialog .el-dialog__body) {
+  padding: 0;
 }
 
 /* 提交成功结果条 */

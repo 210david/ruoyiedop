@@ -73,11 +73,4 @@ public class HrClockRepairController extends BaseController
         return toAjax(hrClockRepairService.deleteHrClockRepairByIds(clockRepairIds));
     }
 
-    @PreAuthorize("@ss.hasPermi('hr:clockRepair:audit')")
-    @Log(title = "补卡审批", businessType = BusinessType.UPDATE)
-    @PutMapping("/audit/{clockRepairId}")
-    public AjaxResult audit(@PathVariable Long clockRepairId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
-    {
-        return toAjax(hrClockRepairService.auditHrClockRepair(clockRepairId, auditAction, auditRemark));
-    }
 }

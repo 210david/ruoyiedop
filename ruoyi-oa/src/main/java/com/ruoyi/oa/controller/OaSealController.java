@@ -35,6 +35,19 @@ public class OaSealController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 流程表单浏览框数据源：正常状态印章列表（仅需登录，不要求 OA 菜单权限，供用印申请等流程弹框选择）
+     */
+    @GetMapping("/pickerList")
+    public TableDataInfo pickerList(OaSeal oaSeal)
+    {
+        // 正常 + 使用中：占用中的印章仍可被预约到其他时段
+        oaSeal.getParams().put("statusIn", java.util.Arrays.asList("0", "3"));
+        startPage();
+        List<OaSeal> list = oaSealService.selectOaSealList(oaSeal);
+        return getDataTable(list);
+    }
+
     @Log(title = "印章管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('oa:seal:export')")
     @PostMapping("/export")

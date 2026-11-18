@@ -80,13 +80,7 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:businessTrip:add']">新增</el-button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['hr:businessTrip:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['hr:businessTrip:remove']">
-            <el-icon><Delete /></el-icon> 删除
-          </button>
+          <el-button type="primary" plain icon="Plus" @click="handleLaunchFlow" v-hasPermi="['flowable:process:start']">发起出差申请</el-button>
           <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:businessTrip:export']">
             <el-icon><Download /></el-icon> 导出
@@ -112,7 +106,7 @@
           <el-table-column label="出发日期" prop="departureDate" key="departureDate" align="center" :width="colWidth('departureDate', 120)" resizable v-if="columns.departureDate.visible" />
           <el-table-column label="预计返回" prop="expectedReturnDate" key="expectedReturnDate" align="center" :width="colWidth('expectedReturnDate', 120)" resizable v-if="columns.expectedReturnDate.visible" />
           <el-table-column label="出差天数" prop="tripDays" key="tripDays" align="center" :width="colWidth('tripDays', 100)" resizable v-if="columns.tripDays.visible" />
-          <el-table-column label="审批状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 110)" resizable v-if="columns.auditStatus.visible">
+          <el-table-column label="流程状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 110)" resizable v-if="columns.auditStatus.visible">
             <template #default="scope">
               <span class="badge" :class="auditStatusClass(scope.row.auditStatus)" v-if="scope.row.auditStatus !== undefined && scope.row.auditStatus !== null && scope.row.auditStatus !== ''">
                 <span class="dot"></span>{{ auditStatusLabel(scope.row.auditStatus) }}
@@ -124,9 +118,7 @@
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:businessTrip:query']">详情</el-button>
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:businessTrip:edit']">修改</el-button>
-                <el-button link type="warning" icon="Finished" @click="handleAudit(scope.row)" v-if="scope.row.auditStatus === '0'" v-hasPermi="['hr:businessTrip:audit']">审批</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:businessTrip:remove']">删除</el-button>
+                <el-button link type="primary" icon="Connection" @click="handleViewFlow(scope.row)" v-if="scope.row.flowInstanceId">关联流程</el-button>
               </div>
             </template>
           </el-table-column>
@@ -310,34 +302,16 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c2')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>流程信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
-            <el-alert v-if="viewData.auditStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
-              <template #title>该记录已被驳回，请根据审核意见修改后重新提交</template>
-            </el-alert>
-            <div class="rd-timeline" v-if="viewAuditLogs().length">
-              <div class="rd-timeline-item" v-for="(log, idx) in viewAuditLogs()" :key="idx">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">
-                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
-                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
-                    </span>
-                    <span class="rd-timeline-time">{{ log.auditTime || '-' }}</span>
-                  </div>
-                  <div class="rd-timeline-body">
-                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
-                  </div>
-                  <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="rd-empty" v-else>
-              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              <p class="rd-empty-text">暂无审核记录</p>
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">流程状态</span><div class="rd-value"><span class="badge" :class="auditStatusClass(viewData.auditStatus)"><span class="dot"></span>{{ auditStatusLabel(viewData.auditStatus) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">
+                <el-button v-if="viewData.flowInstanceId" link type="primary" @click="openFlow(viewData.flowInstanceId)">查看审批流程</el-button>
+                <span v-else>-</span>
+              </div></div>
             </div>
           </div>
         </section>
@@ -347,66 +321,13 @@
       </template>
     </el-dialog>
 
-    <!-- ===== 审批弹窗 ===== -->
-    <el-dialog v-model="auditOpen" width="912px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-          <div class="rd-detail-header-main">
-            <div class="rd-detail-header-title">出差审批</div>
-            <div class="rd-detail-header-sub" v-if="auditData.tripNo">
-              <div class="rd-detail-header-divider"></div>
-              <span class="rd-detail-header-no">出差单号：{{ auditData.tripNo }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-      <div class="rd-page">
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">出差单号</span><div class="rd-value">{{ auditData.tripNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">姓名</span><div class="rd-value">{{ auditData.employeeName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ auditData.employeeNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ auditData.deptName || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>出差信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">出发日期</span><div class="rd-value">{{ auditData.departureDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">预计返回日期</span><div class="rd-value">{{ auditData.expectedReturnDate || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">出差天数</span><div class="rd-value">{{ auditData.tripDays != null ? auditData.tripDays : '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">交通方式</span><div class="rd-value">{{ auditData.transportMode || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">出差目的地</span><div class="rd-value">{{ auditData.destination || '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">出差事由</span><div class="rd-value">{{ auditData.reason || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>审批意见</div></div>
-          <div class="rd-card-body" style="display:block">
-            <el-input v-model="auditData.auditRemark" type="textarea" :rows="4" maxlength="500" show-word-limit placeholder="请输入审批意见，驳回时建议填写驳回原因" />
-          </div>
-        </section>
-      </div>
-      <template #footer>
-        <el-button type="success" :loading="auditSubmitting" @click="submitAudit('1')">通 过</el-button>
-        <el-button type="danger" :loading="auditSubmitting" @click="submitAudit('2')">驳 回</el-button>
-        <el-button @click="auditOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- ===== 人员选择弹窗 ===== -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
   </div>
 </template>
 
 <script setup name="HrBusinessTrip">
-import { listHrBusinessTrip, getHrBusinessTrip, addHrBusinessTrip, updateHrBusinessTrip, delHrBusinessTrip, auditHrBusinessTrip } from '@/api/hr/hrBusinessTrip'
+import { listHrBusinessTrip, getHrBusinessTrip, addHrBusinessTrip, updateHrBusinessTrip, delHrBusinessTrip } from '@/api/hr/hrBusinessTrip'
 import { useColumnResize } from '@/composables/useColumnResize'
 import EmployeePicker from '@/components/EmployeePicker'
 
@@ -417,9 +338,6 @@ const dataList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
-const auditOpen = ref(false)
-const auditSubmitting = ref(false)
-const auditData = ref({})
 const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
@@ -614,10 +532,6 @@ function handleView(row) {
 }
 
 /** 详情弹窗：获取审核日志列表（安全访问，防止 viewData 为空时报错） */
-function viewAuditLogs() {
-  return viewData.value && viewData.value.auditLogList ? viewData.value.auditLogList : []
-}
-
 function submitForm() {
   proxy.$refs['formRef'].validate(valid => {
     if (valid) {
@@ -664,9 +578,9 @@ function auditStatusClass(v) {
   return map[v] || 'gray'
 }
 function auditStatusLabel(v) {
-  if (v === undefined || v === null || v === '') return '-'
-  const d = (auditStatusOptions.value || []).find(i => i.value == v)
-  return d ? d.label : String(v)
+  if (v === undefined || v === null || v === '') return '审批中'
+  const map = { '0': '审批中', '1': '已通过', '2': '已驳回', '3': '已撤销' }
+  return map[v] || String(v)
 }
 
 /** ===== 人员弹框选择 ===== */
@@ -688,42 +602,23 @@ function onEmployeeFieldClick(e) {
   openEmployeePicker()
 }
 
-/** 审批 */
-function handleAudit(row) {
-  getHrBusinessTrip(row.tripId).then(response => {
-    const d = response.data || {}
-    auditData.value = {
-      tripId: d.tripId,
-      tripNo: d.tripNo,
-      employeeName: d.employeeName,
-      employeeNo: d.employeeNo,
-      deptName: d.deptName,
-      departureDate: d.departureDate,
-      expectedReturnDate: d.expectedReturnDate,
-      tripDays: d.tripDays,
-      transportMode: d.transportMode,
-      destination: d.destination,
-      reason: d.reason,
-      auditStatus: d.auditStatus,
-      auditRemark: '',
-  auditLogList: d.auditLogList || []
-    }
-    auditOpen.value = true
-  })
+/** 发起出差流程 */
+function handleLaunchFlow() {
+  const url = proxy.$router.resolve({ path: '/flow/launch/create', query: { key: 'travelApply', name: '出差申请' } }).href
+  window.open(url, '_blank')
 }
-function submitAudit(action) {
-  if (action === '2' && !auditData.value.auditRemark) {
-    proxy.$modal.msgWarning('驳回时请填写审批意见')
+
+/** 查看关联流程 */
+function handleViewFlow(row) {
+  if (!row.flowInstanceId) {
+    proxy.$modal.msgWarning('该记录未关联流程')
     return
   }
-  auditSubmitting.value = true
-  auditHrBusinessTrip(auditData.value.tripId, action, auditData.value.auditRemark).then(() => {
-    proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
-    auditOpen.value = false
-    getList()
-  }).finally(() => {
-    auditSubmitting.value = false
-  })
+  openFlow(row.flowInstanceId)
+}
+function openFlow(instanceId) {
+  const url = proxy.$router.resolve({ path: '/flow/detail/create', query: { instanceId } }).href
+  window.open(url, '_blank')
 }
 
 getList()
