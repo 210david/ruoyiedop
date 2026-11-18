@@ -78,13 +78,7 @@
     <div class="surface">
       <div class="toolbar">
         <div class="left">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hr:leaveRequest:add']">新增</el-button>
-          <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdate" v-hasPermi="['hr:leaveRequest:edit']">
-            <el-icon><Edit /></el-icon> 修改
-          </button>
-          <button type="button" class="btn-soft is-danger-outline" :disabled="multiple" @click="handleDelete" v-hasPermi="['hr:leaveRequest:remove']">
-            <el-icon><Delete /></el-icon> 删除
-          </button>
+          <el-button type="primary" plain icon="Plus" @click="handleLaunchFlow" v-hasPermi="['flowable:process:start']">发起请假申请</el-button>
           <div class="toolbar-divider"></div>
           <button type="button" class="btn-soft is-outline" @click="handleExport" v-hasPermi="['hr:leaveRequest:export']">
             <el-icon><Download /></el-icon> 导出
@@ -121,18 +115,16 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="审批状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 100)" resizable v-if="columns.auditStatus?.visible !== false">
+          <el-table-column label="流程状态" prop="auditStatus" key="auditStatus" align="center" :width="colWidth('auditStatus', 100)" resizable v-if="columns.auditStatus?.visible !== false">
             <template #default="scope">
               <span class="audit-tag" :class="auditStatusClass(scope.row.auditStatus)">{{ auditStatusLabel(scope.row.auditStatus) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="操作" width="190" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['hr:leaveRequest:query']">详情</el-button>
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hr:leaveRequest:edit']" v-if="scope.row.auditStatus !== '1'">修改</el-button>
-                <el-button link type="warning" icon="Finished" @click="handleAudit(scope.row)" v-if="scope.row.auditStatus === '0' || !scope.row.auditStatus" v-hasPermi="['hr:leaveRequest:audit']">审批</el-button>
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hr:leaveRequest:remove']" v-if="scope.row.auditStatus !== '1'">删除</el-button>
+                <el-button link type="primary" icon="Connection" @click="handleViewFlow(scope.row)" v-if="scope.row.flowInstanceId">关联流程</el-button>
               </div>
             </template>
           </el-table-column>
@@ -305,34 +297,16 @@
         </section>
         <section class="rd-card">
           <div class="rd-card-header" @click="toggleCard('c2')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div>
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>流程信息</div>
             <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.c2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.c2">
-            <el-alert v-if="viewData.auditStatus === '2'" type="warning" :closable="false" show-icon class="reject-alert">
-              <template #title>该记录已被驳回，请根据审核意见修改后重新提交</template>
-            </el-alert>
-            <div class="rd-timeline" v-if="viewAuditLogs().length">
-              <div class="rd-timeline-item" v-for="(log, idx) in viewAuditLogs()" :key="idx">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">
-                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
-                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
-                    </span>
-                    <span class="rd-timeline-time">{{ log.auditTime || '-' }}</span>
-                  </div>
-                  <div class="rd-timeline-body">
-                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
-                  </div>
-                  <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="rd-empty" v-else>
-              <svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              <p class="rd-empty-text">暂无审核记录</p>
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">流程状态</span><div class="rd-value"><span class="audit-tag" :class="auditStatusClass(viewData.auditStatus)">{{ auditStatusLabel(viewData.auditStatus) }}</span></div></div>
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">
+                <el-button v-if="viewData.flowInstanceId" link type="primary" @click="openFlow(viewData.flowInstanceId)">查看审批流程</el-button>
+                <span v-else>-</span>
+              </div></div>
             </div>
           </div>
         </section>
@@ -344,89 +318,13 @@
 
     <file-preview ref="filePreviewRef" />
 
-    <!-- ===== 审批弹窗 ===== -->
-    <el-dialog v-model="auditOpen" width="912px" append-to-body draggable class="rd-dialog">
-      <template #header>
-        <div class="rd-detail-header">
-          <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-          <div class="rd-detail-header-main">
-            <div class="rd-detail-header-title">请假审批</div>
-            <div class="rd-detail-header-sub" v-if="auditData.leaveReqNo">
-              <div class="rd-detail-header-divider"></div>
-              <span class="rd-detail-header-no">请假单号：{{ auditData.leaveReqNo }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-      <div class="rd-page">
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>基本信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">请假单号</span><div class="rd-value">{{ auditData.leaveReqNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">姓名</span><div class="rd-value">{{ auditData.employeeName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ auditData.employeeNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">部门</span><div class="rd-value">{{ auditData.deptName || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>请假信息</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-grid">
-              <div class="rd-item"><span class="rd-label">假别</span><div class="rd-value"><dict-tag :options="leaveTypeOptions" :value="auditData.leaveType"/></div></div>
-              <div class="rd-item"><span class="rd-label">假期余额</span><div class="rd-value" v-if="auditData.remainingDays != null">可用 {{ (auditData.remainingDays - (auditData.frozenDays || 0)).toFixed(1) }} 天（总额 {{ auditData.totalDays }} 天 / 已休 {{ auditData.usedDays }} 天 / 冻结 {{ auditData.frozenDays || 0 }} 天）</div><div class="rd-value" v-else>-</div></div>
-              <div class="rd-item"><span class="rd-label">开始时间</span><div class="rd-value">{{ auditData.startTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">结束时间</span><div class="rd-value">{{ auditData.endTime || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">请假天数</span><div class="rd-value">{{ auditData.leaveDays != null ? auditData.leaveDays + ' 天' : '-' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">请假原因</span><div class="rd-value">{{ auditData.reason || '-' }}</div></div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card" v-if="auditData.auditLogList && auditData.auditLogList.length">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>审核记录</div></div>
-          <div class="rd-card-body" style="display:block">
-            <div class="rd-timeline">
-              <div class="rd-timeline-item" v-for="log in auditData.auditLogList" :key="log.logId">
-                <div class="rd-timeline-dot" :class="{ 'rd-timeline-dot--success': log.auditAction === '1', 'rd-timeline-dot--error': log.auditAction === '2' }"></div>
-                <div class="rd-timeline-content">
-                  <div class="rd-timeline-header">
-                    <span class="rd-timeline-title">
-                      <el-tag v-if="log.auditAction === '1'" type="success" size="small" effect="light" round>审核通过</el-tag>
-                      <el-tag v-else-if="log.auditAction === '2'" type="danger" size="small" effect="light" round>审核驳回</el-tag>
-                    </span>
-                    <span class="rd-timeline-time">{{ log.auditTime }}</span>
-                  </div>
-                  <div class="rd-timeline-body">
-                    <div class="rd-item"><span class="rd-label">审核人</span><div class="rd-value">{{ log.auditBy || '-' }}</div></div>
-                  </div>
-                  <div class="rd-timeline-comment" v-if="log.auditRemark"><strong>审核意见：</strong>{{ log.auditRemark }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section class="rd-card">
-          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>审批意见</div></div>
-          <div class="rd-card-body" style="display:block">
-            <el-input v-model="auditData.auditRemark" type="textarea" :rows="4" maxlength="500" show-word-limit placeholder="请输入审批意见，驳回时建议填写驳回原因" />
-          </div>
-        </section>
-      </div>
-      <template #footer>
-        <el-button type="success" :loading="auditSubmitting" @click="submitAudit('1')">通 过</el-button>
-        <el-button type="danger" :loading="auditSubmitting" @click="submitAudit('2')">驳 回</el-button>
-        <el-button @click="auditOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- ===== 人员选择弹窗 ===== -->
     <employee-picker ref="employeePickerRef" title="选择人员" @confirm="onEmployeePickerConfirm" />
   </div>
 </template>
 
 <script setup name="HrLeaveRequest">
-import { listHrLeaveRequest, getHrLeaveRequest, addHrLeaveRequest, updateHrLeaveRequest, delHrLeaveRequest, auditHrLeaveRequest } from '@/api/hr/hrLeaveRequest'
+import { listHrLeaveRequest, getHrLeaveRequest, addHrLeaveRequest, updateHrLeaveRequest, delHrLeaveRequest } from '@/api/hr/hrLeaveRequest'
 import { listHrLeaveBalance } from '@/api/hr/hrLeaveBalance'
 import { useColumnResize } from '@/composables/useColumnResize'
 import FilePreview from '@/components/FilePreview/index.vue'
@@ -441,9 +339,6 @@ const hrLeaveRequestList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
-const auditOpen = ref(false)
-const auditSubmitting = ref(false)
-const auditData = ref({})
 const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
@@ -738,14 +633,6 @@ function handleView(row) {
   })
 }
 
-/** 查看弹窗审核记录：优先使用审核日志，兼容历史数据合成单节点 */
-function viewAuditLogs() {
-  const d = viewData.value || {}
-  if (d.auditLogList && d.auditLogList.length) return d.auditLogList
-  if (d.auditStatus === undefined || d.auditStatus === null || d.auditStatus === '') return []
-  return [{ auditAction: d.auditStatus, auditBy: d.auditBy, auditTime: d.auditTime, auditRemark: d.auditRemark }]
-}
-
 function submitForm() {
   proxy.$refs['hrLeaveRequestRef'].validate(valid => {
     if (valid) {
@@ -777,55 +664,34 @@ function handleDelete(row) {
   }).catch(() => {})
 }
 
-/** 审批状态映射 */
+/** 流程状态映射 */
 function auditStatusLabel(v) {
-  if (!v) return '待审批'
-  const map = { '0': '待审批', '1': '已通过', '2': '已驳回' }
-  return map[v] || '待审批'
+  if (!v) return '审批中'
+  const map = { '0': '审批中', '1': '已通过', '2': '已驳回', '3': '已撤销' }
+  return map[v] || '审批中'
 }
 function auditStatusClass(v) {
-  const map = { '0': 'pending', '1': 'pass', '2': 'reject' }
+  const map = { '0': 'pending', '1': 'pass', '2': 'reject', '3': 'reject' }
   return map[v] || 'pending'
 }
 
-/** 请假审批 */
-function handleAudit(row) {
-  getHrLeaveRequest(row.leaveReqId).then(response => {
-    const d = response.data || {}
-auditData.value = {
-  leaveReqId: d.leaveReqId,
-  leaveReqNo: d.leaveReqNo,
-  employeeName: d.employeeName,
-  employeeNo: d.employeeNo,
-  deptName: d.deptName,
-  leaveType: d.leaveType,
-  remainingDays: d.remainingDays,
-  totalDays: d.totalDays,
-  usedDays: d.usedDays,
-  startTime: d.startTime,
-  endTime: d.endTime,
-  leaveDays: d.leaveDays,
-  reason: d.reason,
-  auditStatus: d.auditStatus,
-  auditLogList: d.auditLogList || [],
-  auditRemark: ''
+/** 发起请假流程 */
+function handleLaunchFlow() {
+  const url = proxy.$router.resolve({ path: '/flow/launch/create', query: { key: 'wf_94663220701', name: '请假申请' } }).href
+  window.open(url, '_blank')
 }
-    auditOpen.value = true
-  })
-}
-function submitAudit(action) {
-  if (action === '2' && !auditData.value.auditRemark) {
-    proxy.$modal.msgWarning('驳回时请填写审批意见')
+
+/** 查看关联流程 */
+function handleViewFlow(row) {
+  if (!row.flowInstanceId) {
+    proxy.$modal.msgWarning('该记录未关联流程')
     return
   }
-  auditSubmitting.value = true
-  auditHrLeaveRequest(auditData.value.leaveReqId, action, auditData.value.auditRemark).then(() => {
-    proxy.$modal.msgSuccess(action === '1' ? '审批通过' : '已驳回')
-    auditOpen.value = false
-    getList()
-  }).finally(() => {
-    auditSubmitting.value = false
-  })
+  openFlow(row.flowInstanceId)
+}
+function openFlow(instanceId) {
+  const url = proxy.$router.resolve({ path: '/flow/detail/create', query: { instanceId } }).href
+  window.open(url, '_blank')
 }
 
 function handleExport() {

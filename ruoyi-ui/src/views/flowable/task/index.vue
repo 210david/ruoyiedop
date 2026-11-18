@@ -247,7 +247,7 @@
 </template>
 
 <script setup name="FlowTask">
-import { listTodoTask, listDoneTask, countDoneTask, listAllTask, countTodoTask, countTodoTasks, getProcessTree, recallMyTask } from '@/api/flowable/flow'
+import { listTodoTask, listDoneTask, countDoneTask, listPendingTask, countTodoTask, countTodoTasks, getProcessTree, recallMyTask } from '@/api/flowable/flow'
 import { listDraft, delDraft } from '@/api/flowable/draft'
 import { listMyCc, getCcUnreadCount, readCc } from '@/api/flowable/cc'
 import { useColumnResize } from '@/composables/useColumnResize'
@@ -430,7 +430,7 @@ function getList() {
   const params = proxy.addDateRange(queryParams.value, dateRange.value)
   if (activeTab.value === 'all') {
     // 全部：待办任务 + 草稿（后端合并后统一分页）
-    listAllTask(params).then(res => {
+    listPendingTask(params).then(res => {
       list.value = res.rows || []
       allTotal.value = res.total || 0
       loading.value = false
@@ -554,7 +554,7 @@ function loadCounts() {
     doneCounts.finished = d.finished || 0
   }).catch(() => { doneCounts.all = 0; doneCounts.running = 0; doneCounts.finished = 0 })
   listDraft({ pageNum: 1, pageSize: 1 }).then(res => { draftTotal.value = res.total || 0 }).catch(() => { draftTotal.value = 0 })
-  listAllTask({ pageNum: 1, pageSize: 1 }).then(res => { allTotal.value = res.total || 0 }).catch(() => { allTotal.value = 0 })
+  listPendingTask({ pageNum: 1, pageSize: 1 }).then(res => { allTotal.value = res.total || 0 }).catch(() => { allTotal.value = 0 })
 }
 
 function handleQuery() { queryParams.value.pageNum = 1; getList() }

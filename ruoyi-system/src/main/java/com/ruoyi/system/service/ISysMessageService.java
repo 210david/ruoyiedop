@@ -99,4 +99,12 @@ public interface ISysMessageService
      * @param bizId     业务单据ID
      */
     public void markHandled(String bizSource, Long bizId);
+
+    /**
+     * 按跳转链接关键字标记消息为已处理（流程任务办结时按 taskId / instanceId 关闭待办消息）
+     *
+     * @param bizSource  业务来源
+     * @param urlKeyword 跳转链接关键字（如 taskId=xxx）
+     */
+    public void markHandledByUrl(String bizSource, String urlKeyword);
 }

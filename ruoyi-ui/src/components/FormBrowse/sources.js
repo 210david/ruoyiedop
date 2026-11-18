@@ -134,6 +134,27 @@ export const BROWSE_SOURCES = {
     openArgs: singleArg,
     pick: (p) => ({ id: p.projectId, name: p.projectName || p.bidNo }),
   },
+  oaVehicle: {
+    label: '车辆',
+    component: defineAsyncComponent(() => import('@/components/VehiclePicker/index.vue')),
+    buildProps: () => ({ title: '选择车辆' }),
+    openArgs: (ids, f, names) => (ids.length ? [num(ids[0]), names[0] || ''] : []),
+    pick: (v) => ({ id: v.vehicleId, name: v.plateNo }),
+  },
+  oaDriver: {
+    label: '司机',
+    component: defineAsyncComponent(() => import('@/components/DriverPicker/index.vue')),
+    buildProps: () => ({ title: '选择司机' }),
+    openArgs: (ids, f, names) => (ids.length ? [num(ids[0]), names[0] || ''] : []),
+    pick: (d) => ({ id: d.driverId, name: d.driverName }),
+  },
+  oaSeal: {
+    label: '印章',
+    component: defineAsyncComponent(() => import('@/components/SealPicker/index.vue')),
+    buildProps: () => ({ title: '选择印章' }),
+    openArgs: (ids, f, names) => (ids.length ? [num(ids[0]), names[0] || ''] : []),
+    pick: (s) => ({ id: s.sealId, name: s.sealName }),
+  },
 };
 
 /** 字段 → 数据源定义（未配置或已下线时返回 null，由组件降级为普通输入框） */

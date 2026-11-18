@@ -105,7 +105,48 @@
 /* ===== Table ===== */
 .oa-list-page .table-wrap { overflow-x:auto; }
 .oa-list-page .col-mono { font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px; }
-.oa-list-page .action-btn-row { display:flex; align-items:center; justify-content:center; gap:2px; }
+/* 操作列按钮布局：每行最多2个按钮，flex-wrap 自动换行，按钮自适应内容宽度（参考 list-page-style-guide 5.5 节） */
+.oa-list-page .app-table .col-action { padding: 6px 4px !important; }
+.oa-list-page .app-table .col-action .cell { display: flex; justify-content: center; padding: 0; }
+.oa-list-page .app-table .col-action .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.oa-list-page .app-table .col-action .el-button { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
+.oa-list-page .app-table .col-action .el-button + .el-button { margin-left: 2px; }
+
+/* ===== 业务操作说明 ===== */
+.oa-list-page .tip-pill { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; background:#fffaf0; border:1px solid #fde68a; color:#92400e; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s var(--ease-out); flex-shrink:0; white-space:nowrap; }
+.oa-list-page .tip-pill:hover { background:#fffbeb; border-color:#f59e0b; color:#7c2d12; }
+.oa-list-page .tip-pill .el-icon { font-size:14px; color:#b45309; }
+
+/* 弹框内容挂载在 body 下，需独立定义样式 */
+.oa-status-help-content { max-height:520px; overflow-y:auto; padding-right:10px; }
+.oa-status-help-content h4 { margin:20px 0 12px; color:#303133; font-weight:600; border-left:4px solid #409eff; padding-left:10px; }
+.oa-status-help-content h4:first-child { margin-top:0; }
+.oa-status-help-content .help-card { border-radius:8px; padding:14px 16px; border:1px solid #a0cfff; background:#ecf5ff; }
+.oa-status-help-content .help-card-title { font-size:14px; font-weight:600; margin-bottom:6px; color:#1d4ed8; }
+.oa-status-help-content .help-card-body { font-size:13px; color:#606266; line-height:1.7; }
+.oa-status-help-content .help-status-list { display:grid; gap:10px; }
+.oa-status-help-content .help-status-item { display:flex; gap:12px; align-items:flex-start; padding:8px 12px; background:#f8fafc; border-radius:6px; }
+.oa-status-help-content .help-status-item p { margin:0; font-size:13px; color:#606266; line-height:1.6; }
+.oa-status-help-content .badge { display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 8px; border-radius:999px; font-size:12px; font-weight:500; border:1px solid transparent; white-space:nowrap; flex-shrink:0; }
+.oa-status-help-content .badge .dot { width:6px; height:6px; border-radius:50%; }
+.oa-status-help-content .badge.green { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+.oa-status-help-content .badge.green .dot { background:#10b981; }
+.oa-status-help-content .badge.blue { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.oa-status-help-content .badge.blue .dot { background:#3b82f6; }
+.oa-status-help-content .badge.amber { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.oa-status-help-content .badge.amber .dot { background:#f59e0b; }
+.oa-status-help-content .badge.gray { background:#f3f4f6; color:#4b5563; border-color:#e5e7eb; }
+.oa-status-help-content .badge.gray .dot { background:#9ca3af; }
+.oa-status-help-content .badge.red { background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+.oa-status-help-content .badge.red .dot { background:#ef4444; }
+.oa-status-help-content .help-flow { display:flex; align-items:stretch; flex-wrap:wrap; gap:8px; padding:14px; background:#f5f7fa; border-radius:8px; }
+.oa-status-help-content .help-flow-node { display:flex; flex-direction:column; justify-content:center; padding:8px 12px; background:#fff; border:1px solid #e4e7ed; border-radius:6px; font-size:13px; color:#303133; }
+.oa-status-help-content .help-flow-node small { color:#909399; font-size:11px; margin-top:2px; }
+.oa-status-help-content .help-flow-node.is-key { border-color:#a0cfff; background:#ecf5ff; color:#1d4ed8; }
+.oa-status-help-content .help-flow-node.is-end { border-color:#b7ebc6; background:#f0f9eb; color:#15803d; }
+.oa-status-help-content .help-flow-arrow { display:flex; align-items:center; color:#909399; font-size:15px; }
+.oa-status-help-content .help-tips { margin:0; padding-left:18px; font-size:13px; color:#606266; line-height:1.9; }
+.oa-status-help-content .help-tips strong { color:#303133; }
 
 /* ===== Responsive ===== */
 @media (max-width: 720px) {
