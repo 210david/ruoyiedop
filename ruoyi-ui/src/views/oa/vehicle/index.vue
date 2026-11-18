@@ -106,6 +106,9 @@
             <span class="dot"></span><span>{{ s.label }}</span><span class="count">{{ statusCounts[s.value] || 0 }}</span>
           </button>
         </div>
+        <button class="tip-pill" @click="showStatusHelp = true">
+          <el-icon><QuestionFilled /></el-icon><span>业务操作说明</span>
+        </button>
       </div>
       <div class="toolbar">
         <div class="left">
@@ -115,39 +118,49 @@
           <div class="toolbar-divider"></div>
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['oa:vehicle:export']">导出</el-button>
           <el-button type="info" plain icon="Upload" @click="handleImport" v-hasPermi="['oa:vehicle:import']">导入</el-button>
+          <el-button type="primary" plain icon="Calendar" @click="calendarRef.open()">使用日历</el-button>
         </div>
         <div class="right">
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns" storageKey="oa_vehicle_index"></right-toolbar>
         </div>
       </div>
       <div class="table-wrap">
-        <el-table v-loading="loading" :data="vehicleList" @selection-change="handleSelectionChange" border class="app-table">
+        <el-table ref="tableRef" v-loading="loading" :data="vehicleList" @selection-change="handleSelectionChange" @header-dragend="onHeaderDragEnd" border class="app-table">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" type="index" width="55" align="center" />
-          <el-table-column label="车牌号" prop="plateNo" align="center" width="120" v-if="columns.plateNo.visible">
+          <el-table-column label="车牌号" prop="plateNo" key="plateNo" align="center" :width="colWidth('plateNo', 120)" resizable v-if="columns.plateNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.plateNo }}</span></template>
           </el-table-column>
-          <el-table-column label="车辆编号" prop="vehicleCode" align="center" width="120" v-if="columns.vehicleCode.visible" />
-          <el-table-column label="车辆类型" prop="vehicleType" align="center" width="110" v-if="columns.vehicleType.visible">
+          <el-table-column label="车辆编号" prop="vehicleCode" key="vehicleCode" align="center" :width="colWidth('vehicleCode', 120)" resizable v-if="columns.vehicleCode.visible" />
+          <el-table-column label="车辆类型" prop="vehicleType" key="vehicleType" align="center" :width="colWidth('vehicleType', 110)" resizable v-if="columns.vehicleType.visible">
             <template #default="scope">
               <span v-if="scope.row.vehicleType" class="badge blue"><span class="dot"></span>{{ dictLabel(vehicleTypeOptions, scope.row.vehicleType) }}</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="品牌型号" prop="vehicleModel" align="center" min-width="130" show-overflow-tooltip v-if="columns.vehicleModel.visible" />
-          <el-table-column label="使用用途" prop="vehicleUse" align="center" min-width="120" show-overflow-tooltip v-if="columns.vehicleUse.visible" />
-          <el-table-column label="座位数" prop="seatCount" align="center" width="80" v-if="columns.seatCount.visible" />
-          <el-table-column label="所属部门" prop="ownerDept" align="center" min-width="130" show-overflow-tooltip v-if="columns.ownerDept.visible" />
-          <el-table-column label="默认驾驶员" prop="driverName" align="center" width="100" v-if="columns.driverName.visible" />
-          <el-table-column label="驾驶员电话" prop="driverPhone" align="center" width="120" v-if="columns.driverPhone.visible" />
-          <el-table-column label="年检到期" prop="inspectExpire" align="center" width="110" v-if="columns.inspectExpire.visible" />
-          <el-table-column label="保险到期" prop="insuranceExpire" align="center" width="110" v-if="columns.insuranceExpire.visible" />
-          <el-table-column label="状态" prop="status" align="center" width="100" v-if="columns.status.visible">
+          <el-table-column label="品牌型号" prop="vehicleModel" key="vehicleModel" align="center" :min-width="colWidth('vehicleModel', 130)" show-overflow-tooltip resizable v-if="columns.vehicleModel.visible" />
+          <el-table-column label="使用用途" prop="vehicleUse" key="vehicleUse" align="center" :min-width="colWidth('vehicleUse', 120)" show-overflow-tooltip resizable v-if="columns.vehicleUse.visible" />
+          <el-table-column label="座位数" prop="seatCount" key="seatCount" align="center" :width="colWidth('seatCount', 80)" resizable v-if="columns.seatCount.visible" />
+          <el-table-column label="所属部门" prop="ownerDept" key="ownerDept" align="center" :min-width="colWidth('ownerDept', 130)" show-overflow-tooltip resizable v-if="columns.ownerDept.visible" />
+          <el-table-column label="默认驾驶员" prop="driverName" key="driverName" align="center" :width="colWidth('driverName', 100)" resizable v-if="columns.driverName.visible" />
+          <el-table-column label="驾驶员电话" prop="driverPhone" key="driverPhone" align="center" :width="colWidth('driverPhone', 120)" resizable v-if="columns.driverPhone.visible" />
+          <el-table-column label="年检到期" prop="inspectExpire" key="inspectExpire" align="center" :width="colWidth('inspectExpire', 110)" resizable v-if="columns.inspectExpire.visible" />
+          <el-table-column label="保险到期" prop="insuranceExpire" key="insuranceExpire" align="center" :width="colWidth('insuranceExpire', 110)" resizable v-if="columns.insuranceExpire.visible" />
+          <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="statusBadgeClass(scope.row.status)"><span class="dot"></span>{{ dictLabel(vehicleStatusOptions, scope.row.status) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="160" align="center" fixed="right">
+          <el-table-column label="关联流程" prop="flowLink" key="flowLink" align="center" :width="colWidth('flowLink', 200)" resizable v-if="columns.flowLink.visible">
+            <template #default="scope">
+              <template v-if="scope.row.flowInstanceId">
+                <el-link type="primary" :underline="false" @click="openFlowDetail(scope.row)">{{ scope.row.flowTitle || '查看流程' }}</el-link>
+                <el-tag size="small" :type="scope.row.flowRunning === '1' ? 'warning' : 'info'" style="margin-left: 4px">{{ scope.row.flowRunning === '1' ? '进行中' : '已结束' }}</el-tag>
+              </template>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" :width="colWidth('操作', 190)" align="center" fixed="right" class-name="col-action" resizable>
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['oa:vehicle:query']">详情</el-button>
@@ -162,6 +175,9 @@
         <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </div>
     </div>
+
+    <!-- 使用日历 -->
+    <oa-resource-calendar ref="calendarRef" type="vehicle" title="车辆使用日历" />
 
     <!-- 新增/修改 -->
     <el-dialog v-model="open" width="900px" append-to-body draggable class="rd-dialog">
@@ -305,24 +321,36 @@
               <div class="rd-item"><span class="rd-label">使用用途</span><div class="rd-value">{{ viewData.vehicleUse || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">座位数</span><div class="rd-value">{{ viewData.seatCount || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ viewData.ownerDept || '-' }}</div></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v1')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>驾驶员与证照</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          </div>
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
+            <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">默认驾驶员</span><div class="rd-value">{{ viewData.driverName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">驾驶员电话</span><div class="rd-value">{{ viewData.driverPhone || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">行驶证号</span><div class="rd-value">{{ viewData.licenseNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">购置日期</span><div class="rd-value">{{ viewData.purchaseDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">年检到期日</span><div class="rd-value">{{ viewData.inspectExpire || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保险到期日</span><div class="rd-value">{{ viewData.insuranceExpire || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowInstanceId || '未关联' }}</div></div>
-              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
             </div>
           </div>
         </section>
-        <section class="rd-card" v-if="viewData.attachment">
-          <div class="rd-card-header" @click="toggleCard('v1')">
-            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>附件</div>
-            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v1 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <section class="rd-card">
+          <div class="rd-card-header" @click="toggleCard('v2')">
+            <div class="rd-card-title"><span class="rd-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>附件与备注</div>
+            <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v2 }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
-          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v1">
-            <div class="rd-file-links">
+          <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v2">
+            <div class="rd-grid">
+              <div class="rd-item"><span class="rd-label">关联流程</span><div class="rd-value">{{ viewData.flowTitle || viewData.flowInstanceId || '未关联' }}</div></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">备注</span><div class="rd-value">{{ viewData.remark || '-' }}</div></div>
+            </div>
+            <div class="rd-file-links" v-if="viewData.attachment">
               <a class="rd-file-link" v-for="(url, idx) in String(viewData.attachment).split(',')" :key="idx" :href="url" target="_blank" rel="noopener">
                 <span class="rd-file-name">{{ url }}</span>
               </a>
@@ -332,6 +360,72 @@
       </div>
       <template #footer>
         <el-button @click="viewOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 业务操作说明 -->
+    <el-dialog v-model="showStatusHelp" title="车辆台账业务操作说明" width="780px" append-to-body>
+      <div class="oa-status-help-content">
+        <h4>一、车辆台账说明</h4>
+        <div class="help-card help-card-primary">
+          <div class="help-card-title">车辆资源统一管理</div>
+          <div class="help-card-body">
+            车辆台账统一维护车辆基本信息、证照日期与使用状态。公车使用申请会按“指派车辆”自动与台账联动，无需手工修改占用状态。
+          </div>
+        </div>
+
+        <h4>二、状态说明</h4>
+        <div class="help-status-list">
+          <div class="help-status-item">
+            <span class="badge green"><span class="dot"></span>可用</span>
+            <p>车辆正常，可被公车使用申请选择并使用。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge blue"><span class="dot"></span>使用中</span>
+            <p>公车使用申请提交后自动置为使用中；流程办结或终止后自动恢复为可用。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge amber"><span class="dot"></span>维修中</span>
+            <p>车辆正在维修保养，暂不可被用车申请选择。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge gray"><span class="dot"></span>停用</span>
+            <p>由管理员手工维护，流程联动不会覆盖停用状态。</p>
+          </div>
+          <div class="help-status-item">
+            <span class="badge red"><span class="dot"></span>已报废</span>
+            <p>车辆已报废，不再参与用车调度。</p>
+          </div>
+        </div>
+
+        <h4>三、用车流程与状态联动</h4>
+        <div class="help-flow">
+          <span class="help-flow-node">提交用车申请</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">部门负责人审批</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">综合管理部调度派车</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node">出车登记 / 回车登记</span>
+          <span class="help-flow-arrow">→</span>
+          <span class="help-flow-node is-end">流程办结<small>自动释放</small></span>
+        </div>
+        <ul class="help-tips" style="margin-top:12px">
+          <li>申请提交后，指派车辆自动变为“使用中”，指派司机自动变为“出车中”。</li>
+          <li>流程办结或终止后，车辆和司机自动恢复为空闲状态。</li>
+        </ul>
+
+        <h4>四、常见操作</h4>
+        <ul class="help-tips">
+          <li><strong>新增 / 修改：</strong>维护车牌号、车辆类型、品牌型号、座位数、证照日期等信息。</li>
+          <li><strong>使用日历：</strong>按车辆查看占用时段，点击资源名称可筛选该车辆的占用明细。</li>
+          <li><strong>详情：</strong>查看完整台账信息及当前关联流程。</li>
+          <li><strong>导入 / 导出：</strong>批量维护车辆台账。</li>
+          <li><strong>删除：</strong>仅删除台账数据，不会删除历史流程记录。</li>
+        </ul>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="showStatusHelp = false">我知道了</el-button>
       </template>
     </el-dialog>
 
@@ -356,16 +450,22 @@
 <script setup name="OaVehicle">
 import { listOaVehicle, getOaVehicle, addOaVehicle, updateOaVehicle, delOaVehicle } from '@/api/oa/vehicle'
 import { useDetailCard } from '@/composables/useDetailCard'
+import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
+import OaResourceCalendar from '@/components/OaResourceCalendar/index.vue'
+import { QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
-const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1'])
+const router = useRouter()
+const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1', 'v2'])
+const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('oa_vehicle_index')
 const { oa_vehicle_type: vehicleTypeOptions } = proxy.useDict('oa_vehicle_type')
 const { oa_vehicle_status: vehicleStatusOptions } = proxy.useDict('oa_vehicle_status')
 
 const importRef = ref()
 const driverPickerRef = ref()
+const calendarRef = ref()
 const vehicleList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
@@ -374,6 +474,7 @@ const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
 const showAdvanced = ref(false)
+const showStatusHelp = ref(false)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
@@ -395,7 +496,8 @@ const columns = ref({
   driverPhone: { label: '驾驶员电话', visible: false },
   inspectExpire: { label: '年检到期', visible: true },
   insuranceExpire: { label: '保险到期', visible: true },
-  status: { label: '状态', visible: true }
+  status: { label: '状态', visible: true },
+  flowLink: { label: '关联流程', visible: true }
 })
 
 const statusTabList = computed(() => vehicleStatusOptions.value)
@@ -573,6 +675,15 @@ function handleExport() {
   proxy.addDateRange(params, inspectRange.value, 'InspectExpire')
   proxy.addDateRange(params, insuranceRange.value, 'InsuranceExpire')
   proxy.download('oa/vehicle/export', params, `车辆台账_${new Date().getTime()}.xlsx`)
+}
+
+/** 查看关联流程：新标签页打开流程详情页（与流程任务列表同一跳转方式） */
+function openFlowDetail(row) {
+  const href = router.resolve({
+    path: '/flow/detail/create',
+    query: { instanceId: row.flowInstanceId || '', defName: row.flowTitle || '' }
+  }).href
+  window.open(href, '_blank')
 }
 
 getList()

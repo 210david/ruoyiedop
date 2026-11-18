@@ -9,6 +9,15 @@ export function listOaVehicle(query) {
   })
 }
 
+// 浏览框选择车辆分页列表
+export function pickerVehicleList(query) {
+  return request({
+    url: '/oa/vehicle/pickerList',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询车辆台账详细
 export function getOaVehicle(vehicleId) {
   return request({

@@ -73,11 +73,4 @@ public class HrOutingController extends BaseController
         return toAjax(hrOutingService.deleteHrOutingByIds(outingIds));
     }
 
-    @PreAuthorize("@ss.hasPermi('hr:outing:audit')")
-    @Log(title = "外出审批", businessType = BusinessType.UPDATE)
-    @PutMapping("/audit/{outingId}")
-    public AjaxResult audit(@PathVariable Long outingId, @RequestParam String auditAction, @RequestParam(required = false) String auditRemark)
-    {
-        return toAjax(hrOutingService.auditHrOuting(outingId, auditAction, auditRemark));
-    }
 }

@@ -358,6 +358,7 @@ import { normalizeHandleField, handleDisplayValue } from './field-norm';
 import FormGridRender from '@/components/FormGridRender.vue';
 import { parseExt } from '@/views/flowable/common/form-rules/constants';
 import { runRules, runFormScripts } from '@/views/flowable/common/form-rules/engine';
+import { prepareWorkdayCalendar } from '@/views/flowable/common/form-rules/workday';
 import FileUpload from '@/components/FileUpload/index.vue';
 import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
@@ -525,6 +526,14 @@ function runFormRules() {
     return;
   }
   const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  // workDays 规则函数需要企业日历数据：预加载（已缓存则立即返回）后再同步求值
+  return prepareWorkdayCalendar(activeFormRules.value, formData.value || {}).then(() => {
+    applyRunFormRules(detailData);
+  });
+}
+
+/** 求值并应用规则结果（runFormRules 的同步主体，在日历预加载完成后执行） */
+function applyRunFormRules(detailData) {
   // 只读审批节点：仅执行展示型规则——derive（明细合计、大写等随明细数据回显）
   // 与 visible（字段显隐，审批人看到的界面与填写态一致）；
   // 不产生「解除只读/必填」覆盖与校验提示——是否可编辑/必填由节点表单设置控制
@@ -570,12 +579,14 @@ watch(
   { deep: true }
 );
 /** 提交前校验：可编辑节点先跑高级脚本（submit 时机可拦截），再跑规则校验。返回错误文案，无错误返回空串 */
-function validateFormRules() {
+async function validateFormRules() {
   if (!ruleEditableCtx()) return '';
   const scriptErr = runScriptsPhase('submit');
   if (scriptErr) return scriptErr;
   if (!activeFormRules.value.length) return '';
   const detailData = (gridRenderRef.value && gridRenderRef.value.getDetailData ? gridRenderRef.value.getDetailData() : {}) || {};
+  // workDays 需要日历数据：预加载后求值（已缓存则立即返回）
+  await prepareWorkdayCalendar(activeFormRules.value, formData.value || {});
   const { errors } = runRules(activeFormRules.value, formFields.value || [], formData.value || {}, detailData, { validate: true });
   return errors && errors.length ? (formFields.value.find((f) => f.field === errors[0].field)?.label || errors[0].field) + ' ' + errors[0].message : '';
 }
@@ -866,7 +877,7 @@ function switchTab(tab) {
 }
 
 /** 提交办理（同意/驳回）：可编辑字段值随办理一并提交 */
-function submitApprove(outcome) {
+async function submitApprove(outcome) {
   if (!task.value.taskId) {
     proxy.$modal.msgWarning('缺少任务标识，无法办理');
     return;
@@ -889,7 +900,7 @@ function submitApprove(outcome) {
     }
   }
   // 规则引擎校验（validate 规则）：先于明细校验，命中直接拦截
-  const ruleMsg = validateFormRules();
+  const ruleMsg = await validateFormRules();
   if (ruleMsg) {
     proxy.$modal.msgWarning(ruleMsg);
     return;

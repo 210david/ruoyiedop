@@ -10,7 +10,4 @@ public interface IHrClockRepairService {
     public int updateHrClockRepair(HrClockRepair hrClockRepair);
     public int deleteHrClockRepairByIds(Long[] clockRepairIds);
     public int deleteHrClockRepairById(Long clockRepairId);
-
-    /** 补卡审批（auditAction: 1=通过, 2=驳回） */
-    public int auditHrClockRepair(Long clockRepairId, String auditAction, String auditRemark);
 }

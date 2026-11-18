@@ -1,0 +1,11 @@
+-- =============================================================
+-- OA 考勤类审批流（出差申请、外出申请、打卡补卡）与考勤模块集成
+-- 1. 流程配置（表单 flow_form、流程模型 act_re_model、部署）通过「流程管理」界面/API 配置，
+--    参考脚本 tmp/build_oa_flows.js（标准库 ry-vue 已配置完成）
+-- 2. 考勤联动代码：
+--    - ruoyi-flowable: FlowArchiveHandler SPI / FlowArchiveDispatchListener（实例办结分发归档）
+--                      FlowFormOptionsProvider SPI（表单动态选项，optionsSource）
+--    - ruoyi-hr:       HrFlowArchiveService（出差单/外出单/补卡修正/请假单回写）
+--                      HrShiftOptionsProvider（补卡班次选项来自 biz_hr_shift）
+-- 3. 补卡班次选项直接引用考勤模块班次配置 biz_hr_shift，无需单独字典（本脚本无DDL/字典操作）
+-- =============================================================

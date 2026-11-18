@@ -3,6 +3,7 @@ package com.ruoyi.hr.service.impl;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,26 @@ public class HrWorkdayCalendarServiceImpl implements IHrWorkdayCalendarService
     public List<HrWorkdayCalendar> selectHrWorkdayCalendarList(HrWorkdayCalendar hrWorkdayCalendar)
     {
         return hrWorkdayCalendarMapper.selectHrWorkdayCalendarList(hrWorkdayCalendar);
+    }
+
+    @Override
+    public java.util.Map<String, String> selectDateTypeMap(String startDate, String endDate)
+    {
+        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
+        List<Map<String, Object>> rows = hrWorkdayCalendarMapper.selectDateTypeRange(startDate, endDate);
+        if (rows != null)
+        {
+            for (Map<String, Object> r : rows)
+            {
+                Object dt = r.get("dt");
+                Object type = r.get("dateType");
+                if (dt != null && type != null)
+                {
+                    map.put(String.valueOf(dt), String.valueOf(type));
+                }
+            }
+        }
+        return map;
     }
 
     @Override

@@ -127,7 +127,8 @@
                   icon="Delete"
                   @click="handleDelete(scope.row)"
                   v-hasPermi="['flowable:model:remove']"
-                  :title="Number(scope.row.instanceCount) > 0 ? '该流程已产生 ' + scope.row.instanceCount + ' 个流程实例，不允许删除' : ''"
+                  :disabled="scope.row.systemFlow"
+                  :title="scope.row.systemFlow ? '系统流程已与业务模块关联，不允许删除，只能修改或调整模型' : (Number(scope.row.instanceCount) > 0 ? '该流程已产生 ' + scope.row.instanceCount + ' 个流程实例，不允许删除' : '')"
                   >删除</el-button
                 >
               </div>
@@ -528,7 +529,7 @@
             </el-form-item>
             <el-form-item label="流程锁定">
               <el-switch v-model="designModel.locked" />
-              <span class="form-tip" style="margin-left: 12px">锁定后保存设计时需二次确认，防止误改已上线流程</span>
+              <span class="form-tip" style="margin-left: 12px">锁定后前台不可发起新流程；保存设计时需二次确认，防止误改已上线流程</span>
             </el-form-item>
             <el-form-item label="帮助文档"><el-input v-model="designModel.helpDoc" placeholder="帮助文档链接或说明（可选）" maxlength="200" /></el-form-item>
             <el-form-item label="显示顺序"
@@ -7106,6 +7107,17 @@ function submitDeploy() {
 }
 
 function handleDelete(row) {
+  if (row.systemFlow) {
+    const safeName = String(row.modelName ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    ElMessageBox.alert(
+      `<div style="line-height:1.9;font-size:13px">` +
+        `流程「<b>${safeName}</b>」属于<b>系统流程</b>，已与考勤、车辆、印章等业务模块联动，相关流程模型与表单<b>不允许删除</b>。<br>` +
+        `如需调整，请修改表单字段（支持新增、修改字段）或调整流程模型；不再启用时可挂起对应流程版本。</div>`,
+      '系统流程不可删除',
+      { dangerouslyUseHTMLString: true, type: 'warning', confirmButtonText: '我知道了' },
+    ).catch(() => {});
+    return;
+  }
   const used = Number(row.instanceCount || 0);
   if (used > 0) {
     // 前端前置拦截：后端也会校验，这里先给出可读的原因与替代方案，避免用户白点一次

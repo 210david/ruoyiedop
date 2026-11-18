@@ -1,8 +1,10 @@
 package com.ruoyi.flowable.service.impl;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,13 +15,17 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.domain.entity.SysUser;
+import com.ruoyi.common.event.FlowFormSubmitEvent;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.flowable.config.FlowSystemFields;
+import com.ruoyi.flowable.config.SystemFlowRegistry;
 import com.ruoyi.flowable.domain.FlowForm;
 import com.ruoyi.flowable.mapper.FlowFormMapper;
 import com.ruoyi.flowable.service.FlowProcessNoService;
+import com.ruoyi.flowable.service.FlowFormOptionsProvider;
 import com.ruoyi.flowable.service.IFlowFormService;
 import com.ruoyi.system.service.ISysUserService;
 
@@ -69,18 +75,46 @@ public class FlowFormServiceImpl implements IFlowFormService
     @Autowired
     private com.ruoyi.flowable.service.FlowFormRuleService formRuleService;
 
+    /** 流程台账：发起时登记实例快照 */
+    @Autowired
+    private com.ruoyi.flowable.service.IFlowLedgerService flowLedgerService;
+
     /** 字段类型 → 数据库类型（由 columnType(JSONObject) 按表现形式/类型/长度动态推导） */
 
     @Override
     public List<FlowForm> selectFlowFormList(FlowForm form)
     {
-        return flowFormMapper.selectFlowFormList(form);
+        List<FlowForm> list = flowFormMapper.selectFlowFormList(form);
+        if (list != null)
+        {
+            for (FlowForm item : list)
+            {
+                item.setSystemFlow(isSystemForm(item));
+            }
+        }
+        return list;
     }
 
     @Override
     public FlowForm selectFlowFormByFormId(Long formId)
     {
-        return flowFormMapper.selectFlowFormByFormId(formId);
+        FlowForm form = mergeDynamicOptions(flowFormMapper.selectFlowFormByFormId(formId));
+        if (form != null)
+        {
+            form.setSystemFlow(isSystemForm(form));
+        }
+        return form;
+    }
+
+    /** 是否系统流程表单（考勤/车辆/印章等）：不允许删除表单与已有字段 */
+    private boolean isSystemForm(FlowForm form)
+    {
+        if (form == null)
+        {
+            return false;
+        }
+        return SystemFlowRegistry.isSystemFormKey(form.getFormKey())
+                || SystemFlowRegistry.isSystemProcess(form.getProcessKey());
     }
 
     @Override
@@ -105,7 +139,7 @@ public class FlowFormServiceImpl implements IFlowFormService
                     FlowForm bound = flowFormMapper.selectFlowFormByFormId(formId);
                     if (bound != null)
                     {
-                        return bound;
+                        return mergeDynamicOptions(bound);
                     }
                 }
             }
@@ -114,7 +148,91 @@ public class FlowFormServiceImpl implements IFlowFormService
             }
         }
         // 兼容旧数据：表单侧绑定的 process_key
-        return flowFormMapper.selectFlowFormByProcessKey(processKey);
+        return mergeDynamicOptions(flowFormMapper.selectFlowFormByProcessKey(processKey));
+    }
+
+    /**
+     * 合并动态选项：字段配置 optionsSource 时按数据源实时填充 selectOptions
+     * （如补卡班次选项来自考勤模块班次配置），字段静态 selectOptions 作为兜底。
+     * 仅在读取表单详情时执行，不回写数据库。
+     */
+    private FlowForm mergeDynamicOptions(FlowForm form)
+    {
+        if (form == null || StringUtils.isEmpty(form.getFieldsJson()))
+        {
+            return form;
+        }
+        try
+        {
+            Map<String, FlowFormOptionsProvider> providers = SpringUtils.getBeansOfType(FlowFormOptionsProvider.class);
+            if (providers == null || providers.isEmpty())
+            {
+                return form;
+            }
+            Long userId = null;
+            try
+            {
+                userId = SecurityUtils.getUserId();
+            }
+            catch (Exception ignored)
+            {
+                // 非登录上下文（如系统内部调用），userId 传空
+            }
+            JSONArray fields = new JSONArray();
+            fields.addAll(parseFields(form.getFieldsJson()));
+            boolean changed = false;
+            for (int i = 0; i < fields.size(); i++)
+            {
+                JSONObject f = fields.getJSONObject(i);
+                String src = f.getString("optionsSource");
+                if (StringUtils.isEmpty(src))
+                {
+                    continue;
+                }
+                String ctrl = f.getString("form");
+                if (!"select".equals(ctrl) && !"radio".equals(ctrl))
+                {
+                    continue;
+                }
+                for (FlowFormOptionsProvider provider : providers.values())
+                {
+                    if (!src.equals(provider.source()))
+                    {
+                        continue;
+                    }
+                    Map<String, Object> ctx = new java.util.HashMap<>();
+                    ctx.put("field", f);
+                    ctx.put("userId", userId);
+                    ctx.put("formId", form.getFormId());
+                    List<FlowFormOptionsProvider.FlowFormOption> opts = provider.options(ctx);
+                    if (opts == null || opts.isEmpty())
+                    {
+                        continue;
+                    }
+                    JSONArray arr = new JSONArray();
+                    for (FlowFormOptionsProvider.FlowFormOption o : opts)
+                    {
+                        JSONObject item = new JSONObject();
+                        item.put("label", o.getLabel());
+                        item.put("value", o.getValue());
+                        arr.add(item);
+                    }
+                    f.put("selectOptions", arr);
+                    changed = true;
+                    break;
+                }
+            }
+            if (changed)
+            {
+                form.setFieldsJson(fields.toJSONString());
+            }
+        }
+        catch (Exception e)
+        {
+            // 动态选项合并失败不影响表单正常返回（保留静态选项）
+            log.warn("表单动态选项合并失败（formId={}）：{}", form.getFormId(), e.getMessage());
+        }
+        return form;
     }
 
     @Override
@@ -150,8 +268,47 @@ public class FlowFormServiceImpl implements IFlowFormService
     {
         validateFields(form.getFieldsJson());
         validateRuleExtension(form);
+        // 系统流程表单（考勤/车辆/印章等）：不允许删除已有字段，只允许新增或修改字段
+        if (form.getFormId() != null && StringUtils.isNotEmpty(form.getFieldsJson()))
+        {
+            FlowForm old = flowFormMapper.selectFlowFormByFormId(form.getFormId());
+            if (isSystemForm(old))
+            {
+                // 防止通过改表单标识绕过删除保护：系统流程表单标识不可变更
+                form.setFormKey(old.getFormKey());
+                form.setProcessKey(old.getProcessKey());
+                Set<String> removed = fieldKeys(old.getFieldsJson());
+                removed.removeAll(fieldKeys(form.getFieldsJson()));
+                if (!removed.isEmpty())
+                {
+                    throw new ServiceException(SystemFlowRegistry.fieldDeleteTip(old.getFormName())
+                            + "（待删除字段：" + String.join("、", removed) + "）");
+                }
+            }
+        }
         form.setUpdateBy(SecurityUtils.getUsername());
         return flowFormMapper.updateFlowForm(form);
+    }
+
+    /** 解析字段定义（fieldsJson）中的字段名集合 */
+    private Set<String> fieldKeys(String fieldsJson)
+    {
+        Set<String> keys = new LinkedHashSet<>();
+        if (StringUtils.isEmpty(fieldsJson))
+        {
+            return keys;
+        }
+        JSONArray array = JSON.parseArray(fieldsJson);
+        for (int i = 0; i < array.size(); i++)
+        {
+            JSONObject field = array.getJSONObject(i);
+            String key = field == null ? null : field.getString("field");
+            if (StringUtils.isNotEmpty(key))
+            {
+                keys.add(key);
+            }
+        }
+        return keys;
     }
 
     /** 表单规则/脚本保存前校验，避免脏规则进入运行态 */
@@ -180,6 +337,11 @@ public class FlowFormServiceImpl implements IFlowFormService
             if (form == null)
             {
                 continue;
+            }
+            // 校验零：系统流程表单（考勤/车辆/印章等）与业务模块联动，任何情况下都不允许删除
+            if (isSystemForm(form))
+            {
+                throw new ServiceException(SystemFlowRegistry.formDeleteTip(form.getFormName()));
             }
             // 校验一：表单数据表已有业务数据，不允许删除
             long dataRows = countFormDataRows(form);
@@ -862,6 +1024,31 @@ public class FlowFormServiceImpl implements IFlowFormService
                     jdbcTemplate.update("UPDATE `" + form.getTableName()
                             + "` SET process_instance_id = ? WHERE id = ?", instance.getId(), businessKey);
                 }
+                // 流程台账：登记实例快照（冻结发起部门，供台账数据权限使用）
+                Long startDeptId = null;
+                try
+                {
+                    startDeptId = SecurityUtils.getLoginUser().getUser().getDeptId();
+                }
+                catch (Exception ignored)
+                {
+                }
+                flowLedgerService.registerInstanceExt(instance.getId(), formId,
+                        form == null ? null : form.getFormKey(),
+                        form == null ? null : form.getProcessKey(),
+                        businessKey, instanceTitle, String.valueOf(userId), startDeptId);
+            }
+            // 发布表单提交事件：业务模块（OA车辆/司机/印章等）监听后写回关联关系，失败不影响发起
+            try
+            {
+                FlowForm startForm = formId == null ? null : flowFormMapper.selectFlowFormByFormId(formId);
+                SpringUtils.publishEvent(new FlowFormSubmitEvent(this,
+                        FlowFormSubmitEvent.PHASE_START, definition.getKey(), formId, instance.getId(),
+                        businessKey, startForm == null ? null : startForm.getTableName(), vars));
+            }
+            catch (Exception e)
+            {
+                log.warn("流程发起表单提交事件发布失败：{}", e.getMessage());
             }
             return instance.getId();
         }
