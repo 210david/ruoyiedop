@@ -224,94 +224,267 @@
     </div>
 
     <!-- ===== 流程干预 / 流程复活弹窗：跳到指定节点（运行中=干预，已结束=复活） ===== -->
-    <el-dialog v-model="intervene.open" :title="isReviveMode ? '流程复活' : '流程干预'" width="660px" append-to-body class="rd-dialog" :close-on-click-modal="false">
-      <div class="monitor-info" v-loading="intervene.loading">
-        <div class="info-row"><span class="label">流程标题</span><span class="value strong">{{ intervene.title || '-' }}</span></div>
-        <div class="info-row"><span class="label">流程名称</span><span class="value">{{ intervene.processName || '-' }}</span></div>
-        <div class="info-row">
-          <span class="label">当前节点</span>
-          <span class="value">
-            <span v-if="!intervene.currentNames.length" class="muted">{{ isReviveMode ? '流程已结束（复活后重新生成待办）' : '流程已结束' }}</span>
-            <span v-for="(n, i) in intervene.currentNames" :key="i" class="badge blue"><span class="dot"></span>{{ n }}</span>
-          </span>
+    <el-dialog v-model="intervene.open" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </div>
+          <span class="rd-detail-header-title">{{ isReviveMode ? '流程复活' : '流程干预' }}</span>
+          <div class="rd-detail-header-sub" v-if="intervene.title">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">{{ intervene.title }}</span>
+          </div>
         </div>
-        <div class="info-row" v-if="intervene.currentTasks.length">
-          <span class="label">当前办理人</span>
-          <span class="value">
-            <span v-for="t in intervene.currentTasks" :key="t.taskId" class="task-chip">
-              {{ t.taskName }}：{{ t.assigneeName || '未指派（候选池）' }}
-            </span>
-          </span>
-        </div>
-      </div>
-      <el-form label-width="92px" class="monitor-form">
-        <el-form-item label="目标节点" required>
-          <el-select v-model="intervene.form.targetActivityId" :placeholder="isReviveMode ? '请选择复活后停留的节点' : '请选择要强制跳转到的节点'" filterable style="width:100%">
-            <el-option v-for="n in intervene.nodes" :key="n.id" :label="n.name" :value="n.id">
-              <span>{{ n.name }}</span>
-              <span class="opt-tags">
-                <span v-if="n.current" class="opt-tag current">当前</span>
-                <span v-if="n.multiInstance" class="opt-tag multi">会签</span>
-              </span>
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="指定办理人">
-          <el-input :model-value="intervene.form.assigneeName" readonly placeholder="不选则由节点「操作人员」配置自动派发">
-            <template #append>
-              <el-button @click="pickAssignee('intervene')">选择</el-button>
-            </template>
-          </el-input>
-          <div class="form-tip">仅对普通审批节点生效；会签/串签节点由配置的集合自动派发。</div>
-        </el-form-item>
-        <el-form-item :label="isReviveMode ? '复活原因' : '干预意见'">
-          <el-input v-model="intervene.form.comment" type="textarea" :rows="3"
-            :placeholder="isReviveMode ? '填写复活原因，将写入流程流转意见' : '填写干预原因，将写入流程流转意见'" />
-        </el-form-item>
-      </el-form>
-      <div class="monitor-warn">
-        <el-icon><WarningFilled /></el-icon>
-        <template v-if="isReviveMode">
-          复活会以原单据新建一个运行实例并停在所选节点，业务数据与流程编号不变，原实例历史保留可追溯；被跳过的节点不会生成待办。若流程中有自动执行的服务节点/通知，复活时会再次触发。
-        </template>
-        <template v-else>
-          干预会跳过中间审批节点，被跳过的环节不会再生成待办；操作会记录到流程流转意见与系统操作日志。
-        </template>
+      </template>
+      <div class="rd-page monitor-dlg" v-loading="intervene.loading">
+        <!-- 流程信息摘要卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              流程信息
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">流程标题</span><span class="rd-value">{{ intervene.title || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">流程名称</span><span class="rd-value">{{ intervene.processName || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">流程编号</span><span class="rd-value col-mono">{{ intervene.processNo || '-' }}</span></div>
+              <div class="rd-item rd-item--full"><span class="rd-label">当前节点</span>
+                <span class="rd-value">
+                  <span v-if="!intervene.currentNames.length" class="muted">{{ isReviveMode ? '流程已结束（复活后重新生成待办）' : '流程已结束' }}</span>
+                  <span v-for="(n, i) in intervene.currentNames" :key="i" class="badge blue"><span class="dot"></span>{{ n }}</span>
+                </span>
+              </div>
+              <div class="rd-item rd-item--full" v-if="intervene.currentTasks.length"><span class="rd-label">当前办理人</span>
+                <span class="rd-value">
+                  <span v-for="t in intervene.currentTasks" :key="t.taskId" class="task-chip">{{ t.taskName }}：{{ t.assigneeName || '未指派（候选池）' }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 干预/复活设置卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></span>
+              {{ isReviveMode ? '复活设置' : '干预设置' }}
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <el-form label-width="92px" class="monitor-form">
+              <el-form-item label="目标节点" required>
+                <el-select v-model="intervene.form.targetActivityId" :placeholder="isReviveMode ? '请选择复活后停留的节点' : '请选择要强制跳转到的节点'" filterable style="width:100%">
+                  <el-option v-for="n in intervene.nodes" :key="n.id" :label="n.name" :value="n.id">
+                    <span>{{ n.name }}</span>
+                    <span class="opt-tags">
+                      <span v-if="n.current" class="opt-tag current">当前</span>
+                      <span v-if="n.multiInstance" class="opt-tag multi">会签</span>
+                    </span>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="指定办理人">
+                <el-input :model-value="intervene.form.assigneeName" readonly placeholder="不选则由节点「操作人员」配置自动派发">
+                  <template #append>
+                    <el-button @click="pickAssignee('intervene')">选择</el-button>
+                  </template>
+                </el-input>
+                <div class="form-tip">仅对普通审批节点生效；会签/串签节点由配置的集合自动派发。</div>
+              </el-form-item>
+              <el-form-item :label="isReviveMode ? '复活原因' : '干预意见'">
+                <el-input v-model="intervene.form.comment" type="textarea" :rows="3"
+                  :placeholder="isReviveMode ? '填写复活原因，将写入流程流转意见' : '填写干预原因，将写入流程流转意见'" />
+              </el-form-item>
+            </el-form>
+            <div class="monitor-warn">
+              <el-icon><WarningFilled /></el-icon>
+              <template v-if="isReviveMode">
+                复活会以原单据新建一个运行实例并停在所选节点，业务数据与流程编号不变，原实例历史保留可追溯；被跳过的节点不会生成待办。若流程中有自动执行的服务节点/通知，复活时会再次触发。
+              </template>
+              <template v-else>
+                干预会跳过中间审批节点，被跳过的环节不会再生成待办；操作会记录到流程流转意见与系统操作日志。
+              </template>
+            </div>
+          </div>
+        </section>
       </div>
       <template #footer>
-        <el-button size="small" @click="intervene.open = false">取 消</el-button>
-        <el-button size="small" type="warning" :loading="intervene.submitting" @click="submitIntervene">{{ isReviveMode ? '确认复活' : '确认干预' }}</el-button>
+        <el-button @click="intervene.open = false">取 消</el-button>
+        <el-button type="warning" :loading="intervene.submitting" @click="submitIntervene">{{ isReviveMode ? '确认复活' : '确认干预' }}</el-button>
       </template>
     </el-dialog>
 
     <!-- ===== 改派办理人弹窗 ===== -->
-    <el-dialog v-model="assign.open" title="改派办理人" width="560px" append-to-body class="rd-dialog" :close-on-click-modal="false">
-      <div class="monitor-info">
-        <div class="info-row"><span class="label">流程标题</span><span class="value strong">{{ assign.title || '-' }}</span></div>
+    <el-dialog v-model="assign.open" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          </div>
+          <span class="rd-detail-header-title">改派办理人</span>
+          <div class="rd-detail-header-sub" v-if="assign.title">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">{{ assign.title }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page monitor-dlg" v-loading="assign.loading">
+        <!-- 流程信息摘要卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              流程信息
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">流程标题</span><span class="rd-value">{{ assign.title || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">流程编号</span><span class="rd-value col-mono">{{ assign.processNo || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">当前环节</span>
+                <span class="rd-value">
+                  <span v-if="assign.tasks.length <= 1" class="cur-task">{{ assign.tasks[0] ? assign.tasks[0].taskName + '（' + (assign.tasks[0].assigneeName || '未指派（候选池）') + '）' : '-' }}</span>
+                  <span v-else class="muted">多个待办任务，请在下方选择</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 改派设置卡片 -->
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+              改派设置
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <el-form label-width="92px" class="monitor-form">
+              <el-form-item label="待办任务" required v-if="assign.tasks.length > 1">
+                <el-select v-model="assign.taskId" placeholder="请选择要改派的任务" style="width:100%">
+                  <el-option v-for="t in assign.tasks" :key="t.taskId" :label="t.taskName + '（' + (t.assigneeName || '未指派') + '）'" :value="t.taskId" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="新办理人" required>
+                <el-input :model-value="assign.targetUserName" readonly placeholder="请选择新的办理人">
+                  <template #append>
+                    <el-button @click="pickAssignee('assign')">选择</el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item label="改派说明">
+                <el-input v-model="assign.comment" type="textarea" :rows="2" placeholder="填写改派原因（可选）" />
+              </el-form-item>
+            </el-form>
+            <div class="monitor-warn">
+              <el-icon><WarningFilled /></el-icon>
+              改派后原办理人不再收到该待办，新办理人将立即收到待办任务；操作会记录到系统操作日志。
+            </div>
+          </div>
+        </section>
       </div>
-      <el-form label-width="92px" class="monitor-form">
-        <el-form-item label="待办任务" required v-if="assign.tasks.length > 1">
-          <el-select v-model="assign.taskId" placeholder="请选择要改派的任务" style="width:100%">
-            <el-option v-for="t in assign.tasks" :key="t.taskId" :label="t.taskName + '（' + (t.assigneeName || '未指派') + '）'" :value="t.taskId" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="当前环节" v-else>
-          <span class="cur-task">{{ assign.tasks[0] ? assign.tasks[0].taskName + '（' + (assign.tasks[0].assigneeName || '未指派（候选池）') + '）' : '-' }}</span>
-        </el-form-item>
-        <el-form-item label="新办理人" required>
-          <el-input :model-value="assign.targetUserName" readonly placeholder="请选择新的办理人">
-            <template #append>
-              <el-button @click="pickAssignee('assign')">选择</el-button>
-            </template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="改派说明">
-          <el-input v-model="assign.comment" type="textarea" :rows="2" placeholder="填写改派原因（可选）" />
-        </el-form-item>
-      </el-form>
       <template #footer>
-        <el-button size="small" @click="assign.open = false">取 消</el-button>
-        <el-button size="small" type="primary" :loading="assign.submitting" @click="submitAssign">确 定</el-button>
+        <el-button @click="assign.open = false">取 消</el-button>
+        <el-button type="primary" :loading="assign.submitting" @click="submitAssign">确认改派</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 强制结束 / 撤销流程弹窗 ===== -->
+    <el-dialog v-model="endDlg.open" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg v-if="endDlg.action === 'end'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <span class="rd-detail-header-title">{{ endDlg.action === 'end' ? '强制结束' : '撤销流程' }}</span>
+          <div class="rd-detail-header-sub" v-if="endDlg.title">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">{{ endDlg.title }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page monitor-dlg">
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+              操作说明
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="end-desc">{{ endDlg.action === 'end' ? '强制结束后流程立即终止，所有待办任务将失效，已办理环节保留可追溯。' : '撤销后流程终止且不可恢复，记录为「已撤销」，已办理环节保留可追溯。' }}</div>
+            <el-form label-width="92px" class="monitor-form">
+              <el-form-item :label="endDlg.action === 'end' ? '结束原因' : '撤销原因'" required>
+                <el-input v-model="endDlg.reason" type="textarea" :rows="3" maxlength="200" show-word-limit
+                  :placeholder="'请填写' + (endDlg.action === 'end' ? '强制结束' : '撤销') + '原因（将写入流转意见）'" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="endDlg.open = false">取 消</el-button>
+        <el-button type="danger" :loading="endDlg.submitting" @click="submitEnd">{{ endDlg.action === 'end' ? '确认强制结束' : '确认撤销' }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ===== 重新发起弹窗 ===== -->
+    <el-dialog v-model="restart.open" width="860px" append-to-body draggable class="rd-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </div>
+          <span class="rd-detail-header-title">重新发起</span>
+          <div class="rd-detail-header-sub" v-if="restart.title">
+            <div class="rd-detail-header-divider"></div>
+            <span class="rd-detail-header-no">{{ restart.title }}</span>
+          </div>
+        </div>
+      </template>
+      <div class="rd-page monitor-dlg">
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              原流程信息
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <div class="rd-grid">
+              <div class="rd-item rd-item--full"><span class="rd-label">原流程标题</span><span class="rd-value">{{ restart.title || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">流程编号</span><span class="rd-value col-mono">{{ restart.processNo || '-' }}</span></div>
+              <div class="rd-item"><span class="rd-label">发起说明</span><span class="rd-value">以原单据表单数据新建流程</span></div>
+            </div>
+          </div>
+        </section>
+        <section class="rd-card">
+          <div class="rd-card-header">
+            <div class="rd-card-title">
+              <span class="rd-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+              发起设置
+            </div>
+          </div>
+          <div class="rd-card-body" style="display:block">
+            <el-form label-width="92px" class="monitor-form">
+              <el-form-item label="新流程标题" required>
+                <el-input v-model="restart.newTitle" maxlength="100" show-word-limit placeholder="请输入新流程标题" />
+              </el-form-item>
+            </el-form>
+            <div class="monitor-warn">
+              <el-icon><WarningFilled /></el-icon>
+              将以原单据的表单数据发起一条新流程（新单、新流程编号），与原流程互不影响。
+            </div>
+          </div>
+        </section>
+      </div>
+      <template #footer>
+        <el-button @click="restart.open = false">取 消</el-button>
+        <el-button type="primary" :loading="restart.submitting" @click="submitRestart">确认发起</el-button>
       </template>
     </el-dialog>
 
@@ -533,7 +706,7 @@ function onUserPicked(users) {
 const intervene = reactive({
   mode: 'intervene',
   open: false, loading: false, submitting: false,
-  instanceId: '', title: '', processName: '',
+  instanceId: '', title: '', processName: '', processNo: '',
   currentNames: [], currentTasks: [], nodes: [],
   form: { targetActivityId: '', assigneeId: null, assigneeName: '', comment: '' }
 })
@@ -547,6 +720,7 @@ function openIntervene(row, mode = 'intervene') {
   intervene.instanceId = row.instanceId
   intervene.title = row.title
   intervene.processName = row.processDefinitionName
+  intervene.processNo = row.processNo
   intervene.currentNames = []
   intervene.currentTasks = []
   intervene.nodes = []
@@ -597,38 +771,50 @@ function submitIntervene() {
 }
 
 /** 重新发起：复制原单据的表单数据新建一条流程（新单、新流程编号） */
+const restart = reactive({
+  open: false, submitting: false,
+  instanceId: '', title: '', processNo: '', newTitle: ''
+})
+
 function confirmRestart(row) {
-  proxy.$confirm('将以原单据的表单数据发起一条新流程（新单、新流程编号），与原流程互不影响。', '重新发起', {
-    confirmButtonText: '下一步', cancelButtonText: '取消', type: 'warning'
-  }).then(() => {
-    return proxy.$prompt('请输入新流程标题', '重新发起', {
-      confirmButtonText: '确认发起', cancelButtonText: '取消',
-      inputValue: (row.title || '流程') + '（重新发起）',
-      inputValidator: v => (v && v.trim().length > 0) || '请输入新流程标题'
-    })
-  }).then(({ value }) => {
-    return restartMonitorProcess(row.instanceId, value.trim())
-  }).then(res => {
+  restart.open = true
+  restart.submitting = false
+  restart.instanceId = row.instanceId
+  restart.title = row.title
+  restart.processNo = row.processNo
+  restart.newTitle = (row.title || '流程') + '（重新发起）'
+}
+
+function submitRestart() {
+  if (!restart.newTitle || !restart.newTitle.trim()) {
+    proxy.$modal.msgWarning('请输入新流程标题')
+    return
+  }
+  restart.submitting = true
+  restartMonitorProcess(restart.instanceId, restart.newTitle.trim()).then(res => {
     const d = (res && res.data) || {}
     proxy.$modal.msgSuccess('已重新发起：' + (d.title || '') + (d.processNo ? '（编号 ' + d.processNo + '）' : ''))
+    restart.open = false
     refreshAll()
   }).catch(e => {
-    if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('重新发起失败：' + (e?.message || e))
-  })
+    proxy.$modal.msgError('重新发起失败：' + (e?.message || e))
+  }).finally(() => { restart.submitting = false })
 }
 
 // ===== 改派办理人 =====
 const assign = reactive({
-  open: false, submitting: false,
-  instanceId: '', title: '', tasks: [], taskId: '',
+  open: false, loading: false, submitting: false,
+  instanceId: '', title: '', processNo: '', tasks: [], taskId: '',
   targetUserId: null, targetUserName: '', comment: ''
 })
 
 function openAssign(row) {
   assign.open = true
+  assign.loading = true
   assign.submitting = false
   assign.instanceId = row.instanceId
   assign.title = row.title
+  assign.processNo = row.processNo
   assign.tasks = []
   assign.taskId = ''
   assign.targetUserId = null
@@ -638,7 +824,8 @@ function openAssign(row) {
     const d = res.data || {}
     assign.tasks = d.currentTasks || []
     assign.taskId = assign.tasks.length === 1 ? assign.tasks[0].taskId : ''
-  }).catch(() => {})
+    assign.loading = false
+  }).catch(() => { assign.loading = false })
 }
 
 function submitAssign() {
@@ -687,34 +874,38 @@ function confirmRecall(row) {
   })
 }
 
+/** 强制结束 / 撤销流程：统一弹窗（action=end/cancel），原因必填写入流转意见 */
+const endDlg = reactive({
+  open: false, submitting: false,
+  action: 'end', instanceId: '', title: '', reason: ''
+})
+
 function confirmEnd(row, action) {
-  const isEnd = action === 'end'
-  const title = isEnd ? '强制结束' : '撤销流程'
-  const tip = isEnd
-    ? '确认强制结束流程「' + row.title + '」？结束后流程立即终止，所有待办任务将失效。'
-    : '确认撤销流程「' + row.title + '」？撤销后流程终止且不可恢复（记录为已撤销）。'
-  proxy.$modal.confirm(tip).then(() => {
-    return proxy.$prompt('请输入' + (isEnd ? '强制结束' : '撤销') + '原因（将写入流转意见）', title, {
-      confirmButtonText: '确定', cancelButtonText: '取消', inputType: 'textarea',
-      inputValidator: v => (v && v.trim().length >= 2) || '请填写至少 2 个字的原因'
-    })
-  }).then(({ value }) => {
-    return endMonitorProcess(row.instanceId, action, value)
-  }).then(() => {
-    proxy.$modal.msgSuccess(isEnd ? '流程已强制结束' : '流程已撤销')
+  endDlg.open = true
+  endDlg.submitting = false
+  endDlg.action = action
+  endDlg.instanceId = row.instanceId
+  endDlg.title = row.title
+  endDlg.reason = ''
+}
+
+function submitEnd() {
+  if (!endDlg.reason || endDlg.reason.trim().length < 2) {
+    proxy.$modal.msgWarning('请填写至少 2 个字的原因')
+    return
+  }
+  endDlg.submitting = true
+  endMonitorProcess(endDlg.instanceId, endDlg.action, endDlg.reason.trim()).then(() => {
+    proxy.$modal.msgSuccess(endDlg.action === 'end' ? '流程已强制结束' : '流程已撤销')
+    endDlg.open = false
     refreshAll()
   }).catch(e => {
-    if (e !== 'cancel' && e !== 'close') proxy.$modal.msgError('操作失败：' + (e?.message || e))
-  })
+    proxy.$modal.msgError('操作失败：' + (e?.message || e))
+  }).finally(() => { endDlg.submitting = false })
 }
 
 function confirmRemove(row) {
   proxy.$modal.confirm('确认删除流程「' + row.title + '」？删除后流程实例与全部审批记录将被彻底清除，不可恢复。').then(() => {
-    return proxy.$prompt('请输入完整流程标题以确认删除', '删除流程', {
-      confirmButtonText: '确认删除', cancelButtonText: '取消',
-      inputValidator: v => v === row.title || '流程标题不匹配，请完整输入'
-    })
-  }).then(() => {
     return deleteMonitorProcess(row.instanceId)
   }).then(() => {
     proxy.$modal.msgSuccess('流程已删除')
@@ -870,44 +1061,45 @@ onUnmounted(unbindAutoRefresh)
   }
 }
 
-/* ===== 干预 / 改派弹窗 ===== */
-.monitor-info {
-  background: #f8fafc;
-  border: 1px solid #eef2f7;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  .info-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
+/* ===== 干预 / 改派 / 结束撤销 / 重新发起弹窗（append-to-body 挂 body 下，样式作用于本组件渲染节点） ===== */
+.monitor-dlg {
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
     font-size: 13px;
-    line-height: 22px;
-    & + .info-row { margin-top: 4px; }
-    .label { width: 72px; color: #6b7280; flex-shrink: 0; }
-    .value {
-      flex: 1;
-      min-width: 0;
-      color: #374151;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      &.strong { color: #111827; font-weight: 600; }
-      .muted { color: #9ca3af; }
-    }
-    .task-chip {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 1px 8px;
-      font-size: 12px;
-      color: #4b5563;
-    }
+    font-weight: 600;
+    line-height: 1;
+    border: 1px solid transparent;
+    &.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; }
   }
+  .muted { color: #9ca3af; }
+  .cur-task { font-size: 13px; color: #374151; }
+  .end-desc {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #4b5563;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+  .task-chip {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+  .col-mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; }
 }
 .monitor-form {
   .form-tip { font-size: 12px; color: #9ca3af; line-height: 1.6; }
-  .cur-task { font-size: 13px; color: #374151; }
 }
 .monitor-warn {
   display: flex;

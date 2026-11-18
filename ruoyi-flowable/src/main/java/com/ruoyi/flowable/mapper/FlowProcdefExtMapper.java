@@ -28,4 +28,15 @@ public interface FlowProcdefExtMapper
      * @return 受影响行数
      */
     public int updateDefinitionNameByKey(@Param("procKey") String procKey, @Param("name") String name);
+
+    /**
+     * 轻量修改即时生效：结构未变时保存模型后，用最新 BPMN 资源字节覆盖已部署定义的资源。
+     *
+     * @param deploymentId 部署ID
+     * @param resourceName 资源名称（定义的 resourceName）
+     * @param bytes        新的 BPMN XML 字节（已应用部署期注入）
+     * @return 受影响行数
+     */
+    public int updateDefinitionResourceBytes(@Param("deploymentId") String deploymentId,
+            @Param("resourceName") String resourceName, @Param("bytes") byte[] bytes);
 }

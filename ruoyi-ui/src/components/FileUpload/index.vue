@@ -34,8 +34,10 @@
       <el-progress :percentage="uploadPercent" :status="uploadPercent >= 100 ? 'success' : undefined" :stroke-width="10" />
       <div class="upload-file-progress-text">正在上传：{{ uploadFileName }}（{{ uploadPercent }}%），请稍候...</div>
     </div>
-    <!-- 文件列表 -->
-    <transition-group ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
+    <!-- 文件列表（编辑态） -->
+    <transition-group
+      v-if="!disabled"
+      ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
       <li :key="file.uid" class="el-upload-list__item ele-upload-list__item-content" v-for="(file, index) in fileList">
         <el-link :href="buildSecureUrl(file.url)" underline="never" target="_blank">
           <span class="el-icon-document"> {{ getFileName(file.name) }} </span>
@@ -47,6 +49,17 @@
         </div>
       </li>
     </transition-group>
+    <!-- 只读回显（审批/详情页）：文件卡片 + 预览/下载按钮，不显示删除与上传区 -->
+    <div v-if="disabled && fileList.length" class="upload-file-ro">
+      <div class="upload-file-ro-item" v-for="file in fileList" :key="file.uid">
+        <svg class="upload-file-ro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="upload-file-ro-name" :title="getFileName(file.name)">{{ getFileName(file.name) }}</span>
+        <span class="upload-file-ro-actions">
+          <button type="button" class="upload-file-ro-btn is-view" @click="handlePreview(file)">预览</button>
+          <button type="button" class="upload-file-ro-btn is-down" @click="handleDownload(file)">下载</button>
+        </span>
+      </div>
+    </div>
     <!-- 文件预览 -->
     <file-preview ref="filePreviewRef" />
   </div>
@@ -405,5 +418,73 @@ onMounted(() => {
   color: #606266;
   line-height: 18px;
   word-break: break-all;
+}
+/* ===== 只读回显（审批/详情页）文件卡片 ===== */
+.upload-file-ro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.upload-file-ro-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #e2eaf5;
+  border-radius: 6px;
+  background: #f8fafd;
+  min-width: 0;
+}
+.upload-file-ro-item:hover {
+  border-color: #b9cfe9;
+  background: #f1f6fc;
+}
+.upload-file-ro-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: #4b7fb5;
+}
+.upload-file-ro-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-file-ro-actions {
+  flex: none;
+  display: inline-flex;
+  gap: 6px;
+}
+.upload-file-ro-btn {
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.upload-file-ro-btn.is-view {
+  color: #0f9d6f;
+  border-color: #bfe5d6;
+  background: #f0faf6;
+}
+.upload-file-ro-btn.is-view:hover {
+  background: #0f9d6f;
+  color: #fff;
+}
+.upload-file-ro-btn.is-down {
+  color: #2f6fb5;
+  border-color: #c3d8ee;
+  background: #f0f6fc;
+}
+.upload-file-ro-btn.is-down:hover {
+  background: #2f6fb5;
+  color: #fff;
 }
 </style>
