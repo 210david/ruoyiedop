@@ -113,8 +113,16 @@
         <el-button @click="pickerOpen = false">取 消</el-button>
       </template>
     </el-dialog>
-    <!-- 明细表编辑弹窗（Excel 式：明细表名称/数据来源 + 逐列配置标签/列宽/表尾合计/必填，序号可拖动排序） -->
-    <el-dialog v-model="dtPropsOpen" :title="dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑'" width="760px" append-to-body :close-on-click-modal="false">
+    <!-- 明细表编辑弹窗（Excel 式：明细表名称/数据来源 + 逐列配置标签/列宽/对齐/表尾合计/必填，序号可拖动排序；按弹窗规范 rd-dialog + rd-detail-header + 可拖拽移动） -->
+    <el-dialog v-model="dtPropsOpen" width="988px" append-to-body draggable class="rd-dialog wdm-dt-dialog" :close-on-click-modal="false">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/></svg>
+          </div>
+          <span class="rd-detail-header-title">{{ dtPropsCell ? '明细表编辑 · ' + (dtPropsCell.text || '明细表') : '明细表编辑' }}</span>
+        </div>
+      </template>
       <el-form label-width="90px" size="small" class="wdm-head-form">
         <el-row :gutter="12">
           <el-col :span="8"><el-form-item label="明细表名称"><el-input v-model="dtPropsForm.title" placeholder="如：明细表1 / 费用明细" maxlength="30" /></el-form-item></el-col>
@@ -134,7 +142,7 @@
         <span class="lb">默认明细行数</span>
         <el-input-number v-model="dtPropsForm.defaultRows" :min="0" :max="20" size="small" style="width:110px" />
       </div>
-      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分。列的「必填」只校验已填写的行，明细表是否必须有数据由上方「必须填写明细」控制（不勾则整表可留空）</div>
+      <div class="wdm-tip" style="margin-bottom:8px">按住序号拖动整行可调整列顺序（整行高亮跟随）；标签为明细表列头显示名；列宽按百分比设置，留空自动均分；「对齐」控制运行态该列内容的水平对齐方式，默认居中。列的「必填」只校验已填写的行，明细表是否必须有数据由上方「必须填写明细」控制（不勾则整表可留空）</div>
       <el-table :data="dtEditRows" border size="small" row-key="field" max-height="320" class="wdm-field-table"
         :row-class-name="dtRowClass">
         <el-table-column label="序号" width="80" align="center">
@@ -161,6 +169,13 @@
         <el-table-column label="表尾合计" width="85" align="center">
           <template #default="scope">
             <el-switch v-model="scope.row.sum" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column label="对齐" width="90" align="center">
+          <template #default="scope">
+            <el-select v-model="scope.row.align" size="small">
+              <el-option label="居左" value="left" /><el-option label="居中" value="center" /><el-option label="居右" value="right" />
+            </el-select>
           </template>
         </el-table-column>
         <el-table-column label="展示属性" width="100" align="center">
@@ -1167,7 +1182,7 @@ function insDetailBlock(key) {
 }
 /** 明细列初始清单：从字段定义生成（编辑字段页签中该明细表的字段） */
 function initDtColumns(dt) {
-  return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, required: !!f.required }))
+  return detailFieldsOf(dt).map(f => ({ field: f.field, label: f.label, width: 0, sum: false, align: 'center', required: !!f.required }))
 }
 /** 明细表属性默认值（勾选面板） */
 function initDtProps() {
@@ -1218,6 +1233,7 @@ function openDtProps(cell) {
     label: c.label,
     width: c.width || undefined,
     sum: !!c.sum,
+    align: c.align || 'center',
     attr: c.attr || (c.required ? 'req' : 'edit')
   }))
   dtPropsOpen.value = true
@@ -1290,9 +1306,9 @@ function confirmDtProps() {
   cell.text = dtPropsForm.value.title || detailBlockTitle(dtPropsForm.value.table)
   cell.detail.table = dtPropsForm.value.table
   cell.detail.title = cell.text
-  // 写回列配置：标签/列宽/表尾合计/必填 + 拖动后的顺序
+  // 写回列配置：标签/列宽/对齐/表尾合计/必填 + 拖动后的顺序
   cell.detail.columns = dtEditRows.value.map(r => ({
-    field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, attr: r.attr || 'edit'
+    field: r.field, label: r.label, width: r.width || 0, sum: !!r.sum, align: r.align || 'center', attr: r.attr || 'edit'
   }))
   // 明细行设置写回：mustAdd=必须填写明细（不可删至空），默认行数允许 0（从空开始）
   const prev = cell.detail.props || {}

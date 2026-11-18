@@ -336,7 +336,7 @@ public class FlowFormRuleService
         }
     }
 
-    /** 依赖环检测：只针对 derive 规则的目标字段 */
+    /** 依赖环检测：只针对 derive 规则的目标字段（表达式引用目标自身属于「保留当前值」惯用法，运行时迭代求值可收敛，不算环） */
     private void ensureNoCycle(JSONArray rules)
     {
         Map<String, Set<String>> edges = new LinkedHashMap<>();
@@ -362,6 +362,8 @@ public class FlowFormRuleService
                     }
                 }
             }
+            // 自引用剔除：如 if(need_loan_offset=="否", "", loan_amount) 引用目标自身表示「否则保留原值」
+            refs.remove(target);
             edges.computeIfAbsent(target, k -> new HashSet<>()).addAll(refs);
         }
         for (String start : edges.keySet())

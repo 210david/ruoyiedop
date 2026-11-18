@@ -64,6 +64,8 @@ const FUNCS = {
   min: (...xs) => Math.min(...xs.map(numOf)),
   max: (...xs) => Math.max(...xs.map(numOf)),
   if: (c, a, b) => (c ? a : b),
+  eq: (a, b) => String(a ?? '') === String(b ?? ''),
+  ne: (a, b) => String(a ?? '') !== String(b ?? ''),
   and: (...xs) => xs.every((x) => !!x),
   or: (...xs) => xs.some((x) => !!x),
   not: (v) => !v,

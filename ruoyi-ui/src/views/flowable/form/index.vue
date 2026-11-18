@@ -66,8 +66,8 @@
           <el-table-column label="字段数" prop="fieldCount" key="fieldCount" :min-width="colWidth('fieldCount', 90)" align="center" resizable>
             <template #default="scope">{{ fieldCount(scope.row.fieldsJson) }}</template>
           </el-table-column>
-          <el-table-column label="创建时间" prop="createTime" key="createTime" width="170" align="center" />
-          <el-table-column label="操作" width="340" align="center" fixed="right" class-name="col-action">
+          <el-table-column label="创建时间" prop="createTime" key="createTime" :width="colWidth('createTime', 170)" resizable align="center" />
+          <el-table-column label="操作" prop="action" key="action" :width="colWidth('action', 340)" resizable align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
                 <el-button link type="primary" icon="Edit" @click="handleDesign(scope.row)" v-hasPermi="['flowable:form:edit']">设计</el-button>

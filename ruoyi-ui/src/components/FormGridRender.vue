@@ -86,14 +86,14 @@
                     <thead>
                       <tr>
                         <th style="width: 48px">序号</th>
-                        <th v-for="col in e.cell.detail.columns || []" :key="col.field">{{ col.label || col.field }}<i v-if="editable && values && colAttr(col) === 'req'" class="req">*</i></th>
+                        <th v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }">{{ col.label || col.field }}<i v-if="editable && values && colAttr(col) === 'req'" class="req">*</i></th>
                         <th v-if="showDetailOpCol(e)" style="width: 48px">操作</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="(row, ri) in detailRows[e.cell.detail && e.cell.detail.table] || []" :key="row._key">
                         <td style="text-align: center; color: #94a3b8">{{ ri + 1 }}</td>
-                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :class="{ 'fgr-dcell-error': isCellError(e.cell.detail && e.cell.detail.table, ri, col.field), 'is-ov-hidden': ovHidden(col.field) }" :title="detailRuleErrText(e.cell.detail && e.cell.detail.table, ri, col.field)">
+                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }" :class="{ 'fgr-dcell-error': isCellError(e.cell.detail && e.cell.detail.table, ri, col.field), 'is-ov-hidden': ovHidden(col.field) }" :title="detailRuleErrText(e.cell.detail && e.cell.detail.table, ri, col.field)">
                           <template v-if="editable && values">
                             <!-- 明细列设为「只读」：只读附件走禁用态卡片（可预览/下载），其余按只读口径渲染纯文本 -->
                             <grid-control
@@ -145,7 +145,7 @@
                       </tr>
                       <tr v-if="(e.cell.detail.columns || []).some((c) => c.sum) && (detailRows[e.cell.detail && e.cell.detail.table] || []).length" class="fgr-dsum">
                         <td style="text-align: center">合计</td>
-                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" style="text-align: right; color: #7c3aed; font-weight: 600">
+                        <td v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'right', color: '#7c3aed', fontWeight: 600 }">
                           <template v-if="col.sum">Σ {{ detailSumValue(e.cell, col.field) }}</template>
                         </td>
                         <td v-if="showDetailOpCol(e)"></td>
@@ -616,7 +616,12 @@ function fieldItemRules(cell) {
   const field = cell && cell.field;
   const rules = [];
   if (fieldReq(field) || cellAttr(cell) === 'req') {
-    rules.push({ required: true, message: '请填写' + fieldLabel(field), trigger: ['blur', 'change'] });
+    // 本组件的 el-form-item 无 el-form/model 上下文（Grid 布局自管数据），
+    // Element 的 required 校验会取不到值而误报，改为闭包直读当前表单数据
+    rules.push({
+      validator: (r, v, cb) => cb(isBlankValue(props.values && props.values[field]) ? new Error('请填写' + fieldLabel(field)) : undefined),
+      trigger: ['blur', 'change']
+    });
   }
   const msg = props.ruleErrors && props.ruleErrors[field];
   if (msg) {
