@@ -462,7 +462,7 @@ function clearOwner() { form.ownerId = null; form.ownerName = null }
 
 const statusOptions = [
   { value: '0', label: '未开始' }, { value: '1', label: '进行中' },
-  { value: '2', label: '完成' }, { value: '3', label: '取消' }, { value: '4', label: '延期' }
+  { value: '2', label: '已完成' }, { value: '3', label: '已取消' }, { value: '4', label: '已延期' }
 ]
 const taskTypeOptions = [
   { value: '1', label: '单项工程' }, { value: '2', label: '单位工程' },
@@ -500,7 +500,7 @@ function onProjectPickerConfirm(p) {
 const activeFilterCount = computed(() => (selectedProjectId.value ? 1 : 0))
 
 const taskTypeLabel = (v) => taskTypeOptions.find(x => x.value === v)?.label || v || '-'
-const statusLabel = (v) => statusOptions.find(x => x.value === v)?.label || v
+const statusLabel = (v) => ({ '0': '未开始', '1': '进行中', '2': '已完成', '3': '已取消', '4': '已延期' }[v] || v || '-')
 const statusBadge = (v) => ({ '0': 'gray', '1': 'blue', '2': 'green', '3': 'gray', '4': 'red' }[v] || 'gray')
 const projectStatusLabel = (v) => ({ '0': '草稿', '1': '待审批', '2': '审批通过', '3': '执行中', '4': '已完成', '5': '已关闭', '6': '暂停', '7': '驳回' }[v] || v || '-')
 const projectStatusBadge = (v) => ({ '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'gray', '6': 'amber', '7': 'red' }[v] || 'gray')
