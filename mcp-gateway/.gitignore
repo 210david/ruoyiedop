@@ -5,3 +5,6 @@ profiles/*.json
 !profiles/standard.example.json
 deploy/logs/
 certs/
+
+# 发布构建产物（含 apiKey/profile 真实配置，体积 100MB+，永不入库）
+release/
