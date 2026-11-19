@@ -2,7 +2,7 @@
  * 布局转换器：旧 sections（分组式）布局 / 字段清单 → Excel 网格初始化；
  * layoutJson 解析与瘦身序列化。纯函数，无 Vue 依赖。
  */
-import { buildMatrix, createGrid, makeCell, normalizeGrid, serializeGrid, hydrateStyle } from './useGridMatrix.js'
+import { buildMatrix, completeBorderMirror, createGrid, makeCell, normalizeGrid, serializeGrid, hydrateStyle } from './useGridMatrix.js'
 
 const GRID_COLS = 4
 
@@ -137,6 +137,10 @@ export function stdFormGrid(fields, formName) {
   // 标题行的上边线即整张表格的起始线
   const frameStart = has('title') ? startRow - 1 : startRow
   if (endRow >= frameStart) paintRange(grid, frameStart, 1, endRow, 4, { s: 1, c: '#333333' })
+  // 补齐共享边镜像：paintRange 只给框内格写边，框外侧邻格（流程编号行、左右空白列）没有对侧边框；
+  // collapse 表格下相邻格无边框的一侧会赢过另一侧的深色边框，导致「标题」上边线被上一行的浅灰格线盖掉。
+  // 载入已保存布局时 normalizeGrid 会做同样的补齐（所以预览正常），套用模板当场生成时也必须补齐。
+  completeBorderMirror(grid)
   return grid
 }
 
@@ -239,6 +243,8 @@ export function expenseCardGrid(fields, formName) {
   grid.rowHeights = Array.from({ length: grid.rows }, () => 30)
   // 字段区统一细边框：必须在 grid.cells/rows 就位后再画，否则 buildMatrix 拿到空表、画出的边框格会被整表覆盖丢失
   if (r - dts.length * 2 - 1 >= startRow) paintRange(grid, startRow, 1, r - dts.length * 2 - 1, 4, { s: 1, c: BORDER })
+  // 补齐共享边镜像：理由同 stdFormGrid，避免框外侧邻格的无边框赢过框内深色边框
+  completeBorderMirror(grid)
   return grid
 }
 
