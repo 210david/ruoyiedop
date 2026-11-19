@@ -134,7 +134,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="ancestors != null and ancestors != ''">ancestors = #{ancestors},</if>
  			<if test="orderNum != null">order_num = #{orderNum},</if>
  			<if test="leader != null">leader = #{leader},</if>
- 			leader_id = #{leaderId},
+ 			<if test="leaderId != null">leader_id = #{leaderId},</if>
  			<if test="deptShortName != null">dept_short_name = #{deptShortName},</if>
  			<if test="deptCode != null">dept_code = #{deptCode},</if>
  			charge_leader_id = #{chargeLeaderId},
@@ -168,16 +168,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	
 	<update id="updateDeptSort" parameterType="SysDept">
 		update sys_dept set order_num = #{orderNum} where dept_id = #{deptId}
-	</update>
-
-	<update id="syncLeaderToUsers">
-		update sys_user
-		<set>
-			<if test="leaderId != null">superior_leader_id = case when user_id = #{leaderId} then ifnull(superior_leader_id, #{leaderId}) else #{leaderId} end,</if>
-			<if test="chargeLeaderId != null">charge_leader_id = case when user_id = #{chargeLeaderId} then ifnull(charge_leader_id, #{chargeLeaderId}) else #{chargeLeaderId} end,</if>
-			update_time = sysdate()
-		</set>
-		where dept_id = #{deptId} and del_flag = '0'
 	</update>
 	
 	<delete id="deleteDeptById" parameterType="Long">

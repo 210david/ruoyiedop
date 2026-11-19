@@ -58,7 +58,15 @@ public class PjmWbsTaskServiceImpl implements IPjmWbsTaskService
     @Transactional
     public int insertTask(PjmWbsTask task)
     {
-        task.setStatus("0");
+        // ★ 仅当未传状态时才给默认值，避免覆盖用户选择
+        if (task.getStatus() == null)
+        {
+            task.setStatus("0");
+        }
+        if (task.getNeedPurchase() == null)
+        {
+            task.setNeedPurchase("0");
+        }
         task.setDelFlag("0");
         task.setCreateTime(new Date());
         task.setCreateBy(SecurityUtils.getUsername());

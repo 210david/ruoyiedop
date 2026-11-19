@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="dictLabel"  column="dict_label"  />
 		<result property="dictValue"  column="dict_value"  />
 		<result property="dictType"   column="dict_type"   />
+		<result property="parentCode" column="parent_code" />
 		<result property="cssClass"   column="css_class"   />
 		<result property="listClass"  column="list_class"  />
 		<result property="isDefault"  column="is_default"  />
@@ -19,9 +20,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="updateBy"   column="update_by"   />
 		<result property="updateTime" column="update_time" />
 	</resultMap>
-	
+
 	<sql id="selectDictDataVo">
-        select dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark 
+        select dict_code, dict_sort, dict_label, dict_value, dict_type, parent_code, css_class, list_class, is_default, status, create_by, create_time, remark 
 		from sys_dict_data
     </sql>
 
@@ -31,6 +32,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		    <if test="dictType != null and dictType != ''">
 				AND dict_type = #{dictType}
 			</if>
+			<if test="parentCode != null">
+				AND parent_code = #{parentCode}
+			</if>
 			<if test="dictLabel != null and dictLabel != ''">
 				AND dict_label like concat('%', #{dictLabel}, '%')
 			</if>
@@ -38,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND status = #{status}
 			</if>
 		</where>
-		order by dict_sort asc
+		order by parent_code IS NULL, parent_code asc, dict_sort asc
 	</select>
 	
 	<select id="selectDictDataByType" parameterType="String" resultMap="SysDictDataResult">
@@ -88,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="dictLabel != null and dictLabel != ''">dict_label = #{dictLabel},</if>
  			<if test="dictValue != null and dictValue != ''">dict_value = #{dictValue},</if>
  			<if test="dictType != null and dictType != ''">dict_type = #{dictType},</if>
+ 			<if test="parentCode != null">parent_code = #{parentCode},</if>
  			<if test="cssClass != null">css_class = #{cssClass},</if>
  			<if test="listClass != null">list_class = #{listClass},</if>
  			<if test="isDefault != null and isDefault != ''">is_default = #{isDefault},</if>
@@ -109,6 +114,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="dictLabel != null and dictLabel != ''">dict_label,</if>
  			<if test="dictValue != null and dictValue != ''">dict_value,</if>
  			<if test="dictType != null and dictType != ''">dict_type,</if>
+ 			<if test="parentCode != null">parent_code,</if>
  			<if test="cssClass != null and cssClass != ''">css_class,</if>
  			<if test="listClass != null and listClass != ''">list_class,</if>
  			<if test="isDefault != null and isDefault != ''">is_default,</if>
@@ -121,6 +127,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  		    <if test="dictLabel != null and dictLabel != ''">#{dictLabel},</if>
  			<if test="dictValue != null and dictValue != ''">#{dictValue},</if>
  			<if test="dictType != null and dictType != ''">#{dictType},</if>
+ 			<if test="parentCode != null">#{parentCode},</if>
  			<if test="cssClass != null and cssClass != ''">#{cssClass},</if>
  			<if test="listClass != null and listClass != ''">#{listClass},</if>
  			<if test="isDefault != null and isDefault != ''">#{isDefault},</if>

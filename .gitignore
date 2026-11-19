@@ -73,3 +73,10 @@ managed-browser-*.png
 
 # 金蝶 SDK 原始包（以源码形式内嵌 ruoyi-kingdee/src/main/java/com/kingdee/apigw/）
 ruoyi-kingdee/lib/
+
+# Local maven cache
+maven/
+
+# SQL patches (local only)
+sql/seed_pjm_engineering_category.sql
+sql/upgrade_20261113_dict_parent.sql

@@ -146,6 +146,7 @@
             <template #default="scope">
               <span v-if="scope.row.purchaseRequestId" class="badge red"><span class="dot"></span>已发起</span>
               <span v-else-if="scope.row.needPurchase === '1'" class="badge amber"><span class="dot"></span>需采购</span>
+              <span v-else-if="scope.row.needPurchase === '0'" class="badge gray"><span class="dot"></span>无需采购</span>
               <span v-else class="muted-dash">—</span>
             </template>
           </el-table-column>
@@ -154,7 +155,7 @@
               <div class="action-btn-row">
                 <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['pjm:task:add']">子任务</el-button>
                 <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['pjm:task:edit']">修改</el-button>
-                <el-button link type="success" icon="ShoppingCart" @click="handleBuildPurchase(scope.row)" v-if="!scope.row.purchaseRequestId" v-hasPermi="['pjm:project:purchase']">发起采购</el-button>
+                <el-button link type="success" icon="ShoppingCart" @click="handleBuildPurchase(scope.row)" v-if="scope.row.needPurchase === '1' && !scope.row.purchaseRequestId" v-hasPermi="['pjm:project:purchase']">发起采购</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['pjm:task:remove']">删除</el-button>
               </div>
             </template>

@@ -38,6 +38,9 @@ public class SysDictData extends BaseEntity
     @Excel(name = "字典类型")
     private String dictType;
 
+    /** 父级字典编码（顶级为 null，支持两级级联字典） */
+    private Long parentCode;
+
     /** 样式属性（其他样式扩展） */
     private String cssClass;
 
@@ -108,6 +111,16 @@ public class SysDictData extends BaseEntity
         this.dictType = dictType;
     }
 
+    public Long getParentCode()
+    {
+        return parentCode;
+    }
+
+    public void setParentCode(Long parentCode)
+    {
+        this.parentCode = parentCode;
+    }
+
     @Size(min = 0, max = 100, message = "样式属性长度不能超过100个字符")
     public String getCssClass()
     {
@@ -162,6 +175,7 @@ public class SysDictData extends BaseEntity
             .append("dictLabel", getDictLabel())
             .append("dictValue", getDictValue())
             .append("dictType", getDictType())
+            .append("parentCode", getParentCode())
             .append("cssClass", getCssClass())
             .append("listClass", getListClass())
             .append("isDefault", getIsDefault())

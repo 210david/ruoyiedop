@@ -34,10 +34,10 @@ public class SysDept extends BaseEntity
     /** 显示顺序 */
     private Integer orderNum;
 
-    /** 部门领导（姓名） */
+    /** 负责人姓名 */
     private String leader;
 
-    /** 部门领导（人员ID） */
+    /** 负责人ID（人员ID） */
     private Long leaderId;
 
     /** 部门简称 */

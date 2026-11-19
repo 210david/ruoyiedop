@@ -1166,7 +1166,7 @@
     <user-picker ref="userPickerRef" title="选择项目经理" @confirm="onUserPickerConfirm" />
 
     <!-- ★ 系统物料选择弹窗（复用全局组件） -->
-    <material-picker ref="materialPickerRef" title="选择物料" @confirm="onMaterialPickerConfirm" />
+    <material-picker ref="materialPickerRef" title="选择物料" :material-types="activePickerMaterialTypes" @confirm="onMaterialPickerConfirm" />
 
     <!-- ★ 项目团队成员选择弹窗 -->
     <user-picker ref="memberUserPickerRef" title="选择团队成员" @confirm="onMemberUserPickerConfirm" />
@@ -1189,15 +1189,23 @@ import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 
-// ★ 字典：wms_unit 单位字典 + pjm_engineering_category 工程类别字典 + pjm_purchase_detail_type 采购明细类型 + pjm_project_attachment_type 附件类型
-const { wms_unit, wms_material_type, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
-// ★ 工程类别：按已选项目类型级联过滤
+// ★ 字典：单位 / 物料类型 / 项目类型（父级）/ 工程类别（子级，parentCode 指向项目类型）/ 采购明细类型 / 附件类型
+const { wms_unit, wms_material_type, pjm_project_type, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_project_type', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
+// ★ 项目类型（顶级，parentCode === null）
+const projectTypeOptions = computed(() => (pjm_project_type.value || []).filter(d => d.parentCode == null))
+const projectTypeLabel = (v) => (pjm_project_type.value || []).find(x => String(x.value) === String(v))?.label || '-'
+// ★ 工程类别：按已选项目类型的 dictCode 级联过滤（parent_code 匹配）
 const allEngineeringCategoryOptions = pjm_engineering_category
+const selectedProjectTypeDictCode = computed(() => {
+  if (!form.projectType) return null
+  const item = (pjm_project_type.value || []).find(d => String(d.value) === String(form.projectType))
+  return item ? Number(item.dictCode) : null
+})
 const filteredEngineeringCategoryOptions = computed(() => {
-  const all = allEngineeringCategoryOptions.value || []
-  const prefix = projectTypeToEngCatPrefix[form.projectType]
-  if (!prefix) return all   // 没选项目类型时显示全部
-  return all.filter(d => String(d.value).startsWith(prefix))
+  const all = (allEngineeringCategoryOptions.value || []).filter(d => d.parentCode != null)
+  const parent = selectedProjectTypeDictCode.value
+  if (parent == null) return all   // 没选项目类型时显示全部子项
+  return all.filter(d => Number(d.parentCode) === parent)
 })
 // 兼容旧引用（详情/审批只读展示用全部，不影响）
 const engineeringCategoryOptions = allEngineeringCategoryOptions
@@ -1310,22 +1318,7 @@ const statusOptions = [
   { value: '4', label: '已完成' }, { value: '5', label: '已关闭' },
   { value: '6', label: '暂停' }, { value: '7', label: '驳回' }
 ]
-const projectTypeOptions = [
-  { value: '1', label: '房屋建筑' }, { value: '2', label: '市政工程' },
-  { value: '3', label: '机电安装' }, { value: '4', label: '装饰装修' },
-  { value: '5', label: '园林绿化' }, { value: '6', label: '基础设施' },
-  { value: '7', label: 'EPC总承包' }
-]
-// ★ 项目类型 → 工程类别字典 value 前缀映射（用于级联过滤）
-const projectTypeToEngCatPrefix = {
-  '1': 'house_',      // 房屋建筑 → house_residential / house_public / ...
-  '2': 'municipal_',  // 市政工程 → municipal_road / municipal_bridge / ...
-  '3': 'mep_',        // 机电安装 → mep_industrial / mep_building / ...
-  '4': 'deco_',       // 装饰装修 → deco_indoor / deco_curtain / ...
-  '5': 'landscape_',  // 园林绿化 → landscape_park / landscape_road / ...
-  '6': 'infra_',      // 基础设施 → infra_transport / infra_water / ...
-  '7': 'epc_'         // EPC总承包 → epc_general
-}
+// projectTypeOptions / projectTypeLabel / filteredEngineeringCategoryOptions 已改为 computed（见上方字典区，基于 pjm_project_type + parent_code 级联）
 const qualityOptions = [
   { value: '合格', label: '合格' }, { value: '优良', label: '优良' },
   { value: '省优', label: '省优' }, { value: '国优', label: '国优' },
@@ -1347,7 +1340,6 @@ const activeFilterCount = computed(() => {
   return count
 })
 
-const projectTypeLabel = (v) => projectTypeOptions.find(x => x.value === v)?.label || '-'
 const statusLabel = (v) => statusOptions.find(x => x.value === v)?.label || '-'
 const statusBadge = (v) => ({ '0': 'amber', '1': 'blue', '2': 'green', '3': 'violet', '4': 'green', '5': 'gray', '6': 'amber', '7': 'red' }[v] || 'gray')
 const statusTabClass = (v) => ({ '0': 'tab-draft', '1': 'tab-audit', '2': 'tab-approved', '3': 'tab-partial', '4': 'tab-done', '5': 'tab-void', '6': 'tab-draft', '7': 'tab-reject' }[v] || '')
@@ -1551,13 +1543,11 @@ function ensureAttachmentGroups() {
 }
 watch(attachmentTypeOptions, ensureAttachmentGroups, { immediate: true })
 
-// ★ 级联：项目类型变化时清空已选工程类别（避免残留旧类型的选项）
+// ★ 级联：项目类型变化时清空已选工程类别（避免残留旧父级下的选项）
 watch(() => form.projectType, (newType, oldType) => {
   if (newType !== oldType && form.engineeringCategory) {
-    const prefix = projectTypeToEngCatPrefix[newType]
-    if (prefix && !String(form.engineeringCategory).startsWith(prefix)) {
-      form.engineeringCategory = ''
-    }
+    const stillValid = filteredEngineeringCategoryOptions.value.some(d => String(d.value) === String(form.engineeringCategory))
+    if (!stillValid) form.engineeringCategory = ''
   }
 })
 
@@ -1907,9 +1897,15 @@ function recalcProcurementAmount(row) {
   }
 }
 
-/** 打开物料选择弹窗（采购清单某行） */
+/** 当前物料选择弹窗的过滤类型（动态：采购清单按 procActiveType 过滤，peItems 不过滤） */
+const activePickerMaterialTypes = ref([])
+
+/** 打开物料选择弹窗（采购清单某行 — 按当前 Tab 类型过滤） */
 function openMaterialPicker(row) {
   currentProcurementRow.value = row || null
+  // 优先用行自身已有的物料类型，没选过就用当前 Tab 类型；"未分类"不过滤
+  const type = row?.materialType || procActiveType.value
+  activePickerMaterialTypes.value = type ? [String(type)] : []
   materialPickerRef.value?.open(row?.materialId)
 }
 
@@ -2149,6 +2145,7 @@ function onPeMaterialTypeChange(row) {
 /** 打开物料浏览框（peItems 某行） */
 function openPeMaterialPicker(index) {
   peCurrentPickerIndex.value = index
+  activePickerMaterialTypes.value = []   // peItems 不按类型过滤，显示全部物料
   proxy.$refs.materialPickerRef?.open?.() || (() => { proxy.$refs.materialPickerRef.visible = true })()
 }
 /** 清除 peItems 某行已关联的物料（库存/出库数据同步归零，数量全部计入采购） */
