@@ -125,4 +125,16 @@ public interface HomeKpiMapper
             + "SUM(CASE WHEN status = '1' THEN 1 ELSE 0 END) AS released "
             + "FROM mms_work_order WHERE del_flag = '0' AND status IN ('1', '2', '5')")
     public Map<String, Object> selectWorkOrderOpen();
+
+    /**
+     * 在管项目 + 执行中 + 已逾期
+     * 口径：pjm_project 状态字典（0草稿 1待审 2通过 3执行 4完成 5关闭 6暂停 7驳回）；
+     *      在管取通过/执行中/暂停（已立项且未终结），草稿、待审、已完成、已关闭、驳回不计入；
+     *      逾期 = 计划结束日已过且仍处于在管状态（与项目列表页预警口径一致）。
+     */
+    @Select("SELECT COUNT(*) AS cnt, "
+            + "SUM(CASE WHEN status = '3' THEN 1 ELSE 0 END) AS doing, "
+            + "SUM(CASE WHEN end_date IS NOT NULL AND end_date < CURDATE() THEN 1 ELSE 0 END) AS overdue "
+            + "FROM pjm_project WHERE del_flag = '0' AND status IN ('2', '3', '6')")
+    public Map<String, Object> selectProjectOpen();
 }

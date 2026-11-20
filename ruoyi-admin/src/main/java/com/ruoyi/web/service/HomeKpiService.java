@@ -494,6 +494,18 @@ public class HomeKpiService
                     item.color = "#722ed1";
                     break;
                 }
+                case "PROJECT_OPEN":
+                {
+                    Map<String, Object> row = kpiMapper.selectProjectOpen();
+                    item.label = "在管项目";
+                    item.unit = "个";
+                    item.value = num(row.get("cnt"));
+                    item.sub = "执行中 " + num(row.get("doing")) + " · 逾期 " + num(row.get("overdue"));
+                    item.subText = "已立项未终结";
+                    item.icon = "chart";
+                    item.color = "#0d9488";
+                    break;
+                }
                 default:
                     return null;
             }
