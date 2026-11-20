@@ -46,7 +46,7 @@
 
         <!-- 版权 -->
         <div class="copyright">
-          © 2026 郎鹰金属 Langying Metal. All rights reserved.
+          © 2026 郎鹰金属 Qujing Lang Eagle Metal Components Co. Ltd
         </div>
       </div>
 
@@ -479,9 +479,9 @@ function handleForgot() {
 }
 
 // 版权
-copyright {
+.copyright {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 // 右侧登录栏
