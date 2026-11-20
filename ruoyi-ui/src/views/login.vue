@@ -16,16 +16,7 @@
         <div class="info-content">
           <!-- Logo -->
           <div class="logo-wrap">
-            <div class="logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-            </div>
-            <div class="logo-text">
-              <span class="logo-main">LYJS</span>
-              <span class="logo-sub">LANGYING METAL DIGITAL OPERATION PLATFORM</span>
-            </div>
+            <img class="logo-full" :src="logoFull" alt="QUJING LANG EAGLE 郎鹰金属" />
           </div>
 
           <!-- 主标题 -->
@@ -171,6 +162,7 @@ import { encrypt, decrypt } from "@/utils/jsencrypt"
 import useUserStore from '@/store/modules/user'
 import useTagsViewStore from '@/store/modules/tagsView'
 import { ElMessage } from 'element-plus'
+import logoFull from '@/assets/logo/ly-logo-full-light.png'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -413,39 +405,15 @@ function handleForgot() {
 .logo-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 50px;
+  margin-bottom: 40px;
 }
 
-.logo-icon {
-  width: 48px;
-  height: 48px;
-  color: #fff;
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-}
-
-.logo-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.logo-main {
-  font-size: 28px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 2px;
-  line-height: 1;
-}
-
-.logo-sub {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.5px;
-  margin-top: 4px;
+.logo-full {
+  height: 96px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 // 主标题
@@ -766,6 +734,10 @@ copyright {
   .info-section,
   .login-section {
     padding: 30px 40px;
+  }
+
+  .logo-full {
+    height: 72px;
   }
 
   .title-white {

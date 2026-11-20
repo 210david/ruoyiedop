@@ -69,6 +69,13 @@ output/
 image-*.png
 image-*.webp
 managed-browser-*.png
+_*.png
+_*.svg
+_*.npy
+_*.html
+ruoyi-ui/logo-qa.html
+ruoyi-ui/dist-copyfix/
+*.tmp
 *.artifact.json
 
 # 金蝶 SDK 原始包（以源码形式内嵌 ruoyi-kingdee/src/main/java/com/kingdee/apigw/）
