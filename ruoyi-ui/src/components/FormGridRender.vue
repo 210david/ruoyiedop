@@ -43,14 +43,14 @@
                         :model-value="values[e.cell.field]"
                         :id-value="values[e.cell.field + '__id']"
                         :extra-value="values[e.cell.field + '__extra']"
-                        :required="cellAttr(e.cell) === 'req'"
+                        :required="showReqStar(e.cell)"
                         :options-override="(props.overrides[e.cell.field] || {}).options"
                         @update:model-value="(v) => (values[e.cell.field] = v)"
                         @update:id-value="(v) => (values[e.cell.field + '__id'] = v)"
                         @update:extra-value="(v) => (values[e.cell.field + '__extra'] = v)"
                       />
                       <!-- 附件控件的星号由 FileUpload 内部紧跟在“选取文件”按钮后渲染，这里不再重复 -->
-                      <i v-if="cellAttr(e.cell) === 'req' && !isAttach(e.cell.field)" class="req" title="必填">*</i>
+                      <i v-if="showReqStar(e.cell) && !isAttach(e.cell.field)" class="req" title="必填">*</i>
                     </el-form-item>
                   </template>
                   <!-- 详情页 / 预览：只读回显——纯文本，不画输入框边框/底色，也不挂控件图标 -->
@@ -86,7 +86,7 @@
                     <thead>
                       <tr>
                         <th style="width: 48px">序号</th>
-                        <th v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }">{{ col.label || col.field }}<i v-if="editable && values && colAttr(col) === 'req'" class="req">*</i></th>
+                        <th v-for="col in e.cell.detail.columns || []" :key="col.field" :style="{ textAlign: col.align || 'center' }">{{ col.label || col.field }}<i v-if="editable && values && showColReqStar(col, e.cell.detail && e.cell.detail.table)" class="req">*</i></th>
                         <th v-if="showDetailOpCol(e)" style="width: 48px">操作</th>
                       </tr>
                     </thead>
@@ -270,6 +270,39 @@ function isAttachValue(v) {
 function hasValue(field) {
   const v = props.values ? props.values[field] : undefined;
   return !!(v && String(v).trim());
+}
+/**
+ * 必填星号是否显示（泛微口径）：有值就不显示，清空后又显示。
+ * 星号是「还没填」的提示，填完还给用户一个红点只会让人觉得还没填对；
+ * 一旦清空（含下拉清空、日期清空、附件删空）就恢复显示，保证必填约束仍然可见。
+ */
+function showReqStar(cell) {
+  if (!cell || cellAttr(cell) !== 'req') return false;
+  return isFieldUnfilled(cell.field);
+}
+/** 字段是否「还没填」：勾选框/开关取消勾选后值是 '0'，语义上仍是未填，星号要回来 */
+function isFieldUnfilled(field) {
+  const v = props.values ? props.values[field] : undefined;
+  if (isBlankValue(v)) return true;
+  const rt = rtypeOf(fieldDef(field));
+  if ((rt === 'check' || rt === 'switch') && String(v) === '0') return true;
+  return false;
+}
+/**
+ * 明细列必填星号是否显示（泛微口径）：明细还没有行，或任一行该列为空 → 显示；
+ * 所有行该列都已填 → 隐藏，清空某行又恢复显示。
+ */
+function showColReqStar(col, table) {
+  if (!col || colAttr(col) !== 'req') return false;
+  const rows = detailRows.value[table] || [];
+  if (!rows.length) return true;
+  // 勾选/开关列值为 '0' 时同样视为未填，与主表口径一致
+  const rt = rtypeOf(fieldDefOfTable(col.field, table));
+  return rows.some((r) => {
+    const v = r[col.field];
+    if (isBlankValue(v)) return true;
+    return (rt === 'check' || rt === 'switch') && String(v) === '0';
+  });
 }
 function displayValue(field, style) {
   const f = (field && fieldMap.value[field]) || { field };

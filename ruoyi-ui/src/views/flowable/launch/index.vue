@@ -123,7 +123,7 @@
               <span class="lc-icon">▤</span>申请表单
             </div>
             <div class="launch-card-body">
-              <el-form ref="dynRef" :model="dynData" label-width="120px">
+              <el-form ref="dynRef" :model="dynData" label-width="120px" hide-required-asterisk>
               <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid" :fields="boundForm.fields" :values="dynData" :editable-fields="noRuleEditableFields" :overrides="ruleOverrides" :rule-errors="ruleErrors" :rule-detail-errors="ruleDetailErrors" editable @detail-change="runFormRules" />
               <template v-else>
                 <!-- 简易模式顶部流程名称：与分组标题一起构成表单层级 -->
@@ -145,7 +145,7 @@
                           <thead>
                             <tr>
                               <th style="width: 48px">序号</th>
-                              <th v-for="f in detailTableFields(c.detailTable)" :key="f.field">{{ f.label }}<span v-if="f.required" style="color: #ef4444"> *</span></th>
+                              <th v-for="f in detailTableFields(c.detailTable)" :key="f.field">{{ f.label }}<span v-if="showDynDetailReqStar(c.detailTable, f)" style="color: #ef4444"> *</span></th>
                               <th style="width: 48px">操作</th>
                             </tr>
                           </thead>
@@ -175,18 +175,23 @@
                       </div>
                       <div v-else-if="c.note" class="dyn-note" :style="dynCellStyle(c)">{{ c.note }}</div>
                       <div v-else-if="c.style && (c.style.bgColor || c.style.border)" class="dyn-cell-wrap" :style="dynCellStyle(c)">
-                        <el-form-item :label="c.f.label" :prop="c.f.field" :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur', 'change'] }] : []">
+                        <el-form-item :prop="c.f.field" :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur', 'change'] }] : []">
+                          <template #label>
+                            <span class="dyn-label">{{ c.f.label }}<i v-if="showDynReqStar(c.f)" class="dyn-req">*</i></span>
+                          </template>
                           <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || '' }}</span>
                           <dyn-field v-else :f="c.f" v-model="dynData[c.f.field]" v-model:model-ids="dynData[c.f.field + '__id']" v-model:model-extra="dynData[c.f.field + '__extra']" />
                         </el-form-item>
                       </div>
                       <el-form-item
                         v-else
-                        :label="c.f.label"
                         :prop="c.f.field"
                         :style="dynCellStyle(c)"
                         :rules="c.f.required ? [{ required: true, message: '请填写' + c.f.label, trigger: ['blur', 'change'] }] : []"
                       >
+                        <template #label>
+                          <span class="dyn-label">{{ c.f.label }}<i v-if="showDynReqStar(c.f)" class="dyn-req">*</i></span>
+                        </template>
                         <span v-if="isFrozenField(c.f)" class="dyn-ro">{{ dynData[c.f.field] || '' }}</span>
                         <dyn-field v-else :f="c.f" v-model="dynData[c.f.field]" v-model:model-ids="dynData[c.f.field + '__id']" v-model:model-extra="dynData[c.f.field + '__extra']" />
                       </el-form-item>
@@ -1387,6 +1392,23 @@ function isBlankVal(v) {
 }
 
 /**
+ * 分组回退模式的必填星号（泛微口径）：有值隐藏，清空后恢复。
+ * 网格模式由 FormGridRender 自己按值计算，这里只覆盖没有 grid 布局时的分组渲染。
+ */
+function showDynReqStar(f) {
+  if (!f || !f.required) return false;
+  return isBlankVal(dynData[f.field]);
+}
+
+/** 分组回退模式的明细列必填星号：明细还没行或任一行该列为空就显示，全填后隐藏 */
+function showDynDetailReqStar(table, f) {
+  if (!f || !f.required) return false;
+  const rows = detailRows.value[table] || [];
+  if (!rows.length) return true;
+  return rows.some((r) => isBlankVal(r[f.field]));
+}
+
+/**
  * 明细表必填校验（提交前置）：
  * - 网格模式：明细行由 FormGridRender 维护，校验与标红交给组件；
  * - 分组模式：明细行在本页 detailRows，逐行校必填列。
@@ -2113,6 +2135,19 @@ export default { name: 'FlowLaunch', components: { 'dyn-field': DynField } };
   color: #334155;
   font-size: 13px;
   line-height: 32px;
+}
+
+/* 分组模式（无网格布局时的回退渲染）的必填星号：
+ * 星号跟随标签、随「已填写/已清空」显隐（泛微口径），不用 Element 自带的常驻星号 */
+.dyn-label {
+  display: inline-flex;
+  align-items: baseline;
+}
+.dyn-req {
+  color: #f56c6c;
+  font-style: normal;
+  font-weight: 700;
+  margin-left: 2px;
 }
 
 /* 简易模式顶部流程名称（表单标题）：居中大字，与预览保持一致 */
