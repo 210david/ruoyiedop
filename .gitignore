@@ -87,3 +87,12 @@ maven/
 # SQL patches (local only)
 sql/seed_pjm_engineering_category.sql
 sql/upgrade_20261113_dict_parent.sql
+
+# ===== 本地构建/部署产物与素材（不入库） =====
+BOOT-INF/
+deploy/app/
+deploy/dist-frontend-*.zip
+dict_data_*.xlsx
+login-snapshot.md
+sidebar-*.png
+2a4560ff6374d44329ef31d60d07ae6c.png

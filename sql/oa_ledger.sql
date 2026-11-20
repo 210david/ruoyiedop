@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS biz_oa_driver (
   owner_dept      varchar(100) DEFAULT NULL COMMENT '所属部门',
   driving_years   int          DEFAULT NULL COMMENT '驾龄(年)',
   status          char(1)      DEFAULT '0' COMMENT '状态(0在岗 1休假 2停用)',
+  flow_instance_id varchar(64) DEFAULT NULL COMMENT '关联流程实例ID（公车使用申请流程写回）',
   attachment      varchar(1000) DEFAULT NULL COMMENT '附件',
   del_flag        char(1)      DEFAULT '0' COMMENT '删除标志(0存在 2删除)',
   create_by       varchar(64)  DEFAULT '' COMMENT '创建者',
