@@ -147,17 +147,73 @@ function handleAuth() {
 
 /** 复制整段 MCP 配置 */
 function copyConfig() {
-  copyText(mcpConfigJson.value, '配置已复制')
-  copied.value = true
+  copyText(mcpConfigJson.value, '配置已复制').then(ok => {
+    if (ok) copied.value = true
+  })
 }
 
-/** 复制文本 */
-function copyText(text, tip) {
-  navigator.clipboard.writeText(text).then(() => {
+/**
+ * 复制文本，兼容非 HTTPS 环境
+ *
+ * navigator.clipboard 只在「安全上下文」可用（HTTPS 或 localhost）。
+ * 客户生产环境常是 http://IP:port 直连，此时 navigator.clipboard 为 undefined，
+ * 直接调用会抛同步异常（不是 Promise reject），表现为：点了没反应、也无报错。
+ * 因此优先用 Clipboard API，不可用或失败时回退到 execCommand('copy')。
+ *
+ * @returns {Promise<boolean>} 是否复制成功
+ */
+async function copyText(text, tip) {
+  if (!text) {
+    proxy.$modal.msgError('没有可复制的内容')
+    return false
+  }
+  let ok = false
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      ok = true
+    }
+  } catch (e) {
+    ok = false
+  }
+  if (!ok) {
+    ok = legacyCopy(text)
+  }
+  if (ok) {
     proxy.$modal.msgSuccess(tip)
-  }).catch(() => {
-    proxy.$modal.msgError('复制失败，请手动选择文本复制')
-  })
+  } else {
+    proxy.$modal.msgError('复制失败，请手动选中文本复制')
+  }
+  return ok
+}
+
+/**
+ * 旧式复制兜底：临时 textarea + execCommand('copy')
+ * 在 HTTP 页面下可用，兼容各主流浏览器。
+ */
+function legacyCopy(text) {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.top = '0'
+  textarea.style.left = '-9999px'
+  textarea.style.opacity = '0'
+  const prevFocus = document.activeElement
+  document.body.appendChild(textarea)
+  textarea.select()
+  textarea.setSelectionRange(0, textarea.value.length)
+  let ok = false
+  try {
+    ok = document.execCommand('copy')
+  } catch (e) {
+    ok = false
+  }
+  document.body.removeChild(textarea)
+  if (prevFocus && typeof prevFocus.focus === 'function') {
+    prevFocus.focus()
+  }
+  return ok
 }
 
 /** 回到授权态（重新颁发） */
