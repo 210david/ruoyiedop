@@ -285,6 +285,7 @@
         </el-form-item>
         <el-form-item v-if="dftCanFixed" label="固定值">
           <el-date-picker v-if="dftField && dftField.form === 'date'" v-model="dft.fixed" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" placeholder="选择日期" clearable style="width:100%" />
+          <el-time-picker v-else-if="dftField && dftField.form === 'time'" v-model="dft.fixed" value-format="HH:mm:ss" format="HH:mm:ss" placeholder="选择时间" clearable style="width:100%" />
           <el-date-picker v-else-if="dftField && dftField.form === 'datetime'" v-model="dft.fixed" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" format="YYYY-MM-DD HH:mm:ss" placeholder="选择日期时间" clearable style="width:100%" />
           <el-input v-else v-model="dft.fixed" placeholder="留空表示不填" maxlength="200" />
           <div class="form-tip">打开表单时直接填入该固定值（用户仍可修改）</div>
@@ -342,13 +343,13 @@ function autoFillFieldName(target, label) {
 const SELECT_FORM_OPTIONS = { select: '下拉框', radio: '点选单选', checkbox: '复选勾选' }
 const FORM_OPTIONS = {
   text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框',
-  attach: '附件上传', date: '日期框', datetime: '日期时间框',
+  attach: '附件上传', date: '日期框', time: '时间框', datetime: '日期时间框',
   number: '数字框', switch: '开关框', rate: '评分框'
 }
 /** 选择框类表现形式（下拉/单选/复选共用选项配置与键值分离逻辑） */
 const isSelForm = f => ['select', 'radio', 'checkbox'].includes(f)
 /** 数据类型（dtype）：决定数据库列类型 */
-const DTYPE_OPTIONS = { text: '文本', date: '日期', datetime: '日期时间', float: '浮点数', int: '整数' }
+const DTYPE_OPTIONS = { text: '文本', date: '日期', time: '时间', datetime: '日期时间', float: '浮点数', int: '整数' }
 /** 浏览按钮多选开关是否可操作：数据源本身支持多选，且不是「只能多选」（如角色） */
 function browseSwitchDisabled(row) {
   return !browseSupportsMultiple(row.browseType) || browseForceMultiple(row.browseType)
@@ -381,6 +382,7 @@ const FORM_DEFAULTS = {
   select:   { dtype: 'text', length: 100, selectOptions: [] },
   attach:   { dtype: 'text', length: 2000, attachType: 'all', attachLimit: 5 },
   date:     { dtype: 'date' },
+  time:     { dtype: 'time' },
   datetime: { dtype: 'datetime' },
   number:   { dtype: 'float', scale: 2 },
   radio:    { dtype: 'text', length: 100, selectOptions: [] },
@@ -570,9 +572,11 @@ function normalizeFields(arr) {
     if (!n.form) {
       if (n.type === 'textarea') n.form = 'textarea'
       else if (n.type === 'select') n.form = 'select'
+      else if (n.type === 'time') n.form = 'time'
       else n.form = 'text'
       if (n.type === 'number') n.dtype = 'float'
       else if (n.type === 'date') n.dtype = 'date'
+      else if (n.type === 'time') n.dtype = 'time'
       else n.dtype = n.dtype || 'text'
     }
     n.dtype = n.dtype || 'text'
@@ -655,18 +659,19 @@ function applyFormDefaults(row) {
   if (d.scale) row.scale = d.scale
   if (row.form === 'textarea') { row.dtype = 'text'; row.length = Math.max(row.length || 4000, 4000) }
   if (row.form === 'date') row.dtype = 'date'
+  if (row.form === 'time') row.dtype = 'time'
   if (row.form === 'datetime') row.dtype = 'datetime'
   if (row.form === 'number') row.dtype = row.dtype === 'int' ? 'int' : 'float'
   if (row.form === 'browse') row.dtype = 'text'
 }
 
 /** 数据类型是否随表现形式锁定：选项类、附件、日期、数字、浏览按钮均不允许改dtype */
-function isDtypeLocked(form) { return ['date', 'datetime', 'number', 'textarea', 'check', 'select', 'radio', 'checkbox', 'attach', 'browse'].includes(form) }
+function isDtypeLocked(form) { return ['date', 'time', 'datetime', 'number', 'textarea', 'check', 'select', 'radio', 'checkbox', 'attach', 'browse'].includes(form) }
 
-/** 自由表现形式下可选的数据类型：日期/日期时间只能通过表现形式选择 */
+/** 自由表现形式下可选的数据类型：日期/时间/日期时间只能通过表现形式选择 */
 function dtypeOptions(form) {
   if (isDtypeLocked(form)) return DTYPE_OPTIONS
-  const { date, datetime, ...rest } = DTYPE_OPTIONS
+  const { date, time, datetime, ...rest } = DTYPE_OPTIONS
   return rest
 }
 

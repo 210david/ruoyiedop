@@ -165,7 +165,7 @@ const filteredFields = computed(() => {
   return (props.fields || []).filter(f => (f.label || '').toLowerCase().includes(k) || (f.field || '').toLowerCase().includes(k))
 })
 const fonts = ['Microsoft YaHei', 'SimSun', 'SimHei', 'KaiTi', 'FangSong', 'DengXian']
-const FORM_LABELS = { text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框', select: '选择框', attach: '附件上传', date: '日期框', datetime: '日期时间框', number: '数字框', radio: '单选框', switch: '开关框', rate: '评分框' }
+const FORM_LABELS = { text: '单行文本框', textarea: '多行文本框', browse: '浏览按钮', check: 'Check框', select: '选择框', attach: '附件上传', date: '日期框', time: '时间框', datetime: '日期时间框', number: '数字框', radio: '单选框', switch: '开关框', rate: '评分框' }
 
 const typeModel = computed({
   get: () => (props.activeCell ? props.activeCell.type : 'text'),
