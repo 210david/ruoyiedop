@@ -30,6 +30,7 @@ export const DEFAULT_MODE_LABELS = {
   currentDept: '当前用户所属部门',
   currentDate: '当天日期',
   currentDatetime: '当前时间',
+  currentTime: '当前时刻',
   fixedValue: '固定值',
   fixedPick: '指定值',
   fieldValue: '取表单字段',
@@ -59,6 +60,12 @@ export function dateTimeText(d) {
   return `${dateText(t)} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
 }
 
+/** 当前时刻 HH:mm:ss（时间框取值口径，与后端 time 列一致） */
+export function timeText(d) {
+  const t = d || new Date();
+  return `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+}
+
 export function isEmptyValue(v) {
   if (v === undefined || v === null || v === '') return true;
   if (Array.isArray(v)) return v.length === 0;
@@ -86,6 +93,7 @@ export function defaultModesOf(f) {
     return ['fixedPick'];
   }
   if (f.form === 'date') return ['currentDate', 'fixedValue', 'fieldValue'];
+  if (f.form === 'time') return ['currentTime', 'fixedValue', 'fieldValue'];
   if (f.form === 'datetime') return ['currentDatetime', 'fixedValue', 'fieldValue'];
   // 选项类固定默认值走「配置」弹窗，附件不提供固定值
   if (['select', 'radio', 'checkbox', 'attach'].includes(f.form)) return ['fieldValue'];
@@ -108,6 +116,10 @@ export function sourceFieldOptions(fields, mode, selfField, selfTable) {
     return list.filter((x) => x.form === 'browse' && (x.browseType || 'user') === 'user');
   }
   const src = list.filter((x) => x.form !== 'attach' && x.form !== 'browse');
+  if (mode === 'fieldValue' && self && self.form === 'time') {
+    // 时间框只取同表其他时间框的值（日期/日期时间带日期部分，抄进时间框会变成非法值）
+    return src.filter((x) => x.form === 'time');
+  }
   if (mode === 'fieldValue' && self && (self.form === 'date' || self.form === 'datetime')) {
     return src.filter((x) => x.form === 'date' || x.form === 'datetime');
   }
@@ -210,12 +222,15 @@ export function applyFieldDefaults(fields, values, ctx) {
         values[f.field] = dateText();
       } else if (mode === 'currentDatetime') {
         values[f.field] = dateTimeText();
+      } else if (mode === 'currentTime') {
+        values[f.field] = timeText();
       } else if (mode === 'fieldValue') {
         const src = f.defaultField;
         if (src && !isEmptyValue(values[src])) {
           let v = values[src];
-          // 日期框只留日期部分，日期时间框补全时分秒，避免控件解析失败显示空白
+          // 日期框只留日期部分，时间框只留时分秒，日期时间框补全时分秒，避免控件解析失败显示空白
           if (f.form === 'date') v = String(v).slice(0, 10);
+          else if (f.form === 'time') v = String(v).length > 10 ? String(v).slice(11) : String(v);
           else if (f.form === 'datetime' && String(v).length === 10) v = v + ' 00:00:00';
           values[f.field] = v;
         }

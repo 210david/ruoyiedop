@@ -456,6 +456,10 @@ public class FlowFormServiceImpl implements IFlowFormService
         {
             return "datetime";
         }
+        if ("time".equals(dtype))
+        {
+            return "time";
+        }
         if ("date".equals(dtype))
         {
             return "date";
@@ -503,6 +507,11 @@ public class FlowFormServiceImpl implements IFlowFormService
         else if ("date".equals(legacy))
         {
             dtype = "date";
+        }
+        else if ("time".equals(legacy))
+        {
+            form = "time";
+            dtype = "time";
         }
         else if ("select".equals(legacy))
         {
