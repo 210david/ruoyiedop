@@ -14,7 +14,7 @@
 | 鉴权头 | `Authorization: Bearer <token>`；HTTP 401 → 网关重登一次 |
 | 分页 | 通用参数 `pageNum` / `pageSize`；响应 `TableDataInfo{total, rows[]}` |
 | 业务响应 | `AjaxResult{code:200, msg, data}`；code≠200 视为业务错误 |
-| 服务账号权限 | 8 个权限点见各工具；账号 `edop-mcp` + 角色 `edop_mcp_readonly`（`sql/edop_mcp_service_account.sql`） |
+| 服务账号权限 | 12 个权限点见各工具；账号 `edop-mcp` + 角色 `edop_mcp_readonly`（`sql/edop_connector_install.sql`，幂等） |
 | 网关侧约束 | 仅 GET；日期范围 ≤92 天；pageSize ≤100 |
 
 ## 1. get_bi_metrics（BI 指标）

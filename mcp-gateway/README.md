@@ -42,7 +42,7 @@ profiles/
 - 冒烟回归：`node smoke-test.mjs`（7 项：stdio×3 + http×4，改网关后必跑）
 - 审计日志：`audit.log`（含 profile 标识、每次调用与登录、http 鉴权拒绝记录）
 - 前提：EDOP 后端在运行（baseUrl 指向的目标）
-- 服务账号初始化：`sql/edop_mcp_service_account.sql`
+- 数据库安装（幂等，可重复执行）：`sql/edop_connector_install.sql`（含授权表/菜单/服务账号/权限点）
 
 ---
 

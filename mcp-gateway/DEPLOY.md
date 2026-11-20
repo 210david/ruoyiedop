@@ -17,7 +17,7 @@
 
 ## 1. 形态 A1：内部 stdio（每台电脑一份）
 
-1. 生产库执行 `sql/edop_mcp_service_account.sql`（**密码必须与开发环境不同**，执行前改脚本）
+1. 生产库执行 `sql/edop_connector_install.sql`（幂等，可重复执行；含服务账号，**密码必须与开发环境不同**，执行后立即改密并同步 `profiles/*.json`）
 2. 分发安装包（zip）：node 免安装版 + `mcp-gateway/` 整目录（**不含 profiles 真实凭据，只含 example 模板**）
 3. 每个用户：
    - 复制 `profiles/standard.example.json` → `profiles/<自己名字>.json`，填分配给他的**个人低权限账号**（禁用共享 admin / edop-mcp）
