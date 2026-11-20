@@ -72,6 +72,13 @@ export function displayTextOf(f, val, placeholder = '—') {
   return val
 }
 
+/** 附件值是否已有文件（逗号分隔路径；空白字符串视为空 → 恢复必填星号） */
+function hasAnyFile(v) {
+  if (!v) return false
+  const s = Array.isArray(v) ? v.join(',') : String(v)
+  return s.split(',').some(x => x.trim())
+}
+
 export default defineComponent({
   name: 'FormGridControl',
   props: {
@@ -134,7 +141,7 @@ export default defineComponent({
           'onUpdate:modelIds': setId,
           'onUpdate:modelExtra': setExtra
         })
-        case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis, inlineTip: true, reqStar: props.required })
+        case 'attach': return h(resolveComponent('FileUpload'), { modelValue: v, 'onUpdate:modelValue': set, limit: f.attachLimit || 5, fileSize: 50, disabled: dis, inlineTip: true, reqStar: props.required && !hasAnyFile(v) })
         case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4, placeholder: f.placeholder, disabled: dis })
         // 数字框默认居中（el-input-number 自带样式），这里跟随单元格对齐方式，未设置时居左
         // 空串/ null 归一为 undefined：ElInputNumber 收到空串会显示并回写 0，误触发「必须大于0」类校验
