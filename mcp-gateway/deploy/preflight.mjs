@@ -93,20 +93,40 @@ if (!fs.existsSync(profilePath)) {
 
 /* ---------- 2. 关键字段检查 ---------- */
 if (cfg) {
-  // password：占位符 / 空值一律阻断
-  const pw = String(cfg.password ?? "");
-  if (!pw) fail("password 为空");
-  else if (pw.startsWith("__") || pw.includes("占位符") || pw.includes("填写") || pw.includes("placeholder")) {
-    fail(`password 仍是占位符（当前值 "${pw}"），请填入 edop-mcp 账号的真实密码`);
-  }
-
-  // apiKey：http 模式必填（stdio 不需要）
   const mode = process.env.EDOP_GATEWAY_MODE || cfg.mode || "stdio";
+  const pw = String(cfg.password ?? "");
+  const pwPlaceholder = !pw || pw.startsWith("__") || pw.includes("占位符") || pw.includes("填写") || pw.includes("placeholder");
+
+  /**
+   * 校验口径（依据 gateway.mjs 实际实现）：
+   *   - apiKey：http 模式**必填**。gateway.mjs:517 会硬性检查，缺失直接退出。
+   *     它开启的是 service 模式（持 key 者以服务账号视角访问全平台数据）。
+   *   - password：只被 service 模式使用（config.username/config.password 登录）。
+   *     逐用户模式（Authorization: Bearer <grant_token>）完全不用它：网关拿用户令牌
+   *     调后端 /edop/connector/auth/exchange 换 JWT，权限由该用户 @DataScope 决定。
+   *
+   * 由于 http 模式必定存在 apiKey，service 模式在本部署下始终可达：
+   *   - 若 apiKey 已发给真实用户/客户 -> 密码必须有效（否则 service 模式调用报"密码错误"）
+   *   - 仅用于内部联调、对外只发 grant_token -> 密码可留占位符，降级为告警
+   * stdio 模式（本机自用）恒为 service，密码必须有效。
+   */
+  const hasApiKey = !!cfg.apiKey;
+
   if (mode === "http") {
-    if (!cfg.apiKey) fail("apiKey 为空（http 模式必需）");
+    if (!hasApiKey) fail("apiKey 为空（http 模式必需，gateway.mjs 会拒绝启动）");
     else if (String(cfg.apiKey).length < 24) fail(`apiKey 过短（${String(cfg.apiKey).length} 位，要求 ≥24 位）`);
     else if (/^(edop-local-dev-key|test|123456|admin|changeme)/i.test(String(cfg.apiKey))) {
       fail("apiKey 疑似开发/弱默认值，生产必须随机生成");
+    }
+  }
+
+  if (pwPlaceholder) {
+    if (mode === "http") {
+      // http 部署下 service 模式可达（有 apiKey），但生产实际只发逐用户令牌时可容忍
+      warn("password 为占位符：service 模式（x-api-key 访问）将报登录失败。"
+        + "若本环境只向用户发放 grant_token（逐用户授权），可忽略此项");
+    } else {
+      fail(`password 仍是占位符（当前值 "${pw}"），请填入 edop-mcp 账号的真实密码（stdio 模式恒用服务账号）`);
     }
   }
 
