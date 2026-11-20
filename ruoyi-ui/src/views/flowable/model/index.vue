@@ -894,6 +894,16 @@
                               placeholder="选择日期"
                               @change="syncCondition"
                             />
+                            <el-time-picker
+                              v-else-if="condValueKind(row) === 'time'"
+                              v-model="row.value"
+                              size="small"
+                              class="cond-value"
+                              value-format="HH:mm:ss"
+                              format="HH:mm"
+                              placeholder="选择时间"
+                              @change="syncCondition"
+                            />
                             <el-input-number
                               v-else-if="condValueKind(row) === 'number'"
                               v-model="row.value"
@@ -1630,6 +1640,15 @@
               type="date"
               value-format="YYYY-MM-DD"
               placeholder="选择日期"
+            />
+            <el-time-picker
+              v-else-if="condValueKind(scope.row) === 'time'"
+              v-model="scope.row.value"
+              size="small"
+              style="width: 100%"
+              value-format="HH:mm:ss"
+              format="HH:mm"
+              placeholder="选择时间"
             />
             <el-input-number v-else-if="condValueKind(scope.row) === 'number'" v-model="scope.row.value" size="small" controls-position="right" placeholder="数值" />
             <el-input v-else v-model="scope.row.value" :placeholder="isMultiValueOp(scope.row.op) ? '多个值用逗号分隔' : '填写比较值'" size="small" />
@@ -5779,13 +5798,14 @@ function fieldMetaOf(field) {
   return condFieldOptions.value.find((f) => f.field === field) || null;
 }
 
-/** 字段的值类型：options（有选项）/ date / number / text */
+/** 字段的值类型：options（有选项）/ date / time / number / text */
 function condValueKind(row) {
   const meta = fieldMetaOf(row && row.field);
   if (!meta) return 'text';
   if (meta.options && meta.options.length) return 'options';
   const rt = meta.rtype || '';
   if (rt === 'date' || rt === 'datetime') return 'date';
+  if (rt === 'time') return 'time';
   if (rt === 'number') return 'number';
   return 'text';
 }

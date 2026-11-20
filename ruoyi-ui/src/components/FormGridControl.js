@@ -4,7 +4,7 @@
  * 避免组件反向引用页面模块造成循环依赖。
  */
 import { defineComponent, h, resolveComponent } from 'vue'
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker } from 'element-plus'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElTimePicker } from 'element-plus'
 import FormBrowse from '@/components/FormBrowse/index.vue'
 import { htmlToText } from '@/utils'
 import { toRmbUpper } from '@/utils/rmb'
@@ -24,11 +24,11 @@ export function rtypeOf(f) {
   if (forced) return forced
   if (f.rtype) return f.rtype
   if (f.form) {
-    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate', 'date', 'datetime', 'number'].includes(f.form)) return f.form
-    return f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
+    if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate', 'date', 'time', 'datetime', 'number'].includes(f.form)) return f.form
+    return f.dtype === 'datetime' ? 'datetime' : f.dtype === 'time' ? 'time' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
   }
   const t = f.type
-  if (['number', 'date', 'datetime', 'textarea', 'select', 'radio', 'check', 'browse', 'attach', 'switch', 'rate'].includes(t)) return t
+  if (['number', 'date', 'time', 'datetime', 'textarea', 'select', 'radio', 'check', 'browse', 'attach', 'switch', 'rate'].includes(t)) return t
   return 'text'
 }
 
@@ -149,6 +149,7 @@ export default defineComponent({
         case 'date': return isTime
           ? h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择时间', style: 'width:100%', disabled: dis })
           : h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: dateVf, placeholder: f.placeholder || '选择日期', style: 'width:100%', disabled: dis })
+        case 'time': return h(ElTimePicker, { modelValue: v, 'onUpdate:modelValue': set, valueFormat: 'HH:mm:ss', format: 'HH:mm', placeholder: f.placeholder || '选择时间', style: 'width:100%', disabled: dis })
         case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: f.placeholder || '选择日期时间', style: 'width:100%', disabled: dis })
         default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, placeholder: f.placeholder || '请输入', disabled: dis })
       }
