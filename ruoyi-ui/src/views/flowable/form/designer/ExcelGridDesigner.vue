@@ -468,13 +468,13 @@ function cellAttr(cell) {
 function ctrlIcon(f) {
   const d = fieldMap.value[f]
   if (!d) return ''
-  return { browse: '⌕', date: '▣', datetime: '▣', select: '▾', radio: '◉', attach: '📎', number: '123', check: '✓', switch: '◉' }[d.form] || ''
+  return { browse: '⌕', date: '▣', time: '◔', datetime: '▣', select: '▾', radio: '◉', attach: '📎', number: '123', check: '✓', switch: '◉' }[d.form] || ''
 }
 /** 设计态展示真实字段名称与控件类型，避免字段格看起来像空白表单。 */
 function fieldPlaceholder(f) {
   const d = fieldMap.value[f]
   if (!d) return f || '未绑定字段'
-  const suffix = { select: '（请选择）', radio: '（请选择）', browse: '（点击选择）', date: '（选择日期）', datetime: '（选择时间）', attach: '（上传附件）', check: '（勾选）', switch: '（开关）' }[d.form] || ''
+  const suffix = { select: '（请选择）', radio: '（请选择）', browse: '（点击选择）', date: '（选择日期）', time: '（选择时间）', datetime: '（选择时间）', attach: '（上传附件）', check: '（勾选）', switch: '（开关）' }[d.form] || ''
   return (d.label || f) + suffix
 }
 /** 字段格是否设置了「人民币大写」数字格式：设计态在控件下方灰字预览示例 */
