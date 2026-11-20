@@ -9,9 +9,9 @@ export function normalizeHandleField(f, perm) {
   let t = f.type
   if (f.form) {
     if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate'].includes(f.form)) t = f.form
-    else if (f.form === 'date' || f.form === 'datetime') t = f.form
+    else if (f.form === 'date' || f.form === 'time' || f.form === 'datetime') t = f.form
     else if (f.form === 'number') t = 'number'
-    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
+    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'time' ? 'time' : f.dtype === 'date' ? 'date' : (f.dtype === 'float' || f.dtype === 'int') ? 'number' : 'text'
   } else if (!t) t = 'text'
   // 系统字段固定渲染：紧急程度→单选按钮组；签字意见→富文本编辑器
   if (f.field === 'urgency') t = 'radio'
