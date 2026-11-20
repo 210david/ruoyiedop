@@ -488,6 +488,35 @@ function grantPageHtml() {
   <div class="foot">EDOP 仅向您本人授权的数据范围提供只读查询能力，<br/>平台管理员与 AI 助手均不会索要您的账号密码。</div>
 </div>
 <script>
+/**
+ * 复制文本，兼容非 HTTPS 环境（客户内网 http://IP:port 常见）
+ * navigator.clipboard 仅在安全上下文（HTTPS/localhost）存在，
+ * 直接调用会同步抛 TypeError，表现为点了没反应且无报错。
+ * 这里优先用 Clipboard API，不可用或失败时回退 execCommand('copy')。
+ */
+function copyText(text){
+  return new Promise(resolve=>{
+    const fallback=()=>{
+      const ta=document.createElement('textarea');
+      ta.value=text;
+      ta.setAttribute('readonly','');
+      ta.style.position='fixed';ta.style.top='0';ta.style.left='-9999px';ta.style.opacity='0';
+      const pf=document.activeElement;
+      document.body.appendChild(ta);
+      ta.select();ta.setSelectionRange(0,ta.value.length);
+      let ok=false;
+      try{ok=document.execCommand('copy')}catch(e){ok=false}
+      document.body.removeChild(ta);
+      if(pf&&typeof pf.focus==='function'){pf.focus()}
+      resolve(ok);
+    };
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(text).then(()=>resolve(true)).catch(fallback);
+    }else{
+      fallback();
+    }
+  });
+}
 const f=document.getElementById('f'),m=document.getElementById('m'),btn=document.getElementById('btn');
 f.addEventListener('submit',async(e)=>{
   e.preventDefault();
@@ -503,7 +532,12 @@ f.addEventListener('submit',async(e)=>{
     document.getElementById('s').textContent=cfg;
     document.getElementById('t').textContent=j.grantToken;
     rEl.style.display='block';
-    document.getElementById('c').onclick=()=>{navigator.clipboard.writeText(cfg);document.getElementById('c').textContent='✓ 已复制，去 WorkBuddy 粘贴即可';};
+    document.getElementById('c').onclick=()=>{
+      const btn=document.getElementById('c');
+      copyText(cfg).then(ok=>{
+        btn.textContent = ok ? '✓ 已复制，去 WorkBuddy 粘贴即可' : '✗ 复制失败，请手动选中下方文本复制';
+      });
+    };
   }catch(err){m.className='msg err';m.textContent='网络异常，请重试';btn.disabled=false;btn.textContent='获取连接令牌';}
 });
 </script>
