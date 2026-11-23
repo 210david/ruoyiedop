@@ -114,9 +114,9 @@
           <el-table-column label="有效期" prop="expiryDate" key="expiryDate" :width="colWidth('expiryDate', 130)" resizable align="center" v-if="columns.expiryDate.visible" />
           <el-table-column label="可用数量" prop="qty" key="qty" :width="colWidth('qty', 110)" resizable align="center" class-name="col-num" v-if="columns.qty.visible" />
           <el-table-column label="锁定数量" prop="lockQty" key="lockQty" :width="colWidth('lockQty', 110)" resizable align="center" class-name="col-num" v-if="columns.lockQty.visible" />
-          <el-table-column v-if="canViewAmount && columns.amount.visible" label="结存金额(元)" prop="amount" key="amount" :width="colWidth('amount', 150)" resizable align="right" class-name="col-num">
+          <el-table-column v-if="canViewAmount && columns.amount.visible" label="结存金额" prop="amount" key="amount" :width="colWidth('amount', 120)" resizable align="right" class-name="col-num">
             <template #default="scope">
-              <span v-if="scope.row.amount != null" class="amount-cell">{{ formatAmount(scope.row.amount) }}</span>
+              <span v-if="scope.row.amount != null" class="amount-cell">￥{{ formatAmount(scope.row.amount) }}</span>
               <span v-else class="amount-cell is-empty">-</span>
               <span v-if="scope.row.amountSource" class="amount-tag" :class="scope.row.amountSource" :title="amountSourceHint(scope.row.amountSource)">{{ amountSourceLabel(scope.row.amountSource) }}</span>
             </template>
@@ -145,6 +145,7 @@ import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { ArrowDown, Delete, Download, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
 import { checkPermi } from '@/utils/permission'
+import { formatAmount } from '@/composables/useDetailCard'
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inventory_index')
 const { wms_unit } = proxy.useDict('wms_unit')
@@ -162,7 +163,7 @@ const defaultColumns = {
   expiryDate: { label: '有效期', visible: true },
   qty: { label: '可用数量', visible: true },
   lockQty: { label: '锁定数量', visible: true },
-  amount: { label: '结存金额(元)', visible: true },
+  amount: { label: '结存金额', visible: true },
   updateTime: { label: '更新时间', visible: true }
 }
 function loadColumnVisibility() {
@@ -216,13 +217,6 @@ function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit
 // ===== 结存金额（金额为敏感数据，按独立权限点控制显示）=====
 const canViewAmount = computed(() => checkPermi(['wms:inventory:amount']))
 
-/** 千分位 + 2 位小数，金额统一两位（后端已 setScale(2)） */
-function formatAmount(v) {
-  const n = Number(v)
-  if (!isFinite(n)) return '-'
-  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 /** 金额来源标签：必须显式标注口径，避免"成本"与"估算"混为一谈 */
 function amountSourceLabel(src) {
   if (src === 'cost') return '成本'
@@ -243,7 +237,7 @@ async function handleExport() {
   if (!rows.length) { proxy.$modal.msgWarning('当前筛选下无数据可导出'); return }
   const headers = ['物料编码', '物料名称', '规格型号', '单位', '仓库/库区/库位', '批次号', '生产日期', '有效期', '可用数量', '锁定数量']
   // 有金额权限才导出金额列，与列表口径一致（无权限时后端不会返回金额）
-  if (canViewAmount.value) { headers.push('结存金额(元)', '金额来源') }
+  if (canViewAmount.value) { headers.push('结存金额', '金额来源') }
   headers.push('更新时间')
   downloadXlsx(`inventory_${new Date().getTime()}`, headers, rows.map(i => {
     const base = [
