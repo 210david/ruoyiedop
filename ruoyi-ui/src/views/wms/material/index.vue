@@ -150,6 +150,9 @@
           </el-table-column>
           <el-table-column label="安全库存下限" prop="safetyStockMin" key="safetyStockMin" :width="colWidth('safetyStockMin', 130)" resizable align="center" class-name="col-num" v-if="columns.safetyStockMin.visible" />
           <el-table-column label="安全库存上限" prop="safetyStockMax" key="safetyStockMax" :width="colWidth('safetyStockMax', 130)" resizable align="center" class-name="col-num" v-if="columns.safetyStockMax.visible" />
+          <el-table-column label="参考成本价" prop="costPrice" key="costPrice" :width="colWidth('costPrice', 130)" resizable align="center" class-name="col-num" v-if="columns.costPrice.visible">
+            <template #default="scope">{{ scope.row.costPrice != null ? scope.row.costPrice : '-' }}</template>
+          </el-table-column>
           <el-table-column label="状态" prop="status" key="status" :width="colWidth('status', 100)" resizable align="center" sortable="custom" v-if="columns.status.visible">
             <template #default="scope">
               <span class="badge" :class="scope.row.status === '0' ? 'green' : 'gray'">
@@ -310,6 +313,14 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="计价参考成本价" prop="costPrice">
+              <el-input-number v-model="form.costPrice" :precision="2" :min="0" controls-position="right" placeholder="不含税" style="width: 50%" />
+              <div class="cost-price-tip">不含税，仅用作入库单价缺失时的财务计价兜底；采购价、销售价分别在采购与营销模块维护</div>
+            </el-form-item>
+          </el-col>
+        </el-row>
         <!-- 分组四：其他信息 -->
                   </div>
         </section>
@@ -398,6 +409,7 @@
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">安全库存下限</span><div class="rd-value">{{ viewData.safetyStockMin != null ? viewData.safetyStockMin : '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">安全库存上限</span><div class="rd-value">{{ viewData.safetyStockMax != null ? viewData.safetyStockMax : '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">计价参考成本价</span><div class="rd-value">{{ viewData.costPrice != null ? viewData.costPrice + ' 元（不含税）' : '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -464,6 +476,7 @@ const defaultColumns = {
   shelfLifeDays: { label: '保质期(天)', visible: true },
   safetyStockMin: { label: '安全库存下限', visible: true },
   safetyStockMax: { label: '安全库存上限', visible: true },
+  costPrice: { label: '参考成本价', visible: false },
   status: { label: '状态', visible: true },
   createTime: { label: '创建时间', visible: true }
 }
@@ -644,6 +657,7 @@ function reset() {
     safetyStockMin: 0,
     safetyStockMax: 0,
     isBatchManage: '0',
+    costPrice: undefined,
     status: '0',
     remark: undefined
   }
@@ -876,6 +890,7 @@ loadTypeCounts()
 .wms-material-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 .wms-material-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 .wms-material-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
+.wms-material-page .cost-price-tip { color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.5; margin-top: 4px; }
 
 @media (max-width:1100px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-material-page .toolbar { flex-wrap:wrap; gap:10px; } }

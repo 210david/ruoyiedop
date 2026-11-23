@@ -8,6 +8,7 @@ import com.ruoyi.fin.domain.vo.InvoiceRefVO;
 import com.ruoyi.fin.domain.vo.OutboundCostRefVO;
 import com.ruoyi.fin.domain.vo.PayrollBatchRefVO;
 import com.ruoyi.fin.domain.vo.ShipmentRefVO;
+import com.ruoyi.fin.domain.vo.StockTakeDiffRefVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -96,6 +97,17 @@ public interface FinRefMapper
      * @return 待结转明细
      */
     List<OutboundCostRefVO> selectUncarriedOutbound(@Param("limit") int limit);
+
+    /**
+     * 扫描已审批完成、但尚未同步到成本台账的盘点差异（盘盈/盘亏）。
+     * 幂等：NOT EXISTS 判断该盘点明细是否已在成本结转流水中。
+     */
+    List<StockTakeDiffRefVO> selectUnadjustedStockTakeDiff(@Param("limit") int limit);
+
+    /**
+     * 取物料入库加权均价（含税），用于盘盈且无成本台账时的计价兜底。
+     */
+    java.math.BigDecimal selectMaterialAvgPrice(@Param("materialId") Long materialId);
 
     /**
      * 扫描已审核但尚未生成应付单的进项发票。
