@@ -13,9 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.hr.domain.HrAttendanceImportDTO;
+import com.ruoyi.hr.domain.HrEmployee;
 import com.ruoyi.hr.mapper.HrEmployeeMapper;
 import com.ruoyi.hr.service.IHrAttendanceRecordService;
 import com.ruoyi.integration.dingtalk.DingTalkApiClient;
@@ -25,6 +27,7 @@ import com.ruoyi.integration.mapper.IntegrationSyncLogMapper;
 import com.ruoyi.integration.mapper.IntegrationUserBindingMapper;
 import com.ruoyi.integration.service.IDingtalkSyncService;
 import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.system.service.ISysUserService;
 
 /**
  * 钉钉集成同步服务实现
@@ -70,6 +73,9 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ISysUserService userService;
 
     /** 匹配策略参数键（mobile=手机号 jobNumber=工号 auto=工号优先手机号兜底） */
     private static final String MATCH_TYPE_KEY = "integration.dingtalk.matchType";
@@ -260,12 +266,12 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
     }
 
     /**
-     * 按配置策略自动匹配员工档案
+     * 按配置策略自动匹配平台组织用户（sys_user）
      * 策略参数 integration.dingtalk.matchType：mobile=手机号 / jobNumber=工号 / auto=工号优先、手机号兜底
      * 仅处理未匹配绑定，已匹配（含人工绑定）不重跑，防止策略切换冲掉既有绑定
-     * 一一绑定约束：目标员工已被其他外部用户占用时跳过，避免同一员工打卡数据被两个账号覆盖
+     * 一一绑定约束：目标用户已被其他外部用户占用时跳过，避免同一用户打卡数据被两个账号覆盖
      *
-     * @return 匹配统计（命中数 / 因员工被占用跳过数）
+     * @return 匹配统计（命中数 / 因用户被占用跳过数）
      */
     private AutoMatchStat autoMatchBindings()
     {
@@ -277,7 +283,7 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
         List<IntegrationUserBinding> unmatched = bindingMapper.selectIntegrationUserBindingList(query);
         for (IntegrationUserBinding binding : unmatched)
         {
-            com.ruoyi.hr.domain.HrEmployee employee = null;
+            SysUser user = null;
             String usedStrategy = null;
 
             // 工号优先（jobNumber / auto）
@@ -285,39 +291,42 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
             {
                 if (StringUtils.isNotEmpty(binding.getExternalJobNo()))
                 {
-                    employee = hrEmployeeMapper.selectHrEmployeeByEmployeeNo(binding.getExternalJobNo());
+                    user = matchUserByJobNo(binding.getExternalJobNo());
                     usedStrategy = "jobNumber";
                 }
                 // auto 策略下工号未命中时兜底手机号
-                if (employee == null && "auto".equals(strategy))
+                if (user == null && "auto".equals(strategy))
                 {
-                    employee = matchByMobile(binding);
+                    user = matchUserByMobile(binding);
                     usedStrategy = "mobile";
                 }
             }
             else
             {
                 // 默认手机号策略
-                employee = matchByMobile(binding);
+                user = matchUserByMobile(binding);
                 usedStrategy = "mobile";
             }
 
-            if (employee != null)
+            if (user != null)
             {
-                // 一一绑定约束：员工已被其他钉钉用户绑定则跳过，保持未匹配等待人工处理
+                // 一一绑定约束：用户已被其他钉钉用户绑定则跳过，保持未匹配等待人工处理
                 IntegrationUserBinding occupied = bindingMapper.selectOccupiedBinding(CONNECTOR_DINGTALK,
-                        employee.getEmployeeId(), binding.getBindingId());
+                        user.getUserId(), binding.getBindingId());
                 if (occupied != null)
                 {
-                    log.info("员工 {} 已被钉钉用户 {} 绑定，跳过自动匹配（外部用户：{}）", employee.getEmployeeNo(),
-                            occupied.getExternalName(), binding.getExternalName());
+                    log.info("平台用户 {}({}) 已被钉钉用户 {} 绑定，跳过自动匹配（外部用户：{}）", user.getUserName(),
+                            user.getNickName(), occupied.getExternalName(), binding.getExternalName());
                     stat.skipped++;
                     continue;
                 }
                 IntegrationUserBinding update = new IntegrationUserBinding();
                 update.setBindingId(binding.getBindingId());
-                update.setEmployeeNo(employee.getEmployeeNo());
-                update.setEmployeeId(employee.getEmployeeId());
+                update.setUserId(user.getUserId());
+                // 用户关联了 HR 员工档案时同步回填档案工号/ID，供考勤同步按工号落库；未关联则留空
+                HrEmployee employee = selectEmployeeByUserId(user.getUserId());
+                update.setEmployeeNo(employee != null ? employee.getEmployeeNo() : null);
+                update.setEmployeeId(employee != null ? employee.getEmployeeId() : null);
                 update.setMatchType("auto_" + usedStrategy);
                 update.setSyncTime(new Date());
                 bindingMapper.updateIntegrationUserBinding(update);
@@ -328,6 +337,46 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
     }
 
     /**
+     * 按手机号匹配平台组织用户（sys_user.phonenumber）
+     */
+    private SysUser matchUserByMobile(IntegrationUserBinding binding)
+    {
+        if (StringUtils.isEmpty(binding.getMobile()))
+        {
+            return null;
+        }
+        SysUser query = new SysUser();
+        query.setPhonenumber(binding.getMobile());
+        query.setStatus("0");
+        List<SysUser> users = userService.selectUserList(query);
+        return users.isEmpty() ? null : users.get(0);
+    }
+
+    /**
+     * 按工号（登录账号）匹配平台组织用户（sys_user.user_name）
+     */
+    private SysUser matchUserByJobNo(String jobNo)
+    {
+        SysUser user = userService.selectUserByUserName(jobNo);
+        return (user != null && !"1".equals(user.getStatus())) ? user : null;
+    }
+
+    /**
+     * 查询系统用户关联的 HR 员工档案（biz_hr_employee.user_id），未关联返回 null
+     */
+    private HrEmployee selectEmployeeByUserId(Long userId)
+    {
+        if (userId == null)
+        {
+            return null;
+        }
+        HrEmployee query = new HrEmployee();
+        query.setUserId(userId);
+        List<HrEmployee> employees = hrEmployeeMapper.selectHrEmployeeList(query);
+        return employees.isEmpty() ? null : employees.get(0);
+    }
+
+    /**
      * 自动匹配统计结果
      */
     private static class AutoMatchStat
@@ -335,20 +384,8 @@ public class DingtalkSyncServiceImpl implements IDingtalkSyncService
         /** 本次匹配成功数量 */
         private int matched;
 
-        /** 因目标员工已被其他外部用户绑定而跳过的数量 */
+        /** 因目标用户已被其他外部用户绑定而跳过的数量 */
         private int skipped;
-    }
-
-    /**
-     * 按手机号精确匹配员工档案
-     */
-    private com.ruoyi.hr.domain.HrEmployee matchByMobile(IntegrationUserBinding binding)
-    {
-        if (StringUtils.isEmpty(binding.getMobile()))
-        {
-            return null;
-        }
-        return hrEmployeeMapper.selectHrEmployeeByPhone(binding.getMobile());
     }
 
     /**

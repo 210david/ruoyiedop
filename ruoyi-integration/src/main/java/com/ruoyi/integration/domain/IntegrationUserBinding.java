@@ -30,11 +30,17 @@ public class IntegrationUserBinding extends BaseEntity
     /** 外部平台工号（钉钉 jobNumber，按工号匹配时使用） */
     private String externalJobNo;
 
-    /** 平台员工工号（匹配成功后回填） */
+    /** 平台员工工号（匹配成功后回填，取自用户关联的 HR 员工档案，供考勤导入使用） */
     private String employeeNo;
 
-    /** 平台员工ID */
+    /** 平台员工ID（用户关联的 HR 员工档案ID，仅当所选系统用户已关联员工档案时回填） */
     private Long employeeId;
+
+    /** 平台组织用户ID（sys_user.user_id，绑定的权威对象） */
+    private Long userId;
+
+    /** 平台用户账号（sys_user.user_name，人工绑定时由前端提交） */
+    private String userName;
 
     /** 平台员工姓名 */
     private String employeeName;
@@ -62,6 +68,10 @@ public class IntegrationUserBinding extends BaseEntity
     public void setEmployeeNo(String employeeNo) { this.employeeNo = employeeNo; }
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
     public String getEmployeeName() { return employeeName; }
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getMatchType() { return matchType; }

@@ -122,7 +122,7 @@
           <el-table-column label="平台工号" prop="employeeNo" key="employeeNo" :width="colWidth('employeeNo', 130)" align="center" resizable v-if="columns.employeeNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.employeeNo || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="平台员工" prop="employeeName" key="employeeName" :min-width="colWidth('employeeName', 130)" align="center" show-overflow-tooltip resizable v-if="columns.employeeName.visible">
+          <el-table-column label="平台用户" prop="employeeName" key="employeeName" :min-width="colWidth('employeeName', 130)" align="center" show-overflow-tooltip resizable v-if="columns.employeeName.visible">
             <template #default="scope">{{ scope.row.employeeName || '-' }}</template>
           </el-table-column>
           <el-table-column label="匹配方式" prop="matchType" key="matchType" :width="colWidth('matchType', 170)" align="center" resizable v-if="columns.matchType.visible">
@@ -134,7 +134,7 @@
           <el-table-column label="操作" align="center" width="180" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="row-actions">
-                <el-button v-if="!scope.row.employeeId" link type="primary" @click="handleBind(scope.row)" v-hasPermi="['integration:attendance:sync']">绑定</el-button>
+                <el-button v-if="!scope.row.userId" link type="primary" @click="handleBind(scope.row)" v-hasPermi="['integration:attendance:sync']">绑定</el-button>
                 <template v-else>
                   <el-button link type="primary" @click="handleBind(scope.row)" v-hasPermi="['integration:attendance:sync']">重新绑定</el-button>
                   <el-button link type="danger" @click="handleUnbind(scope.row)" v-hasPermi="['integration:attendance:sync']">解绑</el-button>
@@ -172,7 +172,7 @@
           <div class="rd-detail-header-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           </div>
-          <span class="rd-detail-header-title">{{ bindForm.originalEmployeeNo ? '变更绑定' : '人工绑定' }}</span>
+          <span class="rd-detail-header-title">{{ bindForm.originalUserId ? '变更绑定' : '人工绑定' }}</span>
         </div>
       </template>
       <div class="bind-dialog-body">
@@ -185,8 +185,8 @@
           </div>
         </div>
         <el-form ref="bindRef" :model="bindForm" :rules="bindRules" label-width="100px">
-          <el-form-item label="平台员工" prop="employeeNo">
-            <el-input :model-value="bindEmployeeLabel" readonly placeholder="点击选择平台员工" @click="openBindEmployeePicker">
+          <el-form-item label="平台用户" prop="employeeNo">
+            <el-input :model-value="bindEmployeeLabel" readonly placeholder="点击选择平台用户" @click="openBindEmployeePicker">
               <template #append>
                 <el-button icon="Search" @click.stop="openBindEmployeePicker" />
               </template>
@@ -208,13 +208,13 @@
                 <el-icon class="bind-occupied-icon"><WarningFilled /></el-icon>
                 该员工已被{{ connectorLabel }}用户「{{ occupant.externalName }}」绑定<template v-if="occupant.mobile">（{{ occupant.mobile }}）</template>
               </div>
-              <div class="bind-occupied-desc">一个员工只能绑定一个{{ connectorLabel }}用户，否则打卡数据会互相覆盖。请先在列表中解绑该{{ connectorLabel }}用户，或改选其他员工。</div>
+              <div class="bind-occupied-desc">一个用户只能绑定一个{{ connectorLabel }}用户，否则打卡数据会互相覆盖。请先在列表中解绑该{{ connectorLabel }}用户，或改选其他用户。</div>
             </div>
           </el-form-item>
         </el-form>
         <div class="bind-tip">
-          <template v-if="bindForm.originalEmployeeNo">变更后该{{ connectorLabel }}用户的打卡将改为写入新选员工的考勤记录；原员工已同步的历史记录不会删除。一个员工只能绑定一个{{ connectorLabel }}用户。</template>
-          <template v-else>绑定后该{{ connectorLabel }}用户的打卡数据将写入所选员工的考勤记录。一个员工只能绑定一个{{ connectorLabel }}用户。</template>
+          <template v-if="bindForm.originalUserId">变更后该{{ connectorLabel }}用户的打卡将改为写入新选用户的考勤记录；原用户已同步的历史记录不会删除。一个用户只能绑定一个{{ connectorLabel }}用户。</template>
+          <template v-else>绑定后该{{ connectorLabel }}用户的打卡数据将写入所选用户关联的考勤记录。一个用户只能绑定一个{{ connectorLabel }}用户。</template>
         </div>
       </div>
       <template #footer>
@@ -224,7 +224,7 @@
     </el-dialog>
 
     <!-- 平台员工选择器 -->
-    <employee-picker ref="employeePickerRef" title="选择平台员工" @confirm="onBindEmployeeConfirm" />
+    <employee-picker ref="employeePickerRef" title="选择平台用户" @confirm="onBindEmployeeConfirm" />
 
     <!-- 集成配置弹窗（钉钉 / 企业微信） -->
     <el-dialog v-model="configOpen" width="806px" append-to-body draggable class="rd-dialog">
@@ -292,7 +292,7 @@
               <el-form-item label=" ">
                 <div class="config-tip">
                   <p v-if="isWecom">· 默认「按手机号」为手机号优先，未命中时自动用工号兜底（工号取自企业微信「别名 alias」或「账号 userid」）。</p>
-                  <p v-else>· 匹配策略决定通讯录同步时{{ connectorLabel }}用户如何关联平台员工：自动 = 工号优先、手机号兜底。</p>
+                  <p v-else>· 匹配策略决定通讯录同步时{{ connectorLabel }}用户如何关联平台组织用户：自动 = 工号优先、手机号兜底。</p>
                   <p v-if="isWecom">· 企业微信 2022-06-20 起新建自建应用调用成员详情接口不再返回手机号，如自动匹配大面积未命中，请在成员「别名」中维护工号，或改用「按工号」策略。</p>
                   <p>· 切换策略只影响尚未匹配的绑定，已匹配记录不会被重跑。</p>
                   <p>· {{ secretLabel }} 保存后不再回显；配置实时生效，无需重启。</p>
@@ -312,26 +312,26 @@
     <el-dialog v-model="helpOpen" :title="connectorLabel + '集成业务操作说明'" width="760px" append-to-body class="rd-dialog status-help-dialog">
       <div class="status-help-content">
         <h4>一、功能定位</h4>
-        <p>本页用于将{{ connectorLabel }}的<b>考勤打卡数据</b>同步到平台人力资源考勤模块，并在{{ connectorLabel }}用户与平台员工之间建立对应关系。同步取{{ connectorLabel }}的<b>原始打卡时间</b>与<b>上下班类型</b>，迟到、早退、缺卡等判定由平台按自身班次规则计算，避免两套口径冲突。</p>
+        <p>本页用于将{{ connectorLabel }}的<b>考勤打卡数据</b>同步到平台人力资源考勤模块，并在{{ connectorLabel }}用户与平台组织用户之间建立对应关系。同步取{{ connectorLabel }}的<b>原始打卡时间</b>与<b>上下班类型</b>，迟到、早退、缺卡等判定由平台按自身班次规则计算，避免两套口径冲突。</p>
 
         <h4>二、使用步骤</h4>
         <div class="help-steps">
           <div class="help-step"><span class="help-step-no">1</span><div><b>配置集成</b>：点击「集成配置」，填写{{ accountLabel }} / {{ secretLabel }}，并打开「启用集成」。</div></div>
-          <div class="help-step"><span class="help-step-no">2</span><div><b>同步通讯录</b>：点击「同步通讯录」拉取{{ connectorLabel }}组织人员，系统按匹配策略自动关联平台员工。未匹配人员以橙色高亮显示。</div></div>
-          <div class="help-step"><span class="help-step-no">3</span><div><b>人工绑定</b>：自动匹配失败的记录，点该行右侧的「绑定」按钮，通过人员选择弹框选定平台员工完成关联；已绑定的记录可随时「重新绑定」或「解绑」。</div></div>
+          <div class="help-step"><span class="help-step-no">2</span><div><b>同步通讯录</b>：点击「同步通讯录」拉取{{ connectorLabel }}组织人员，系统按匹配策略自动关联平台组织用户。未匹配人员以橙色高亮显示。</div></div>
+          <div class="help-step"><span class="help-step-no">3</span><div><b>人工绑定</b>：自动匹配失败的记录，点该行右侧的「绑定」按钮，通过人员选择弹框选定平台组织用户完成关联；已绑定的记录可随时「重新绑定」或「解绑」。</div></div>
           <div class="help-step"><span class="help-step-no">4</span><div><b>打卡同步</b>：点击「打卡同步」选择日期范围拉取打卡数据，结果写入考勤记录，来源标记为「{{ connectorLabel }}同步」。</div></div>
         </div>
 
         <h4>三、匹配策略说明</h4>
         <template v-if="isWecom">
-          <p><b>按手机号</b>（默认）：{{ connectorLabel }}手机号 = 员工档案手机号；未命中时自动用<b>工号兜底</b>（工号取自成员「别名 alias」或「账号 userid」）。<br/>
+          <p><b>按手机号</b>（默认）：{{ connectorLabel }}手机号 = 平台用户手机号；未命中时自动用<b>工号兜底</b>（工号取自成员「别名 alias」或「账号 userid」，即登录账号）。<br/>
           <b>按工号</b>：先按别名 / userid 对员工工号匹配，未命中再按手机号兜底。<br/>
           <b>自动</b>：同「按手机号」，手机号优先、工号兜底。<br/>
           注：企业微信 2022-06-20 起新建自建应用调用成员详情接口不再返回手机号，若自动匹配大面积未命中，请在成员「别名」中维护工号或改用「按工号」。</p>
         </template>
         <template v-else>
-          <p><b>按手机号</b>：钉钉手机号 = 员工档案手机号（默认，要求最低）。<br/>
-          <b>按工号</b>：钉钉工号 = 平台员工工号（要求钉钉通讯录已维护工号）。<br/>
+          <p><b>按手机号</b>：钉钉手机号 = 平台用户手机号（默认，要求最低）。<br/>
+          <b>按工号</b>：钉钉工号 = 平台用户登录账号（要求钉钉通讯录已维护工号）。<br/>
           <b>自动</b>：先按工号匹配，未命中再按手机号兜底。<br/>
           策略切换只影响尚未匹配的记录，已绑定记录不会被覆盖；每条记录的匹配方式可在列表中查看。</p>
         </template>
@@ -341,7 +341,7 @@
         · 定时任务「{{ connectorLabel }}通讯录同步」「{{ connectorLabel }}考勤同步」默认暂停，需在系统监控-定时任务中启用后才会自动运行（{{ isWecom ? '建议每日凌晨 01:20 / 01:40' : '建议每日凌晨 01:10 / 01:30' }}）。<br/>
         · {{ secretLabel }} 保存后不再回显，如需更换直接填写新值即可。<br/>
         · 解绑或变更绑定只解除对应关系，不会删除已写入 HR 的考勤记录；解绑后该{{ connectorLabel }}用户在下次同步时按「未匹配」跳过。<br/>
-        · <b>一个员工只能绑定一个{{ connectorLabel }}用户</b>：所选员工若已被其他{{ connectorLabel }}用户占用，系统会拦截并提示占用方，需先解绑原绑定；自动匹配同样遵守该约束，会跳过已被占用的员工。<br/>
+        · <b>一个用户只能绑定一个{{ connectorLabel }}用户</b>：所选用户若已被其他{{ connectorLabel }}用户占用，系统会拦截并提示占用方，需先解绑原绑定；自动匹配同样遵守该约束，会跳过已被占用的用户。<br/>
         · {{ isWecom ? '企业微信打卡接口单次最多 100 人、时间跨度 30 天，系统会自动分批分段拉取；「外出打卡」不参与上下班归位，不会被当成正常上下班卡。' : '钉钉打卡接口单次最多 50 人、时间跨度 7 天，系统会自动分批分段拉取。' }}</p>
       </div>
       <template #footer>
@@ -386,7 +386,7 @@ function buildDefaultColumns() {
     mobile: { label: connectorLabel.value + '手机号', visible: true },
     externalJobNo: { label: externalNoLabel.value, visible: true },
     employeeNo: { label: '平台工号', visible: true },
-    employeeName: { label: '平台员工', visible: true },
+    employeeName: { label: '平台用户', visible: true },
     matchType: { label: '匹配方式', visible: true },
     syncTime: { label: '最后同步时间', visible: true }
   }
@@ -457,7 +457,7 @@ const configForm = reactive({
 const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, externalName: undefined, mobile: undefined, externalJobNo: undefined, employeeNo: undefined, matchType: undefined, params: {} },
   syncForm: { dateRange: [] },
-  bindForm: { bindingId: undefined, externalName: '', mobile: '', externalJobNo: '', employeeNo: '', employeeName: '', orgName: '', positionName: '', originalEmployeeNo: '' }
+  bindForm: { bindingId: undefined, externalName: '', mobile: '', externalJobNo: '', userId: '', employeeNo: '', employeeName: '', orgName: '', positionName: '', originalUserId: '' }
 })
 const { queryParams, syncForm, bindForm } = toRefs(data)
 
@@ -474,23 +474,23 @@ const syncRules = {
   dateRange: [{ required: true, message: '请选择同步日期范围', trigger: 'change' }]
 }
 const bindRules = {
-  employeeNo: [{ required: true, message: '请选择平台员工', trigger: 'change' }]
+  employeeNo: [{ required: true, message: '请选择平台用户', trigger: 'change' }]
 }
 
 /** 未匹配行高亮 */
 function rowClassName({ row }) {
-  return row.employeeId ? '' : 'row-unmatched'
+  return row.userId ? '' : 'row-unmatched'
 }
 
 /** 匹配方式徽章 */
 function matchLabel(row) {
-  if (!row.employeeId) return '未匹配'
+  if (!row.userId) return '未匹配'
   if (row.matchType === 'manual') return '人工绑定'
   if (row.matchType === 'auto_jobNumber') return '自动·工号'
   return '自动·手机号'
 }
 function matchBadgeClass(row) {
-  if (!row.employeeId) return 'red'
+  if (!row.userId) return 'red'
   return row.matchType === 'manual' ? 'amber' : 'green'
 }
 
@@ -557,7 +557,7 @@ function resetQuery() {
 
 /** 同步通讯录并自动匹配 */
 function handleSyncContacts() {
-  proxy.$modal.confirm('将拉取' + connectorLabel.value + '通讯录全量用户并按配置策略自动匹配员工档案，是否继续？').then(() => {
+  proxy.$modal.confirm('将拉取' + connectorLabel.value + '通讯录全量用户并按配置策略自动匹配平台组织用户，是否继续？').then(() => {
     syncingContacts.value = true
     syncIntegrationContacts(connectorType.value).then(res => {
       proxy.$modal.msgSuccess(res.msg || '同步完成')
@@ -596,33 +596,35 @@ function handleBind(row) {
     externalName: target.externalName,
     mobile: target.mobile,
     externalJobNo: target.externalJobNo,
+    userId: target.userId || '',
     employeeNo: target.employeeNo || '',
     employeeName: target.employeeName || '',
     orgName: '',
     positionName: '',
-    originalEmployeeNo: target.employeeNo || ''
+    originalUserId: target.userId || ''
   }
   occupant.value = null
   bindOpen.value = true
   nextTick(() => proxy.$refs.bindRef && proxy.$refs.bindRef.clearValidate())
 }
-/** 解绑：解除外部平台用户与平台员工的关联（不影响已同步的考勤记录） */
+/** 解绑：解除外部平台用户与平台组织用户的关联（不影响已同步的考勤记录） */
 function handleUnbind(row) {
   const employee = row.employeeName || row.employeeNo || ''
-  proxy.$modal.confirm('确认解除「' + row.externalName + '」与平台员工「' + employee + '」的绑定关系？解绑后该' + connectorLabel.value + '用户的打卡不再写入该员工考勤，已同步的历史记录不会删除。').then(() => {
+  proxy.$modal.confirm('确认解除「' + row.externalName + '」与平台用户「' + employee + '」的绑定关系？解绑后该' + connectorLabel.value + '用户的打卡不再写入该用户考勤，已同步的历史记录不会删除。').then(() => {
     return unbindIntegrationUser(row.bindingId)
   }).then(res => {
     proxy.$modal.msgSuccess(res.msg || '解绑成功')
     getList()
   }).catch(() => {})
 }
-/** 打开平台员工选择弹框 */
+/** 打开平台用户选择弹框 */
 function openBindEmployeePicker() {
   employeePickerRef.value.open()
 }
 /** 员工选择确认：仅取工号提交，姓名/部门/岗位用于回显 */
 function onBindEmployeeConfirm(emp) {
   const f = bindForm.value
+  f.userId = emp.employeeId
   f.employeeNo = emp.employeeNo
   f.employeeName = emp.employeeName
   f.orgName = emp.orgName
@@ -630,13 +632,13 @@ function onBindEmployeeConfirm(emp) {
   nextTick(() => proxy.$refs.bindRef && proxy.$refs.bindRef.clearValidate('employeeNo'))
   checkEmployeeOccupied()
 }
-/** 一一绑定校验：所选员工已被其他外部平台用户绑定则拦截提交 */
+/** 一一绑定校验：所选平台用户已被其他外部平台用户绑定则拦截提交 */
 function checkEmployeeOccupied() {
   const f = bindForm.value
   occupant.value = null
-  if (!f.employeeNo) return
+  if (!f.userId) return
   checkingOccupant.value = true
-  checkEmployeeOccupant({ employeeNo: f.employeeNo, bindingId: f.bindingId, connectorType: connectorType.value }).then(res => {
+  checkEmployeeOccupant({ userId: f.userId, bindingId: f.bindingId, connectorType: connectorType.value }).then(res => {
     if (res && res.occupied) {
       occupant.value = {
         externalName: res.externalName || '-',
@@ -652,6 +654,7 @@ function checkEmployeeOccupied() {
 /** 清除已选员工 */
 function clearBindEmployee() {
   const f = bindForm.value
+  f.userId = ''
   f.employeeNo = ''
   f.employeeName = ''
   f.orgName = ''
@@ -661,18 +664,18 @@ function clearBindEmployee() {
 function submitBind() {
   proxy.$refs.bindRef.validate(valid => {
     if (!valid) return
-    // 变更绑定场景：所选员工与当前绑定一致时提示改选，避免误操作把自动匹配改成人工绑定
-    if (bindForm.value.originalEmployeeNo && bindForm.value.originalEmployeeNo === bindForm.value.employeeNo) {
-      proxy.$modal.msgWarning('所选员工与当前绑定一致，如需变更请重新选择')
+    // 变更绑定场景：所选用户与当前绑定一致时提示改选，避免误操作把自动匹配改成人工绑定
+    if (bindForm.value.originalUserId && bindForm.value.originalUserId === bindForm.value.userId) {
+      proxy.$modal.msgWarning('所选用户与当前绑定一致，如需变更请重新选择')
       return
     }
     // 一一绑定兜底：前端已提示占用，此处再拦一次，避免提示延迟时误提交
     if (occupant.value) {
-      proxy.$modal.msgWarning('该员工已被' + connectorLabel.value + '用户「' + occupant.value.externalName + '」绑定，请先解绑后再绑定')
+      proxy.$modal.msgWarning('该用户已被' + connectorLabel.value + '用户「' + occupant.value.externalName + '」绑定，请先解绑后再绑定')
       return
     }
     binding.value = true
-    bindIntegrationUser({ bindingId: bindForm.value.bindingId, employeeNo: bindForm.value.employeeNo }).then(res => {
+    bindIntegrationUser({ bindingId: bindForm.value.bindingId, userId: bindForm.value.userId }).then(res => {
       proxy.$modal.msgSuccess(res.msg || '绑定成功')
       bindOpen.value = false
       getList()
