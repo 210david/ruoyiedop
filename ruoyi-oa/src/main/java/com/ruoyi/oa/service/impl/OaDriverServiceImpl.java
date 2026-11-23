@@ -54,12 +54,12 @@ public class OaDriverServiceImpl implements IOaDriverService
                 {
                     throw new ServiceException("司机状态【" + driver.getStatus() + "】不存在");
                 }
-                OaDriver exist = StringUtils.isNotEmpty(driver.getDriverNo()) ? oaDriverMapper.selectOaDriverByNo(driver.getDriverNo()) : null;
+                OaDriver exist = StringUtils.isNotEmpty(driver.getPhone()) ? oaDriverMapper.selectOaDriverByPhone(driver.getPhone()) : null;
                 if (exist != null)
                 {
                     if (!updateSupport)
                     {
-                        throw new ServiceException("工号【" + driver.getDriverNo() + "】已存在");
+                        throw new ServiceException("手机号【" + driver.getPhone() + "】已存在");
                     }
                     driver.setDriverId(exist.getDriverId());
                     driver.setUpdateBy(operName);
@@ -88,7 +88,6 @@ public class OaDriverServiceImpl implements IOaDriverService
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("driverName", driver.getDriverName() != null ? driver.getDriverName() : "");
-        item.put("driverNo", driver.getDriverNo() != null ? driver.getDriverNo() : "");
         item.put("phone", driver.getPhone() != null ? driver.getPhone() : "");
         item.put("licenseType", driver.getLicenseType() != null ? driver.getLicenseType() : "");
         item.put("licenseNo", driver.getLicenseNo() != null ? driver.getLicenseNo() : "");
@@ -105,7 +104,6 @@ public class OaDriverServiceImpl implements IOaDriverService
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("driverName", driver.getDriverName() != null ? driver.getDriverName() : "");
-        item.put("driverNo", driver.getDriverNo() != null ? driver.getDriverNo() : "");
         item.put("phone", driver.getPhone() != null ? driver.getPhone() : "");
         item.put("licenseType", driver.getLicenseType() != null ? driver.getLicenseType() : "");
         item.put("licenseNo", driver.getLicenseNo() != null ? driver.getLicenseNo() : "");

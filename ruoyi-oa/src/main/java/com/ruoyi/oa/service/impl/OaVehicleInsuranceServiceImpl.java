@@ -1,6 +1,7 @@
 package com.ruoyi.oa.service.impl;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,8 +12,10 @@ import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.DictUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.oa.domain.OaVehicle;
 import com.ruoyi.oa.domain.OaVehicleInsurance;
 import com.ruoyi.oa.mapper.OaVehicleInsuranceMapper;
+import com.ruoyi.oa.mapper.OaVehicleMapper;
 import com.ruoyi.oa.service.IOaVehicleInsuranceService;
 
 @Service
@@ -20,6 +23,9 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
 {
     @Autowired
     private OaVehicleInsuranceMapper oaVehicleInsuranceMapper;
+
+    @Autowired
+    private OaVehicleMapper oaVehicleMapper;
 
     @Override
     public OaVehicleInsurance selectOaVehicleInsuranceById(Long insuranceId) { return oaVehicleInsuranceMapper.selectOaVehicleInsuranceById(insuranceId); }
@@ -42,14 +48,17 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
         {
             try
             {
-                if (StringUtils.isEmpty(insurance.getPolicyNo()))
+                // 车牌号必须来源于车辆台账（同时校验非空并回填车辆ID）
+                syncVehicle(insurance);
+                if (insurance.getStartDate() == null)
                 {
-                    throw new ServiceException("保单号不能为空");
+                    throw new ServiceException("起保日期不能为空");
                 }
-                if (StringUtils.isNotEmpty(insurance.getInsuranceType()) && StringUtils.isEmpty(DictUtils.getDictLabel("oa_insurance_type", insurance.getInsuranceType())))
+                if (insurance.getEndDate() == null)
                 {
-                    throw new ServiceException("保险类型【" + insurance.getInsuranceType() + "】不存在");
+                    throw new ServiceException("到期日期不能为空");
                 }
+
                 if (StringUtils.isEmpty(insurance.getStatus()))
                 {
                     insurance.setStatus("0");
@@ -58,7 +67,9 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
                 {
                     throw new ServiceException("保险状态【" + insurance.getStatus() + "】不存在");
                 }
-                OaVehicleInsurance exist = oaVehicleInsuranceMapper.selectOaVehicleInsuranceByPolicyNo(insurance.getPolicyNo());
+                // 保单号为空时不参与重复识别，直接新增
+                OaVehicleInsurance exist = StringUtils.isEmpty(insurance.getPolicyNo())
+                        ? null : oaVehicleInsuranceMapper.selectOaVehicleInsuranceByPolicyNo(insurance.getPolicyNo());
                 if (exist != null)
                 {
                     if (!updateSupport)
@@ -92,14 +103,11 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("policyNo", insurance.getPolicyNo() != null ? insurance.getPolicyNo() : "");
-        item.put("insuranceNo", insurance.getInsuranceNo() != null ? insurance.getInsuranceNo() : "");
         item.put("plateNo", insurance.getPlateNo() != null ? insurance.getPlateNo() : "");
-        item.put("insuranceType", dictText("oa_insurance_type", insurance.getInsuranceType()));
         item.put("insurer", insurance.getInsurer() != null ? insurance.getInsurer() : "");
         item.put("startDate", insurance.getStartDate() != null ? DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, insurance.getStartDate()) : "");
         item.put("endDate", insurance.getEndDate() != null ? DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, insurance.getEndDate()) : "");
         item.put("premium", insurance.getPremium() != null ? insurance.getPremium() : "");
-        item.put("insuredAmount", insurance.getInsuredAmount() != null ? insurance.getInsuredAmount() : "");
         item.put("contactName", insurance.getContactName() != null ? insurance.getContactName() : "");
         item.put("contactPhone", insurance.getContactPhone() != null ? insurance.getContactPhone() : "");
         item.put("status", dictText("oa_insurance_status", insurance.getStatus()));
@@ -111,14 +119,11 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
     {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("policyNo", insurance.getPolicyNo() != null ? insurance.getPolicyNo() : "");
-        item.put("insuranceNo", insurance.getInsuranceNo() != null ? insurance.getInsuranceNo() : "");
         item.put("plateNo", insurance.getPlateNo() != null ? insurance.getPlateNo() : "");
-        item.put("insuranceType", dictText("oa_insurance_type", insurance.getInsuranceType()));
         item.put("insurer", insurance.getInsurer() != null ? insurance.getInsurer() : "");
         item.put("startDate", insurance.getStartDate() != null ? DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, insurance.getStartDate()) : "");
         item.put("endDate", insurance.getEndDate() != null ? DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, insurance.getEndDate()) : "");
         item.put("premium", insurance.getPremium() != null ? insurance.getPremium() : "");
-        item.put("insuredAmount", insurance.getInsuredAmount() != null ? insurance.getInsuredAmount() : "");
         item.put("contactName", insurance.getContactName() != null ? insurance.getContactName() : "");
         item.put("contactPhone", insurance.getContactPhone() != null ? insurance.getContactPhone() : "");
         item.put("status", dictText("oa_insurance_status", insurance.getStatus()));
@@ -155,10 +160,74 @@ public class OaVehicleInsuranceServiceImpl implements IOaVehicleInsuranceService
     }
 
     @Override
-    public int insertOaVehicleInsurance(OaVehicleInsurance oaVehicleInsurance) { return oaVehicleInsuranceMapper.insertOaVehicleInsurance(oaVehicleInsurance); }
+    public int insertOaVehicleInsurance(OaVehicleInsurance oaVehicleInsurance)
+    {
+        syncVehicle(oaVehicleInsurance);
+        syncCoverage(oaVehicleInsurance);
+        checkPolicyNoUnique(oaVehicleInsurance);
+        return oaVehicleInsuranceMapper.insertOaVehicleInsurance(oaVehicleInsurance);
+    }
 
     @Override
-    public int updateOaVehicleInsurance(OaVehicleInsurance oaVehicleInsurance) { return oaVehicleInsuranceMapper.updateOaVehicleInsurance(oaVehicleInsurance); }
+    public int updateOaVehicleInsurance(OaVehicleInsurance oaVehicleInsurance)
+    {
+        syncVehicle(oaVehicleInsurance);
+        syncCoverage(oaVehicleInsurance);
+        checkPolicyNoUnique(oaVehicleInsurance);
+        return oaVehicleInsuranceMapper.updateOaVehicleInsurance(oaVehicleInsurance);
+    }
+
+    /**
+     * 校验保单期限：起保日期不得晚于到期日期。
+     */
+    private void syncCoverage(OaVehicleInsurance insurance)
+    {
+        Date start = insurance.getStartDate();
+        Date end = insurance.getEndDate();
+        if (start == null || end == null)
+        {
+            return;
+        }
+        if (start.after(end))
+        {
+            throw new ServiceException("起保日期不能晚于到期日期");
+        }
+    }
+
+    /**
+     * 保单号非必填，但填写时不允许与其他记录重复（空值不参与判重）。
+     */
+    private void checkPolicyNoUnique(OaVehicleInsurance insurance)
+    {
+        if (StringUtils.isEmpty(insurance.getPolicyNo()))
+        {
+            return;
+        }
+        OaVehicleInsurance exist = oaVehicleInsuranceMapper.selectOaVehicleInsuranceByPolicyNo(insurance.getPolicyNo());
+        if (exist != null && !exist.getInsuranceId().equals(insurance.getInsuranceId()))
+        {
+            throw new ServiceException("保单号【" + insurance.getPolicyNo() + "】已存在");
+        }
+    }
+
+    /**
+     * 校验车牌号必须来源于车辆台账，并回填车辆ID。
+     * 车牌号由前端「车辆管理」选择器提供，此处兜底防止直接调用接口写入无效车牌。
+     */
+    private void syncVehicle(OaVehicleInsurance insurance)
+    {
+        String plateNo = insurance.getPlateNo();
+        if (StringUtils.isEmpty(plateNo))
+        {
+            throw new ServiceException("车牌号不能为空");
+        }
+        OaVehicle vehicle = oaVehicleMapper.selectOaVehicleByPlateNo(plateNo);
+        if (vehicle == null)
+        {
+            throw new ServiceException("车牌号【" + plateNo + "】在车辆台账中不存在，请从车辆管理中选择");
+        }
+        insurance.setVehicleId(vehicle.getVehicleId());
+    }
 
     @Override
     public int deleteOaVehicleInsuranceByIds(Long[] insuranceIds) { return oaVehicleInsuranceMapper.deleteOaVehicleInsuranceByIds(insuranceIds); }

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
@@ -16,37 +17,30 @@ public class OaVehicleInsurance extends BaseEntity
 
     private Long insuranceId;
 
-    @NotBlank(message = "保单号不能为空")
     @Excel(name = "保单号")
     private String policyNo;
 
-    @Excel(name = "投保单号")
-    private String insuranceNo;
-
     private Long vehicleId;
 
+    @NotBlank(message = "车牌号不能为空")
     @Excel(name = "车牌号")
     private String plateNo;
-
-    @Excel(name = "保险类型", dictType = "oa_insurance_type")
-    private String insuranceType;
 
     @Excel(name = "保险公司")
     private String insurer;
 
+    @NotNull(message = "起保日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "起保日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date startDate;
 
+    @NotNull(message = "到期日期不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "到期日期", width = 120, dateFormat = "yyyy-MM-dd")
     private Date endDate;
 
     @Excel(name = "保费(元)")
     private BigDecimal premium;
-
-    @Excel(name = "保额(元)")
-    private BigDecimal insuredAmount;
 
     @Excel(name = "联系人")
     private String contactName;
@@ -65,14 +59,10 @@ public class OaVehicleInsurance extends BaseEntity
     public void setInsuranceId(Long insuranceId) { this.insuranceId = insuranceId; }
     public String getPolicyNo() { return policyNo; }
     public void setPolicyNo(String policyNo) { this.policyNo = policyNo; }
-    public String getInsuranceNo() { return insuranceNo; }
-    public void setInsuranceNo(String insuranceNo) { this.insuranceNo = insuranceNo; }
     public Long getVehicleId() { return vehicleId; }
     public void setVehicleId(Long vehicleId) { this.vehicleId = vehicleId; }
     public String getPlateNo() { return plateNo; }
     public void setPlateNo(String plateNo) { this.plateNo = plateNo; }
-    public String getInsuranceType() { return insuranceType; }
-    public void setInsuranceType(String insuranceType) { this.insuranceType = insuranceType; }
     public String getInsurer() { return insurer; }
     public void setInsurer(String insurer) { this.insurer = insurer; }
     public Date getStartDate() { return startDate; }
@@ -81,8 +71,6 @@ public class OaVehicleInsurance extends BaseEntity
     public void setEndDate(Date endDate) { this.endDate = endDate; }
     public BigDecimal getPremium() { return premium; }
     public void setPremium(BigDecimal premium) { this.premium = premium; }
-    public BigDecimal getInsuredAmount() { return insuredAmount; }
-    public void setInsuredAmount(BigDecimal insuredAmount) { this.insuredAmount = insuredAmount; }
     public String getContactName() { return contactName; }
     public void setContactName(String contactName) { this.contactName = contactName; }
     public String getContactPhone() { return contactPhone; }

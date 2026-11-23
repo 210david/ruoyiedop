@@ -7,7 +7,7 @@ public interface OaDriverMapper
 {
     public OaDriver selectOaDriverById(Long driverId);
 
-    public OaDriver selectOaDriverByNo(String driverNo);
+    public OaDriver selectOaDriverByPhone(String phone);
 
     public List<OaDriver> selectOaDriverList(OaDriver oaDriver);
 

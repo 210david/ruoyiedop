@@ -19,14 +19,6 @@
           </div>
         </div>
         <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.driverNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
-            </el-input>
-          </div>
-        </div>
-        <div class="field">
           <label>手机号</label>
           <div class="control">
             <el-input v-model="queryParams.phone" placeholder="请输入手机号" clearable @keyup.enter="handleQuery">
@@ -121,9 +113,6 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" type="index" width="55" align="center" />
           <el-table-column label="司机姓名" prop="driverName" key="driverName" align="center" :width="colWidth('driverName', 110)" resizable v-if="columns.driverName.visible" />
-          <el-table-column label="工号" prop="driverNo" key="driverNo" align="center" :width="colWidth('driverNo', 110)" resizable v-if="columns.driverNo.visible">
-            <template #default="scope"><span class="col-mono">{{ scope.row.driverNo || '-' }}</span></template>
-          </el-table-column>
           <el-table-column label="手机号" prop="phone" key="phone" align="center" :width="colWidth('phone', 120)" resizable v-if="columns.phone.visible" />
           <el-table-column label="准驾车型" prop="licenseType" key="licenseType" align="center" :width="colWidth('licenseType', 100)" resizable v-if="columns.licenseType.visible" />
           <el-table-column label="驾驶证号" prop="licenseNo" key="licenseNo" align="center" :min-width="colWidth('licenseNo', 160)" show-overflow-tooltip resizable v-if="columns.licenseNo.visible" />
@@ -171,7 +160,7 @@
           <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <div class="rd-detail-header-main">
             <div class="rd-detail-header-title">{{ title }}</div>
-            <div class="rd-detail-header-sub">{{ form.driverName ? '司机：' + form.driverName + (form.driverNo ? ' · ' + form.driverNo : '') : '维护司机基本信息、驾驶资质与联系方式' }}</div>
+            <div class="rd-detail-header-sub">{{ form.driverName ? '司机：' + form.driverName : '维护司机基本信息、驾驶资质与联系方式' }}</div>
           </div>
         </div>
       </template>
@@ -186,13 +175,13 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="司机姓名" prop="driverName">
-                    <el-input v-model="form.driverName" placeholder="选择人员或直接输入司机姓名">
-                      <template #append><el-button icon="Search" @click="openDriverPicker" /></template>
+                    <el-input v-model="form.driverName" :readonly="!!form.userId" placeholder="选择人员或直接输入司机姓名" @input="onDriverNameInput">
+                      <template #append><el-button icon="Search" @click.stop="openDriverPicker" /></template>
+                      <template #suffix>
+                        <el-icon v-if="form.driverName" class="vehicle-clear-icon" @click.stop="clearDriver"><CircleClose /></el-icon>
+                      </template>
                     </el-input>
                   </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="工号" prop="driverNo"><el-input v-model="form.driverNo" placeholder="请输入工号" /></el-form-item>
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="手机号" prop="phone"><el-input v-model="form.phone" placeholder="请输入手机号" /></el-form-item>
@@ -201,7 +190,9 @@
                   <el-form-item label="身份证号" prop="idCard"><el-input v-model="form.idCard" placeholder="请输入身份证号" /></el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="所属部门" prop="ownerDept"><el-input v-model="form.ownerDept" placeholder="请输入所属部门" /></el-form-item>
+                  <el-form-item label="所属部门" prop="ownerDept">
+                    <el-input v-model="form.ownerDept" :disabled="!!form.userId" :placeholder="form.userId ? '选择人员后自动回填' : '请输入所属部门'" />
+                  </el-form-item>
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="状态" prop="status">
@@ -271,7 +262,7 @@
           <div class="rd-detail-header-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <div class="rd-detail-header-main">
             <div class="rd-detail-header-title">司机详情</div>
-            <div class="rd-detail-header-sub">{{ viewData.driverName || '' }}{{ viewData.driverNo ? ' · ' + viewData.driverNo : '' }}</div>
+            <div class="rd-detail-header-sub">{{ viewData.driverName || '' }}</div>
           </div>
         </div>
       </template>
@@ -284,7 +275,6 @@
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v0">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">司机姓名</span><div class="rd-value">{{ viewData.driverName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工号</span><div class="rd-value">{{ viewData.driverNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">手机号</span><div class="rd-value">{{ viewData.phone || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">身份证号</span><div class="rd-value">{{ viewData.idCard || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ viewData.ownerDept || '-' }}</div></div>
@@ -402,9 +392,9 @@
       action="/oa/driver/importData"
       template-action="/oa/driver/importTemplate"
       template-file-name="司机台账导入模板.xlsx"
-      update-support-label="如果已存在相同工号，则更新该司机数据"
-      :column-labels="{ driverName: '司机姓名', driverNo: '工号', phone: '手机号', licenseType: '准驾车型', licenseNo: '驾驶证号', licenseExpire: '驾驶证有效期至', entryDate: '入职日期', ownerDept: '所属部门', drivingYears: '驾龄', status: '状态', result: '导入结果', errorReason: '失败原因' }"
-      :tips="['司机姓名为必填项，工号建议填写以便重复数据识别', '状态请填写字典值（如：状态 0=在职）', '勾选“更新已存在的数据”后，相同工号的记录将被覆盖更新']"
+      update-support-label="如果已存在相同手机号，则更新该司机数据"
+      :column-labels="{ driverName: '司机姓名', phone: '手机号', licenseType: '准驾车型', licenseNo: '驾驶证号', licenseExpire: '驾驶证有效期至', entryDate: '入职日期', ownerDept: '所属部门', drivingYears: '驾龄', status: '状态', result: '导入结果', errorReason: '失败原因' }"
+      :tips="['司机姓名为必填项，手机号用于识别重复数据', '状态请填写字典值（如：状态 0=在岗）', '勾选“更新已存在的数据”后，相同手机号的记录将被覆盖更新']"
       @success="getList"
     />
   </div>
@@ -418,7 +408,7 @@ import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
 import OaResourceCalendar from '@/components/OaResourceCalendar/index.vue'
 import { listHrEmployee } from '@/api/hr/hrEmployee'
-import { QuestionFilled } from '@element-plus/icons-vue'
+import { QuestionFilled, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const router = useRouter()
@@ -449,7 +439,6 @@ const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0, '3': 0 })
 
 const columns = ref({
   driverName: { label: '司机姓名', visible: true },
-  driverNo: { label: '工号', visible: true },
   phone: { label: '手机号', visible: true },
   licenseType: { label: '准驾车型', visible: true },
   licenseNo: { label: '驾驶证号', visible: false },
@@ -467,11 +456,11 @@ const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1, pageSize: 10,
-    driverName: undefined, driverNo: undefined, phone: undefined,
+    driverName: undefined, phone: undefined,
     licenseType: undefined, licenseNo: undefined, ownerDept: undefined, status: undefined, params: {}
   },
   rules: {
-    driverName: [{ required: true, message: '司机姓名不能为空', trigger: 'blur' }]
+    driverName: [{ required: true, message: '司机姓名不能为空', trigger: 'change' }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -479,7 +468,6 @@ const { queryParams, form, rules } = toRefs(data)
 const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.driverName) count++
-  if (queryParams.value.driverNo) count++
   if (queryParams.value.phone) count++
   if (queryParams.value.licenseType) count++
   if (queryParams.value.licenseNo) count++
@@ -511,7 +499,7 @@ function handleQuery() {
 function resetQuery() {
   queryParams.value = {
     pageNum: 1, pageSize: queryParams.value.pageSize,
-    driverName: undefined, driverNo: undefined, phone: undefined,
+    driverName: undefined, phone: undefined,
     licenseType: undefined, licenseNo: undefined, ownerDept: undefined, status: undefined, params: {}
   }
   licenseRange.value = []
@@ -553,7 +541,7 @@ function handleSelectionChange(selection) {
 
 function reset() {
   form.value = {
-    driverId: undefined, driverName: undefined, driverNo: undefined, phone: undefined,
+    driverId: undefined, userId: undefined, driverName: undefined, phone: undefined,
     idCard: undefined, licenseNo: undefined, licenseType: undefined, licenseExpire: undefined,
     entryDate: undefined, ownerDept: undefined, drivingYears: undefined,
     status: '0', attachment: undefined, remark: undefined
@@ -615,21 +603,49 @@ function handleDelete(row) {
 
 /** 打开司机选择弹框 */
 function openDriverPicker() {
-  driverPickerRef.value.open()
+  driverPickerRef.value.open(form.value.userId)
 }
 
-/** 选择司机后自动带出部门、电话与身份证号 */
+/** 手动输入姓名（外部人员）：解除组织用户关联，并即时清除校验残留 */
+function onDriverNameInput(val) {
+  if (form.value.userId) {
+    form.value.userId = undefined
+    form.value.ownerDept = undefined
+  }
+  if (val) proxy.$refs['driverRef']?.clearValidate('driverName')
+}
+
+/** 选择人员后自动带出部门与电话，并回填身份证号 */
 function onDriverPicked(user) {
-  form.value.driverName = user.nickName
+  form.value.userId = user.userId
+  form.value.driverName = user.nickName || user.nickname
   form.value.ownerDept = user.deptName
   form.value.phone = user.phonenumber
+  // 选择后立即清除“司机姓名不能为空”的校验残留，避免提交时误报
+  nextTick(() => {
+    proxy.$refs['driverRef']?.validateField('driverName', () => {})
+  })
   listHrEmployee({ userId: user.userId, pageNum: 1, pageSize: 1 }).then(res => {
     const emp = (res.rows || [])[0]
-    if (emp) {
-      if (emp.idCard) form.value.idCard = emp.idCard
-      if (emp.employeeNo) form.value.driverNo = emp.employeeNo
-    }
+    if (emp && emp.idCard) form.value.idCard = emp.idCard
   }).catch(() => {})
+}
+
+/**
+ * 清除司机姓名：
+ * - 人员选择带入时，一并清除人员关联与自动带出的部门、电话、身份证；
+ * - 手工输入时仅清空姓名，保留已手工填写的联系方式。
+ */
+function clearDriver() {
+  const fromPicker = !!form.value.userId
+  form.value.userId = undefined
+  form.value.driverName = undefined
+  if (fromPicker) {
+    form.value.ownerDept = undefined
+    form.value.phone = undefined
+    form.value.idCard = undefined
+  }
+  proxy.$refs['driverRef']?.clearValidate('driverName')
 }
 
 function handleImport() {

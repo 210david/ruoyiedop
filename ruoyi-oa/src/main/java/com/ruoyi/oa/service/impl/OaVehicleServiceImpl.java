@@ -13,12 +13,17 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.oa.domain.OaVehicle;
 import com.ruoyi.oa.mapper.OaVehicleMapper;
 import com.ruoyi.oa.service.IOaVehicleService;
+import com.ruoyi.common.core.domain.entity.SysDept;
+import com.ruoyi.system.service.ISysDeptService;
 
 @Service
 public class OaVehicleServiceImpl implements IOaVehicleService
 {
     @Autowired
     private OaVehicleMapper oaVehicleMapper;
+
+    @Autowired
+    private ISysDeptService sysDeptService;
 
     @Override
     public OaVehicle selectOaVehicleById(Long vehicleId) { return oaVehicleMapper.selectOaVehicleById(vehicleId); }
@@ -66,6 +71,7 @@ public class OaVehicleServiceImpl implements IOaVehicleService
                     }
                     vehicle.setVehicleId(exist.getVehicleId());
                     vehicle.setUpdateBy(operName);
+                    normalizeOwnerDept(vehicle);
                     oaVehicleMapper.updateOaVehicle(vehicle);
                     successNum++;
                     successList.add(buildItem(vehicle, "更新成功"));
@@ -73,6 +79,7 @@ public class OaVehicleServiceImpl implements IOaVehicleService
                 else
                 {
                     vehicle.setCreateBy(operName);
+                    normalizeOwnerDept(vehicle);
                     oaVehicleMapper.insertOaVehicle(vehicle);
                     successNum++;
                     successList.add(buildItem(vehicle, "新增成功"));
@@ -150,10 +157,46 @@ public class OaVehicleServiceImpl implements IOaVehicleService
     }
 
     @Override
-    public int insertOaVehicle(OaVehicle oaVehicle) { return oaVehicleMapper.insertOaVehicle(oaVehicle); }
+    public int insertOaVehicle(OaVehicle oaVehicle)
+    {
+        normalizeOwnerDept(oaVehicle);
+        return oaVehicleMapper.insertOaVehicle(oaVehicle);
+    }
 
     @Override
-    public int updateOaVehicle(OaVehicle oaVehicle) { return oaVehicleMapper.updateOaVehicle(oaVehicle); }
+    public int updateOaVehicle(OaVehicle oaVehicle)
+    {
+        normalizeOwnerDept(oaVehicle);
+        return oaVehicleMapper.updateOaVehicle(oaVehicle);
+    }
+
+    /**
+     * 所属部门一致性校正：
+     * 1) 传了部门ID（弹框选择）→ 以部门表中的名称为准回填 ownerDept；
+     * 2) 只传了名称（Excel 导入）→ 按名称唯一匹配部门ID，匹配不到则保留名称、ID 为空。
+     */
+    private void normalizeOwnerDept(OaVehicle vehicle)
+    {
+        if (vehicle.getOwnerDeptId() != null)
+        {
+            SysDept dept = sysDeptService.selectDeptById(vehicle.getOwnerDeptId());
+            if (dept != null)
+            {
+                vehicle.setOwnerDept(dept.getDeptName());
+            }
+            return;
+        }
+        String name = StringUtils.trim(vehicle.getOwnerDept());
+        if (StringUtils.isEmpty(name))
+        {
+            return;
+        }
+        List<Long> matched = oaVehicleMapper.selectDeptIdsByExactName(name);
+        if (matched != null && matched.size() == 1)
+        {
+            vehicle.setOwnerDeptId(matched.get(0));
+        }
+    }
 
     @Override
     public int deleteOaVehicleByIds(Long[] vehicleIds) { return oaVehicleMapper.deleteOaVehicleByIds(vehicleIds); }
