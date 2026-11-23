@@ -39,7 +39,6 @@
               <el-radio :model-value="selectedId" :value="row.driverId" @click.stop="onRowClick(row)"><span /></el-radio>
             </template>
           </el-table-column>
-          <el-table-column label="司机编号" prop="driverNo" width="110" show-overflow-tooltip />
           <el-table-column label="司机姓名" prop="driverName" width="110" show-overflow-tooltip />
           <el-table-column label="手机号" prop="phone" width="130" show-overflow-tooltip />
           <el-table-column label="驾驶证类型" prop="licenseType" min-width="100" align="center" />
@@ -179,8 +178,10 @@ function handleConfirm() {
   if (!selectedId.value || !selectedRow.value) return
   emit('confirm', {
     driverId: selectedRow.value.driverId,
-    driverNo: selectedRow.value.driverNo,
-    driverName: selectedRow.value.driverName
+    driverName: selectedRow.value.driverName,
+    phone: selectedRow.value.phone,
+    ownerDept: selectedRow.value.ownerDept,
+    licenseType: selectedRow.value.licenseType
   })
   visible.value = false
 }

@@ -37,6 +37,9 @@ public class OaVehicle extends BaseEntity
     @Excel(name = "所属部门")
     private String ownerDept;
 
+    /** 所属部门ID（与部门弹框选择联动，ownerDept 保存部门名称用于展示与导入导出） */
+    private Long ownerDeptId;
+
     @Excel(name = "默认驾驶员")
     private String driverName;
 
@@ -90,6 +93,8 @@ public class OaVehicle extends BaseEntity
     public void setSeatCount(Integer seatCount) { this.seatCount = seatCount; }
     public String getOwnerDept() { return ownerDept; }
     public void setOwnerDept(String ownerDept) { this.ownerDept = ownerDept; }
+    public Long getOwnerDeptId() { return ownerDeptId; }
+    public void setOwnerDeptId(Long ownerDeptId) { this.ownerDeptId = ownerDeptId; }
     public String getDriverName() { return driverName; }
     public void setDriverName(String driverName) { this.driverName = driverName; }
     public String getDriverPhone() { return driverPhone; }

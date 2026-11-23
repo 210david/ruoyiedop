@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS biz_oa_vehicle (
   vehicle_use     varchar(100) DEFAULT NULL COMMENT '使用用途',
   seat_count      int          DEFAULT NULL COMMENT '座位数',
   owner_dept      varchar(100) DEFAULT NULL COMMENT '所属部门',
+  owner_dept_id   bigint       DEFAULT NULL COMMENT '所属部门ID(sys_dept.dept_id)',
   driver_name     varchar(50)  DEFAULT NULL COMMENT '默认驾驶员',
   driver_phone    varchar(20)  DEFAULT NULL COMMENT '驾驶员电话',
   license_no      varchar(64)  DEFAULT NULL COMMENT '行驶证号',
@@ -114,7 +115,6 @@ CREATE TABLE IF NOT EXISTS biz_oa_vehicle (
 CREATE TABLE IF NOT EXISTS biz_oa_driver (
   driver_id       bigint       NOT NULL AUTO_INCREMENT COMMENT '司机ID',
   driver_name     varchar(50)  NOT NULL COMMENT '司机姓名',
-  driver_no       varchar(64)  DEFAULT NULL COMMENT '工号',
   phone           varchar(20)  DEFAULT NULL COMMENT '手机号',
   id_card         varchar(32)  DEFAULT NULL COMMENT '身份证号',
   license_no      varchar(64)  DEFAULT NULL COMMENT '驾驶证号',
@@ -132,22 +132,18 @@ CREATE TABLE IF NOT EXISTS biz_oa_driver (
   update_time     datetime     DEFAULT NULL COMMENT '更新时间',
   remark          varchar(500) DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (driver_id),
-  KEY idx_oa_driver_name (driver_name),
-  KEY idx_oa_driver_no (driver_no)
+  KEY idx_oa_driver_name (driver_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='司机台账';
 
 CREATE TABLE IF NOT EXISTS biz_oa_vehicle_insurance (
   insurance_id    bigint        NOT NULL AUTO_INCREMENT COMMENT '保险ID',
-  policy_no       varchar(64)   NOT NULL COMMENT '保单号',
-  insurance_no    varchar(64)   DEFAULT NULL COMMENT '投保单号',
+  policy_no       varchar(64)   DEFAULT NULL COMMENT '保单号',
   vehicle_id      bigint        DEFAULT NULL COMMENT '车辆ID',
   plate_no        varchar(32)   DEFAULT NULL COMMENT '车牌号',
-  insurance_type  varchar(20)   DEFAULT NULL COMMENT '保险类型(oa_insurance_type)',
   insurer         varchar(100)  DEFAULT NULL COMMENT '保险公司',
   start_date      date          DEFAULT NULL COMMENT '起保日期',
   end_date        date          DEFAULT NULL COMMENT '到期日期',
   premium         decimal(12,2) DEFAULT NULL COMMENT '保费(元)',
-  insured_amount  decimal(14,2) DEFAULT NULL COMMENT '保额(元)',
   contact_name    varchar(50)   DEFAULT NULL COMMENT '联系人',
   contact_phone   varchar(20)   DEFAULT NULL COMMENT '联系电话',
   status          char(1)       DEFAULT '0' COMMENT '状态(0有效 1即将到期 2已过期)',

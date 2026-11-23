@@ -153,3 +153,16 @@
   .oa-list-page .filter-card .filter-bar { grid-template-columns:1fr; }
   .oa-list-page .toolbar { flex-wrap:wrap; gap:10px; }
 }
+
+/* 选择器（部门/人员/车辆等）右侧清除按钮 */
+/* 弹框内容 append-to-body 后不在列表页 DOM 内，需按 .rd-dialog 作用域单独声明 */
+.oa-list-page .oa-picker-clear-icon,
+.oa-list-page .vehicle-clear-icon,
+.rd-dialog .vehicle-clear-icon {
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 14px;
+}
+.oa-list-page .oa-picker-clear-icon:hover,
+.oa-list-page .vehicle-clear-icon:hover,
+.rd-dialog .vehicle-clear-icon:hover { color: #909399; }

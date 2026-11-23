@@ -5,7 +5,6 @@
     <resultMap type="OaDriver" id="OaDriverResult">
         <result property="driverId"      column="driver_id"/>
         <result property="driverName"    column="driver_name"/>
-        <result property="driverNo"      column="driver_no"/>
         <result property="phone"         column="phone"/>
         <result property="idCard"        column="id_card"/>
         <result property="licenseNo"     column="license_no"/>
@@ -28,7 +27,7 @@
     </resultMap>
 
     <sql id="selectOaDriverVo">
-        SELECT driver_id, driver_name, driver_no, phone, id_card, license_no, license_type,
+        SELECT driver_id, driver_name, phone, id_card, license_no, license_type,
                license_expire, entry_date, owner_dept, driving_years, status, flow_instance_id, attachment, del_flag,
                create_by, create_time, update_by, update_time, remark,
                (SELECT f.title FROM flow_data_bus_use_apply f WHERE f.process_instance_id = flow_instance_id LIMIT 1) AS flow_title,
@@ -42,7 +41,6 @@
         <where>
             del_flag = '0'
             <if test="driverName != null and driverName != ''"> AND driver_name LIKE CONCAT('%', #{driverName}, '%')</if>
-            <if test="driverNo != null and driverNo != ''"> AND driver_no LIKE CONCAT('%', #{driverNo}, '%')</if>
             <if test="phone != null and phone != ''"> AND phone LIKE CONCAT('%', #{phone}, '%')</if>
             <if test="licenseNo != null and licenseNo != ''"> AND license_no LIKE CONCAT('%', #{licenseNo}, '%')</if>
             <if test="licenseType != null and licenseType != ''"> AND license_type LIKE CONCAT('%', #{licenseType}, '%')</if>
@@ -64,16 +62,17 @@
         <include refid="selectOaDriverVo"/> WHERE driver_id = #{driverId}
     </select>
 
-    <select id="selectOaDriverByNo" parameterType="String" resultMap="OaDriverResult">
-        <include refid="selectOaDriverVo"/> WHERE del_flag = '0' AND driver_no = #{driverNo} LIMIT 1
+    <!-- 按手机号识别重复司机（原工号字段已移除） -->
+    <select id="selectOaDriverByPhone" parameterType="String" resultMap="OaDriverResult">
+        <include refid="selectOaDriverVo"/> WHERE del_flag = '0' AND phone = #{phone} LIMIT 1
     </select>
 
     <insert id="insertOaDriver" parameterType="OaDriver" useGeneratedKeys="true" keyProperty="driverId">
         INSERT INTO biz_oa_driver (
-            driver_name, driver_no, phone, id_card, license_no, license_type, license_expire,
+            driver_name, phone, id_card, license_no, license_type, license_expire,
             entry_date, owner_dept, driving_years, status, attachment, create_by, create_time, remark
         ) VALUES (
-            #{driverName}, #{driverNo}, #{phone}, #{idCard}, #{licenseNo}, #{licenseType}, #{licenseExpire},
+            #{driverName}, #{phone}, #{idCard}, #{licenseNo}, #{licenseType}, #{licenseExpire},
             #{entryDate}, #{ownerDept}, #{drivingYears}, #{status}, #{attachment}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -82,7 +81,6 @@
         UPDATE biz_oa_driver
         <set>
             <if test="driverName != null and driverName != ''">driver_name = #{driverName},</if>
-            <if test="driverNo != null">driver_no = #{driverNo},</if>
             <if test="phone != null">phone = #{phone},</if>
             <if test="idCard != null">id_card = #{idCard},</if>
             <if test="licenseNo != null">license_no = #{licenseNo},</if>
