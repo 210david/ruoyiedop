@@ -69,9 +69,21 @@
           </el-table-column>
           <el-table-column label="上传人" prop="createBy" key="createBy" :width="colWidth('createBy', 110)" align="center" resizable v-if="columns.createBy.visible" />
           <el-table-column label="上传时间" prop="createTime" key="createTime" :width="colWidth('createTime', 180)" align="center" resizable v-if="columns.createTime.visible" />
-          <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
+          <!-- 功能入口：问答命中该文档时，AI 直接给出此菜单入口 -->
+          <el-table-column label="功能入口" key="navMenuId" :width="colWidth('navMenuId', 140)" align="center" resizable v-if="columns.navMenuId.visible">
+            <template #default="scope">
+              <el-tag v-if="scope.row.navMenuId" size="small" effect="light" type="primary" class="nav-bound-tag"
+                :title="navMenuFullTitle(scope.row.navMenuId)">
+                {{ navMenuTitle(scope.row.navMenuId) }}
+              </el-tag>
+              <button v-else type="button" class="nav-bind-link" v-hasPermi="['ai:knowledge:nav']"
+                @click="openNavBind(scope.row)">+ 关联入口</button>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="150" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
+                <el-button link type="primary" icon="Link" @click="openNavBind(scope.row)" v-hasPermi="['ai:knowledge:nav']">入口</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['ai:knowledge:remove']">删除</el-button>
               </div>
             </template>
@@ -110,6 +122,16 @@
             </div>
           </el-upload>
         </el-form-item>
+        <el-form-item label="关联功能入口（可选）">
+          <el-select v-model="uploadNavMenuId" style="width: 100%" size="large" clearable filterable
+            placeholder="选填：问答命中该文档时，直接给出此功能入口">
+            <el-option v-for="o in menuOptions" :key="o.menuId" :label="o.title" :value="o.menuId" />
+          </el-select>
+          <div class="upload-tip" style="margin-top:8px">
+            <el-icon :size="13"><InfoFilled /></el-icon>
+            例如《入库操作手册》关联「入库单管理」，用户问"入库怎么操作"时会直接给出该页面入口。
+          </div>
+        </el-form-item>
         <div class="upload-tip">
           <el-icon :size="13"><InfoFilled /></el-icon>
           上传后系统将自动抽取文本、清洗格式并切片入库，供 AI 知识问答检索引用；解析状态可在列表中查看。
@@ -122,13 +144,93 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 关联功能入口弹窗（文档 → 系统功能页面） -->
+    <el-dialog v-model="navBindOpen" width="580px" destroy-on-close append-to-body
+      class="ai-nav-bind-dialog" @closed="resetNavBind">
+      <template #header>
+        <div class="nbd-head">
+          <span class="nbd-head-icon"><el-icon :size="16"><Connection /></el-icon></span>
+          <div class="nbd-head-text">
+            <div class="nbd-head-title">关联功能入口</div>
+            <div class="nbd-head-sub">问答命中该文档时，直接给出对应的功能页面</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 当前文档：卡片化展示 -->
+      <div class="nbd-doc">
+        <div class="nbd-doc-icon"><el-icon :size="17"><Document /></el-icon></div>
+        <div class="nbd-doc-main">
+          <div class="nbd-doc-name" :title="navBindDoc.docName">{{ navBindDoc.docName || '—' }}</div>
+          <div class="nbd-doc-meta">
+            <span class="nbd-module-chip">{{ moduleNames[navBindDoc.module] || navBindDoc.module || '未分类' }}</span>
+            <span class="nbd-meta-sep">·</span>
+            <span class="nbd-meta-text">{{ (navBindDoc.fileType || '').toUpperCase() || '—' }}</span>
+            <span class="nbd-meta-sep">·</span>
+            <span class="nbd-meta-text">{{ navBindDoc.chunkCount || 0 }} 个切片</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 关系示意：让用户一眼看懂"文档 → 页面"这层映射 -->
+      <div class="nbd-flow">
+        <div class="nbd-flow-node">
+          <span class="nbd-flow-label">用户提问</span>
+          <span class="nbd-flow-value">命中该文档</span>
+        </div>
+        <span class="nbd-flow-arrow"></span>
+        <div class="nbd-flow-node is-target" :class="{ 'is-empty': !navBindMenuId }">
+          <span class="nbd-flow-label">点击直达</span>
+          <span class="nbd-flow-value">{{ selectedMenu?.title || '尚未绑定' }}</span>
+        </div>
+      </div>
+
+      <el-form label-position="top" class="nbd-form">
+        <el-form-item label="目标功能页面">
+          <el-select v-model="navBindMenuId" style="width: 100%" size="large" clearable filterable
+            placeholder="选择该文档对应的系统功能页面">
+            <el-option v-for="o in menuOptions" :key="o.menuId" :label="o.title" :value="o.menuId" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <!-- 路径预览：管理员确认跳转目标是否正确 -->
+      <div v-if="navBindMenuId" class="nbd-preview">
+        <div class="nbd-preview-row">
+          <span class="nbd-preview-label">跳转路径</span>
+          <span class="nbd-preview-path">{{ selectedMenu?.path || '—' }}</span>
+        </div>
+        <div class="nbd-preview-row">
+          <span class="nbd-preview-label">菜单层级</span>
+          <span class="nbd-preview-crumb">{{ selectedMenu?.title || '—' }}</span>
+        </div>
+      </div>
+
+      <div class="nbd-tip">
+        <el-icon :size="13"><InfoFilled /></el-icon>
+        <div>
+          <b>绑定后</b>按确定性映射返回入口，不调用大模型，不受模型波动影响；
+          <b>清空</b>则回退为按问题语义自动匹配（依赖意图表与别名配置）。
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="navBindOpen = false">取 消</el-button>
+        <el-button v-if="navBindDoc.navMenuId" plain type="danger" :loading="navBinding"
+          @click="saveNavBind(true)">解除绑定</el-button>
+        <el-button type="primary" :loading="navBinding" @click="saveNavBind(false)">保 存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="AiKnowledge">
-import { listKnowledge, uploadKnowledge, delKnowledge } from '@/api/ai/knowledge'
+import { computed } from 'vue'
+import { listKnowledge, uploadKnowledge, delKnowledge, updateDocNav } from '@/api/ai/knowledge'
+import { navMenuOptions } from '@/api/ai/nav'
 import { useColumnResize } from '@/composables/useColumnResize'
-import { UploadFilled, Search, InfoFilled } from '@element-plus/icons-vue'
+import { UploadFilled, Search, InfoFilled, Connection, Document } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 
@@ -157,7 +259,8 @@ const defaultColumns = {
   chunkCount: { label: '切片数', visible: true },
   status: { label: '状态', visible: true },
   createBy: { label: '上传人', visible: true },
-  createTime: { label: '上传时间', visible: true }
+  createTime: { label: '上传时间', visible: true },
+  navMenuId: { label: '功能入口', visible: true }
 }
 function loadColumnVisibility() {
   try {
@@ -183,10 +286,77 @@ const uploadOpen = ref(false)
 const uploadModule = ref('platform')
 const uploadFile = ref(null)
 const uploading = ref(false)
+const uploadNavMenuId = ref(null)
+
+/* ===== 关联功能入口 ===== */
+const menuOptions = ref([])
+const navBindOpen = ref(false)
+const navBindDoc = ref({})
+const navBindMenuId = ref(null)
+const navBinding = ref(false)
+
+/** 目标菜单下拉：只取当前登录人有权访问的可跳转页面 */
+function loadMenuOptions() {
+  if (menuOptions.value.length) return
+  navMenuOptions().then(res => {
+    menuOptions.value = res.data || []
+  }).catch(() => {})
+}
+
+/** 列表里只显示菜单名（面包屑最后一段），完整层级放 title 提示 */
+function navMenuTitle(menuId) {
+  const o = menuOptions.value.find(x => x.menuId === menuId)
+  if (!o) return '菜单#' + menuId
+  return String(o.title).split(' / ').pop()
+}
+
+function navMenuFullTitle(menuId) {
+  const o = menuOptions.value.find(x => x.menuId === menuId)
+  return o ? o.title : ('菜单#' + menuId)
+}
+
+/** 当前弹框选中的菜单对象（用于路径预览） */
+const selectedMenu = computed(() => {
+  if (!navBindMenuId.value) return null
+  return menuOptions.value.find(x => x.menuId === navBindMenuId.value) || null
+})
+
+function openNavBind(row) {
+  loadMenuOptions()
+  navBindDoc.value = row || {}
+  navBindMenuId.value = row && row.navMenuId ? row.navMenuId : null
+  navBindOpen.value = true
+}
+
+function resetNavBind() {
+  navBindDoc.value = {}
+  navBindMenuId.value = null
+}
+
+/**
+ * 保存/解除绑定
+ * @param {boolean} unbind true=解除绑定（显式传 null），false=按当前选择保存
+ */
+function saveNavBind(unbind) {
+  const docId = navBindDoc.value.docId
+  if (!docId) return
+  const targetId = unbind ? null : navBindMenuId.value
+  if (!unbind && !targetId) {
+    proxy.$modal.msgWarning('请先选择目标功能页面')
+    return
+  }
+  navBinding.value = true
+  updateDocNav(docId, targetId).then(() => {
+    proxy.$modal.msgSuccess(targetId ? '已关联功能入口' : '已解除关联')
+    navBindOpen.value = false
+    getList()
+  }).catch(() => {}).finally(() => { navBinding.value = false })
+}
 
 function resetUploadForm() {
   uploadFile.value = null
   uploadModule.value = 'platform'
+  uploadNavMenuId.value = null
 }
 
 function getList() {
@@ -232,6 +402,9 @@ function handleUpload() {
   const fd = new FormData()
   fd.append('file', uploadFile.value)
   fd.append('module', uploadModule.value)
+  if (uploadNavMenuId.value) {
+    fd.append('navMenuId', uploadNavMenuId.value)
+  }
   uploadKnowledge(fd).then(() => {
     uploading.value = false
     uploadOpen.value = false
@@ -242,6 +415,8 @@ function handleUpload() {
 }
 
 getList()
+// 预载目标菜单清单：列表里"功能入口"列需要按 menuId 显示菜单名
+loadMenuOptions()
 </script>
 
 <style scoped>
@@ -343,7 +518,17 @@ getList()
 .upload-tip { display:flex; align-items:flex-start; gap:6px; font-size:12px; color:#6b7280; background:#f8faff; border:1px solid #e4e8ff; border-radius:8px; padding:9px 12px; line-height:1.6; margin-top:2px; }
 .upload-tip .el-icon { margin-top:2px; color:#6366f1; flex:none; }
 
-/* 全局兜底：el-dialog 弹层在 body 下，scoped 样式无法命中，用非 scoped 保证铺满 */
+/* ===== 列表内"功能入口"列 ===== */
+.nav-bound-tag { max-width:118px; cursor:default; }
+.nav-bound-tag :deep(span) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nav-bind-link {
+  display:inline-flex; align-items:center; gap:3px; padding:2px 8px;
+  font-size:12px; color:var(--brand-600); cursor:pointer; white-space:nowrap;
+  background:var(--brand-50); border:1px dashed var(--brand-200);
+  border-radius:var(--r-sm); transition:all .15s var(--ease-out);
+}
+.nav-bind-link:hover { background:var(--brand-100); border-color:var(--brand-500); color:var(--brand-700); }
+
 </style>
 
 <style>
@@ -352,4 +537,98 @@ getList()
 .ai-upload-dialog .el-upload-dragger {
   width: 100% !important;
 }
+
+/* ===== 关联功能入口弹窗 ===== */
+.ai-nav-bind-dialog .nbd-head { display:flex; align-items:center; gap:10px; }
+.ai-nav-bind-dialog .nbd-head-icon {
+  width:34px; height:34px; flex:none; border-radius:10px; color:#fff;
+  background:linear-gradient(135deg,#8b5cf6,#6366f1);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(99,102,241,.28);
+}
+.ai-nav-bind-dialog .nbd-head-text { display:flex; flex-direction:column; gap:2px; }
+.ai-nav-bind-dialog .nbd-head-title { font-size:15px; font-weight:600; color:#0f172a; line-height:1.3; }
+.ai-nav-bind-dialog .nbd-head-sub { font-size:12px; color:#64748b; line-height:1.3; }
+
+/* 文档卡片 */
+.ai-nav-bind-dialog .nbd-doc {
+  display:flex; align-items:center; gap:11px;
+  padding:12px 14px; margin-bottom:14px;
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+}
+.ai-nav-bind-dialog .nbd-doc-icon {
+  width:36px; height:36px; flex:none; border-radius:10px;
+  background:#fff; border:1px solid #e0e7ff;
+  color:#4f46e5;
+  display:flex; align-items:center; justify-content:center;
+}
+.ai-nav-bind-dialog .nbd-doc-main { min-width:0; flex:1; display:flex; flex-direction:column; gap:5px; }
+.ai-nav-bind-dialog .nbd-doc-name {
+  font-size:13.5px; font-weight:600; color:#0f172a; line-height:1.4;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.ai-nav-bind-dialog .nbd-doc-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.ai-nav-bind-dialog .nbd-module-chip {
+  display:inline-flex; align-items:center; padding:2px 8px;
+  border-radius:999px; font-size:11.5px; font-weight:600; line-height:1.4;
+  background:#f5f3ff; color:#4338ca; border:1px solid #c7d2fe;
+}
+.ai-nav-bind-dialog .nbd-meta-sep { color:#cbd5e1; font-size:11px; }
+.ai-nav-bind-dialog .nbd-meta-text { font-size:11.5px; color:#64748b; }
+
+/* 关系示意 */
+.ai-nav-bind-dialog .nbd-flow {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 14px; margin-bottom:16px;
+  background:#f8faff; border:1px solid #e4e8ff; border-radius:10px;
+}
+.ai-nav-bind-dialog .nbd-flow-node {
+  flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;
+  padding:8px 10px; background:#fff;
+  border:1px solid #e0e7ff; border-radius:6px;
+}
+.ai-nav-bind-dialog .nbd-flow-node.is-target { border-color:#c7d2fe; background:#eef2ff; }
+.ai-nav-bind-dialog .nbd-flow-node.is-empty { border-style:dashed; border-color:#cbd5e1; background:#fff; }
+.ai-nav-bind-dialog .nbd-flow-label { font-size:11px; color:#94a3b8; line-height:1.2; }
+.ai-nav-bind-dialog .nbd-flow-value {
+  font-size:12.5px; font-weight:600; color:#334155; line-height:1.3;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.ai-nav-bind-dialog .nbd-flow-node.is-target .nbd-flow-value { color:#4338ca; }
+.ai-nav-bind-dialog .nbd-flow-node.is-empty .nbd-flow-value { color:#94a3b8; font-weight:500; }
+.ai-nav-bind-dialog .nbd-flow-arrow {
+  flex:none; width:24px; height:1px; position:relative;
+  background:linear-gradient(90deg,#c7d2fe,#e0e7ff);
+}
+.ai-nav-bind-dialog .nbd-flow-arrow::after {
+  content:''; position:absolute; right:0; top:-2.5px;
+  border-left:5px solid #c7d2fe; border-top:3px solid transparent; border-bottom:3px solid transparent;
+}
+
+.ai-nav-bind-dialog .nbd-form :deep(.el-form-item__label) { font-size:13px; color:#334155; font-weight:500; padding-bottom:6px; }
+.ai-nav-bind-dialog .nbd-form :deep(.el-form-item) { margin-bottom:12px; }
+
+/* 路径预览 */
+.ai-nav-bind-dialog .nbd-preview {
+  padding:10px 14px; margin-bottom:12px;
+  background:#fff; border:1px solid #e2e8f0;
+  border-left:3px solid #6366f1; border-radius:6px;
+}
+.ai-nav-bind-dialog .nbd-preview-row { display:flex; align-items:baseline; gap:10px; line-height:1.8; }
+.ai-nav-bind-dialog .nbd-preview-row + .nbd-preview-row { margin-top:2px; }
+.ai-nav-bind-dialog .nbd-preview-label { flex:none; width:56px; font-size:11.5px; color:#94a3b8; }
+.ai-nav-bind-dialog .nbd-preview-path {
+  font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px;
+  color:#4338ca; word-break:break-all;
+}
+.ai-nav-bind-dialog .nbd-preview-crumb { font-size:12px; color:#64748b; word-break:break-all; }
+
+.ai-nav-bind-dialog .nbd-tip {
+  display:flex; align-items:flex-start; gap:6px;
+  font-size:12px; color:#64748b; line-height:1.65;
+  background:#f8fafc; border:1px solid #e2e8f0;
+  border-radius:6px; padding:9px 12px;
+}
+.ai-nav-bind-dialog .nbd-tip .el-icon { margin-top:2px; color:#4f46e5; flex:none; }
+.ai-nav-bind-dialog .nbd-tip b { color:#334155; font-weight:600; }
 </style>
