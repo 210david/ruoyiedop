@@ -111,6 +111,9 @@
       更新成本记录：带 version 乐观锁。
       version 不匹配时影响行数为 0，Service 据此重试或报错，
       防止并发覆盖导致成本金额失真。
+
+      注意：末尾 update_time 之后不带逗号，可选字段用「前置逗号」写法，
+      避免全部 <if> 不成立时生成 "sysdate(), WHERE" 的语法错误（原实现存在此 bug）。
     -->
     <update id="updateCost" parameterType="com.ruoyi.fin.domain.FinInventoryCost">
         UPDATE fin_inventory_cost
@@ -121,9 +124,9 @@
             last_in_date     = #{lastInDate},
             version          = version + 1,
             update_by        = #{updateBy},
-            update_time      = sysdate(),
-            <if test="inboundOrderId != null">inbound_order_id = #{inboundOrderId},</if>
-            <if test="remark != null">remark = #{remark},</if>
+            update_time      = sysdate()
+            <if test="inboundOrderId != null">, inbound_order_id = #{inboundOrderId}</if>
+            <if test="remark != null">, remark = #{remark}</if>
         WHERE cost_id = #{costId}
           AND version = #{version}
     </update>

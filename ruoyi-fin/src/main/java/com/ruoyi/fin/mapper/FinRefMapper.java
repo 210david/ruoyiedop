@@ -8,6 +8,7 @@ import com.ruoyi.fin.domain.vo.InvoiceRefVO;
 import com.ruoyi.fin.domain.vo.OutboundCostRefVO;
 import com.ruoyi.fin.domain.vo.PayrollBatchRefVO;
 import com.ruoyi.fin.domain.vo.ShipmentRefVO;
+import com.ruoyi.fin.domain.vo.StockTakeDiffRefVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -86,6 +87,27 @@ public interface FinRefMapper
      */
     List<InboundCostRefVO> selectUnpricedInbound(@Param("limit") int limit);
 
+    /**
+     * 扫描已审批完成、但尚未同步到成本台账的盘点差异（盘盈/盘亏）。
+     *
+     * <p>对应 wms_stock_take.status='3'（已完成）且明细 diff_qty != 0。</p>
+     * <p>幂等：用 NOT EXISTS 判断该盘点明细是否已在成本结转流水中。</p>
+     *
+     * @param limit 单批上限
+     * @return 待调整差异明细
+     */
+    List<StockTakeDiffRefVO> selectUnadjustedStockTakeDiff(@Param("limit") int limit);
+
+    /**
+     * 取物料入库加权均价（含税），用于盘盈且无成本台账时的计价兜底。
+     *
+     * <p>口径与 wms WmsStatsMapper.materialAvgPrice 一致：
+     * Σ(上架数量 × 入库单价) / Σ(上架数量)，两者不得漂移。</p>
+     *
+     * @param materialId 物料ID
+     * @return 含税均价，无数据返回 null
+     */
+    java.math.BigDecimal selectMaterialAvgPrice(@Param("materialId") Long materialId);
     /**
      * 扫描已出库但尚未结转成本的出库明细。
      *

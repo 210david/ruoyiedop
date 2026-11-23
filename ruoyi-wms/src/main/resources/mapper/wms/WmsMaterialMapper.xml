@@ -15,6 +15,7 @@
         <result property="safetyStockMin"  column="safety_stock_min"/>
         <result property="safetyStockMax"  column="safety_stock_max"/>
         <result property="isBatchManage"   column="is_batch_manage"/>
+        <result property="costPrice"       column="cost_price"/>
         <result property="status"          column="status"/>
         <result property="delFlag"         column="del_flag"/>
         <result property="createBy"        column="create_by"/>
@@ -27,7 +28,7 @@
     <sql id="selectMaterialVo">
         SELECT material_id, material_code, material_name, material_type, spec_model, unit,
                shelf_life_days, expiry_alert_days, is_expiry_manage,
-               safety_stock_min, safety_stock_max, is_batch_manage, status, del_flag,
+               safety_stock_min, safety_stock_max, is_batch_manage, cost_price, status, del_flag,
                create_by, create_time, update_by, update_time, remark
         FROM wms_material
     </sql>
@@ -60,10 +61,10 @@
     <insert id="insertMaterial" parameterType="WmsMaterial" useGeneratedKeys="true" keyProperty="materialId">
         INSERT INTO wms_material (material_code, material_name, material_type, spec_model, unit,
             shelf_life_days, expiry_alert_days, is_expiry_manage,
-            safety_stock_min, safety_stock_max, is_batch_manage, status, create_by, create_time, remark)
+            safety_stock_min, safety_stock_max, is_batch_manage, cost_price, status, create_by, create_time, remark)
         VALUES (#{materialCode}, #{materialName}, #{materialType}, #{specModel}, #{unit},
             #{shelfLifeDays}, #{expiryAlertDays}, #{isExpiryManage},
-            #{safetyStockMin}, #{safetyStockMax}, #{isBatchManage}, #{status}, #{createBy}, sysdate(), #{remark})
+            #{safetyStockMin}, #{safetyStockMax}, #{isBatchManage}, #{costPrice}, #{status}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateMaterial" parameterType="WmsMaterial">
@@ -80,6 +81,7 @@
             <if test="safetyStockMin != null">safety_stock_min = #{safetyStockMin},</if>
             <if test="safetyStockMax != null">safety_stock_max = #{safetyStockMax},</if>
             <if test="isBatchManage != null">is_batch_manage = #{isBatchManage},</if>
+            <if test="costPrice != null">cost_price = #{costPrice},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>

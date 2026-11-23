@@ -61,6 +61,18 @@ public class WmsMaterial extends BaseEntity
     @Excel(name = "批次管理", dictType = "sys_yes_no")
     private String isBatchManage;
 
+    /**
+     * 计价参考成本价（不含税，元）
+     *
+     * <p>【用途限定】仅作为财务入库计价在「入库明细单价缺失」时的兜底价，
+     * 不是采购价、也不是销售价。采购价见 pms_supplier_catalog.unit_price，
+     * 销售价见 mk_price_policy，二者不在物料主数据维护。</p>
+     *
+     * <p>为 0 或 null 表示未维护兜底价，计价时仍按无价明细跳过。</p>
+     */
+    @Excel(name = "参考成本价(不含税)")
+    private BigDecimal costPrice;
+
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", dictType = "sys_normal_disable")
     private String status;
@@ -95,6 +107,8 @@ public class WmsMaterial extends BaseEntity
     public void setSafetyStockMax(BigDecimal safetyStockMax) { this.safetyStockMax = safetyStockMax; }
     public String getIsBatchManage() { return isBatchManage; }
     public void setIsBatchManage(String isBatchManage) { this.isBatchManage = isBatchManage; }
+    public BigDecimal getCostPrice() { return costPrice; }
+    public void setCostPrice(BigDecimal costPrice) { this.costPrice = costPrice; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getDelFlag() { return delFlag; }

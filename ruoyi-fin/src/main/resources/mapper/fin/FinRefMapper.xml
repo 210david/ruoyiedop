@@ -174,6 +174,7 @@
         <result property="locationId"      column="location_id"/>
         <result property="receivedQty"     column="received_qty"/>
         <result property="unitPrice"       column="unit_price"/>
+        <result property="costPrice"       column="cost_price"/>
     </resultMap>
 
     <resultMap id="OutboundCostResult" type="com.ruoyi.fin.domain.vo.OutboundCostRefVO">
@@ -189,6 +190,32 @@
         <result property="batchNo"         column="batch_no"/>
         <result property="locationId"      column="location_id"/>
         <result property="actualQty"       column="actual_qty"/>
+    </resultMap>
+
+    <!-- 物料入库加权均价（含税）：与 wms WmsStatsMapper.materialAvgPrice 保持同一口径 -->
+    <select id="selectMaterialAvgPrice" resultType="java.math.BigDecimal">
+        SELECT SUM(d.putaway_qty * d.unit_price) / NULLIF(SUM(d.putaway_qty), 0)
+        FROM wms_inbound_order_detail d
+        WHERE d.del_flag = '0'
+          AND d.material_id = #{materialId}
+          AND d.putaway_qty > 0
+          AND d.unit_price > 0
+    </select>
+
+    <resultMap id="StockTakeDiffResult" type="com.ruoyi.fin.domain.vo.StockTakeDiffRefVO">
+        <result property="detailId"     column="detail_id"/>
+        <result property="takeId"       column="take_id"/>
+        <result property="takeNo"       column="take_no"/>
+        <result property="warehouseId"  column="warehouse_id"/>
+        <result property="materialId"   column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="locationId"   column="location_id"/>
+        <result property="batchNo"      column="batch_no"/>
+        <result property="diffQty"      column="diff_qty"/>
+        <result property="bookQty"      column="book_qty"/>
+        <result property="actualQty"    column="actual_qty"/>
+        <result property="completeTime" column="complete_time"/>
     </resultMap>
 
     <!--
@@ -209,7 +236,8 @@
                IFNULL(d.batch_no, '')  AS batch_no,
                IFNULL(d.location_id, 0) AS location_id,
                IFNULL(d.received_qty, 0) AS received_qty,
-               d.unit_price           AS unit_price
+               d.unit_price           AS unit_price,
+               m.cost_price           AS cost_price
         FROM wms_inbound_order_detail d
         JOIN wms_inbound_order o ON o.order_id = d.order_id AND o.del_flag = '0'
         LEFT JOIN wms_material m ON m.material_id = d.material_id
@@ -261,6 +289,43 @@
                 AND cf.del_flag = '0'
           )
         ORDER BY o.outbound_date, d.detail_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      扫描已审批完成、但尚未同步到成本台账的盘点差异。
+      幂等：NOT EXISTS 判断该盘点明细是否已在成本结转流水中（source_type='stocktake'）。
+      口径：diff_qty > 0 盘盈，< 0 盘亏；为 0 表示账实相符，不需要成本调整。
+      只读：本查询只 SELECT wms_* 表，不写任何业务表（FinRefMapper 强制约束）。
+    -->
+    <select id="selectUnadjustedStockTakeDiff" resultMap="StockTakeDiffResult">
+        SELECT d.detail_id       AS detail_id,
+               t.take_id         AS take_id,
+               t.take_no         AS take_no,
+               t.warehouse_id    AS warehouse_id,
+               d.material_id     AS material_id,
+               m.material_code   AS material_code,
+               m.material_name   AS material_name,
+               IFNULL(d.location_id, 0) AS location_id,
+               IFNULL(d.batch_no, '')   AS batch_no,
+               d.diff_qty        AS diff_qty,
+               d.book_qty        AS book_qty,
+               d.actual_qty      AS actual_qty,
+               IFNULL(t.approve_time, t.end_time) AS complete_time
+        FROM wms_stock_take_detail d
+        JOIN wms_stock_take t ON t.take_id = d.take_id AND t.del_flag = '0'
+        LEFT JOIN wms_material m ON m.material_id = d.material_id
+        WHERE t.status = '3'
+          AND d.del_flag = '0'
+          AND IFNULL(d.diff_qty, 0) != 0
+          AND NOT EXISTS (
+              SELECT 1 FROM fin_cost_carry_forward cf
+              WHERE cf.source_module = 'wms'
+                AND cf.source_type   = 'stocktake'
+                AND cf.source_id     = d.detail_id
+                AND cf.del_flag = '0'
+          )
+        ORDER BY complete_time, d.detail_id
         LIMIT #{limit}
     </select>
 

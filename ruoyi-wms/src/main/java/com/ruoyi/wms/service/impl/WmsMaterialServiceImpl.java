@@ -52,6 +52,8 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         validateSafetyStock(material);
         // 校验效期管理为"是"时保质期天数和临期预警必填
         validateExpiryManage(material);
+        // 计价参考成本价：非负、统一 2 位小数（金额精度规范）
+        normalizeCostPrice(material);
         if (StringUtils.isEmpty(material.getMaterialCode()))
         {
             material.setMaterialCode(generateMaterialCode(material.getMaterialType()));
@@ -85,6 +87,8 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
         validateSafetyStock(material);
         // 校验效期管理为"是"时保质期天数和临期预警必填
         validateExpiryManage(material);
+        // 计价参考成本价：非负、统一 2 位小数（金额精度规范）
+        normalizeCostPrice(material);
         if (!checkMaterialCodeUnique(material))
         {
             throw new ServiceException("修改物料'" + material.getMaterialName() + "'失败，物料编码已存在");
@@ -142,6 +146,8 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
                 validateExpiryManage(row);
                 // 4. 安全库存校验
                 validateSafetyStock(row);
+                // 4.1 计价参考成本价校验（负数拒绝）
+                normalizeCostPrice(row);
                 // 5. 根据匹配字段校验并查找已存在的物料
                 String matchValue = getMatchValue(row, updateKey);
                 if (StringUtils.isEmpty(matchValue))
@@ -499,6 +505,26 @@ public class WmsMaterialServiceImpl implements IWmsMaterialService
                 throw new ServiceException("临期预警天数不能大于保质期天数");
             }
         }
+    }
+
+    /**
+     * 校验并规整「计价参考成本价」
+     *
+     * <p>该字段是不含税金额，按统一开发规范统一保留 2 位小数（HALF_UP）。
+     * 负数直接拒绝：兜底价参与加权平均，负价会污染整个物料成本。</p>
+     */
+    private void normalizeCostPrice(WmsMaterial material)
+    {
+        BigDecimal costPrice = material.getCostPrice();
+        if (costPrice == null)
+        {
+            return;
+        }
+        if (costPrice.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new ServiceException("计价参考成本价不能为负数");
+        }
+        material.setCostPrice(costPrice.setScale(2, java.math.RoundingMode.HALF_UP));
     }
 
     /**

@@ -27,6 +27,14 @@ export function carryOutbound() {
   })
 }
 
+// 盘点差异成本调整（扫描已完成盘点单的盘盈/盘亏）
+export function adjustStockTake() {
+  return request({
+    url: '/fin/cost/adjustStockTake',
+    method: 'post'
+  })
+}
+
 // 期末存货计价表
 export function getValuation(period) {
   return request({

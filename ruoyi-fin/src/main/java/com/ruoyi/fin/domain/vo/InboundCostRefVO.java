@@ -50,6 +50,14 @@ public class InboundCostRefVO
     /** 入库单价（Q4 决策：含税价） */
     private BigDecimal unitPrice;
 
+    /**
+     * 物料计价参考成本价（不含税），来自 wms_material.cost_price。
+     *
+     * <p>仅当入库明细 unit_price 缺失（0 或 NULL）时作为兜底取价，
+     * 命中兜底时需在结果与流水中显式标注来源，避免财务误认为业务单据录了价。</p>
+     */
+    private BigDecimal costPrice;
+
     public Long getDetailId() { return detailId; }
     public void setDetailId(Long detailId) { this.detailId = detailId; }
 
@@ -85,4 +93,7 @@ public class InboundCostRefVO
 
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+    public BigDecimal getCostPrice() { return costPrice; }
+    public void setCostPrice(BigDecimal costPrice) { this.costPrice = costPrice; }
 }

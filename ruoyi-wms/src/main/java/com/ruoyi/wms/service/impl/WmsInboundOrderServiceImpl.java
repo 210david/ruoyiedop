@@ -70,19 +70,10 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
         {
             order.setStatus("0");
         }
-        // calculate total
-        BigDecimal totalQty = BigDecimal.ZERO;
-        if (order.getDetailList() != null)
-        {
-            for (WmsInboundOrderDetail d : order.getDetailList())
-            {
-                if (d.getPlanQty() != null)
-                {
-                    totalQty = totalQty.add(d.getPlanQty());
-                }
-            }
-        }
-        order.setTotalQty(totalQty);
+        // calculate total（数量与金额一次算清，见 calcOrderTotals）
+        BigDecimal[] totals = calcOrderTotals(order.getDetailList());
+        order.setTotalQty(totals[0]);
+        order.setTotalAmount(totals[1]);
         int rows = wmsInboundOrderMapper.insertInboundOrder(order);
         // insert details
         if (order.getDetailList() != null)
@@ -105,7 +96,6 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
     {
         // delete old details and re-insert
         wmsInboundOrderMapper.deleteInboundDetailByOrderId(order.getOrderId());
-        BigDecimal totalQty = BigDecimal.ZERO;
         if (order.getDetailList() != null)
         {
             for (WmsInboundOrderDetail d : order.getDetailList())
@@ -113,14 +103,71 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
                 d.setOrderId(order.getOrderId());
                 d.setDelFlag("0");
                 wmsInboundOrderMapper.insertInboundDetail(d);
-                if (d.getPlanQty() != null)
+            }
+        }
+        BigDecimal[] totals = calcOrderTotals(order.getDetailList());
+        order.setTotalQty(totals[0]);
+        order.setTotalAmount(totals[1]);
+        return wmsInboundOrderMapper.updateInboundOrder(order);
+    }
+
+    /**
+     * 计算「真实入库金额」：按明细的实收数量 × 含税单价汇总，保留 2 位小数。
+     *
+     * <p>用于入库单完成（status=3）时回写 total_amount，与
+     * 「入库按类型统计」报表的金额口径对齐（该报表统计已完成单据）。</p>
+     *
+     * <p>注意：明细可能因跨库位上架被拆分成多行，同批次数量会分散到多行，
+     * 但每行都有自己的 received_qty 与 unit_price，逐行相乘再汇总不会重复计数。</p>
+     */
+    private BigDecimal calcReceivedAmount(List<WmsInboundOrderDetail> details)
+    {
+        BigDecimal amount = BigDecimal.ZERO;
+        if (details != null)
+        {
+            for (WmsInboundOrderDetail d : details)
+            {
+                BigDecimal qty = d.getReceivedQty() == null ? BigDecimal.ZERO : d.getReceivedQty();
+                if (d.getUnitPrice() != null)
                 {
-                    totalQty = totalQty.add(d.getPlanQty());
+                    amount = amount.add(qty.multiply(d.getUnitPrice()));
                 }
             }
         }
-        order.setTotalQty(totalQty);
-        return wmsInboundOrderMapper.updateInboundOrder(order);
+        return amount.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 计算入库单头汇总：返回 [计划总数量, 计划总金额]
+     *
+     * <p>【为什么要有这个方法】wms_inbound_order.total_amount 原先只有字段和 Mapper 映射，
+     * 全工程无任何写入点，导致「入库按类型统计」的金额恒为 0（WmsStatisticsMapper.selectInboundByType）。
+     * 这里统一在新增/修改入库单时按明细计算，口径为：数量取 plan_qty，
+     * 金额取 plan_qty × unit_price（含税，与 Q4 决策的入库单价口径一致），保留 2 位小数。</p>
+     *
+     * <p>单据完成时（status=3）会由 {@link #calcReceivedAmount} 按实收数量覆盖，</p>
+     * <p>明细为空时返回 [0, 0]，不返回 null，避免下游报表出现 NULL 拼接。</p>
+     */
+    private BigDecimal[] calcOrderTotals(List<WmsInboundOrderDetail> details)
+    {
+        BigDecimal totalQty = BigDecimal.ZERO;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        if (details != null)
+        {
+            for (WmsInboundOrderDetail d : details)
+            {
+                BigDecimal qty = d.getPlanQty() == null ? BigDecimal.ZERO : d.getPlanQty();
+                totalQty = totalQty.add(qty);
+                if (d.getUnitPrice() != null)
+                {
+                    totalAmount = totalAmount.add(qty.multiply(d.getUnitPrice()));
+                }
+            }
+        }
+        return new BigDecimal[] {
+                totalQty,
+                totalAmount.setScale(2, java.math.RoundingMode.HALF_UP)
+        };
     }
 
     @Override
@@ -261,19 +308,21 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
         {
             throw new ServiceException("上架数量必须大于0");
         }
-        // 汇总同物料同批次的已上架数量
-        BigDecimal totalPutaway = BigDecimal.ZERO;
-        for (WmsInboundOrderDetail d : details)
+        // 校验：本行「已上架 + 本次上架」不得超过本行已收数量。
+        // 【原实现缺陷】原先用同物料同批次的汇总已上架量(totalPutaway)与本行 receivedQty 比较，
+        // 当同一物料分多行（如不同计划批次）时，会把其他行的上架量算进本行额度，
+        // 导致合法的上架请求被误拒（实测：d107 收10上架10 后，d108 收4 上架4 被判超收）。
+        // 上架是对明细行的动作，额度必须按行计算；跨行汇总只在「整单是否上架完成」时使用。
+        BigDecimal thisLinePutaway = target.getPutawayQty() == null
+                ? BigDecimal.ZERO : target.getPutawayQty();
+        BigDecimal thisLineReceived = target.getReceivedQty() == null
+                ? BigDecimal.ZERO : target.getReceivedQty();
+        if (thisLinePutaway.add(putawayQty).compareTo(thisLineReceived) > 0)
         {
-            if (d.getMaterialId().equals(target.getMaterialId())
-                    && (d.getBatchNo() == null ? target.getBatchNo() == null : d.getBatchNo().equals(target.getBatchNo())))
-            {
-                totalPutaway = totalPutaway.add(d.getPutawayQty() == null ? BigDecimal.ZERO : d.getPutawayQty());
-            }
-        }
-        if (target.getReceivedQty().compareTo(totalPutaway.add(putawayQty)) < 0)
-        {
-            throw new ServiceException("上架数量不能超过已收数量");
+            throw new ServiceException("上架数量不能超过该行已收数量，本行已收："
+                    + thisLineReceived.stripTrailingZeros().toPlainString()
+                    + "，已上架：" + thisLinePutaway.stripTrailingZeros().toPlainString()
+                    + "，本次：" + putawayQty.stripTrailingZeros().toPlainString());
         }
         String username = SecurityUtils.getUsername();
 
@@ -354,6 +403,11 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
         {
             order.setStatus("3");
             order.setCompleteDate(new Date());
+            // 【金额口径修正】单据完成时按「实收数量 × 单价」重算总金额。
+            // 单据创建/修改时算的是计划金额（plan_qty × unit_price），
+            // 而「已完成入库统计」看的是真实入库金额，收多少才算多少钱。
+            // 二者在部分收货场景下差额显著，不能混用。
+            order.setTotalAmount(calcReceivedAmount(details));
             wmsInboundOrderMapper.updateInboundOrder(order);
             // 发送消息：入库单已完成
             messageHelper.sendMessage(

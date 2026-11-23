@@ -5,6 +5,7 @@ import com.ruoyi.fin.domain.FinCostCarryForward;
 import com.ruoyi.fin.domain.FinInventoryCost;
 import com.ruoyi.fin.domain.vo.InboundCostRefVO;
 import com.ruoyi.fin.domain.vo.OutboundCostRefVO;
+import com.ruoyi.fin.domain.vo.StockTakeDiffRefVO;
 import com.ruoyi.fin.engine.FinCostEngine;
 import com.ruoyi.fin.engine.FinNumberGenerator;
 import com.ruoyi.fin.mapper.FinCostCarryForwardMapper;
@@ -80,37 +81,56 @@ public class FinInventoryCostServiceImpl implements IFinInventoryCostService
         int success = 0;
         int skip = 0;
         int fail = 0;
+        int fallback = 0;
         StringBuilder skipDetail = new StringBuilder();
+        StringBuilder fallbackDetail = new StringBuilder();
         String user = SecurityUtils.getUsername();
 
         for (InboundCostRefVO in : list)
         {
             BigDecimal qty = nz(in.getReceivedQty());
             BigDecimal price = in.getUnitPrice();
+            boolean usedFallback = false;
 
-            // 无价明细：跳过，不中断整批
+            // 无价明细：回退到物料「计价参考成本价」兜底；兜底价也没有才跳过，不中断整批
             if (price == null || price.compareTo(BigDecimal.ZERO) <= 0)
             {
-                skip++;
-                if (skipDetail.length() < 200)
+                BigDecimal costPrice = in.getCostPrice();
+                if (costPrice == null || costPrice.compareTo(BigDecimal.ZERO) <= 0)
                 {
-                    skipDetail.append(in.getInboundOrderNo()).append('/')
+                    skip++;
+                    if (skipDetail.length() < 200)
+                    {
+                        skipDetail.append(in.getInboundOrderNo()).append('/')
+                                .append(in.getMaterialCode()).append(' ');
+                    }
+                    continue;
+                }
+                price = costPrice;
+                usedFallback = true;
+                fallback++;
+                if (fallbackDetail.length() < 200)
+                {
+                    fallbackDetail.append(in.getInboundOrderNo()).append('/')
                             .append(in.getMaterialCode()).append(' ');
                 }
-                continue;
             }
 
             try
             {
-                // Q4：含税单价除税得不含税成本
-                BigDecimal unitCostExcl = costEngine.toExclTax(in.getMaterialCode(), null, price);
+                // Q4：入库单价为含税价，需除税得不含税成本；
+                // 兜底价 cost_price 本身即「不含税」，不能再除一次税，否则会被低估。
+                BigDecimal unitCostExcl = usedFallback
+                        ? price.setScale(FinCostEngine.UNIT_COST_SCALE, java.math.RoundingMode.HALF_UP)
+                        : costEngine.toExclTax(in.getMaterialCode(), null, price);
                 String batch = nz(in.getBatchNo());
                 long locationId = in.getLocationId() == null ? 0L : in.getLocationId();
 
                 FinCostEngine.CostResult result =
                         inboundOne(in, qty, unitCostExcl, batch, locationId, user);
-                log.debug("入库计价成功：{} {} 数量{} 新单位成本{}",
-                        in.getInboundOrderNo(), in.getMaterialCode(), qty, result.getUnitCost());
+                log.debug("入库计价成功：{} {} 数量{} 新单位成本{}{}",
+                        in.getInboundOrderNo(), in.getMaterialCode(), qty, result.getUnitCost(),
+                        usedFallback ? "（兜底价）" : "");
                 success++;
             }
             catch (Exception e)
@@ -123,10 +143,20 @@ public class FinInventoryCostServiceImpl implements IFinInventoryCostService
 
         if (skip > 0)
         {
-            log.warn("入库计价跳过 {} 条无单价明细（入库单价为 0），请先在 WMS 补录单价或设置默认成本价。样例：{}",
+            log.warn("入库计价跳过 {} 条无单价明细（入库单价与物料参考成本价均为 0），"
+                    + "请在 WMS 补录入库单价或维护物料「计价参考成本价」。样例：{}",
                     skip, skipDetail.toString());
         }
-        return buildResult(success, skip, fail, list.size());
+        if (fallback > 0)
+        {
+            log.warn("入库计价命中兜底价 {} 条（入库单价为空，按 wms_material.cost_price 取价），"
+                    + "建议尽快补录实际入库单价以保证成本准确。样例：{}",
+                    fallback, fallbackDetail.toString());
+        }
+        Map<String, Object> result = buildResult(success, skip, fail, list.size());
+        // 兜底命中数单独返回，供前端提示「其中 N 条使用了参考成本价」
+        result.put("fallback", fallback);
+        return result;
     }
 
     /**
@@ -301,6 +331,246 @@ public class FinInventoryCostServiceImpl implements IFinInventoryCostService
         cf.setTargetKey(out.getOutboundOrderNo());
         cf.setCreateBy(user);
         cf.setRemark("出库成本结转 " + out.getOutboundOrderNo());
+        carryMapper.insertCarry(cf);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> adjustStockTakeDiff()
+    {
+        List<StockTakeDiffRefVO> list = refMapper.selectUnadjustedStockTakeDiff(BATCH_LIMIT);
+        int success = 0;
+        int skip = 0;
+        int fail = 0;
+        int gain = 0;
+        int loss = 0;
+        StringBuilder skipDetail = new StringBuilder();
+        String user = SecurityUtils.getUsername();
+
+        for (StockTakeDiffRefVO d : list)
+        {
+            BigDecimal diff = nz(d.getDiffQty());
+            if (diff.compareTo(BigDecimal.ZERO) == 0)
+            {
+                skip++;
+                continue;
+            }
+            String batch = nz(d.getBatchNo());
+            long locationId = d.getLocationId() == null ? 0L : d.getLocationId();
+
+            try
+            {
+                BigDecimal unitCost = resolveUnitCost(d, batch, locationId);
+                if (diff.compareTo(BigDecimal.ZERO) > 0)
+                {
+                    applyGain(d, diff, unitCost, batch, locationId, user);
+                    gain++;
+                }
+                else
+                {
+                    boolean applied = applyLoss(d, diff.abs(), unitCost, batch, locationId, user);
+                    if (!applied)
+                    {
+                        skip++;
+                        // 台账无结存（该维度未计价），无法冲减，交由补录单价后重跑
+                        if (skipDetail.length() < 200)
+                        {
+                            skipDetail.append(d.getTakeNo()).append('/')
+                                    .append(d.getMaterialCode()).append(' ');
+                        }
+                        continue;
+                    }
+                    loss++;
+                }
+                success++;
+            }
+            catch (Exception e)
+            {
+                fail++;
+                log.warn("盘点成本调整失败：{} {} —— {}",
+                        d.getTakeNo(), d.getMaterialCode(), e.getMessage());
+            }
+        }
+
+        if (skip > 0)
+        {
+            log.warn("盘点成本调整跳过 {} 条（台账无该维度结存，需先完成入库计价）。样例：{}",
+                    skip, skipDetail.toString());
+        }
+        Map<String, Object> result = buildResult(success, skip, fail, list.size());
+        result.put("gain", gain);
+        result.put("loss", loss);
+        return result;
+    }
+
+    /**
+     * 解析盘盈/盘亏使用的单位成本（不含税）。
+     *
+     * <p>优先级：该维度台账 unit_cost → 物料+仓库加权平均 → 入库均价除税。
+     * 三级都取不到则抛错，由上层计入 fail，避免用 0 成本污染台账。</p>
+     */
+    private BigDecimal resolveUnitCost(StockTakeDiffRefVO d, String batch, long locationId)
+    {
+        FinInventoryCost exist = costMapper.selectByDimForUpdate(
+                d.getMaterialId(), d.getWarehouseId(), locationId, batch);
+        if (exist != null && exist.getUnitCost() != null
+                && exist.getUnitCost().compareTo(BigDecimal.ZERO) > 0)
+        {
+            return exist.getUnitCost();
+        }
+
+        Map<String, Object> sum = costMapper.sumByMaterial(d.getMaterialId(), d.getWarehouseId());
+        if (sum != null && sum.get("avgCost") != null) {
+            BigDecimal avg = new BigDecimal(sum.get("avgCost").toString());
+            if (avg.compareTo(BigDecimal.ZERO) > 0)
+            {
+                return avg;
+            }
+        }
+
+        BigDecimal avgPrice = refMapper.selectMaterialAvgPrice(d.getMaterialId());
+        if (avgPrice != null && avgPrice.compareTo(BigDecimal.ZERO) > 0)
+        {
+            // 入库均价为含税，需除税成不含税成本（与入库计价口径一致）
+            return costEngine.toExclTax(d.getMaterialCode(), null, avgPrice);
+        }
+
+        throw new IllegalStateException(
+                "物料「" + d.getMaterialCode() + "」无成本记录且无入库均价，请先办理入库计价");
+    }
+
+    /**
+     * 盘盈：增加台账数量与金额（金额 = 差异数量 × 单位成本）。
+     */
+    private void applyGain(StockTakeDiffRefVO d, BigDecimal diff, BigDecimal unitCost,
+                           String batch, long locationId, String user)
+    {
+        BigDecimal amount = diff.multiply(unitCost).setScale(2, java.math.RoundingMode.HALF_UP);
+        FinInventoryCost exist = costMapper.selectByDimForUpdate(
+                d.getMaterialId(), d.getWarehouseId(), locationId, batch);
+
+        if (exist == null)
+        {
+            FinInventoryCost row = new FinInventoryCost();
+            row.setMaterialId(d.getMaterialId());
+            row.setMaterialCode(d.getMaterialCode());
+            row.setMaterialName(d.getMaterialName());
+            row.setWarehouseId(d.getWarehouseId());
+            row.setLocationId(locationId);
+            row.setBatchNo(batch);
+            row.setQty(diff);
+            row.setUnitCost(unitCost);
+            row.setTotalCost(amount);
+            row.setCostMethod(FinCostEngine.WEIGHTED_AVG);
+            row.setSourceModule("wms");
+            row.setSourceType(FinCostCarryForward.TYPE_STOCK_TAKE);
+            row.setSourceId(d.getDetailId());
+            row.setCreateBy(user);
+            row.setRemark("盘盈 " + d.getTakeNo());
+            costMapper.insertCost(row);
+        }
+        else
+        {
+            FinCostEngine.CostResult r = costEngine.calcInboundWeighted(
+                    exist.getQty(), exist.getTotalCost(), diff, unitCost);
+            exist.setQty(r.getQty());
+            exist.setUnitCost(r.getUnitCost());
+            exist.setTotalCost(r.getTotalCost());
+            exist.setUpdateBy(user);
+            exist.setRemark("盘盈 " + d.getTakeNo());
+            costMapper.updateCost(exist);
+        }
+
+        writeCarry(d, diff, unitCost, amount, true, user, "盘盈 " + d.getTakeNo());
+    }
+
+    /**
+     * 盘亏：按当前单位成本冲减数量与金额。
+     *
+     * <p>台账无可冲减结存时返回 false（由上层记为 skip），不写 0 成本流水。</p>
+     */
+    private boolean applyLoss(StockTakeDiffRefVO d, BigDecimal absDiff, BigDecimal unitCost,
+                              String batch, long locationId, String user)
+    {
+        FinInventoryCost exist = costMapper.selectByDimForUpdate(
+                d.getMaterialId(), d.getWarehouseId(), locationId, batch);
+        if (exist == null || exist.getQty() == null
+                || exist.getQty().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            return false;
+        }
+
+        // 数量不足时截断到实际结存，避免负结存
+        BigDecimal fullQty = exist.getQty();
+        boolean truncated = absDiff.compareTo(fullQty) > 0;
+        BigDecimal qty = truncated ? fullQty : absDiff;
+        if (truncated)
+        {
+            log.warn("盘点 {} 物料 {} 盘亏 {} 超过台账结存 {}，已按结存全额冲减",
+                    d.getTakeNo(), d.getMaterialCode(), absDiff, fullQty);
+        }
+
+        BigDecimal unit = exist.getUnitCost() == null ? unitCost : exist.getUnitCost();
+        BigDecimal amount = qty.multiply(unit).setScale(2, java.math.RoundingMode.HALF_UP);
+
+        if (truncated)
+        {
+            // 【精度保护】冲减到零时直接清零，不走 calcOutboundWeighted 的逐次舍入，
+            // 否则「qty × unit_cost」两次舍入会在末位残留 -0.01 之类误差（已实测复现）。
+            // 全额冲减的金额必须等于结存金额，台账与流水才对得上账。
+            BigDecimal bookCost = exist.getTotalCost() == null
+                    ? BigDecimal.ZERO : exist.getTotalCost();
+            amount = bookCost.setScale(2, java.math.RoundingMode.HALF_UP);
+            exist.setQty(BigDecimal.ZERO.setScale(2));
+            exist.setTotalCost(BigDecimal.ZERO.setScale(2));
+            exist.setUpdateBy(user);
+            exist.setRemark("盘亏 " + d.getTakeNo());
+            costMapper.updateCost(exist);
+
+            writeCarry(d, fullQty.negate(), unit, amount, false, user, "盘亏 " + d.getTakeNo());
+            return true;
+        }
+
+        FinCostEngine.CostResult r = costEngine.calcOutboundWeighted(
+                exist.getQty(), unit, qty);
+
+        exist.setQty(r.getQty());
+        exist.setTotalCost(r.getTotalCost());
+        exist.setUpdateBy(user);
+        exist.setRemark("盘亏 " + d.getTakeNo());
+        costMapper.updateCost(exist);
+
+        writeCarry(d, qty.negate(), r.getUnitCost(), amount, false, user, "盘亏 " + d.getTakeNo());
+        return true;
+    }
+
+    /**
+     * 写盘点成本结转流水（幂等键：source_type='stocktake' + detail_id）。
+     *
+     * <p>盘盈与盘亏使用不同 target_type（STOCK_GAIN / STOCK_LOSS），
+     * 否则 sumByPeriod 汇总时会正负抵消，财务无法判断净影响方向。</p>
+     */
+    private void writeCarry(StockTakeDiffRefVO d, BigDecimal qty, BigDecimal unitCost,
+                            BigDecimal amount, boolean isGain, String user, String remark)
+    {
+        FinCostCarryForward cf = new FinCostCarryForward();
+        cf.setCfNo(numberGenerator.generate(FinNumberGenerator.RULE_COST_CF));
+        cf.setCostDate(d.getCompleteTime() == null ? new java.util.Date() : d.getCompleteTime());
+        cf.setPeriod(periodOf(d.getCompleteTime()));
+        cf.setSourceModule("wms");
+        cf.setSourceType(FinCostCarryForward.TYPE_STOCK_TAKE);
+        cf.setSourceId(d.getDetailId());
+        cf.setMaterialId(d.getMaterialId());
+        cf.setMaterialCode(d.getMaterialCode());
+        cf.setQty(qty);
+        cf.setUnitCost(unitCost);
+        cf.setTotalCost(amount);
+        cf.setTargetType(isGain
+                ? FinCostCarryForward.TARGET_STOCK_GAIN
+                : FinCostCarryForward.TARGET_STOCK_LOSS);
+        cf.setTargetKey(d.getTakeNo());
+        cf.setCreateBy(user);
+        cf.setRemark(remark);
         carryMapper.insertCarry(cf);
     }
 

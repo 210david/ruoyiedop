@@ -90,6 +90,32 @@ public class WmsInventory extends BaseEntity
     /** 库区ID（查询条件，用于按库区过滤库存） */
     private Long areaId;
 
+    // ===== 库存金额（只读回填，不落库）=====
+    // 【设计约束】wms_inventory 不新增任何金额列。财务已确认「WMS 只管数量，财务只管金额」的
+    // 旁路设计（见 FinInventoryCost 类注释），金额由查询时回填，避免数量与金额两套生命周期错位。
+
+    /** 结存金额（元） */
+    @Excel(name = "结存金额(元)")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private BigDecimal amount;
+
+    /** 金额来源：cost=成本台账（准）/ estimate=入库均价估算 / fallback=物料兜底价估算 */
+    @Excel(name = "金额来源", readConverterExp = "cost=成本台账,estimate=均价估算,fallback=兜底估算")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String amountSource;
+
+    /** 计量单位成本（元）：cost 口径为不含税单位成本，其余为估算单价 */
+    @Excel(name = "单位成本(元)")
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private BigDecimal unitCost;
+
+    /**
+     * 金额来源编码常量
+     */
+    public static final String AMOUNT_SOURCE_COST = "cost";
+    public static final String AMOUNT_SOURCE_ESTIMATE = "estimate";
+    public static final String AMOUNT_SOURCE_FALLBACK = "fallback";
+
     public Long getInventoryId() { return inventoryId; }
     public void setInventoryId(Long inventoryId) { this.inventoryId = inventoryId; }
     public Long getMaterialId() { return materialId; }
@@ -132,4 +158,10 @@ public class WmsInventory extends BaseEntity
     public void setLocationKeyword(String locationKeyword) { this.locationKeyword = locationKeyword; }
     public Long getAreaId() { return areaId; }
     public void setAreaId(Long areaId) { this.areaId = areaId; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getAmountSource() { return amountSource; }
+    public void setAmountSource(String amountSource) { this.amountSource = amountSource; }
+    public BigDecimal getUnitCost() { return unitCost; }
+    public void setUnitCost(BigDecimal unitCost) { this.unitCost = unitCost; }
 }

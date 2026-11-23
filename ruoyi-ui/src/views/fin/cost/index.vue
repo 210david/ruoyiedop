@@ -78,6 +78,7 @@
         <div class="toolbar-left">
           <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="primary" icon="Download" @click="handlePriceInbound">入库计价</el-button>
           <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="warning" icon="Upload" @click="handleCarryOutbound">出库结转</el-button>
+          <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" icon="Refresh" @click="handleAdjustStockTake">盘点调账</el-button>
           <el-button v-if="!isIndependent || tab === 'cost'" v-hasPermi="['fin:cost:carry']" type="success" icon="Edit" @click="handleInit">录入期初成本</el-button>
           <el-button v-if="!isIndependent" icon="List" @click="tab = 'carry'">结转流水</el-button>
           <el-button v-if="!isIndependent || tab === 'cost'" icon="DataAnalysis" @click="showValuation = true">存货计价表</el-button>
@@ -651,7 +652,7 @@
 <script setup name="Cost">
 import { WarningFilled } from '@element-plus/icons-vue'
 const showStatusHelp = ref(false)
-import { listCost, priceInbound, carryOutbound, getValuation, getTotalCost, initCost, listCarry } from "@/api/fin/cost";
+import { listCost, priceInbound, carryOutbound, adjustStockTake, getValuation, getTotalCost, initCost, listCarry } from "@/api/fin/cost";
 import { listMaterialTax, addMaterialTax, updateMaterialTax, delMaterialTax, listUntaxedMaterials, countMaterialTax, batchInitTax } from "@/api/fin/materialTax";
 import { useColumnResize } from "@/composables/useColumnResize";
 import MaterialPicker from '@/components/MaterialPicker/index.vue';
@@ -966,6 +967,17 @@ function handleCarryOutbound() {
     return carryOutbound({});
   }).then(() => {
     proxy.$modal.msgSuccess("结转完成");
+    getList();
+    getCarryList();
+    loadTotal();
+  }).catch(() => {});
+}
+function handleAdjustStockTake() {
+  proxy.$modal.confirm("确认按已完成盘点单调整存货成本吗？盘盈将增加台账、盘亏将冲减台账，已调整过的不会再重复执行。").then(() => {
+    return adjustStockTake({});
+  }).then(res => {
+    const d = res.data || {};
+    proxy.$modal.msgSuccess(`盘点调账完成：盘盈 ${d.gain || 0} 条，盘亏 ${d.loss || 0} 条，跳过 ${d.skip || 0} 条，失败 ${d.fail || 0} 条`);
     getList();
     getCarryList();
     loadTotal();
