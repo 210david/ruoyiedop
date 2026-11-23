@@ -45,6 +45,19 @@ public class FinCostCarryForward extends BaseEntity
     /** 结转目标：费用 */
     public static final String TARGET_EXPENSE = "EXPENSE";
 
+    /** 来源类型：盘点差异（盘盈记正数量、盘亏记负数量） */
+    public static final String TYPE_STOCK_TAKE = "stocktake";
+
+    /**
+     * 结转目标：盘盈（存货增加）
+     *
+     * <p>与盘亏分开，避免 sumByPeriod 按 target_type 汇总时两者正负抵消。</p>
+     */
+    public static final String TARGET_STOCK_GAIN = "STOCK_GAIN";
+
+    /** 结转目标：盘亏（存货减少，qty 记负数） */
+    public static final String TARGET_STOCK_LOSS = "STOCK_LOSS";
+
     /** 结转ID */
     private Long cfId;
 

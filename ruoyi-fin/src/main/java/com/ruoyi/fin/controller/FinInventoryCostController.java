@@ -77,6 +77,20 @@ public class FinInventoryCostController extends BaseController
     }
 
     /**
+     * 盘点差异成本调整（扫描已完成盘点单的盘盈/盘亏）
+     *
+     * <p>WMS 盘点只调数量，不做本操作会导致台账数量不减、期末存货虚高。</p>
+     */
+    @Log(title = "盘点成本调整", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
+    @PreAuthorize("@ss.hasPermi('fin:cost:carry')")
+    @PostMapping("/adjustStockTake")
+    public AjaxResult adjustStockTake()
+    {
+        return AjaxResult.success(costService.adjustStockTakeDiff());
+    }
+
+    /**
      * 期末存货计价表
      */
     @PreAuthorize("@ss.hasPermi('fin:cost:valuation')")

@@ -114,6 +114,14 @@
           <el-table-column label="有效期" prop="expiryDate" key="expiryDate" :width="colWidth('expiryDate', 130)" resizable align="center" v-if="columns.expiryDate.visible" />
           <el-table-column label="可用数量" prop="qty" key="qty" :width="colWidth('qty', 110)" resizable align="center" class-name="col-num" v-if="columns.qty.visible" />
           <el-table-column label="锁定数量" prop="lockQty" key="lockQty" :width="colWidth('lockQty', 110)" resizable align="center" class-name="col-num" v-if="columns.lockQty.visible" />
+
+          <el-table-column v-if="canViewAmount && columns.amount.visible" label="结存金额" prop="amount" key="amount" :width="colWidth('amount', 120)" resizable align="right" class-name="col-num">
+            <template #default="scope">
+              <span v-if="scope.row.amount != null" class="amount-cell">￥{{ formatAmount(scope.row.amount) }}</span>
+              <span v-else class="amount-cell is-empty">-</span>
+              <span v-if="scope.row.amountSource" class="amount-tag" :class="scope.row.amountSource" :title="amountSourceHint(scope.row.amountSource)">{{ amountSourceLabel(scope.row.amountSource) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="更新时间" prop="updateTime" key="updateTime" :width="colWidth('updateTime', 180)" resizable align="center" sortable="custom" v-if="columns.updateTime.visible" />
           <el-table-column label="操作" width="80" align="center">
             <template #default="scope">
@@ -136,6 +144,8 @@ import AiAssistButton from '@/components/AiAssist/AiAssistButton.vue'
 import AiResultPanel from '@/components/AiAssist/AiResultPanel.vue'
 import { fetchAllPages, downloadXlsx } from '@/utils/csvExport'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { checkPermi } from '@/utils/permission'
+import { formatAmount } from '@/composables/useDetailCard'
 import { ArrowDown, Delete, Download, RefreshLeft, Search, Filter } from '@element-plus/icons-vue'
 const { proxy } = getCurrentInstance()
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('wms_inventory_index')
@@ -154,6 +164,7 @@ const defaultColumns = {
   expiryDate: { label: '有效期', visible: true },
   qty: { label: '可用数量', visible: true },
   lockQty: { label: '锁定数量', visible: true },
+  amount: { label: '结存金额', visible: true },
   updateTime: { label: '更新时间', visible: true }
 }
 function loadColumnVisibility() {
@@ -203,6 +214,23 @@ function handleSortChange(column) {
   getList()
 }
 function unitLabel(unit) { const item = wms_unit.value.find(d => d.value == unit); return item ? item.label : '-' }
+
+// ===== 结存金额（金额为敏感数据，按独立权限点控制显示）=====
+const canViewAmount = computed(() => checkPermi(['wms:inventory:amount']))
+
+/** 金额来源标签：必须显式标注口径，避免"成本"与"估算"混为一谈 */
+function amountSourceLabel(src) {
+  if (src === 'cost') return '成本'
+  if (src === 'estimate') return '估算'
+  if (src === 'fallback') return '兜底'
+  return ''
+}
+function amountSourceHint(src) {
+  if (src === 'cost') return '来自财务存货成本台账：不含税、按物料+仓库+库位+批次四维分账，为权威口径'
+  if (src === 'estimate') return '估算口径：库存数量 × 物料入库加权均价（含税、按物料拉平），该记录尚未进入成本台账'
+  if (src === 'fallback') return '兜底口径：库存数量 × 物料参考成本价（不含税），既无台账也无入库均价时使用'
+  return ''
+}
 /** 导出库存（与列表口径一致：含筛选条件，导出全部页数据；仓库/库区/库位为合并列） */
 async function handleExport() {
   let rows = await fetchAllPages(listInventory, proxy.addDateRange(queryParams.value, dateRange.value, 'UpdateTime'))
@@ -326,6 +354,12 @@ function onStaleList(d) {
 .wms-inventory-page .badge.violet { background:var(--violet-50); color:var(--brand-700); border-color:var(--brand-200); }
 .wms-inventory-page .badge.gray { background:var(--ink-100); color:var(--ink-500); border-color:var(--ink-200); }
 .wms-inventory-page .badge.gray .dot { background:var(--ink-400); }
+.wms-inventory-page .amount-cell { font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; font-weight:600; color:var(--ink-900); }
+.wms-inventory-page .amount-cell.is-empty { font-weight:400; color:var(--ink-400); }
+.wms-inventory-page .amount-tag { display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px; font-size:11px; font-weight:600; line-height:1.5; vertical-align:middle; cursor:help; }
+.wms-inventory-page .amount-tag.cost { background:var(--green-50); color:var(--green-700); border:1px solid #a7f3d0; }
+.wms-inventory-page .amount-tag.estimate { background:var(--amber-50); color:var(--amber-700); border:1px solid #fde68a; }
+.wms-inventory-page .amount-tag.fallback { background:var(--ink-100); color:var(--ink-500); border:1px solid var(--ink-200); }
 .wms-inventory-page .pagination-container { display:flex; align-items:center; justify-content:flex-end; padding:14px 20px; font-size:14px; color:var(--ink-500); background:#fff; border-top:1px solid transparent; }
 .wms-inventory-page .pagination-container :deep(.el-pagination) { justify-content:flex-end; }
 .wms-inventory-page .pagination-container :deep(.el-pagination .el-pager li) { border-radius:6px; border:1px solid var(--ink-200); background:#fff; min-width:32px; height:32px; line-height:32px; font-size:14px; color:var(--ink-700); margin:0 2px; }
