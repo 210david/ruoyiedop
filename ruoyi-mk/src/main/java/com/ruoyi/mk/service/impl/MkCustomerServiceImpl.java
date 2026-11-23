@@ -20,6 +20,16 @@ import com.ruoyi.mk.domain.MkCustomerChangeLog;
 import com.ruoyi.mk.mapper.MkContactMapper;
 import com.ruoyi.mk.mapper.MkCustomerChangeLogMapper;
 import com.ruoyi.mk.mapper.MkCustomerMapper;
+import com.ruoyi.mk.domain.MkContract;
+import com.ruoyi.mk.domain.MkInteraction;
+import com.ruoyi.mk.domain.MkActivityParticipant;
+import com.ruoyi.mk.domain.MkOpportunity;
+import com.ruoyi.mk.domain.MkOrder;
+import com.ruoyi.mk.mapper.MkActivityParticipantMapper;
+import com.ruoyi.mk.mapper.MkContractMapper;
+import com.ruoyi.mk.mapper.MkInteractionMapper;
+import com.ruoyi.mk.mapper.MkOpportunityMapper;
+import com.ruoyi.mk.mapper.MkOrderMapper;
 import com.ruoyi.mk.service.IMkCustomerService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
 
@@ -36,6 +46,21 @@ public class MkCustomerServiceImpl implements IMkCustomerService
 
     @Autowired
     private MkCustomerMapper mkCustomerMapper;
+
+    @Autowired
+    private MkOpportunityMapper mkOpportunityMapper;
+
+    @Autowired
+    private MkContractMapper mkContractMapper;
+
+    @Autowired
+    private MkOrderMapper mkOrderMapper;
+
+    @Autowired
+    private MkInteractionMapper mkInteractionMapper;
+
+    @Autowired
+    private MkActivityParticipantMapper mkActivityParticipantMapper;
 
     @Autowired
     private MkContactMapper mkContactMapper;
@@ -754,4 +779,96 @@ public class MkCustomerServiceImpl implements IMkCustomerService
         }
         return list;
     }
+
+    /**
+     * 查询客户关联数据（详情卡片专用）。
+     *
+     * 关键设计：
+     * 1. 先按客户列表同一口径（@DataScope）校验当前用户对该客户是否可见；
+     * 2. 可见后关联单据只按 customerId 过滤，不再叠加单据层面的本人/本部门过滤，
+     *    否则单据 user_id 为空或负责人非当前用户时，客户详情会“看起来没有数据”；
+     * 3. 各模块按当前用户的 list 权限决定是否查询，无权限返回空列表并标记 skipped，
+     *    前端据此提示，避免 403 被渲染成“暂无”。
+     */
+    @Override
+    public Map<String, Object> selectCustomerRelations(Long customerId)
+    {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (customerId == null)
+        {
+            throw new ServiceException("客户ID不能为空");
+        }
+
+        // 1. 客户可见性校验：复用客户列表的数据权限口径
+        MkCustomer query = new MkCustomer();
+        query.setCustomerId(customerId);
+        List<MkCustomer> visible = mkCustomerMapper.selectCustomerList(query);
+        boolean canView = visible != null && !visible.isEmpty();
+        result.put("canView", canView);
+        if (!canView)
+        {
+            result.put("contacts", new ArrayList<>());
+            result.put("opportunities", new ArrayList<>());
+            result.put("contracts", new ArrayList<>());
+            result.put("orders", new ArrayList<>());
+            result.put("interactions", new ArrayList<>());
+            result.put("activities", new ArrayList<>());
+            result.put("skipped", new ArrayList<String>());
+            return result;
+        }
+
+        List<String> skipped = new ArrayList<>();
+
+        // 2. 联系人：与联系人菜单一致（无单据级数据权限）
+        MkContact contactQuery = new MkContact();
+        contactQuery.setCustomerId(customerId);
+        result.put("contacts", mkContactMapper.selectContactList(contactQuery));
+
+        // 3. 商机
+        if (SecurityUtils.hasPermi("marketing:opportunity:list"))
+        {
+            MkOpportunity oppQuery = new MkOpportunity();
+            oppQuery.setCustomerId(customerId);
+            result.put("opportunities", mkOpportunityMapper.selectOpportunityList(oppQuery));
+        }
+        else { result.put("opportunities", new ArrayList<>()); skipped.add("opportunities"); }
+
+        // 4. 合同
+        if (SecurityUtils.hasPermi("marketing:contract:list"))
+        {
+            MkContract contractQuery = new MkContract();
+            contractQuery.setCustomerId(customerId);
+            result.put("contracts", mkContractMapper.selectContractList(contractQuery));
+        }
+        else { result.put("contracts", new ArrayList<>()); skipped.add("contracts"); }
+
+        // 5. 订单
+        if (SecurityUtils.hasPermi("marketing:order:list"))
+        {
+            MkOrder orderQuery = new MkOrder();
+            orderQuery.setCustomerId(customerId);
+            result.put("orders", mkOrderMapper.selectOrderList(orderQuery));
+        }
+        else { result.put("orders", new ArrayList<>()); skipped.add("orders"); }
+
+        // 6. 互动记录
+        if (SecurityUtils.hasPermi("marketing:interaction:list"))
+        {
+            MkInteraction interactionQuery = new MkInteraction();
+            interactionQuery.setCustomerId(customerId);
+            result.put("interactions", mkInteractionMapper.selectInteractionList(interactionQuery));
+        }
+        else { result.put("interactions", new ArrayList<>()); skipped.add("interactions"); }
+
+        // 7. 参与活动：contact_id 优先归属，company_name 兜底且要求名称唯一
+        if (SecurityUtils.hasPermi("marketing:participant:list"))
+        {
+            result.put("activities", mkActivityParticipantMapper.selectParticipantListByCustomer(customerId));
+        }
+        else { result.put("activities", new ArrayList<>()); skipped.add("activities"); }
+
+        result.put("skipped", skipped);
+        return result;
+    }
+
 }
