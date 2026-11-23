@@ -13,6 +13,8 @@ import com.ruoyi.mk.domain.MkOrder;
 import com.ruoyi.mk.domain.MkOrderItem;
 import com.ruoyi.mk.domain.MkOrderAuditLog;
 import com.ruoyi.mk.mapper.MkOrderMapper;
+import com.ruoyi.mk.mapper.MkCustomerMapper;
+import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.mapper.MkOrderAuditLogMapper;
 import com.ruoyi.mk.service.IMkOrderService;
 import com.ruoyi.mk.service.IMkNumberRuleService;
@@ -36,6 +38,9 @@ public class MkOrderServiceImpl implements IMkOrderService
 {
     @Autowired
     private MkOrderMapper mkOrderMapper;
+
+    @Autowired
+    private MkCustomerMapper mkCustomerMapper;
 
     @Autowired
     private MkOrderAuditLogMapper mkOrderAuditLogMapper;
@@ -75,6 +80,16 @@ public class MkOrderServiceImpl implements IMkOrderService
     public int insertOrder(MkOrder order)
     {
         order.setDelFlag("0");
+        // 归属补全：负责人/部门为空时继承客户负责人，避免单据在数据权限下不可见
+        if (order.getCustomerId() != null && (order.getUserId() == null || order.getDeptId() == null))
+        {
+            MkCustomer owner = mkCustomerMapper.selectCustomerById(order.getCustomerId());
+            if (owner != null)
+            {
+                if (order.getUserId() == null) { order.setUserId(owner.getUserId()); }
+                if (order.getDeptId() == null) { order.setDeptId(owner.getDeptId()); }
+            }
+        }
         if (order.getOrderStatus() == null)
         {
             order.setOrderStatus("0");

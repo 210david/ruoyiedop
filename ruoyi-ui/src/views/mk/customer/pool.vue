@@ -293,6 +293,8 @@
                 <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_contracts }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.v_contracts">
+                <el-alert v-if="isSkipped('contracts')" type="warning" :closable="false" show-icon
+                  title="当前账号无该模块查询权限，数据未加载（并非无数据）" style="margin-bottom:8px" />
                 <el-table :data="contracts" border size="small" v-if="contracts.length > 0">
                   <el-table-column label="合同编号" prop="contractNo" width="150" />
                   <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
@@ -311,11 +313,13 @@
                 <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_orders }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.v_orders">
+                <el-alert v-if="isSkipped('orders')" type="warning" :closable="false" show-icon
+                  title="当前账号无该模块查询权限，数据未加载（并非无数据）" style="margin-bottom:8px" />
                 <el-table :data="orders" border size="small" v-if="orders.length > 0">
                   <el-table-column label="订单编号" prop="orderNo" width="150" />
-                  <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
+                  <el-table-column label="合同编号" prop="contractNo" show-overflow-tooltip />
                   <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
-                  <el-table-column label="下单日期" prop="orderDate" width="120" />
+                  <el-table-column label="下单日期" prop="createTime" width="160" />
                   <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><span class="badge" :class="orderBadgeClass(scope.row.orderStatus)"><span class="dot"></span>{{ orderStatusLabel(scope.row.orderStatus) }}</span></template></el-table-column>
                 </el-table>
                 <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><p class="rd-empty-text">暂无订单</p></div>
@@ -329,6 +333,8 @@
                 <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_interactions }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.v_interactions">
+                <el-alert v-if="isSkipped('interactions')" type="warning" :closable="false" show-icon
+                  title="当前账号无该模块查询权限，数据未加载（并非无数据）" style="margin-bottom:8px" />
                 <div class="rd-timeline" v-if="interactions.length > 0">
                   <div class="rd-timeline-item" v-for="item in interactions" :key="item.recordId">
                     <div class="rd-timeline-dot rd-timeline-dot--success"></div>
@@ -353,6 +359,8 @@
                 <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.v_activities }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
               </div>
               <div class="rd-card-body" v-show="!collapsedCards.v_activities">
+                <el-alert v-if="isSkipped('activities')" type="warning" :closable="false" show-icon
+                  title="当前账号无该模块查询权限，数据未加载（并非无数据）" style="margin-bottom:8px" />
                 <el-table :data="activities" border size="small" v-if="activities.length > 0">
                   <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                   <el-table-column label="联系人" prop="contactName" width="100" />
@@ -409,14 +417,8 @@
 </template>
 
 <script setup name="MkCustomerPool">
-import { listPublicPool, getCustomer, claimCustomer } from '@/api/mk/customer'
+import { listPublicPool, getCustomer, claimCustomer, getCustomerRelations } from '@/api/mk/customer'
 import { ArrowRight, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
-import { listContact } from '@/api/mk/contact'
-import { listOpportunity } from '@/api/mk/opportunity'
-import { listContract } from '@/api/mk/contract'
-import { listOrder } from '@/api/mk/order'
-import { listInteraction } from '@/api/mk/interaction'
-import { listParticipant } from '@/api/mk/participant'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
 const { collapsedCards, toggleCard } = useDetailCard(["v_basic", "v_company", "v_business", "v_owner", "v_other", "v_contacts", "v_opportunities", "v_contracts", "v_orders", "v_interactions", "v_activities"])
@@ -443,6 +445,8 @@ const contracts = ref([])
 const orders = ref([])
 const interactions = ref([])
 const activities = ref([])
+/** 无权限查看的关联模块（后端置为 skipped） */
+const skippedModules = ref([])
 
 const data = reactive({
   queryParams: { pageNum: 1, pageSize: 10, customerNo: undefined, customerName: undefined, customerLevel: undefined, customerStatus: undefined, industry: undefined, customerSource: undefined, params: {} }
@@ -564,14 +568,20 @@ function handleView(row) {
 function loadRelations() {
   if (!viewForm.value.customerId) return
   const cid = viewForm.value.customerId
-  listContact({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { contacts.value = res.rows || [] })
-  listOpportunity({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { opportunities.value = res.rows || [] })
-  listContract({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { contracts.value = res.rows || [] })
-  listOrder({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { orders.value = res.rows || [] })
-  listInteraction({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { interactions.value = res.rows || [] })
-  listParticipant({ customerId: cid, pageNum: 1, pageSize: 999 }).then(res => { activities.value = res.rows || [] })
+  getCustomerRelations(cid).then(res => {
+    const data = res.data || {}
+    contacts.value = data.contacts || []
+    opportunities.value = data.opportunities || []
+    contracts.value = data.contracts || []
+    orders.value = data.orders || []
+    interactions.value = data.interactions || []
+    activities.value = data.activities || []
+    skippedModules.value = data.skipped || []
+  })
 }
 /** 金额格式化 */
+/** 模块是否因无权限而未加载 */
+function isSkipped(name) { return skippedModules.value.includes(name) }
 function formatAmount(val) { if (val == null || val === '') return '-'; return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 function handleClaim(row) {

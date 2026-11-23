@@ -117,3 +117,11 @@ export function getCreditUsage(customerId) {
     method: 'get'
   })
 }
+
+// 客户关联数据（详情卡片：联系人/商机/合同/订单/互动记录/参与活动）
+export function getCustomerRelations(customerId) {
+  return request({
+    url: '/mk/customer/relations/' + customerId,
+    method: 'get'
+  })
+}

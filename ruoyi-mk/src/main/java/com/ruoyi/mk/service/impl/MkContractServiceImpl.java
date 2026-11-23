@@ -18,6 +18,8 @@ import com.ruoyi.mk.domain.MkPaymentPlan;
 import com.ruoyi.mk.mapper.MkContractApproveLogMapper;
 import com.ruoyi.mk.mapper.MkContractChangeLogMapper;
 import com.ruoyi.mk.mapper.MkContractMapper;
+import com.ruoyi.mk.mapper.MkCustomerMapper;
+import com.ruoyi.mk.domain.MkCustomer;
 import com.ruoyi.mk.mapper.MkPaymentPlanMapper;
 import com.ruoyi.mk.service.IMkContractService;
 import com.ruoyi.mk.service.IMkContractChangeService;
@@ -35,6 +37,9 @@ public class MkContractServiceImpl implements IMkContractService
 
     @Autowired
     private MkContractMapper mkContractMapper;
+
+    @Autowired
+    private MkCustomerMapper mkCustomerMapper;
 
     @Autowired
     private MkPaymentPlanMapper mkPaymentPlanMapper;
@@ -109,6 +114,16 @@ public class MkContractServiceImpl implements IMkContractService
     {
         validateContractDates(contract);
         contract.setDelFlag("0");
+        // 归属补全：负责人/部门为空时继承客户负责人，避免单据在数据权限下不可见
+        if (contract.getCustomerId() != null && (contract.getUserId() == null || contract.getDeptId() == null))
+        {
+            MkCustomer owner = mkCustomerMapper.selectCustomerById(contract.getCustomerId());
+            if (owner != null)
+            {
+                if (contract.getUserId() == null) { contract.setUserId(owner.getUserId()); }
+                if (contract.getDeptId() == null) { contract.setDeptId(owner.getDeptId()); }
+            }
+        }
         if (contract.getContractStatus() == null)
         {
             contract.setContractStatus("0");

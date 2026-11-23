@@ -27,6 +27,13 @@ public interface MkActivityParticipantMapper
     /** P3-15: 根据签到码查询参与人（现场签到） */
     public MkActivityParticipant selectBySignInCode(@Param("signInCode") String signInCode);
 
+    /**
+     * 按客户查询活动参与记录。
+     * 匹配规则：优先 contact_id 归属客户；contact_id 为空时用 company_name 兜底，
+     * 且要求该名称在客户表中唯一，避免同名客户串数据。
+     */
+    public List<MkActivityParticipant> selectParticipantListByCustomer(@Param("customerId") Long customerId);
+
     /** P3-15: 统计活动报名人数 */
     public int countByActivityId(@Param("activityId") Long activityId);
 }
