@@ -488,7 +488,7 @@ public class FlowAiGenServiceImpl implements IFlowAiGenService
                 .append("1. 严格只输出一个 JSON 对象，禁止输出 markdown 代码块、注释或解释文字。\n")
                 .append("2. 只输出 form 对象（含 fields、sections、detailTables），禁止输出流程节点与连线。\n")
                 .append("3. 表单字段 field 必须小写字母开头、仅含小写字母/数字/下划线；form 取值：")
-                .append("text、textarea、number、date、datetime、select、radio、checkbox、attach、browse。\n")
+                .append("text、textarea、number、date、time、datetime、select、radio、checkbox、attach、browse。\n")
                 .append("4. 附件字段 form=attach；人员字段 form=browse、browseType=user；部门字段 form=browse、browseType=dept。\n")
                 .append("5. 明细子表：字段增加 \"table\":\"dt1\"（第二张用 dt2），明细字段不要放进 sections；")
                 .append("同时在 detailTables 中给出明细表名。\n")
@@ -1104,6 +1104,10 @@ public class FlowAiGenServiceImpl implements IFlowAiGenService
             {
                 f.put("dtype", "date");
             }
+            else if ("time".equals(form))
+            {
+                f.put("dtype", "time");
+            }
             else if ("datetime".equals(form))
             {
                 f.put("dtype", "datetime");
@@ -1132,7 +1136,11 @@ public class FlowAiGenServiceImpl implements IFlowAiGenService
         {
             return "date";
         }
-        if ("日期时间".equals(t) || "time".equals(t))
+        if ("时间".equals(t) || "time".equals(t))
+        {
+            return "time";
+        }
+        if ("日期时间".equals(t))
         {
             return "datetime";
         }
@@ -1156,7 +1164,7 @@ public class FlowAiGenServiceImpl implements IFlowAiGenService
         {
             return "browse";
         }
-        if ("textarea".equals(t) || "number".equals(t) || "date".equals(t) || "datetime".equals(t)
+        if ("textarea".equals(t) || "number".equals(t) || "date".equals(t) || "time".equals(t) || "datetime".equals(t)
                 || "select".equals(t) || "radio".equals(t) || "checkbox".equals(t)
                 || "attach".equals(t) || "browse".equals(t) || "text".equals(t))
         {
@@ -1170,6 +1178,10 @@ public class FlowAiGenServiceImpl implements IFlowAiGenService
         if ("date".equals(form))
         {
             return "date";
+        }
+        if ("time".equals(form))
+        {
+            return "time";
         }
         if ("datetime".equals(form))
         {

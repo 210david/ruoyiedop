@@ -543,6 +543,7 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
         }
         // 业务字段：以数据表真实列为准，显示名优先取表单字段设计的中文名
         Map<String, String> labelMap = formFieldLabels(form.getFieldsJson());
+        Map<String, String> formMap = formFieldForms(form.getFieldsJson());
         List<Map<String, Object>> cols = jdbcTemplate.query(
                 "SELECT COLUMN_NAME, COLUMN_COMMENT FROM information_schema.COLUMNS "
                         + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION",
@@ -564,10 +565,46 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
             item.put("label", StringUtils.isNotEmpty(labelMap.get(name)) ? labelMap.get(name)
                     : (StringUtils.isNotEmpty(String.valueOf(c.get("comment"))) ? String.valueOf(c.get("comment")) : name));
             item.put("source", "main");
-            item.put("type", "text");
+            item.put("type", columnFormatOf(formMap.get(name)));
             list.add(item);
         }
         return list;
+    }
+
+    /** 表单字段的渲染类型（form，如 date / time / datetime），用于台账列默认显示格式 */
+    private Map<String, String> formFieldForms(String fieldsJson)
+    {
+        Map<String, String> map = new HashMap<>();
+        if (StringUtils.isEmpty(fieldsJson))
+        {
+            return map;
+        }
+        try
+        {
+            JSONArray arr = JSON.parseArray(fieldsJson);
+            for (int i = 0; i < arr.size(); i++)
+            {
+                JSONObject f = arr.getJSONObject(i);
+                if (f.getString("field") != null)
+                {
+                    map.put(f.getString("field"), StringUtils.isEmpty(f.getString("form")) ? f.getString("dtype") : f.getString("form"));
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+        return map;
+    }
+
+    /** 台账列默认显示格式：时间框 → time，日期框 → date，日期时间框 → datetime，其余按文本 */
+    private String columnFormatOf(String form)
+    {
+        if ("time".equals(form) || "date".equals(form) || "datetime".equals(form))
+        {
+            return form;
+        }
+        return "text";
     }
 
     private Map<String, String> formFieldLabels(String fieldsJson)
@@ -1205,6 +1242,7 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
         List<Map<String, Object>> list = new ArrayList<>(rows.size());
         SimpleDateFormat datetime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
         for (Map<String, Object> row : rows)
         {
             Map<String, Object> out = new LinkedHashMap<>();
@@ -1216,7 +1254,8 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
                 Object v = row.get("v" + i);
                 if (v instanceof Timestamp)
                 {
-                    v = "date".equals(c.format) ? date.format((Timestamp) v) : datetime.format((Timestamp) v);
+                    v = "date".equals(c.format) ? date.format((Timestamp) v)
+                            : "time".equals(c.format) ? time.format((Timestamp) v) : datetime.format((Timestamp) v);
                 }
                 else if (v instanceof java.sql.Date)
                 {
@@ -1226,11 +1265,21 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
                 {
                     v = "date".equals(c.format)
                             ? ((java.time.LocalDateTime) v).toLocalDate().toString()
-                            : ((java.time.LocalDateTime) v).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                            : "time".equals(c.format)
+                                    ? ((java.time.LocalDateTime) v).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                    : ((java.time.LocalDateTime) v).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 }
                 else if (v instanceof java.time.LocalDate)
                 {
                     v = v.toString();
+                }
+                else if (v instanceof java.time.LocalTime)
+                {
+                    v = ((java.time.LocalTime) v).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+                }
+                else if (v instanceof java.sql.Time)
+                {
+                    v = time.format((java.sql.Time) v);
                 }
                 else if (v instanceof BigDecimal && ("money".equals(c.format) || "number".equals(c.format)))
                 {
