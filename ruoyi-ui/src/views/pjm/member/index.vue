@@ -58,8 +58,8 @@
           <el-table-column label="姓名" prop="userName" key="userName" :width="colWidth('userName', 120)" resizable v-if="columns.userName.visible">
             <template #default="scope">{{ scope.row.userName || '-' }}</template>
           </el-table-column>
-          <el-table-column label="部门" prop="deptName" key="deptName" :min-width="colWidth('deptName', 180)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
-          <el-table-column label="角色" prop="roleType" key="roleType" :width="colWidth('roleType', 120)" resizable align="center" v-if="columns.roleType.visible">
+          <el-table-column label="所属部门/团队" prop="deptName" key="deptName" :min-width="colWidth('deptName', 180)" resizable show-overflow-tooltip v-if="columns.deptName.visible" />
+          <el-table-column label="角色" prop="roleType" key="roleType" :width="colWidth('roleType', 140)" resizable align="center" v-if="columns.roleType.visible">
             <template #default="scope">
               <span class="badge" :class="roleBadge(scope.row.roleType)">
                 <span class="dot"></span>{{ roleLabel(scope.row.roleType) }}
@@ -122,23 +122,20 @@
             <div class="rd-card-body" v-show="!collapsedCards.c1">
               <el-row :gutter="20">
                 <el-col :span="12">
-                  <el-form-item label="选择用户" prop="userId">
-                    <el-input v-model="form.userName" readonly placeholder="请从组织架构选择成员" @click="openUserPicker">
+                  <el-form-item label="姓名" prop="userName">
+                    <el-input v-model="form.userName" placeholder="可手动输入姓名，或点右侧图标从系统用户选择" clearable @input="onUserNameInput">
                       <template #append><el-button icon="Search" @click="openUserPicker" /></template>
-                      <template #suffix>
-                        <el-icon v-if="form.userName" style="cursor:pointer" @click.stop="clearMemberUser"><CircleClose /></el-icon>
-                      </template>
                     </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="所属部门">
-                    <el-input v-model="form.deptName" readonly placeholder="选择用户后自动带出" />
+                  <el-form-item label="所属部门/团队">
+                    <el-input v-model="form.deptName" placeholder="选择姓名后自动带出，也可手动输入" clearable />
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
                   <el-form-item label="角色" prop="roleType">
-                    <el-select v-model="form.roleType" style="width:100%">
+                    <el-select v-model="form.roleType" style="width:100%" filterable allow-create default-first-option placeholder="选择或输入角色">
                       <el-option v-for="d in roleOptions" :key="d.value" :label="d.label" :value="d.value" />
                     </el-select>
                   </el-form-item>
@@ -182,7 +179,6 @@
 <script setup name="PjmMember">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { CircleClose } from '@element-plus/icons-vue'
 import UserPicker from '@/components/UserPicker/index.vue'
 import ProjectPicker from '@/components/ProjectPicker/index.vue'
 import { listMember, getMember, addMember, updateMember, delMember } from '@/api/pjm/member'
@@ -222,7 +218,7 @@ const roleOptions = [
   { value: '7', label: '监理' }
 ]
 
-const roleLabel = (v) => roleOptions.find(x => x.value === v)?.label || '普通成员'
+const roleLabel = (v) => roleOptions.find(x => x.value === v)?.label || (v || '普通成员')
 const roleBadge = (v) => ({ '1': 'red', '2': 'amber', '3': 'blue', '4': 'red', '5': 'green', '6': 'gray', '7': 'violet' }[v] || 'gray')
 
 const queryParams = reactive({ pageNum: 1, pageSize: 10, projectId: null, roleType: null })
@@ -240,7 +236,7 @@ function onProjectPickerConfirm(p) {
 }
 const form = ref({})
 const rules = {
-  userId: [{ required: true, message: '请选择用户', trigger: 'change' }],
+  userName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   roleType: [{ required: true, message: '请选择角色', trigger: 'change' }]
 }
 
@@ -298,11 +294,10 @@ function onUserConfirm(u) {
   form.value.deptId = u.deptId
   form.value.deptName = u.deptName
 }
-function clearMemberUser() {
+/** 手动修改姓名时清空原有关联，后端按姓名自动匹配回填 userId/deptId/deptName */
+function onUserNameInput() {
   form.value.userId = null
-  form.value.userName = null
   form.value.deptId = null
-  form.value.deptName = null
 }
 
 function submitForm() {

@@ -269,7 +269,7 @@
                         </el-form-item>
                       </el-col>
                       <el-col :span="12">
-                        <el-form-item label="所属部门">
+                        <el-form-item label="所属部门/团队">
                           <el-input v-model="form.deptName" readonly placeholder="选择项目经理后自动带出" style="width:100%" />
                         </el-form-item>
                       </el-col>
@@ -511,18 +511,18 @@
                 </div>
               </el-tab-pane>
 
-              <!-- ===== 项目成员 ===== -->
+              <!-- ===== 项目团队 ===== -->
               <el-tab-pane name="team">
                 <template #label>
                   <div class="dtab-label">
                     <el-icon><User /></el-icon>
-                    <span>项目成员</span>
+                    <span>项目团队</span>
                     <span v-if="(form.memberList || []).length > 0" class="dtab-badge">{{ (form.memberList || []).length }}</span>
                   </div>
                 </template>
                 <div class="dtab-body">
                   <div class="dtab-toolbar">
-                    <span class="dtab-hint">可通过 AI 解析自动识别填入，或点击"添加成员"从系统用户中选择</span>
+                    <span class="dtab-hint">可手动输入姓名，或点击添加成员后点 <el-icon style="vertical-align:middle;"><Search /></el-icon> 从系统用户中选择（自动带出部门）；也可通过 AI 解析自动识别填入</span>
                     <div style="display:flex; gap:8px;">
                       <el-button type="primary" plain size="small" icon="Plus" @click="addMemberRow">添加成员</el-button>
                     </div>
@@ -537,14 +537,14 @@
                         </div>
                       </template>
                     </el-table-column>
-                    <el-table-column label="部门" prop="deptName" min-width="160">
+                    <el-table-column label="所属部门/团队" prop="deptName" min-width="160">
                       <template #default="{row}">
-                        <el-input v-model="row.deptName" size="small" placeholder="选填（AI/选择用户后自动回填）" />
+                        <el-input v-model="row.deptName" size="small" placeholder="选填（选择用户后自动带出）" />
                       </template>
                     </el-table-column>
-                    <el-table-column label="角色" prop="roleType" width="140" align="center">
+                    <el-table-column label="角色" prop="roleType" width="150" align="center">
                       <template #default="{row}">
-                        <el-select v-model="row.roleType" size="small" placeholder="选择角色">
+                        <el-select v-model="row.roleType" size="small" placeholder="选择或输入角色" filterable allow-create default-first-option>
                           <el-option v-for="r in teamRoleOptions" :key="r.value" :label="r.label" :value="r.value" />
                         </el-select>
                       </template>
@@ -554,21 +554,12 @@
                         <el-date-picker v-model="row.joinDate" type="date" value-format="YYYY-MM-DD" size="small" placeholder="选填" style="width:100%" />
                       </template>
                     </el-table-column>
-                    <el-table-column label="系统用户" prop="userId" width="100" align="center">
-                      <template #default="{row}">
-                        <el-tag v-if="row.userId" type="success" size="small" effect="light">已关联</el-tag>
-                        <el-tag v-else type="info" size="small" effect="plain">仅文本</el-tag>
-                      </template>
-                    </el-table-column>
                     <el-table-column label="操作" width="72" align="center" fixed="right">
                       <template #default="{ $index }">
                         <el-button link type="danger" icon="Delete" size="small" @click="removeMemberRow($index)">删除</el-button>
                       </template>
                     </el-table-column>
                   </el-table>
-                  <div style="margin-top:8px; font-size:12px; color:var(--ink-400); line-height:1.6;">
-                    💡 提示：AI 解析识别的成员若未自动关联到系统用户，会保存为"仅文本"模式；点 <el-icon style="vertical-align:middle;"><Search /></el-icon> 图标可改选系统用户。
-                  </div>
                 </div>
               </el-tab-pane>
 
@@ -731,7 +722,7 @@
                   <el-tag size="small" effect="light">{{ teamRoleLabel(row.roleType) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="部门" prop="deptName" min-width="130" show-overflow-tooltip />
+              <el-table-column label="所属部门/团队" prop="deptName" min-width="130" show-overflow-tooltip />
               <el-table-column label="加入日期" prop="joinDate" width="100" align="center">
                 <template #default="{row}">{{ row.joinDate || '—' }}</template>
               </el-table-column>
@@ -788,7 +779,7 @@
               <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, viewData.engineeringCategory) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, viewData.priority) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ viewData.managerName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">所属部门/团队</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -884,16 +875,16 @@
 
           <el-tab-pane name="team">
             <template #label>
-              <div class="dtab-label"><el-icon><User /></el-icon><span>项目成员</span><span v-if="(viewData.memberList || []).length > 0" class="dtab-badge">{{ (viewData.memberList || []).length }}</span></div>
+              <div class="dtab-label"><el-icon><User /></el-icon><span>项目团队</span><span v-if="(viewData.memberList || []).length > 0" class="dtab-badge">{{ (viewData.memberList || []).length }}</span></div>
             </template>
             <div class="dtab-body">
               <el-table :data="viewData.memberList || []" border size="small" class="app-table" empty-text="暂无项目团队成员">
                 <el-table-column type="index" label="#" width="48" align="center" />
                 <el-table-column label="姓名" prop="userName" min-width="120" />
-                <el-table-column label="角色" width="140" align="center">
-                  <template #default="{row}">{{ teamRoleLabel(row.roleType) }}</template>
+                <el-table-column label="角色" width="150" align="center">
+                  <template #default="{row}">{{ memberRoleLabel(row.roleType) }}</template>
                 </el-table-column>
-                <el-table-column label="所属部门" prop="deptName" min-width="140" show-overflow-tooltip />
+                <el-table-column label="所属部门/团队" prop="deptName" min-width="140" show-overflow-tooltip />
                 <el-table-column label="加入日期" prop="joinDate" width="120" align="center" />
               </el-table>
             </div>
@@ -950,7 +941,7 @@
               <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, auditProjectData.engineeringCategory) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, auditProjectData.priority) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ auditProjectData.managerName || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">所属部门</span><div class="rd-value">{{ auditProjectData.deptName || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">所属部门/团队</span><div class="rd-value">{{ auditProjectData.deptName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">建设单位</span><div class="rd-value">{{ auditProjectData.ownerUnit || '-' }}</div></div>
             </div>
           </div>
@@ -1657,6 +1648,12 @@ const aiProjectFields = computed(() => {
 })
 function teamRoleLabel(v) {
   return teamRoleOptions.find(r => String(r.value) === String(v))?.label || '施工员'
+}
+
+/** 只读展示用：自定义角色（下拉手动输入的非字典值）原样显示 */
+function memberRoleLabel(v) {
+  if (v == null || v === '') return '-'
+  return teamRoleOptions.find(r => String(r.value) === String(v))?.label || String(v)
 }
 
 /** 从文件对象提取 URL（UploadFile 组件可能存 url 或 response.url） */
