@@ -27,14 +27,6 @@
           </div>
         </div>
         <div class="field">
-          <label>保险类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.insuranceType" placeholder="全部" clearable @change="handleQuery">
-              <el-option v-for="d in insuranceTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
-            </el-select>
-          </div>
-        </div>
-        <div class="field">
           <label>保险公司</label>
           <div class="control">
             <el-input v-model="queryParams.insurer" placeholder="请输入保险公司" clearable @keyup.enter="handleQuery">
@@ -121,17 +113,10 @@
           <el-table-column label="车牌号" prop="plateNo" key="plateNo" align="center" :width="colWidth('plateNo', 120)" resizable v-if="columns.plateNo.visible">
             <template #default="scope"><span class="col-mono">{{ scope.row.plateNo || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="保险类型" prop="insuranceType" key="insuranceType" align="center" :width="colWidth('insuranceType', 130)" resizable v-if="columns.insuranceType.visible">
-            <template #default="scope">
-              <span v-if="scope.row.insuranceType" class="badge blue"><span class="dot"></span>{{ dictLabel(insuranceTypeOptions, scope.row.insuranceType) }}</span>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
           <el-table-column label="保险公司" prop="insurer" key="insurer" align="center" :min-width="colWidth('insurer', 150)" show-overflow-tooltip resizable v-if="columns.insurer.visible" />
           <el-table-column label="起保日期" prop="startDate" key="startDate" align="center" :width="colWidth('startDate', 110)" resizable v-if="columns.startDate.visible" />
           <el-table-column label="到期日期" prop="endDate" key="endDate" align="center" :width="colWidth('endDate', 110)" resizable v-if="columns.endDate.visible" />
           <el-table-column label="保费(元)" prop="premium" key="premium" align="center" :width="colWidth('premium', 110)" resizable v-if="columns.premium.visible" />
-          <el-table-column label="保额(元)" prop="insuredAmount" key="insuredAmount" align="center" :width="colWidth('insuredAmount', 120)" resizable v-if="columns.insuredAmount.visible" />
           <el-table-column label="联系人" prop="contactName" key="contactName" align="center" :width="colWidth('contactName', 100)" resizable v-if="columns.contactName.visible" />
           <el-table-column label="联系电话" prop="contactPhone" key="contactPhone" align="center" :width="colWidth('contactPhone', 120)" resizable v-if="columns.contactPhone.visible" />
           <el-table-column label="状态" prop="status" key="status" align="center" :width="colWidth('status', 100)" resizable v-if="columns.status.visible">
@@ -176,19 +161,16 @@
             <div class="rd-card-body" v-show="!collapsedCards.e0">
               <el-row :gutter="20">
                 <el-col :span="12">
-                  <el-form-item label="保单号" prop="policyNo"><el-input v-model="form.policyNo" placeholder="请输入保单号" /></el-form-item>
+                  <el-form-item label="保单号" prop="policyNo"><el-input v-model="form.policyNo" placeholder="请输入保单号（可不填）" /></el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="投保单号" prop="insuranceNo"><el-input v-model="form.insuranceNo" placeholder="请输入投保单号" /></el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="车牌号" prop="plateNo"><el-input v-model="form.plateNo" placeholder="请输入车牌号" /></el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="保险类型" prop="insuranceType">
-                    <el-select v-model="form.insuranceType" placeholder="请选择保险类型" style="width: 100%">
-                      <el-option v-for="d in insuranceTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
-                    </el-select>
+                  <el-form-item label="车牌号" prop="plateNo">
+                    <el-input v-model="form.plateNo" readonly placeholder="请从车辆管理中选择" style="width: 100%" @click="openVehiclePicker">
+                      <template #append><el-button icon="Search" @click.stop="openVehiclePicker" /></template>
+                      <template #suffix>
+                        <el-icon v-if="form.plateNo" class="vehicle-clear-icon" @click.stop="clearVehicle"><CircleClose /></el-icon>
+                      </template>
+                    </el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -213,7 +195,7 @@
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="起保日期" prop="startDate">
-                    <el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择起保日期" style="width: 100%" />
+                    <el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择起保日期" style="width: 100%" @change="onStartDateChange" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -225,17 +207,14 @@
                   <el-form-item label="保费(元)" prop="premium"><el-input-number v-model="form.premium" :min="0" :precision="2" :controls="false" placeholder="请输入保费" style="width: 100%" /></el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="保额(元)" prop="insuredAmount"><el-input-number v-model="form.insuredAmount" :min="0" :precision="2" :controls="false" placeholder="请输入保额" style="width: 100%" /></el-form-item>
+                  <el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入联系电话" /></el-form-item>
                 </el-col>
-                <el-col :span="12">
+                <el-col :span="24">
                   <el-form-item label="联系人" prop="contactName">
                     <el-input v-model="form.contactName" placeholder="选择人员或直接输入联系人">
                       <template #append><el-button icon="Search" @click="openContactPicker" /></template>
                     </el-input>
                   </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="联系电话" prop="contactPhone"><el-input v-model="form.contactPhone" placeholder="请输入联系电话" /></el-form-item>
                 </el-col>
               </el-row>
             </div>
@@ -282,9 +261,7 @@
           <div class="rd-card-body" style="display:block" v-show="!collapsedCards.v0">
             <div class="rd-grid">
               <div class="rd-item"><span class="rd-label">保单号</span><div class="rd-value">{{ viewData.policyNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">投保单号</span><div class="rd-value">{{ viewData.insuranceNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">车牌号</span><div class="rd-value">{{ viewData.plateNo || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">保险类型</span><div class="rd-value"><dict-tag :options="insuranceTypeOptions" :value="viewData.insuranceType" /></div></div>
               <div class="rd-item"><span class="rd-label">保险公司</span><div class="rd-value">{{ viewData.insurer || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="insuranceStatusOptions" :value="viewData.status" /></div></div>
             </div>
@@ -300,9 +277,8 @@
               <div class="rd-item"><span class="rd-label">起保日期</span><div class="rd-value">{{ viewData.startDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">到期日期</span><div class="rd-value">{{ viewData.endDate || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保费(元)</span><div class="rd-value">{{ viewData.premium ?? '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">保额(元)</span><div class="rd-value">{{ viewData.insuredAmount ?? '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewData.contactName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">联系电话</span><div class="rd-value">{{ viewData.contactPhone || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">联系人</span><div class="rd-value">{{ viewData.contactName || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -361,7 +337,7 @@
 
         <h4>三、常见操作</h4>
         <ul class="help-tips">
-          <li><strong>新增 / 修改：</strong>维护保单号、关联车辆、保险公司、险种、保额、生效日期、到期日期等信息。</li>
+          <li><strong>新增 / 修改：</strong>从车辆管理中选择车辆（车牌号必填），维护保单号、保险公司、保费、起保日期、到期日期等信息；起保日期与到期日期为必填项。</li>
           <li><strong>详情：</strong>查看保单完整信息及附件。</li>
           <li><strong>导入 / 导出：</strong>批量维护车辆保险台账。</li>
           <li><strong>删除：</strong>仅删除台账数据，不影响车辆信息和历史流程记录。</li>
@@ -375,6 +351,9 @@
     <!-- 人员选择 -->
     <user-picker ref="contactPickerRef" title="选择联系人" @confirm="onContactPicked" />
 
+    <!-- 车辆选择 -->
+    <vehicle-picker ref="vehiclePickerRef" title="选择车辆" @confirm="onVehiclePicked" />
+
     <!-- 导入 -->
     <ExcelImportDialog
       ref="importRef"
@@ -382,9 +361,9 @@
       action="/oa/insurance/importData"
       template-action="/oa/insurance/importTemplate"
       template-file-name="车辆保险台账导入模板.xlsx"
-      update-support-label="如果已存在相同保单号，则更新该保险数据"
-      :column-labels="{ policyNo: '保单号', insuranceNo: '投保单号', plateNo: '车牌号', insuranceType: '保险类型', insurer: '保险公司', startDate: '起保日期', endDate: '到期日期', premium: '保费(元)', insuredAmount: '保额(元)', contactName: '联系人', contactPhone: '联系电话', status: '状态', result: '导入结果', errorReason: '失败原因' }"
-      :tips="['保单号为必填项，且用于识别重复数据', '保险类型、状态请填写字典值（如：保险类型 1=交强险，状态 0=有效）', '勾选“更新已存在的数据”后，相同保单号的记录将被覆盖更新']"
+      update-support-label="如果已存在相同保单号，则更新该保险数据（保单号为空时一律新增）"
+      :column-labels="{ policyNo: '保单号', plateNo: '车牌号', insurer: '保险公司', startDate: '起保日期', endDate: '到期日期', premium: '保费(元)', contactName: '联系人', contactPhone: '联系电话', status: '状态', result: '导入结果', errorReason: '失败原因' }"
+      :tips="['车牌号、起保日期、到期日期为必填项；车牌号须存在于车辆台账', '保单号可不填，填写时用于识别重复数据', '状态请填写字典值（如：状态 0=有效）', '勾选“更新已存在的数据”后，相同保单号的记录将被覆盖更新']"
       @success="getList"
     />
   </div>
@@ -396,16 +375,18 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
+import VehiclePicker from '@/components/VehiclePicker/index.vue'
+import { CircleClose } from '@element-plus/icons-vue'
 import { QuestionFilled } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1', 'v2'])
 const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('oa_insurance_index')
-const { oa_insurance_type: insuranceTypeOptions } = proxy.useDict('oa_insurance_type')
 const { oa_insurance_status: insuranceStatusOptions } = proxy.useDict('oa_insurance_status')
 
 const importRef = ref()
 const contactPickerRef = ref()
+const vehiclePickerRef = ref()
 const insuranceList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
@@ -427,12 +408,10 @@ const statusCounts = ref({ all: 0, '0': 0, '1': 0, '2': 0 })
 const columns = ref({
   policyNo: { label: '保单号', visible: true },
   plateNo: { label: '车牌号', visible: true },
-  insuranceType: { label: '保险类型', visible: true },
   insurer: { label: '保险公司', visible: true },
   startDate: { label: '起保日期', visible: true },
   endDate: { label: '到期日期', visible: true },
   premium: { label: '保费', visible: true },
-  insuredAmount: { label: '保额', visible: false },
   contactName: { label: '联系人', visible: false },
   contactPhone: { label: '联系电话', visible: true },
   status: { label: '状态', visible: true }
@@ -440,15 +419,30 @@ const columns = ref({
 
 const statusTabList = computed(() => insuranceStatusOptions.value)
 
+/** 到期日期不得早于起保日期 */
+function validateEndDate(rule, value, callback) {
+  const start = form.value && form.value.startDate
+  if (value && start && String(value) < String(start)) {
+    callback(new Error('到期日期不能早于起保日期'))
+  } else {
+    callback()
+  }
+}
+
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1, pageSize: 10,
-    policyNo: undefined, plateNo: undefined, insuranceType: undefined,
+    policyNo: undefined, plateNo: undefined,
     insurer: undefined, contactName: undefined, status: undefined, params: {}
   },
   rules: {
-    policyNo: [{ required: true, message: '保单号不能为空', trigger: 'blur' }]
+    plateNo: [{ required: true, message: '请选择车牌号', trigger: 'change' }],
+    startDate: [{ required: true, message: '起保日期不能为空', trigger: 'change' }],
+    endDate: [
+      { required: true, message: '到期日期不能为空', trigger: 'change' },
+      { validator: validateEndDate, trigger: 'change' }
+    ]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -457,7 +451,6 @@ const activeFilterCount = computed(() => {
   let count = 0
   if (queryParams.value.policyNo) count++
   if (queryParams.value.plateNo) count++
-  if (queryParams.value.insuranceType) count++
   if (queryParams.value.insurer) count++
   if (queryParams.value.contactName) count++
   if (queryParams.value.status) count++
@@ -487,7 +480,7 @@ function handleQuery() {
 function resetQuery() {
   queryParams.value = {
     pageNum: 1, pageSize: queryParams.value.pageSize,
-    policyNo: undefined, plateNo: undefined, insuranceType: undefined,
+    policyNo: undefined, plateNo: undefined,
     insurer: undefined, contactName: undefined, status: undefined, params: {}
   }
   startDateRange.value = []
@@ -529,9 +522,9 @@ function handleSelectionChange(selection) {
 
 function reset() {
   form.value = {
-    insuranceId: undefined, policyNo: undefined, insuranceNo: undefined, vehicleId: undefined,
-    plateNo: undefined, insuranceType: undefined, insurer: undefined, startDate: undefined,
-    endDate: undefined, premium: undefined, insuredAmount: undefined, contactName: undefined,
+    insuranceId: undefined, policyNo: undefined, vehicleId: undefined,
+    plateNo: undefined, insurer: undefined, startDate: undefined,
+    endDate: undefined, premium: undefined, contactName: undefined,
     contactPhone: undefined, status: '0', attachment: undefined, remark: undefined
   }
   proxy.resetForm('insuranceRef')
@@ -587,6 +580,29 @@ function handleDelete(row) {
     getList()
     proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
+}
+
+/** 起保日期变更：若已有到期日期则重新校验先后顺序 */
+function onStartDateChange() {
+  proxy.$refs['insuranceRef']?.validateField('endDate')
+}
+
+/** 打开车辆选择弹框 */
+function openVehiclePicker() {
+  vehiclePickerRef.value.open(form.value.vehicleId, form.value.plateNo)
+}
+
+/** 选择车辆后回填车牌号与车辆ID */
+function onVehiclePicked(vehicle) {
+  form.value.vehicleId = vehicle.vehicleId
+  form.value.plateNo = vehicle.plateNo
+  proxy.$refs['insuranceRef']?.validateField('plateNo')
+}
+
+/** 清除已选车辆 */
+function clearVehicle() {
+  form.value.vehicleId = undefined
+  form.value.plateNo = undefined
 }
 
 /** 打开联系人选择弹框 */
