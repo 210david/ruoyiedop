@@ -264,6 +264,8 @@
               <div class="rd-item"><span class="rd-label">车牌号</span><div class="rd-value">{{ viewData.plateNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">保险公司</span><div class="rd-value">{{ viewData.insurer || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">状态</span><div class="rd-value"><dict-tag :options="insuranceStatusOptions" :value="viewData.status" /></div></div>
+              <div class="rd-item"><span class="rd-label">车辆类型</span><div class="rd-value"><dict-tag v-if="viewVehicle.vehicleType" :options="vehicleTypeOptions" :value="viewVehicle.vehicleType" /><span v-else>-</span></div></div>
+              <div class="rd-item"><span class="rd-label">使用用途</span><div class="rd-value">{{ viewVehicle.vehicleUse || '-' }}</div></div>
             </div>
           </div>
         </section>
@@ -371,6 +373,7 @@
 
 <script setup name="OaInsurance">
 import { listOaInsurance, getOaInsurance, addOaInsurance, updateOaInsurance, delOaInsurance } from '@/api/oa/insurance'
+import { getOaVehicle } from '@/api/oa/vehicle'
 import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
@@ -383,6 +386,7 @@ const { proxy } = getCurrentInstance()
 const { collapsedCards, toggleCard } = useDetailCard(['e0', 'e1', 'e2', 'v0', 'v1', 'v2'])
 const { colWidth, onHeaderDragEnd, tableRef } = useColumnResize('oa_insurance_index')
 const { oa_insurance_status: insuranceStatusOptions } = proxy.useDict('oa_insurance_status')
+const { oa_vehicle_type: vehicleTypeOptions } = proxy.useDict('oa_vehicle_type')
 
 const importRef = ref()
 const contactPickerRef = ref()
@@ -391,6 +395,7 @@ const insuranceList = ref([])
 const open = ref(false)
 const viewOpen = ref(false)
 const viewData = ref({})
+const viewVehicle = ref({})
 const title = ref('')
 const loading = ref(true)
 const showSearch = ref(true)
@@ -547,9 +552,14 @@ function handleUpdate(row) {
 }
 
 function handleView(row) {
+  viewVehicle.value = {}
   getOaInsurance(row.insuranceId).then(response => {
     viewData.value = response.data || {}
     viewOpen.value = true
+    const vid = viewData.value.vehicleId
+    if (vid) {
+      getOaVehicle(vid).then(res => { viewVehicle.value = res.data || {} }).catch(() => {})
+    }
   })
 }
 
@@ -624,7 +634,8 @@ function handleExport() {
   const params = { ...queryParams.value }
   proxy.addDateRange(params, startDateRange.value, 'StartDate')
   proxy.addDateRange(params, endDateRange.value, 'EndDate')
-  proxy.download('oa/insurance/export', params, `车辆保险台账_${new Date().getTime()}.xlsx`)
+  // 勾选了数据时只导出勾选记录，否则按当前筛选条件导出
+  proxy.download('oa/insurance/export', proxy.withExportIds(params, ids.value, 'insuranceId'), `车辆保险台账_${new Date().getTime()}.xlsx`)
 }
 
 getList()

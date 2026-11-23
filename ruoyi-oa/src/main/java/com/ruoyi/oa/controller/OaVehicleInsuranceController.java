@@ -11,6 +11,7 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.ExportIdFilter;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.oa.domain.OaVehicleInsurance;
 import com.ruoyi.oa.service.IOaVehicleInsuranceService;
@@ -41,6 +42,8 @@ public class OaVehicleInsuranceController extends BaseController
     public void export(HttpServletResponse response, OaVehicleInsurance oaVehicleInsurance)
     {
         List<OaVehicleInsurance> list = oaVehicleInsuranceService.selectOaVehicleInsuranceList(oaVehicleInsurance);
+        // 勾选了数据时按勾选导出，未勾选按筛选条件导出全部
+        list = ExportIdFilter.filter(list, oaVehicleInsurance);
         ExcelUtil<OaVehicleInsurance> util = new ExcelUtil<>(OaVehicleInsurance.class);
         util.exportExcel(response, list, "车辆保险台账");
     }
