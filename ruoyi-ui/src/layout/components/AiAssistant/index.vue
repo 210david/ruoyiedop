@@ -63,7 +63,7 @@
                   <div v-if="m.summary" class="ai-data-summary">
                     <el-icon :size="13"><DataAnalysis /></el-icon>{{ m.summary }}
                   </div>
-                  <div v-if="m.error" class="ai-data-error">{{ m.error }}</div>
+                  <div v-if="m.error" class="ai-data-error">{{ dataErrorText(m) }}</div>
                   <el-table v-if="m.rows && m.rows.length" :data="m.rows" border size="small" max-height="220"
                     class="ai-data-table" :header-cell-style="{ background: '#F8FAFC', color: '#111827', fontWeight: 600 }">
                     <el-table-column type="index" label="#" width="44" align="center" />
@@ -71,11 +71,13 @@
                       <template #default="{ row }">{{ formatCell(row[col]) }}</template>
                     </el-table-column>
                   </el-table>
-                  <div v-else class="ai-data-norows">{{ m.emptyReason || '查询执行成功，但没有查到匹配数据——可能尚无关联业务记录，可到对应业务模块确认数据是否已录入。' }}</div>
+                  <div v-else-if="!hasActions(m)" class="ai-data-norows">{{ m.emptyReason || '查询执行成功，但没有查到匹配数据——可能尚无关联业务记录，可到对应业务模块确认数据是否已录入。' }}</div>
                   <div v-if="m.rows && m.rows.length" class="ai-data-meta">共 {{ m.rows.length }} 行
                     <button class="ai-sql-toggle" type="button" @click="m.sqlOpen = !m.sqlOpen">{{ m.sqlOpen ? '隐藏 SQL' : '查看 SQL' }}</button>
                   </div>
                   <pre v-if="m.sqlOpen && m.sql" class="ai-data-sql">{{ m.sql }}</pre>
+                  <!-- 入口仅在查询无报错时展示：避免"查不到数据"与"给你入口"同时出现造成认知冲突 -->
+                  <ai-nav-actions v-if="hasActions(m)" :actions="m.actions" @navigate="onNavigate" />
                 </div>
                 <template v-else>
                   <div v-if="isDirectHit(m.text)" class="ai-direct-hit">
@@ -83,6 +85,7 @@
                     <div class="ai-bubble-text md" v-html="renderMd(stripHitPrefix(m.text))"></div>
                   </div>
                   <div v-else class="ai-bubble-text md" v-html="renderMd(m.text)"></div>
+                  <ai-nav-actions v-if="m.actions && m.actions.length" :actions="m.actions" @navigate="onNavigate" />
                 </template>
               </template>
               <div v-if="m.sources && m.sources.length" class="ai-msg-sources">
@@ -223,6 +226,7 @@ import { ref, computed, nextTick, getCurrentInstance, onMounted, onBeforeUnmount
 import { renderAsync } from 'docx-preview'
 import { Clock, Delete, Close, ChatDotRound, Document, Promotion, InfoFilled, Collection, Download, DataAnalysis, FullScreen, ScaleToOriginal, ArrowUp } from '@element-plus/icons-vue'
 import AiKnowledgeIcon from '@/components/AiKnowledgeIcon/index.vue'
+import AiNavActions from '@/components/AiNavActions/index.vue'
 import useUserStore from '@/store/modules/user'
 import { parseTime } from '@/utils/ruoyi'
 import { saveAs } from 'file-saver'
@@ -323,7 +327,8 @@ function replayHistory(h) {
       role: 'assistant', mode: 'data', kind: 'data',
       summary: h.answer || '', error: h.status === '1' ? '（当时查询失败）' : '',
       columns: snap.columns || [], rows: snap.rows || [],
-      sql: snap.sql || '', emptyReason: snap.emptyReason || '', sqlOpen: false
+      sql: snap.sql || '', emptyReason: snap.emptyReason || '', sqlOpen: false,
+      actions: parseActions(h.navActionsJson)
     })
     historyOpen.value = false
     open.value = true
@@ -331,15 +336,56 @@ function replayHistory(h) {
     return
   }
   messages.value.push({ role: 'user', text: h.question, mode: 'knowledge' })
-  messages.value.push({ role: 'assistant', text: h.answer || '（无回答）', sources: parseSources(h.sourcesJson), mode: 'knowledge' })
+  messages.value.push({
+    role: 'assistant', text: h.answer || '（无回答）', sources: parseSources(h.sourcesJson),
+    actions: parseActions(h.navActionsJson), mode: 'knowledge'
+  })
   historyOpen.value = false
   open.value = true
   if (mode.value !== 'knowledge') switchMode('knowledge')
   scrollToBottom()
 }
 
+/** 是否有可展示的导航入口 */
+function hasActions(m) {
+  return !!(m && m.actions && m.actions.length)
+}
+
+/**
+ * 数据查询失败时的提示文案
+ *
+ * 场景说明：用户问「入库单在哪里录入」这类「找页面」的问题时，NL2SQL 必然判定
+ * 超出白名单范围（它只懂查数据、不懂找功能）。此时若原样显示
+ * 「不在可查询范围」，再给一个「入库单管理」入口，用户会困惑。
+ * 有入口时改为引导文案：告诉用户「这不是查数据的问题，但入口在下面」。
+ */
+function dataErrorText(m) {
+  if (hasActions(m)) {
+    return '这个问题更适合直接打开对应功能页面，入口见下方。'
+  }
+  return m.error
+}
+
 function parseSources(json) {
   try { const arr = JSON.parse(json || '[]'); return Array.isArray(arr) ? arr : [] } catch (e) { return [] }
+}
+
+/** 解析历史里的导航入口（空值/脏数据一律返回空数组，不影响回放） */
+function parseActions(json) {
+  try { const arr = JSON.parse(json || '[]'); return Array.isArray(arr) ? arr : [] } catch (e) { return [] }
+}
+
+/**
+ * 点击功能入口后的处理
+ * - 权限已变更（组件二次校验失败）：提示而不跳转，避免 404 白屏
+ * - 正常：收起面板，让用户直接看到目标页面
+ */
+function onNavigate(a) {
+  if (a && a.denied) {
+    proxy.$modal.msgWarning('您暂无该功能权限，可能权限已变更，请联系管理员')
+    return
+  }
+  open.value = false
 }
 
 function shortAnswer(a) {
@@ -419,6 +465,7 @@ async function handleAsk() {
         summary: d.summary || '', error: d.error || '',
         columns: d.columns || [], rows: d.rows || [],
         sql: d.sql || '', emptyReason: d.emptyReason || '',
+        actions: d.actions || [],
         sqlOpen: false
       })
     } catch (e) {
@@ -435,7 +482,7 @@ async function handleAsk() {
   try {
     const res = await knowledgeQa({ question: q })
     const d = res.data || {}
-    messages.value.push({ role: 'assistant', text: d.answer || '未返回答案', sources: d.sources || [] })
+    messages.value.push({ role: 'assistant', text: d.answer || '未返回答案', sources: d.sources || [], actions: d.actions || [] })
   } catch (e) {
     messages.value.push({ role: 'assistant', text: '提问失败，请稍后重试' })
   } finally {

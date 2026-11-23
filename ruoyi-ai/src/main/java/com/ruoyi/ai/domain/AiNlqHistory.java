@@ -33,6 +33,9 @@ public class AiNlqHistory extends BaseEntity
     /** 状态（0成功 1失败） */
     private String status;
 
+    /** AI导航入口JSON（历史回放可点击） */
+    private String navActionsJson;
+
     /** 分页参数（仅查询用，非表字段） */
     private transient Integer pageSize = 20;
     private transient Integer offset = 0;
@@ -54,6 +57,8 @@ public class AiNlqHistory extends BaseEntity
     public void setAnswer(String answer) { this.answer = answer; }
     public String getResultJson() { return resultJson; }
     public void setResultJson(String resultJson) { this.resultJson = resultJson; }
+    public String getNavActionsJson() { return navActionsJson; }
+    public void setNavActionsJson(String navActionsJson) { this.navActionsJson = navActionsJson; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 }

@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="filePath"    column="file_path"/>
         <result property="status"      column="status"/>
         <result property="chunkCount"  column="chunk_count"/>
+        <result property="navMenuId"   column="nav_menu_id"/>
         <result property="createBy"    column="create_by"/>
         <result property="createTime"  column="create_time"/>
         <result property="updateBy"    column="update_by"/>
@@ -20,16 +21,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectDocVo">
-        select doc_id, module, doc_name, file_type, file_path, status, chunk_count,
+        select doc_id, module, doc_name, file_type, file_path, status, chunk_count, nav_menu_id,
                create_by, create_time, update_by, update_time, remark
         from ai_knowledge_doc
     </sql>
 
     <insert id="insertDoc" parameterType="AiKnowledgeDoc" useGeneratedKeys="true" keyProperty="docId">
         insert into ai_knowledge_doc (module, doc_name, file_type, file_path, status, chunk_count,
-            create_by, create_time, remark)
+            nav_menu_id, create_by, create_time, remark)
         values (#{module}, #{docName}, #{fileType}, #{filePath}, #{status}, 0,
-            #{createBy}, sysdate(), #{remark})
+            #{navMenuId}, #{createBy}, sysdate(), #{remark})
     </insert>
 
     <update id="updateDoc" parameterType="AiKnowledgeDoc">
@@ -41,12 +42,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="filePath != null">file_path = #{filePath},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="chunkCount != null">chunk_count = #{chunkCount},</if>
+            <if test="navMenuId != null">nav_menu_id = #{navMenuId},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_by = #{updateBy},
             update_time = sysdate()
         </set>
         where doc_id = #{docId}
     </update>
+
+    <!-- 关联功能入口：允许显式置空（navMenuId 传 null 时清空绑定） -->
+    <update id="updateNavMenuId">
+        update ai_knowledge_doc
+        set nav_menu_id = #{navMenuId}, update_time = sysdate()
+        where doc_id = #{docId}
+    </update>
+
+    <!-- 取文档绑定的功能入口（未绑定返回 null） -->
+    <select id="selectNavMenuIdByDocId" resultType="java.lang.Long">
+        select nav_menu_id from ai_knowledge_doc where doc_id = #{docId}
+    </select>
 
     <delete id="deleteDocByIds">
         delete from ai_knowledge_doc where doc_id in
@@ -110,6 +124,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
     </select>
 
+    <!-- 检索结果附带文档绑定的功能入口，供命名入口直连使用 -->
+    <select id="selectChunksWithNav" resultType="map">
+        select c.chunk_id as chunkId, c.doc_id as docId, c.chunk_index as chunkIndex,
+               c.content as content, d.doc_name as docName, d.module as module,
+               d.nav_menu_id as navMenuId
+        from ai_knowledge_chunk c
+        inner join ai_knowledge_doc d on d.doc_id = c.doc_id
+        where d.status = '0'
+        <if test="module != null and module != ''">
+            and (d.module = #{module} or d.module = 'platform')
+        </if>
+    </select>
+
     <select id="selectChunksByDocId" parameterType="Long" resultType="map">
         select chunk_id as chunkId, chunk_index as chunkIndex, content
         from ai_knowledge_chunk
@@ -119,9 +146,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectDocByName" parameterType="String" resultMap="AiKnowledgeDocResult">
         <include refid="selectDocVo"/>
-        where doc_name = #{docName} and status = '0'
-        order by doc_id desc
-        limit 1
+        where doc_name = #{docName} limit 1
     </select>
 
 </mapper>

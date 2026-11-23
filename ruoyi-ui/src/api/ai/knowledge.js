@@ -11,6 +11,11 @@ export function uploadKnowledge(data) {
     headers: { 'Content-Type': 'multipart/form-data' } })
 }
 
+// 设置/清除文档关联的功能入口（navMenuId 为空即解绑）
+export function updateDocNav(docId, navMenuId) {
+  return request({ url: '/ai/knowledge/nav/' + docId, method: 'put', params: { navMenuId } })
+}
+
 // 删除文档
 export function delKnowledge(docIds) {
   return request({ url: '/ai/knowledge/' + docIds, method: 'delete' })

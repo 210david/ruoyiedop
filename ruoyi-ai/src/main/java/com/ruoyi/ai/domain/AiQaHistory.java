@@ -33,6 +33,9 @@ public class AiQaHistory extends BaseEntity
     /** 来源文档JSON */
     private String sourcesJson;
 
+    /** AI导航入口JSON（历史回放可点击） */
+    private String navActionsJson;
+
     /** 检索模式（keyword/vector） */
     private String retrievalMode;
 
@@ -59,6 +62,8 @@ public class AiQaHistory extends BaseEntity
     public void setAnswer(String answer) { this.answer = answer; }
     public String getSourcesJson() { return sourcesJson; }
     public void setSourcesJson(String sourcesJson) { this.sourcesJson = sourcesJson; }
+    public String getNavActionsJson() { return navActionsJson; }
+    public void setNavActionsJson(String navActionsJson) { this.navActionsJson = navActionsJson; }
     public String getRetrievalMode() { return retrievalMode; }
     public void setRetrievalMode(String retrievalMode) { this.retrievalMode = retrievalMode; }
 }
