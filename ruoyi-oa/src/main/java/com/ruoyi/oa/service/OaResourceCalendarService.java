@@ -106,7 +106,7 @@ public class OaResourceCalendarService
     private List<Map<String, Object>> queryDriver(String start, String end)
     {
         String sql = "SELECT d.driver_id AS resourceId, d.driver_name AS resourceName, d.status AS resourceStatus, "
-                + "d.driver_no AS resourceType, f.process_instance_id AS flowInstanceId, f.title AS flowTitle, "
+                + "NULL AS resourceType, f.process_instance_id AS flowInstanceId, f.title AS flowTitle, "
                 + "f.applicant AS applicant, "
                 + "DATE_FORMAT(f.depart_time, '%Y-%m-%d %H:%i:%s') AS startTime, "
                 + "DATE_FORMAT(f.return_time, '%Y-%m-%d %H:%i:%s') AS endTime, f.procStatus AS procStatus "

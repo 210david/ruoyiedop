@@ -37,8 +37,11 @@
         <div class="field">
           <label>所属部门</label>
           <div class="control">
-            <el-input v-model="queryParams.ownerDept" placeholder="请输入所属部门" clearable @keyup.enter="handleQuery">
-              <template #prefix><el-icon><Search /></el-icon></template>
+            <el-input :model-value="queryParams.ownerDept" readonly placeholder="请选择所属部门" @click="openDeptFilter">
+              <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
+              <template #suffix>
+                <el-icon v-if="queryParams.ownerDept" class="oa-picker-clear-icon" @click.stop="clearDeptFilter"><CircleClose /></el-icon>
+              </template>
             </el-input>
           </div>
         </div>
@@ -229,7 +232,14 @@
                   <el-form-item label="座位数" prop="seatCount"><el-input-number v-model="form.seatCount" :min="1" :max="100" controls-position="right" style="width: 100%" /></el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="所属部门" prop="ownerDept"><el-input v-model="form.ownerDept" placeholder="请输入所属部门" /></el-form-item>
+                  <el-form-item label="所属部门" prop="ownerDept">
+                    <el-input v-model="form.ownerDept" readonly placeholder="请选择所属部门" style="width: 100%" @click="openDeptPicker">
+                      <template #append><el-button icon="Search" @click.stop="openDeptPicker" /></template>
+                      <template #suffix>
+                        <el-icon v-if="form.ownerDept" class="vehicle-clear-icon" @click.stop="clearDept"><CircleClose /></el-icon>
+                      </template>
+                    </el-input>
+                  </el-form-item>
                 </el-col>
               </el-row>
             </div>
@@ -432,6 +442,12 @@
     <!-- 人员选择 -->
     <user-picker ref="driverPickerRef" title="选择驾驶员" @confirm="onDriverPicked" />
 
+    <!-- 部门选择（新增/修改表单） -->
+    <dept-picker ref="deptPickerRef" title="选择所属部门" :disabled-ids="[100]" @confirm="onDeptPickerConfirm" />
+
+    <!-- 部门选择（列表筛选） -->
+    <dept-picker ref="deptFilterRef" title="选择筛选部门" :disabled-ids="[100]" @confirm="onDeptFilterConfirm" />
+
     <!-- 导入 -->
     <ExcelImportDialog
       ref="importRef"
@@ -453,8 +469,9 @@ import { useDetailCard } from '@/composables/useDetailCard'
 import { useColumnResize } from '@/composables/useColumnResize'
 import ExcelImportDialog from '@/components/ExcelImportDialog'
 import UserPicker from '@/components/UserPicker/index.vue'
+import DeptPicker from '@/components/DeptPicker/index.vue'
 import OaResourceCalendar from '@/components/OaResourceCalendar/index.vue'
-import { QuestionFilled } from '@element-plus/icons-vue'
+import { QuestionFilled, OfficeBuilding, CircleClose } from '@element-plus/icons-vue'
 
 const { proxy } = getCurrentInstance()
 const router = useRouter()
@@ -465,6 +482,8 @@ const { oa_vehicle_status: vehicleStatusOptions } = proxy.useDict('oa_vehicle_st
 
 const importRef = ref()
 const driverPickerRef = ref()
+const deptPickerRef = ref()
+const deptFilterRef = ref()
 const calendarRef = ref()
 const vehicleList = ref([])
 const open = ref(false)
@@ -507,7 +526,7 @@ const data = reactive({
   queryParams: {
     pageNum: 1, pageSize: 10,
     plateNo: undefined, vehicleCode: undefined, vehicleType: undefined, vehicleUse: undefined,
-    ownerDept: undefined, driverName: undefined, vehicleModel: undefined,
+    ownerDept: undefined, ownerDeptId: undefined, driverName: undefined, vehicleModel: undefined,
     status: undefined, params: {}
   },
   rules: {
@@ -553,7 +572,7 @@ function resetQuery() {
   queryParams.value = {
     pageNum: 1, pageSize: queryParams.value.pageSize,
     plateNo: undefined, vehicleCode: undefined, vehicleType: undefined, vehicleUse: undefined,
-    ownerDept: undefined, driverName: undefined, vehicleModel: undefined,
+    ownerDept: undefined, ownerDeptId: undefined, driverName: undefined, vehicleModel: undefined,
     status: undefined, params: {}
   }
   inspectRange.value = []
@@ -596,7 +615,7 @@ function handleSelectionChange(selection) {
 function reset() {
   form.value = {
     vehicleId: undefined, vehicleCode: undefined, plateNo: undefined, vehicleType: undefined,
-    vehicleModel: undefined, vehicleUse: undefined, seatCount: undefined, ownerDept: undefined,
+    vehicleModel: undefined, vehicleUse: undefined, seatCount: undefined, ownerDept: undefined, ownerDeptId: undefined,
     driverName: undefined, driverPhone: undefined, licenseNo: undefined, purchaseDate: undefined,
     inspectExpire: undefined, insuranceExpire: undefined, status: '0', attachment: undefined, remark: undefined
   }
@@ -664,6 +683,42 @@ function openDriverPicker() {
 function onDriverPicked(user) {
   form.value.driverName = user.nickName
   form.value.driverPhone = user.phonenumber
+}
+
+/** 打开所属部门选择弹框（表单） */
+function openDeptPicker() {
+  deptPickerRef.value.open(form.value.ownerDeptId)
+}
+
+/** 所属部门选择回填 */
+function onDeptPickerConfirm(dept) {
+  form.value.ownerDeptId = dept.deptId
+  form.value.ownerDept = dept.deptName
+}
+
+/** 清除所属部门（表单）：置空名称用于后端清空部门ID */
+function clearDept() {
+  form.value.ownerDeptId = undefined
+  form.value.ownerDept = ''
+}
+
+/** 打开所属部门选择弹框（筛选） */
+function openDeptFilter() {
+  deptFilterRef.value.open(queryParams.value.ownerDeptId)
+}
+
+/** 筛选部门选择后立即查询 */
+function onDeptFilterConfirm(dept) {
+  queryParams.value.ownerDeptId = dept.deptId
+  queryParams.value.ownerDept = dept.deptName
+  handleQuery()
+}
+
+/** 清除筛选用所属部门 */
+function clearDeptFilter() {
+  queryParams.value.ownerDeptId = undefined
+  queryParams.value.ownerDept = undefined
+  handleQuery()
 }
 
 function handleImport() {

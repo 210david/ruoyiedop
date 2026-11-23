@@ -19,9 +19,6 @@ public class OaDriver extends BaseEntity
     @Excel(name = "司机姓名")
     private String driverName;
 
-    @Excel(name = "工号")
-    private String driverNo;
-
     @Excel(name = "手机号")
     private String phone;
 
@@ -51,6 +48,9 @@ public class OaDriver extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=在岗,1=休假,2=停用")
     private String status;
 
+    /** 关联组织用户ID（人员选择带入，仅用于前端表单只读联动，不入库） */
+    private Long userId;
+
     /** 关联流程实例ID（公车使用申请流程写回） */
     private String flowInstanceId;
 
@@ -68,8 +68,6 @@ public class OaDriver extends BaseEntity
     public void setDriverId(Long driverId) { this.driverId = driverId; }
     public String getDriverName() { return driverName; }
     public void setDriverName(String driverName) { this.driverName = driverName; }
-    public String getDriverNo() { return driverNo; }
-    public void setDriverNo(String driverNo) { this.driverNo = driverNo; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
     public String getIdCard() { return idCard; }
@@ -88,6 +86,8 @@ public class OaDriver extends BaseEntity
     public void setDrivingYears(Integer drivingYears) { this.drivingYears = drivingYears; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public String getFlowInstanceId() { return flowInstanceId; }
     public void setFlowInstanceId(String flowInstanceId) { this.flowInstanceId = flowInstanceId; }
     public String getFlowTitle() { return flowTitle; }

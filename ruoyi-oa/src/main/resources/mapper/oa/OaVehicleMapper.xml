@@ -11,6 +11,7 @@
         <result property="vehicleUse"      column="vehicle_use"/>
         <result property="seatCount"       column="seat_count"/>
         <result property="ownerDept"       column="owner_dept"/>
+        <result property="ownerDeptId"     column="owner_dept_id"/>
         <result property="driverName"      column="driver_name"/>
         <result property="driverPhone"     column="driver_phone"/>
         <result property="licenseNo"       column="license_no"/>
@@ -32,7 +33,7 @@
 
     <sql id="selectOaVehicleVo">
         SELECT vehicle_id, vehicle_code, plate_no, vehicle_type, vehicle_model, vehicle_use, seat_count,
-               owner_dept, driver_name, driver_phone, license_no, purchase_date, inspect_expire,
+               owner_dept, owner_dept_id, driver_name, driver_phone, license_no, purchase_date, inspect_expire,
                insurance_expire, status, flow_instance_id, attachment, del_flag,
                create_by, create_time, update_by, update_time, remark,
                (SELECT f.title FROM flow_data_bus_use_apply f WHERE f.process_instance_id = flow_instance_id LIMIT 1) AS flow_title,
@@ -50,7 +51,9 @@
             <if test="vehicleType != null and vehicleType != ''"> AND vehicle_type = #{vehicleType}</if>
             <if test="vehicleModel != null and vehicleModel != ''"> AND vehicle_model LIKE CONCAT('%', #{vehicleModel}, '%')</if>
             <if test="vehicleUse != null and vehicleUse != ''"> AND vehicle_use LIKE CONCAT('%', #{vehicleUse}, '%')</if>
-            <if test="ownerDept != null and ownerDept != ''"> AND owner_dept LIKE CONCAT('%', #{ownerDept}, '%')</if>
+            <!-- 弹框选部门时按部门ID精确筛选；仅传名称（如旧接口调用/导入校验）时按名称模糊匹配 -->
+            <if test="ownerDeptId != null"> AND owner_dept_id = #{ownerDeptId}</if>
+            <if test="ownerDeptId == null and ownerDept != null and ownerDept != ''"> AND owner_dept LIKE CONCAT('%', #{ownerDept}, '%')</if>
             <if test="driverName != null and driverName != ''"> AND driver_name LIKE CONCAT('%', #{driverName}, '%')</if>
             <if test="status != null and status != ''"> AND status = #{status}</if>
             <if test="params.statusIn != null and params.statusIn.size() > 0">
@@ -76,11 +79,11 @@
     <insert id="insertOaVehicle" parameterType="OaVehicle" useGeneratedKeys="true" keyProperty="vehicleId">
         INSERT INTO biz_oa_vehicle (
             vehicle_code, plate_no, vehicle_type, vehicle_model, vehicle_use, seat_count,
-            owner_dept, driver_name, driver_phone, license_no, purchase_date, inspect_expire,
+            owner_dept, owner_dept_id, driver_name, driver_phone, license_no, purchase_date, inspect_expire,
             insurance_expire, status, flow_instance_id, attachment, create_by, create_time, remark
         ) VALUES (
             #{vehicleCode}, #{plateNo}, #{vehicleType}, #{vehicleModel}, #{vehicleUse}, #{seatCount},
-            #{ownerDept}, #{driverName}, #{driverPhone}, #{licenseNo}, #{purchaseDate}, #{inspectExpire},
+            #{ownerDept}, #{ownerDeptId}, #{driverName}, #{driverPhone}, #{licenseNo}, #{purchaseDate}, #{inspectExpire},
             #{insuranceExpire}, #{status}, #{flowInstanceId}, #{attachment}, #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -95,6 +98,8 @@
             <if test="vehicleUse != null">vehicle_use = #{vehicleUse},</if>
             <if test="seatCount != null">seat_count = #{seatCount},</if>
             <if test="ownerDept != null">owner_dept = #{ownerDept},</if>
+            <if test="ownerDept != null and ownerDept == ''">owner_dept_id = null,</if>
+            <if test="ownerDeptId != null">owner_dept_id = #{ownerDeptId},</if>
             <if test="driverName != null">driver_name = #{driverName},</if>
             <if test="driverPhone != null">driver_phone = #{driverPhone},</if>
             <if test="licenseNo != null">license_no = #{licenseNo},</if>
@@ -119,5 +124,9 @@
         UPDATE biz_oa_vehicle SET del_flag = '2' WHERE vehicle_id IN
         <foreach item="vehicleId" collection="array" open="(" separator="," close=")">#{vehicleId}</foreach>
     </delete>
+
+    <select id="selectDeptIdsByExactName" parameterType="String" resultType="java.lang.Long">
+        SELECT dept_id FROM sys_dept WHERE del_flag = '0' AND dept_name = #{deptName}
+    </select>
 
 </mapper>
