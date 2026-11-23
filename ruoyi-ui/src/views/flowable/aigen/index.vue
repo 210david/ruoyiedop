@@ -460,6 +460,7 @@ const formTypeOptions = [
   { label: '多行文本', value: 'textarea' },
   { label: '数字', value: 'number' },
   { label: '日期', value: 'date' },
+  { label: '时间', value: 'time' },
   { label: '日期时间', value: 'datetime' },
   { label: '下拉选择', value: 'select' },
   { label: '单选框', value: 'radio' },
