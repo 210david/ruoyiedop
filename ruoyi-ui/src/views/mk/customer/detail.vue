@@ -118,6 +118,8 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_contacts }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_contacts">
+              <el-alert v-if="isSkipped('contacts')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <el-table :data="contacts" border size="small" v-if="contacts.length > 0">
                 <el-table-column label="姓名" prop="name" width="100" />
                 <el-table-column label="职位" prop="position" width="120" show-overflow-tooltip />
@@ -140,6 +142,8 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_opportunities }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_opportunities">
+              <el-alert v-if="isSkipped('opportunities')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <el-table :data="opportunities" border size="small" v-if="opportunities.length > 0">
                 <el-table-column label="商机编号" prop="opportunityNo" width="150" />
                 <el-table-column label="商机名称" prop="opportunityName" show-overflow-tooltip />
@@ -162,6 +166,8 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_contracts }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_contracts">
+              <el-alert v-if="isSkipped('contracts')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <el-table :data="contracts" border size="small" v-if="contracts.length > 0">
                 <el-table-column label="合同编号" prop="contractNo" width="150" />
                 <el-table-column label="合同名称" prop="contractName" show-overflow-tooltip />
@@ -183,11 +189,13 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_orders }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_orders">
+              <el-alert v-if="isSkipped('orders')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <el-table :data="orders" border size="small" v-if="orders.length > 0">
                 <el-table-column label="订单编号" prop="orderNo" width="150" />
-                <el-table-column label="订单名称" prop="orderName" show-overflow-tooltip />
+                <el-table-column label="合同编号" prop="contractNo" show-overflow-tooltip />
                 <el-table-column label="订单金额" prop="orderAmount" width="120" align="right"><template #default="scope">￥{{ formatAmount(scope.row.orderAmount) }}</template></el-table-column>
-                <el-table-column label="下单日期" prop="orderDate" width="120" />
+                <el-table-column label="下单日期" prop="createTime" width="160" />
                 <el-table-column label="订单状态" prop="orderStatus" width="100" align="center"><template #default="scope"><dict-tag :options="marketing_order_status" :value="scope.row.orderStatus" /></template></el-table-column>
               </el-table>
               <div class="rd-empty" v-else><svg class="rd-empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg><p class="rd-empty-text">暂无订单</p></div>
@@ -204,6 +212,8 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_interactions }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_interactions">
+              <el-alert v-if="isSkipped('interactions')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <div class="rd-timeline" v-if="interactions.length > 0">
                 <div class="rd-timeline-item" v-for="item in interactions" :key="item.recordId">
                   <div class="rd-timeline-dot rd-timeline-dot--success"></div>
@@ -231,6 +241,8 @@
               <button class="rd-collapse-btn" :class="{ 'is-collapsed': collapsedCards.d_activities }" aria-label="折叠"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.d_activities">
+              <el-alert v-if="isSkipped('activities')" type="warning" :closable="false" show-icon
+                title="当前账号无该模块查询权限，数据未加载（并非无数据）" class="mb10" />
               <el-table :data="activities" border size="small" v-if="activities.length > 0">
                 <el-table-column label="活动名称" prop="activityName" show-overflow-tooltip />
                 <el-table-column label="联系人" prop="contactName" width="100" />
@@ -249,13 +261,7 @@
 
 <script setup name="MkCustomerDetail">
 import { useRoute, useRouter } from 'vue-router'
-import { getCustomer } from '@/api/mk/customer'
-import { listContact } from '@/api/mk/contact'
-import { listOpportunity } from '@/api/mk/opportunity'
-import { listContract } from '@/api/mk/contract'
-import { listOrder } from '@/api/mk/order'
-import { listInteraction } from '@/api/mk/interaction'
-import { listParticipant } from '@/api/mk/participant'
+import { getCustomer, getCustomerRelations } from '@/api/mk/customer'
 import { useDetailCard } from '@/composables/useDetailCard'
 
 const route = useRoute()
@@ -286,6 +292,8 @@ const contracts = ref([])
 const orders = ref([])
 const interactions = ref([])
 const activities = ref([])
+/** 无权限查看的关联模块（后端置为 skipped），用于提示而不是显示“暂无” */
+const skippedModules = ref([])
 
 function levelTagType(val) {
   return { '1': 'danger', '2': 'warning', '3': '', '4': 'info' }[val] || ''
@@ -312,56 +320,30 @@ function getCustomerData() {
   })
 }
 
-function getContacts() {
-  listContact({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    contacts.value = res.rows || []
-  })
-}
-
-function getOpportunities() {
-  listOpportunity({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    opportunities.value = res.rows || []
-  })
-}
-
-function getContracts() {
-  listContract({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    contracts.value = res.rows || []
-  })
-}
-
-function getOrders() {
-  listOrder({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    orders.value = res.rows || []
-  })
-}
-
-function getInteractions() {
-  listInteraction({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    interactions.value = res.rows || []
-  })
-}
-
-function getActivities() {
-  listParticipant({ customerId: customerId, pageNum: 1, pageSize: 999 }).then(res => {
-    activities.value = res.rows || []
+/** 关联数据统一加载：一次请求取回 6 个页签数据，口径与各模块菜单一致 */
+function getRelations() {
+  getCustomerRelations(customerId).then(res => {
+    const data = res.data || {}
+    contacts.value = data.contacts || []
+    opportunities.value = data.opportunities || []
+    contracts.value = data.contracts || []
+    orders.value = data.orders || []
+    interactions.value = data.interactions || []
+    activities.value = data.activities || []
+    skippedModules.value = data.skipped || []
   })
 }
 
 function goBack() { router.push('/mk/customer/list') }
 function handleEdit() { router.push('/mk/customer/list') }
 
-// 监听tab切换时加载对应数据
-watch(activeTab, (val) => {
-  if (val === 'contacts' && contacts.value.length === 0) getContacts()
-  if (val === 'opportunities' && opportunities.value.length === 0) getOpportunities()
-  if (val === 'contracts' && contracts.value.length === 0) getContracts()
-  if (val === 'orders' && orders.value.length === 0) getOrders()
-  if (val === 'interactions' && interactions.value.length === 0) getInteractions()
-  if (val === 'activities' && activities.value.length === 0) getActivities()
-})
+/** 模块是否因无权限而未加载 */
+function isSkipped(name) {
+  return skippedModules.value.includes(name)
+}
 
 getCustomerData()
+getRelations()
 </script>
 
 <style scoped>
