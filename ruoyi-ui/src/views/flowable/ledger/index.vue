@@ -740,7 +740,9 @@ function addField(f) {
   editColumns.value.push({
     field: f.field, source: f.source, label: f.label || f.field, width: 140,
     sortable: false, sortOrder: 'desc', filterable: false, align: 'left',
-    format: f.source === 'sys' && String(f.field).endsWith('Time') ? 'datetime' : ''
+    format: f.type && ['date', 'time', 'datetime'].includes(f.type)
+      ? f.type
+      : (f.source === 'sys' && String(f.field).endsWith('Time') ? 'datetime' : '')
   })
 }
 
