@@ -29,4 +29,12 @@ public interface MkActivityParticipantMapper
 
     /** P3-15: 统计活动报名人数 */
     public int countByActivityId(@Param("activityId") Long activityId);
+
+    /**
+     * 按客户查询活动参与记录。
+     * 匹配规则：优先 contact_id 归属客户；contact_id 为空或联系人已删除时，用 company_name 兜底。
+     * 不再用 company_name 单条件相等匹配，避免同名客户串数据。
+     */
+    public List<MkActivityParticipant> selectParticipantListByCustomer(@Param("customerId") Long customerId);
+
 }
