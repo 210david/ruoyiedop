@@ -39,6 +39,9 @@ public class AiKnowledgeDoc extends BaseEntity
     @Excel(name = "切片数")
     private Integer chunkCount;
 
+    /** 关联功能入口菜单ID（P2：问答命中该文档时直接给出入口） */
+    private Long navMenuId;
+
     public Long getDocId() { return docId; }
     public void setDocId(Long docId) { this.docId = docId; }
     public String getModule() { return module; }
@@ -53,4 +56,6 @@ public class AiKnowledgeDoc extends BaseEntity
     public void setStatus(String status) { this.status = status; }
     public Integer getChunkCount() { return chunkCount; }
     public void setChunkCount(Integer chunkCount) { this.chunkCount = chunkCount; }
+    public Long getNavMenuId() { return navMenuId; }
+    public void setNavMenuId(Long navMenuId) { this.navMenuId = navMenuId; }
 }

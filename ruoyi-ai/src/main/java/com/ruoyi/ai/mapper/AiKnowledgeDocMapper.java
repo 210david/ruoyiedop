@@ -45,6 +45,15 @@ public interface AiKnowledgeDocMapper
     /** 按文档加载全部切片（原文查看用，按切片顺序） */
     public List<java.util.Map<String, Object>> selectChunksByDocId(@Param("docId") Long docId);
 
+    /** 检索结果附带文档绑定的功能入口（命名入口直连用） */
+    public List<java.util.Map<String, Object>> selectChunksWithNav(@Param("module") String module);
+
     /** 按文档名称精确查找（来源无docId时兜底） */
     public AiKnowledgeDoc selectDocByName(@Param("docName") String docName);
+
+    /** 取文档绑定的功能入口菜单ID（未绑定返回 null） */
+    public Long selectNavMenuIdByDocId(@Param("docId") Long docId);
+
+    /** 设置文档关联的功能入口菜单（navMenuId 传 null 表示清空绑定） */
+    public int updateNavMenuId(@Param("docId") Long docId, @Param("navMenuId") Long navMenuId);
 }

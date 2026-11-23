@@ -10,12 +10,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import com.ruoyi.ai.domain.AiKnowledgeDoc;
 import com.ruoyi.ai.domain.AiQaHistory;
 import com.ruoyi.ai.service.IAiKnowledgeService;
+import com.ruoyi.ai.service.IAiNavService;
 import com.ruoyi.ai.mapper.AiKnowledgeDocMapper;
 import com.ruoyi.ai.mapper.AiQaHistoryMapper;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.utils.file.FileUploadUtils;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.system.service.ISysMenuService;
 import com.ruoyi.common.config.RuoYiConfig;
 
 /**
@@ -37,6 +40,12 @@ public class AiKnowledgeController extends BaseController
     @Autowired
     private AiQaHistoryMapper historyMapper;
 
+    @Autowired
+    private IAiNavService navService;
+
+    @Autowired
+    private ISysMenuService menuService;
+
     /**
      * 查询知识库文档列表
      */
@@ -54,9 +63,48 @@ public class AiKnowledgeController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('ai:knowledge:add')")
     @PostMapping("/upload")
-    public AjaxResult upload(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "platform") String module)
+    public AjaxResult upload(@RequestParam("file") MultipartFile file,
+                             @RequestParam(defaultValue = "platform") String module,
+                             @RequestParam(required = false) Long navMenuId)
     {
-        return AjaxResult.success("上传解析成功", knowledgeService.uploadAndParse(file, module));
+        Long docId = knowledgeService.uploadAndParse(file, module);
+        // P2：上传时可直接指定关联的功能入口
+        if (docId != null && navMenuId != null)
+        {
+            docMapper.updateNavMenuId(docId, navMenuId);
+        }
+        return AjaxResult.success("上传解析成功", docId);
+    }
+
+    /**
+     * 设置/清除文档关联的功能入口（P2 核心）
+     *
+     * 说明：上传手册时选好归属页面，问答命中该文档即可确定性给出入口，不依赖模型猜测。
+     * navMenuId 传空表示解除绑定。
+     */
+    @PreAuthorize("@ss.hasPermi('ai:knowledge:nav')")
+    @PutMapping("/nav/{docId}")
+    public AjaxResult updateNav(@PathVariable Long docId,
+                                @RequestParam(required = false) Long navMenuId)
+    {
+        AiKnowledgeDoc doc = docMapper.selectDocById(docId);
+        if (doc == null)
+        {
+            return AjaxResult.error("文档不存在或已被删除");
+        }
+        if (navMenuId != null)
+        {
+            com.ruoyi.common.core.domain.entity.SysMenu menu = menuService.selectMenuById(navMenuId);
+            if (menu == null)
+            {
+                return AjaxResult.error("目标菜单不存在（menu_id=" + navMenuId + "）");
+            }
+            if (!"C".equals(menu.getMenuType()) || StringUtils.isEmpty(menu.getComponent()))
+            {
+                return AjaxResult.error("只能关联「菜单」类型且已配置组件的页面");
+            }
+        }
+        return toAjax(docMapper.updateNavMenuId(docId, navMenuId));
     }
 
     /**
@@ -87,6 +135,22 @@ public class AiKnowledgeController extends BaseController
         }
         String module = body.get("module");
         Map<String, Object> result = knowledgeService.answer(module, question);
+        // AI导航：优先按来源文档绑定的功能入口直连，未绑定则走语义解析（失败静默降级）
+        try
+        {
+            @SuppressWarnings("unchecked")
+            java.util.List<Map<String, Object>> srcs =
+                    (java.util.List<Map<String, Object>>) result.get("sources");
+            java.util.List<Map<String, Object>> actions = navService.resolveBySources(question, srcs);
+            if (!actions.isEmpty())
+            {
+                result.put("actions", actions);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.warn("AI导航解析失败（不影响回答）: {}", e.getMessage());
+        }
         // 异步落库失败不影响回答返回；保存历史按用户隔离，仅本人可查
         try
         {
@@ -100,6 +164,9 @@ public class AiKnowledgeController extends BaseController
             h.setSourcesJson(sources == null ? "[]" : com.alibaba.fastjson2.JSON.toJSONString(sources));
             Object mode = result.get("retrievalMode");
             h.setRetrievalMode(mode == null ? "" : mode.toString());
+            // 导航入口单独落库，历史回放仍可点击（跳转前前端会再校验权限）
+            Object navActions = result.get("actions");
+            h.setNavActionsJson(navActions == null ? "" : com.alibaba.fastjson2.JSON.toJSONString(navActions));
             historyMapper.insertHistory(h);
         }
         catch (Exception e)
@@ -156,6 +223,8 @@ public class AiKnowledgeController extends BaseController
         info.put("fileType", doc.getFileType());
         info.put("status", doc.getStatus());
         info.put("chunkCount", doc.getChunkCount());
+        // 关联功能入口：前端据此展示"已绑定哪个页面"
+        info.put("navMenuId", doc.getNavMenuId());
         info.put("createBy", doc.getCreateBy());
         info.put("createTime", doc.getCreateTime());
         return AjaxResult.success(info);
@@ -180,6 +249,7 @@ public class AiKnowledgeController extends BaseController
         info.put("fileType", doc.getFileType());
         info.put("status", doc.getStatus());
         info.put("chunkCount", doc.getChunkCount());
+        info.put("navMenuId", doc.getNavMenuId());
         info.put("createBy", doc.getCreateBy());
         info.put("createTime", doc.getCreateTime());
         return AjaxResult.success(info);

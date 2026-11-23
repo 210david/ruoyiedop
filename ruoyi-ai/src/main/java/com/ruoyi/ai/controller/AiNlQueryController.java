@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.ruoyi.ai.domain.AiNlqHistory;
+import com.ruoyi.ai.service.IAiNavService;
 import com.ruoyi.ai.service.IAiNlQueryService;
 import com.ruoyi.ai.service.IAiToolRouteService;
 import com.ruoyi.ai.mapper.AiNlqHistoryMapper;
@@ -31,6 +32,9 @@ public class AiNlQueryController extends BaseController
     @Autowired
     private AiNlqHistoryMapper historyMapper;
 
+    @Autowired
+    private IAiNavService navService;
+
     /**
      * 自然语言查询（管理层权限）：先工具直答，未命中NL2SQL兜底
      * 完成后自动保存历史记录（按用户隔离，落库失败不影响查询结果）
@@ -45,6 +49,19 @@ public class AiNlQueryController extends BaseController
             return AjaxResult.error("请输入问题");
         }
         Map<String, Object> result = toolRouteService.query(question);
+        // AI导航：解析可点击的系统菜单入口（失败静默降级，不影响查询结果）
+        try
+        {
+            java.util.List<Map<String, Object>> actions = navService.resolve(question);
+            if (!actions.isEmpty())
+            {
+                result.put("actions", actions);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.warn("AI导航解析失败（不影响查询）: {}", e.getMessage());
+        }
         // 异步落库失败不影响查询返回；保存历史按用户隔离，仅本人可查
         try
         {
@@ -61,6 +78,9 @@ public class AiNlQueryController extends BaseController
             snapshot.put("sql", result.get("sql"));
             snapshot.put("emptyReason", result.get("emptyReason"));
             h.setResultJson(com.alibaba.fastjson2.JSON.toJSONString(snapshot));
+            // 导航入口单独落库，历史回放仍可点击（跳转前前端会再校验权限）
+            Object navActions = result.get("actions");
+            h.setNavActionsJson(navActions == null ? "" : com.alibaba.fastjson2.JSON.toJSONString(navActions));
             h.setStatus(result.get("error") == null ? "0" : "1");
             historyMapper.insertHistory(h);
         }
