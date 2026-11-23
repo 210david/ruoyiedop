@@ -1992,7 +1992,7 @@ if (isStandaloneLaunch.value) {
 
 <script>
 import { defineComponent, h, resolveComponent } from 'vue';
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker } from 'element-plus';
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElTimePicker } from 'element-plus';
 import FormBrowse from '@/components/FormBrowse/index.vue';
 
 /** 动态字段控件：按 rtype 渲染对应 Element 控件（布局样式渲染共用） */
