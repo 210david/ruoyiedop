@@ -2,12 +2,14 @@ import { defineConfig, loadEnv } from 'vite'
 import path from 'path'
 import createVitePlugins from './vite/plugins'
 
-const baseUrl = 'http://127.0.0.1:81' // 后端接口
+// 后端接口：默认 http://127.0.0.1:81，可用环境变量 VITE_PROXY_TARGET 覆盖（如本机端口冲突时指向 8082）
+const defaultBaseUrl = 'http://127.0.0.1:81'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd())
   const { VITE_APP_ENV } = env
+  const baseUrl = process.env.VITE_PROXY_TARGET || defaultBaseUrl
   return {
     // 部署生产环境和开发环境下的URL。
     // 默认情况下，vite 会假设你的应用是被部署在一个域名的根路径上
@@ -42,7 +44,8 @@ export default defineConfig(({ mode, command }) => {
     },
     // vite 相关配置
     server: {
-      port: 8081,
+      // 默认 8081，可用环境变量 VITE_DEV_PORT 覆盖（如本机端口冲突时改用 82）
+      port: Number(process.env.VITE_DEV_PORT) || 8081,
       host: true,
       open: true,
       proxy: {

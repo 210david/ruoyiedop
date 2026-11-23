@@ -132,11 +132,19 @@ CREATE PROCEDURE `sp_flow_ledger_ext_backfill`()
 BEGIN
   DECLARE done INT DEFAULT 0;
   DECLARE tname VARCHAR(64);
+  -- 引擎表流程实例ID列的实际字符集/排序规则（旧库常为 utf8mb3_bin），
+  -- 关联时必须按此转换，否则会报 COLLATION is not valid for CHARACTER SET
+  DECLARE ext_charset VARCHAR(32) DEFAULT 'utf8mb4';
+  DECLARE ext_collation VARCHAR(32) DEFAULT 'utf8mb4_general_ci';
   DECLARE cur CURSOR FOR
     SELECT TABLE_NAME FROM information_schema.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE 'flow\_data\_%' AND TABLE_TYPE = 'BASE TABLE'
        AND TABLE_NAME NOT LIKE '%\_dt%';
   DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+  SELECT IFNULL(MAX(CHARACTER_SET_NAME), 'utf8mb4'), IFNULL(MAX(COLLATION_NAME), 'utf8mb4_general_ci')
+    INTO ext_charset, ext_collation
+    FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ACT_HI_PROCINST' AND COLUMN_NAME = 'ID_';
   OPEN cur;
   read_loop: LOOP
     FETCH cur INTO tname;
@@ -150,7 +158,7 @@ BEGIN
         '       p.START_USER_ID_, u.dept_id, p.START_TIME_, NOW() ',
         '  FROM `', tname, '` d ',
         '  JOIN flow_form f ON f.table_name = ''', tname, ''' AND f.del_flag = ''0'' ',
-        '  JOIN ACT_HI_PROCINST p ON p.ID_ COLLATE utf8mb4_general_ci = CONVERT(d.process_instance_id USING utf8mb4) COLLATE utf8mb4_general_ci ',
+        '  JOIN ACT_HI_PROCINST p ON p.ID_ = CONVERT(d.process_instance_id USING ', ext_charset, ') COLLATE ', ext_collation, ' ',
         '  LEFT JOIN sys_user u ON u.user_id = CAST(p.START_USER_ID_ AS UNSIGNED) ',
         ' WHERE d.process_instance_id IS NOT NULL');
       PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;

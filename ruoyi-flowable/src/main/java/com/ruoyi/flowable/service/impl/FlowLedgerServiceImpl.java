@@ -118,6 +118,19 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
     private static final long TABLE_COLUMN_CACHE_TTL_MS = 60_000L;
     private static final Map<String, TableColumnCache> TABLE_COLUMN_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * 引擎表流程实例ID列的字符集白名单。排序规则取探测到的实际值（utf8mb3_bin /
+     * utf8mb4_general_ci 等），只做格式校验，不写死具体排序规则。
+     */
+    private static final Set<String> INSTANCE_CHARSETS = new HashSet<>(Arrays.asList("utf8mb3", "utf8mb4", "utf8"));
+
+    /** 字符集/排序规则名称格式白名单（防注入） */
+    private static final Pattern COLLATION_PATTERN = Pattern.compile("^[A-Za-z0-9_]{1,50}$");
+
+    private static final long INSTANCE_COLLATION_CACHE_TTL_MS = 5 * 60_000L;
+    private static volatile String[] INSTANCE_COLLATION_CACHE;
+    private static volatile long INSTANCE_COLLATION_EXPIRE_AT;
+
     private static class TableColumnCache
     {
         private final long expireAt;
@@ -1095,15 +1108,38 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
 
     private QuerySql buildQuery(LedgerContext ctx, Map<String, String> params, boolean paged, boolean includeStatus)
     {
-        // 引擎表与业务表可能使用不同排序规则（utf8mb4_general_ci / utf8mb4_0900_ai_ci），
-        // 关联时显式统一 COLLATE，避免 Illegal mix of collations
-        String instanceRef = "CONVERT(d.process_instance_id USING utf8mb4) COLLATE utf8mb4_general_ci";
+        // 引擎表与业务表可能使用不同字符集/排序规则（utf8mb3_bin / utf8mb4_general_ci 等），
+        // 关联时统一 CONVERT 到「引擎流程实例ID列」的实际字符集再 COLLATE，
+        // 避免 Illegal mix of collations，以及把 utf8mb4 排序规则强加到 utf8mb3 列时
+        // 报 COLLATION 'utf8mb4_general_ci' is not valid for CHARACTER SET 'utf8mb3'
+        String[] engineCharset = resolveInstanceCollation();
+        String instanceRef;
+        String engineIdRef;
+        String extIdRef;
+        String requestIdRef;
+        if (engineCharset == null)
+        {
+            // 探测失败（引擎表缺失/无权限）时沿用历史写法，兼容 utf8mb4 库
+            instanceRef = "CONVERT(d.process_instance_id USING utf8mb4) COLLATE utf8mb4_general_ci";
+            engineIdRef = "p.ID_ COLLATE utf8mb4_general_ci";
+            extIdRef = "e.instance_id COLLATE utf8mb4_general_ci";
+            requestIdRef = "r.instance_id COLLATE utf8mb4_general_ci";
+        }
+        else
+        {
+            // 引擎侧不做 CONVERT，保持 p.ID_ 原样以保留主键索引；其余三侧转成引擎字符集
+            String engineCollation = " COLLATE " + engineCharset[1];
+            instanceRef = "CONVERT(d.process_instance_id USING " + engineCharset[0] + ")" + engineCollation;
+            engineIdRef = "p.ID_";
+            extIdRef = "CONVERT(e.instance_id USING " + engineCharset[0] + ")" + engineCollation;
+            requestIdRef = "CONVERT(r.instance_id USING " + engineCharset[0] + ")" + engineCollation;
+        }
         String from = " FROM `" + ctx.ledger.getTableName() + "` d"
-                + " LEFT JOIN ACT_HI_PROCINST p ON p.ID_ COLLATE utf8mb4_general_ci = " + instanceRef
-                + " LEFT JOIN flow_instance_ext e ON e.instance_id COLLATE utf8mb4_general_ci = " + instanceRef
+                + " LEFT JOIN ACT_HI_PROCINST p ON " + engineIdRef + " = " + instanceRef
+                + " LEFT JOIN flow_instance_ext e ON " + extIdRef + " = " + instanceRef
                 + " LEFT JOIN sys_user u ON u.user_id = CAST(p.START_USER_ID_ AS UNSIGNED)"
                 + " LEFT JOIN sys_dept dept ON dept.dept_id = " + DEPT_SQL
-                + " LEFT JOIN flow_request r ON r.instance_id COLLATE utf8mb4_general_ci = " + instanceRef;
+                + " LEFT JOIN flow_request r ON " + requestIdRef + " = " + instanceRef;
         // 仅统计有效流程数据：业务行必须关联到流程实例（实例被删除/清空的历史脏数据不进入台账）
         StringBuilder where = new StringBuilder(" WHERE d.process_instance_id IS NOT NULL AND p.ID_ IS NOT NULL");
         List<Object> args = new ArrayList<>();
@@ -1395,6 +1431,56 @@ public class FlowLedgerServiceImpl implements IFlowLedgerService
             list.add(m);
         }
         return list;
+    }
+
+    /**
+     * 探测 Flowable 引擎表流程实例ID列的实际字符集与排序规则。
+     *
+     * <p>历史部署的引擎表可能由 Flowable 自动建表时为 utf8mb3/utf8_bin（MySQL 8 下
+     * 显示为 utf8mb3），而业务表为 utf8mb4_general_ci。JOIN 时若把 utf8mb4 的排序规则
+     * 强加到 utf8mb3 列上，MySQL 会直接报
+     * "COLLATION 'utf8mb4_general_ci' is not valid for CHARACTER SET 'utf8mb3'"。
+     * 因此按库的实际定义动态生成 CONVERT/COLLATE 片段。
+     *
+     * @return {字符集, 排序规则}；无法探测时返回 null，由调用方走兼容默认值
+     */
+    private String[] resolveInstanceCollation()
+    {
+        long now = System.currentTimeMillis();
+        String[] cached = INSTANCE_COLLATION_CACHE;
+        if (cached != null && INSTANCE_COLLATION_EXPIRE_AT > now)
+        {
+            return cached;
+        }
+        String[] result = null;
+        try
+        {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT CHARACTER_SET_NAME, COLLATION_NAME FROM information_schema.COLUMNS "
+                            + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ACT_HI_PROCINST' "
+                            + "AND COLUMN_NAME = 'ID_'");
+            if (!rows.isEmpty())
+            {
+                Map<String, Object> row = rows.get(0);
+                String charset = row.get("CHARACTER_SET_NAME") == null ? null
+                        : String.valueOf(row.get("CHARACTER_SET_NAME"));
+                String collation = row.get("COLLATION_NAME") == null ? null
+                        : String.valueOf(row.get("COLLATION_NAME"));
+                // 只接受白名单内的字符集/排序规则格式，避免拼接非法值
+                if (charset != null && collation != null && INSTANCE_CHARSETS.contains(charset)
+                        && COLLATION_PATTERN.matcher(collation).matches())
+                {
+                    result = new String[] { charset, collation };
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("探测引擎表字符集失败，回退 utf8mb4_general_ci：{}", e.getMessage());
+        }
+        INSTANCE_COLLATION_CACHE = result;
+        INSTANCE_COLLATION_EXPIRE_AT = now + INSTANCE_COLLATION_CACHE_TTL_MS;
+        return result;
     }
 
     private Set<String> resolveTableColumns(String tableName)
