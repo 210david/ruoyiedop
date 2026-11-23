@@ -602,11 +602,19 @@ function openVehiclePicker() {
   vehiclePickerRef.value.open(form.value.vehicleId, form.value.plateNo)
 }
 
-/** 选择车辆后回填车牌号与车辆ID */
+/** 选择车辆后回填车牌号与车辆ID，并在联系人空缺时带出车辆默认驾驶员 */
 function onVehiclePicked(vehicle) {
   form.value.vehicleId = vehicle.vehicleId
   form.value.plateNo = vehicle.plateNo
   proxy.$refs['insuranceRef']?.validateField('plateNo')
+  // 联系人/电话未填时，用车辆台账的默认驾驶员信息补全，减少重复录入
+  if (!form.value.contactName || !form.value.contactPhone) {
+    getOaVehicle(vehicle.vehicleId).then(res => {
+      const v = res.data || {}
+      if (!form.value.contactName && v.driverName) form.value.contactName = v.driverName
+      if (!form.value.contactPhone && v.driverPhone) form.value.contactPhone = v.driverPhone
+    }).catch(() => {})
+  }
 }
 
 /** 清除已选车辆 */
