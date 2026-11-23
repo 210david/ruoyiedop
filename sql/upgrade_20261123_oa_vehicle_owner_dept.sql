@@ -15,13 +15,13 @@ ALTER TABLE biz_oa_vehicle
 
 -- ---------- 2. 存量数据回填（按名称唯一匹配的部门） ----------
 UPDATE biz_oa_vehicle v
-JOIN sys_dept d ON TRIM(v.owner_dept) = d.dept_name AND d.del_flag = '0'
+JOIN sys_dept d ON TRIM(v.owner_dept) COLLATE utf8mb4_general_ci = d.dept_name COLLATE utf8mb4_general_ci AND d.del_flag = '0'
 SET v.owner_dept_id = d.dept_id
 WHERE v.owner_dept IS NOT NULL AND v.owner_dept <> '' AND v.owner_dept_id IS NULL;
 
 -- ---------- 3. 校验：名称存在但未能匹配到唯一部门的记录（需人工处理） ----------
 SELECT v.vehicle_id, v.plate_no, v.owner_dept,
-       (SELECT COUNT(*) FROM sys_dept d WHERE TRIM(v.owner_dept) = d.dept_name AND d.del_flag = '0') AS match_cnt
+       (SELECT COUNT(*) FROM sys_dept d WHERE TRIM(v.owner_dept) COLLATE utf8mb4_general_ci = d.dept_name COLLATE utf8mb4_general_ci AND d.del_flag = '0') AS match_cnt
 FROM biz_oa_vehicle v
 WHERE v.del_flag = '0' AND v.owner_dept IS NOT NULL AND v.owner_dept <> ''
 ORDER BY match_cnt ASC, v.vehicle_id;
