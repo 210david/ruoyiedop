@@ -136,4 +136,47 @@ VALUES (#{materialId}, #{warehouseId}, #{locationId}, #{batchNo}, #{productionDa
         <foreach item="inventoryId" collection="array" open="(" separator="," close=")">#{inventoryId}</foreach>
     </delete>
 
+    <!--
+      批量取成本台账结存金额（只读财务 fin_inventory_cost）。
+      【调用前提】InventoryCostAvailability 已判定该表存在，缺表时本语句会报错。
+      【维度口径】物料+仓库+库位+批次，与台账唯一索引口径一致；批次空串参与匹配。
+    -->
+    <select id="selectCostByDimension" resultType="com.ruoyi.wms.domain.vo.WmsInventoryCostVO">
+        SELECT c.material_id   AS materialId,
+               c.warehouse_id  AS warehouseId,
+               c.location_id   AS locationId,
+               c.batch_no      AS batchNo,
+               c.qty           AS qty,
+               c.unit_cost     AS unitCost,
+               c.total_cost    AS totalCost
+        FROM fin_inventory_cost c
+        WHERE c.del_flag = '0'
+          AND (
+          <foreach item="inv" collection="list" separator=" OR ">
+              (c.material_id = #{inv.materialId}
+               AND c.warehouse_id = #{inv.warehouseId}
+               AND c.location_id = IFNULL(#{inv.locationId}, 0)
+               AND c.batch_no = IFNULL(#{inv.batchNo}, ''))
+          </foreach>
+          )
+    </select>
+
+    <!-- 批量取物料取价依据：入库加权均价（含税）+ 物料参考成本价（不含税） -->
+    <select id="selectMaterialPrice" resultType="com.ruoyi.wms.domain.vo.WmsMaterialPriceVO">
+        SELECT m.material_id AS materialId,
+               m.cost_price  AS costPrice,
+               p.avg_price   AS avgPrice
+        FROM wms_material m
+        LEFT JOIN (
+            SELECT d.material_id,
+                   SUM(d.putaway_qty * d.unit_price) / NULLIF(SUM(d.putaway_qty), 0) AS avg_price
+            FROM wms_inbound_order_detail d
+            WHERE d.del_flag = '0' AND d.putaway_qty > 0 AND d.unit_price > 0
+            GROUP BY d.material_id
+        ) p ON m.material_id = p.material_id
+        WHERE m.del_flag = '0'
+          AND m.material_id IN
+        <foreach item="materialId" collection="materialIds" open="(" separator="," close=")">#{materialId}</foreach>
+    </select>
+
 </mapper>

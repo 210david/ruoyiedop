@@ -12,14 +12,22 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.wms.domain.WmsInventory;
 import com.ruoyi.wms.service.IWmsInventoryService;
+import com.ruoyi.wms.service.impl.WmsInventoryAmountService;
+import com.ruoyi.common.utils.SecurityUtils;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/wms/inventory")
 public class WmsInventoryController extends BaseController
 {
+    /** 库存金额查看权限（金额属敏感数据，与库存列表权限分离） */
+    private static final String PERMI_AMOUNT = "wms:inventory:amount";
+
     @Autowired
     private IWmsInventoryService wmsInventoryService;
+
+    @Autowired
+    private WmsInventoryAmountService amountService;
 
     @PreAuthorize("@ss.hasPermi('wms:inventory:list')")
     @GetMapping("/list")
@@ -27,7 +35,24 @@ public class WmsInventoryController extends BaseController
     {
         startPage();
         List<WmsInventory> list = wmsInventoryService.selectInventoryList(inventory);
+        fillAmountIfPermitted(list);
         return getDataTable(list);
+    }
+
+    /**
+     * 金额回填（仅 Web 端且具备金额权限时执行）
+     *
+     * <p>【为什么放在 Controller 而不是 Service】
+     * selectInventoryList 同时被 OpenWmsController 与 MCP 服务账号复用。
+     * 若在 Service 内回填金额，采购价/成本会顺着对外开放通道泄露。
+     * 因此金额只在本 Web Controller 按权限点补填，对 OpenAPI 保持零暴露。</p>
+     */
+    private void fillAmountIfPermitted(List<WmsInventory> list)
+    {
+        if (SecurityUtils.hasPermi(PERMI_AMOUNT))
+        {
+            amountService.fillAmount(list);
+        }
     }
 
     @Log(title = "库存查询", businessType = BusinessType.EXPORT)

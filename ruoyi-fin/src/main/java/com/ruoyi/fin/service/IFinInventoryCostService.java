@@ -45,6 +45,19 @@ public interface IFinInventoryCostService
     Map<String, Object> carryOutbound();
 
     /**
+     * 盘点差异成本调整（扫描已完成盘点单的盘盈/盘亏）
+     *
+     * <p>WMS 盘点审批只调整库存数量，不联动成本台账，会导致盘亏后台账数量不减、
+     * total_cost 虚高，期末存货计价与总账对不上。</p>
+     *
+     * <p>口径：盘盈按单位成本增加；盘亏按当前单位成本冲减，数量不足截断到 0，
+     * 均记入 fin_cost_carry_forward（source_type='stocktake'）保证幂等。</p>
+     *
+     * @return 处理结果，含 success/skip/fail/gain/loss
+     */
+    Map<String, Object> adjustStockTakeDiff();
+
+    /**
      * 期末存货计价汇总（资产负债表取数）
      *
      * @param period 会计期间

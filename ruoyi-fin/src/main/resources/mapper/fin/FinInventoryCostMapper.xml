@@ -121,9 +121,9 @@
             last_in_date     = #{lastInDate},
             version          = version + 1,
             update_by        = #{updateBy},
-            update_time      = sysdate(),
-            <if test="inboundOrderId != null">inbound_order_id = #{inboundOrderId},</if>
-            <if test="remark != null">remark = #{remark},</if>
+            update_time      = sysdate()
+            <if test="inboundOrderId != null">, inbound_order_id = #{inboundOrderId}</if>
+            <if test="remark != null">, remark = #{remark}</if>
         WHERE cost_id = #{costId}
           AND version = #{version}
     </update>
