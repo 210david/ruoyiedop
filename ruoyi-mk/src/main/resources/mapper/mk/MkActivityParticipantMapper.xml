@@ -46,7 +46,19 @@
             <if test="position != null and position != ''"> AND p.position LIKE CONCAT('%', #{position}, '%')</if>
             <if test="params.beginSignTime != null and params.beginSignTime != ''"> AND p.sign_time &gt;= #{params.beginSignTime}</if>
             <if test="params.endSignTime != null and params.endSignTime != ''"> AND p.sign_time &lt;= #{params.endSignTime}</if>
-            <if test="customerId != null"> AND p.company_name = (SELECT customer_name FROM mk_customer WHERE customer_id = #{customerId})</if>
+            <!-- 按客户过滤：contact_id 归属优先；contact_id 为空时用公司名兜底，且仅当该名称对应唯一客户，避免同名串数据 -->
+            <if test="customerId != null">
+                AND (
+                    p.contact_id IN (SELECT xc.contact_id FROM mk_contact xc WHERE xc.customer_id = #{customerId})
+                    OR (
+                        p.contact_id IS NULL
+                        AND p.company_name = (SELECT xk.customer_name FROM mk_customer xk WHERE xk.customer_id = #{customerId})
+                        AND (SELECT COUNT(*) FROM mk_customer xk2
+                             WHERE xk2.customer_name = (SELECT xk3.customer_name FROM mk_customer xk3 WHERE xk3.customer_id = #{customerId})
+                               AND xk2.del_flag = '0') = 1
+                    )
+                )
+            </if>
         </where>
         ORDER BY p.participant_id DESC
     </select>
@@ -126,6 +138,25 @@
     <!-- P3-15: 统计活动报名人数 -->
     <select id="countByActivityId" resultType="int">
         SELECT COUNT(1) FROM mk_activity_participant WHERE activity_id = #{activityId}
+    </select>
+
+
+    <!-- 按客户查询参与记录：contact_id 优先归属，company_name 兜底（避免同名客户串数据） -->
+    <select id="selectParticipantListByCustomer" parameterType="Long" resultMap="MkActivityParticipantResult">
+        <include refid="selectParticipantVo"/>
+        <where>
+            (
+                p.contact_id IN (SELECT ct.contact_id FROM mk_contact ct WHERE ct.customer_id = #{customerId})
+                OR (
+                    p.contact_id IS NULL
+                    AND p.company_name = (SELECT c.customer_name FROM mk_customer c WHERE c.customer_id = #{customerId})
+                    AND (SELECT COUNT(*) FROM mk_customer c2
+                         WHERE c2.customer_name = (SELECT c3.customer_name FROM mk_customer c3 WHERE c3.customer_id = #{customerId})
+                           AND c2.del_flag = '0') = 1
+                )
+            )
+        </where>
+        ORDER BY p.participant_id DESC
     </select>
 
 </mapper>

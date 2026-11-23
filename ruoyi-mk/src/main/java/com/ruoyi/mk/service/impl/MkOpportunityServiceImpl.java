@@ -26,6 +26,9 @@ public class MkOpportunityServiceImpl implements IMkOpportunityService
     private MkOpportunityMapper mkOpportunityMapper;
 
     @Autowired
+    private MkCustomerMapper mkCustomerMapper;
+
+    @Autowired
     private IMkNumberRuleService mkNumberRuleService;
 
     @Autowired
@@ -73,6 +76,16 @@ public class MkOpportunityServiceImpl implements IMkOpportunityService
             throw new ServiceException("请填写预计成交日期");
         }
         opportunity.setDelFlag("0");
+        // 归属补全：负责人/部门为空时继承客户负责人，避免单据在数据权限下不可见
+        if (opportunity.getCustomerId() != null && (opportunity.getUserId() == null || opportunity.getDeptId() == null))
+        {
+            MkCustomer owner = mkCustomerMapper.selectCustomerById(opportunity.getCustomerId());
+            if (owner != null)
+            {
+                if (opportunity.getUserId() == null) { opportunity.setUserId(owner.getUserId()); }
+                if (opportunity.getDeptId() == null) { opportunity.setDeptId(owner.getDeptId()); }
+            }
+        }
         if (opportunity.getOpportunityStatus() == null)
         {
             opportunity.setOpportunityStatus("0");
