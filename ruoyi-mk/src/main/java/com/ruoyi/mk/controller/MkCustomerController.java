@@ -41,6 +41,19 @@ public class MkCustomerController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 客户关联数据（详情卡片专用：联系人/商机/合同/订单/互动记录/参与活动）
+     *
+     * 权限口径：以客户列表的可见性为准；关联单据不再叠加单据级数据权限，
+     * 各模块按当前用户的 list 权限返回，无权限时为空并置于 skipped。
+     */
+    @PreAuthorize("@ss.hasPermi('marketing:customer:query')")
+    @GetMapping("/relations/{customerId}")
+    public AjaxResult relations(@PathVariable Long customerId)
+    {
+        return success(mkCustomerService.selectCustomerRelations(customerId));
+    }
+
     /** 公海客户列表 */
     @PreAuthorize("@ss.hasAnyPermi('marketing:customer:pool,marketing:customer:list')")
     @GetMapping("/publicPool")
