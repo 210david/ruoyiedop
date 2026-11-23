@@ -1,5 +1,5 @@
 import { defineComponent, h, resolveComponent } from 'vue'
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElButton } from 'element-plus'
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElTimePicker, ElButton } from 'element-plus'
 
 /** 动态字段控件（审批页复用）：按 rtype 渲染对应 Element 控件 */
 export const DynField = defineComponent({
@@ -26,6 +26,7 @@ export const DynField = defineComponent({
         case 'textarea': return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set, type: 'textarea', rows: f.rows || 4 })
         case 'number': return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, style: 'width:100%' })
         case 'date': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: 'YYYY-MM-DD', placeholder: '选择日期', style: 'width:100%' })
+        case 'time': return h(ElTimePicker, { modelValue: v, 'onUpdate:modelValue': set, valueFormat: 'HH:mm:ss', format: 'HH:mm', placeholder: '选择时间', style: 'width:100%' })
         case 'datetime': return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'datetime', valueFormat: 'YYYY-MM-DD HH:mm:ss', placeholder: '选择日期时间', style: 'width:100%' })
         default: return h(ElInput, { modelValue: v, 'onUpdate:modelValue': set })
       }

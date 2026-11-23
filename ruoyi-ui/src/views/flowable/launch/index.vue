@@ -826,9 +826,9 @@ function normalizeField(f) {
   let t = f.type;
   if (f.form) {
     if (['check', 'browse', 'attach', 'select', 'textarea', 'radio', 'checkbox', 'switch', 'rate'].includes(f.form)) t = f.form;
-    else if (f.form === 'date' || f.form === 'datetime') t = f.form;
+    else if (f.form === 'date' || f.form === 'time' || f.form === 'datetime') t = f.form;
     else if (f.form === 'number') t = 'number';
-    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'date' ? 'date' : f.dtype === 'float' || f.dtype === 'int' ? 'number' : 'text';
+    else t = f.dtype === 'datetime' ? 'datetime' : f.dtype === 'time' ? 'time' : f.dtype === 'date' ? 'date' : f.dtype === 'float' || f.dtype === 'int' ? 'number' : 'text';
   } else if (!t) t = 'text';
   // 系统字段固定渲染：紧急程度→单选按钮组；签字意见→富文本编辑器
   if (f.field === 'urgency') t = 'radio';
@@ -1992,7 +1992,7 @@ if (isStandaloneLaunch.value) {
 
 <script>
 import { defineComponent, h, resolveComponent } from 'vue';
-import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker } from 'element-plus';
+import { ElSelect, ElOption, ElRadioGroup, ElRadio, ElCheckbox, ElCheckboxGroup, ElSwitch, ElRate, ElInput, ElInputNumber, ElDatePicker, ElTimePicker } from 'element-plus';
 import FormBrowse from '@/components/FormBrowse/index.vue';
 
 /** 动态字段控件：按 rtype 渲染对应 Element 控件（布局样式渲染共用） */
@@ -2057,6 +2057,8 @@ export const DynField = defineComponent({
           return h(ElInputNumber, { modelValue: v, 'onUpdate:modelValue': set, controls: false, style: 'width:100%', placeholder: f.placeholder || '请输入' });
         case 'date':
           return h(ElDatePicker, { modelValue: v, 'onUpdate:modelValue': set, type: 'date', valueFormat: 'YYYY-MM-DD', placeholder: f.placeholder || '选择日期', style: 'width:100%' });
+        case 'time':
+          return h(ElTimePicker, { modelValue: v, 'onUpdate:modelValue': set, valueFormat: 'HH:mm:ss', format: 'HH:mm', placeholder: f.placeholder || '选择时间', style: 'width:100%' });
         case 'datetime':
           return h(ElDatePicker, {
             modelValue: v,
