@@ -33,7 +33,7 @@ SET b.user_id = e.user_id
 WHERE b.user_id IS NULL AND b.employee_id IS NOT NULL;
 
 -- 3. 唯一索引迁移：uk_connector_employee (connector_type, employee_id)
---    → uk_connector_user (connector_type, user_id)，与一一绑定新口径一致
+--    → uk_connector_user_id (connector_type, user_id)，与一一绑定新口径一致
 SET @old_idx := (
   SELECT COUNT(*) FROM information_schema.STATISTICS
    WHERE TABLE_SCHEMA = DATABASE()
@@ -51,11 +51,11 @@ SET @new_idx := (
   SELECT COUNT(*) FROM information_schema.STATISTICS
    WHERE TABLE_SCHEMA = DATABASE()
      AND TABLE_NAME = 'integration_user_binding'
-     AND INDEX_NAME = 'uk_connector_user'
+     AND INDEX_NAME = 'uk_connector_user_id'
 );
 SET @ddl := IF(@new_idx = 0,
-  'ALTER TABLE `integration_user_binding` ADD UNIQUE KEY `uk_connector_user` (`connector_type`, `user_id`)',
-  'SELECT ''uk_connector_user 已存在，跳过'' AS result');
+  'ALTER TABLE `integration_user_binding` ADD UNIQUE KEY `uk_connector_user_id` (`connector_type`, `user_id`)',
+  'SELECT ''uk_connector_user_id 已存在，跳过'' AS result');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -68,6 +68,6 @@ GROUP BY connector_type, user_id
 HAVING COUNT(*) > 1;
 -- 预期：0 行。若出现非 0 行，说明存量数据本身违反一一绑定，需人工核对解绑后再建索引。
 
--- 5. 复核：user_id 列与 uk_connector_user 索引均应存在
+-- 5. 复核：user_id 列与 uk_connector_user_id 索引均应存在
 SHOW COLUMNS FROM `integration_user_binding` LIKE 'user_id';
-SHOW INDEX FROM `integration_user_binding` WHERE Key_name = 'uk_connector_user';
+SHOW INDEX FROM `integration_user_binding` WHERE Key_name = 'uk_connector_user_id';
