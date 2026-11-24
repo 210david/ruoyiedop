@@ -15,27 +15,27 @@
                   <ul class="list-group list-group-striped">
                      <li class="list-group-item">
                         <svg-icon icon-class="user" />用户名称
-                        <div class="pull-right">{{ state.user.userName }}</div>
+                        <div class="item-value">{{ state.user.userName }}</div>
                      </li>
                      <li class="list-group-item">
                         <svg-icon icon-class="phone" />手机号码
-                        <div class="pull-right">{{ state.user.phonenumber }}</div>
+                        <div class="item-value">{{ state.user.phonenumber }}</div>
                      </li>
                      <li class="list-group-item">
                         <svg-icon icon-class="email" />用户邮箱
-                        <div class="pull-right">{{ state.user.email }}</div>
+                        <div class="item-value">{{ state.user.email }}</div>
                      </li>
                      <li class="list-group-item">
                         <svg-icon icon-class="tree" />所属部门
-                        <div class="pull-right" v-if="state.user.dept">{{ state.user.dept.deptName }} / {{ state.postGroup }}</div>
+                        <div class="item-value" v-if="state.user.dept">{{ state.user.dept.deptName }} / {{ state.postGroup }}</div>
                      </li>
                      <li class="list-group-item">
                         <svg-icon icon-class="peoples" />所属角色
-                        <div class="pull-right">{{ state.roleGroup }}</div>
+                        <div class="item-value">{{ state.roleGroup }}</div>
                      </li>
                      <li class="list-group-item">
                         <svg-icon icon-class="date" />创建日期
-                        <div class="pull-right">{{ state.user.createTime }}</div>
+                        <div class="item-value">{{ state.user.createTime }}</div>
                      </li>
                   </ul>
                </div>
@@ -92,3 +92,23 @@ onMounted(() => {
   getUser()
 })
 </script>
+
+<style scoped>
+.list-group-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.list-group-item .item-value {
+  margin-left: auto;
+  text-align: right;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.list-group-item > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+</style>
