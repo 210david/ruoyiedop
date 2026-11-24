@@ -277,7 +277,12 @@ function hasValue(field) {
  * 一旦清空（含下拉清空、日期清空、附件删空）就恢复显示，保证必填约束仍然可见。
  */
 function showReqStar(cell) {
-  if (!cell || cellAttr(cell) !== 'req') return false;
+  if (!cell) return false;
+  const attr = cellAttr(cell);
+  if (attr === 'ro') return false;
+  // 与 fieldItemRules 校验口径一致：字段定义必填 / 规则引擎覆盖必填 / 设计器单元格必填，任一成立即显示星号。
+  // 修复：设计器单元格 attr 配成非 req（如 edit）但字段定义 required=true 时，校验会拦截提交而星号被遮蔽不显示
+  if (!fieldReq(cell.field) && attr !== 'req') return false;
   return isFieldUnfilled(cell.field);
 }
 /** 字段是否「还没填」：勾选框/开关取消勾选后值是 '0'，语义上仍是未填，星号要回来 */
