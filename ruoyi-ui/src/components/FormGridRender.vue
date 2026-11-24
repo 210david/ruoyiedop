@@ -158,7 +158,7 @@
                   <img v-if="e.cell.src" :src="e.cell.src" class="fgr-img" alt="图片" />
                   <span v-else class="fgr-text ph">图片</span>
                 </div>
-                <div v-else class="fgr-text">{{ e.cell.text || '' }}</div>
+                <div v-else class="fgr-text">{{ labelTextOf(e.cell) }}</div>
               </template>
             </td>
               </template>
@@ -188,9 +188,18 @@ import { buildRowsView, cellCss, colWStyle } from '@/views/flowable/form/designe
 import { toRmbUpper } from '@/utils/rmb';
 // 渲染态不显示编辑网格默认线框，只显示用户绘制的边框
 const cellStyle = (st) => cellCss(st, true);
+/** 标签格显示文字：labelField 绑定且字段存在时实时取字段最新标签（字段改名后运行态同步），否则用格内文本 */
+function labelTextOf(cell) {
+  if (cell && cell.type === 'text' && cell.labelField) {
+    const f = (props.fields || []).find((x) => x && x.field === cell.labelField);
+    if (f && f.label) return f.label;
+  }
+  return (cell && cell.text) || '';
+}
 /** 标签格：设计器「插入标签」创建的文本格（labelField 标记），运行态沿用设计器的默认浅蓝底 */
 function isLabelCell(e) {
-  return !!(e && e.cell && e.cell.type === 'text' && e.cell.text && e.cell.labelField);
+  const c = e && e.cell;
+  return !!(c && c.type === 'text' && c.labelField && labelTextOf(c));
 }
 
 const props = defineProps({
