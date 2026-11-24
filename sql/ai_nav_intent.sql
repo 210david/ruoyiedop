@@ -66,51 +66,12 @@ FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_config WHERE config_key = 'ai.nav.enabled');
 
 -- ------------------------------------------------------------
--- 4. 种子意图数据（使用真实 menu_id，已核对路径）
---    路径对照（由 sys_menu.parent_id/path 逐级拼接验证）：
---      2060 入库单管理 → /wms/inbound/order
---      2080 库存查询   → /wms/inv/list
---      2090 盘点任务   → /wms/stocktake/task
---      2010 物料管理   → /wms/base/material
---      905887 招标公告库 → /bid/notice
---      905825 流程发起   → /flow/launch
---      905940 往来单位管理 → /fin/base/info
---      905802 智能查询   → /ai/nlquery
+-- 种子意图数据：完整 116 条见 sql/ai_nav_intent_core.sql（预置 14 个模块核心功能）。
+-- 本文件不再内置旧版 8 条种子（intent_key 如 wms_inbound/bid_notice 等），
+-- 避免与 core 脚本的统一 key（模块_菜单ID）重复造成同菜单双意图。
+-- 初始化顺序：先执行本文件（建表/字段/开关/菜单权限），再执行 ai_nav_intent_core.sql。
 -- ------------------------------------------------------------
-INSERT INTO ai_nav_intent
-(intent_key, menu_id, module_code, title, aliases, examples, sort_no, status) VALUES
-('wms_inbound',   2060,   'wms',  '入库单管理',
- '入库,入库单,收货,收货单,到货登记,收料,验收入库',
- '入库单在哪里录入,怎么收货入库,入库流程怎么走,收料在哪登记', 20, '0'),
-('wms_inventory', 2080,   'wms',  '库存查询',
- '库存,存货,库存查询,还有多少料,结存,现存量,库存量',
- '查库存,某个物料还有多少库存,库存还有多少', 20, '0'),
-('wms_stocktake', 2090,   'wms',  '盘点任务',
- '盘点,盘库,清点,盘点单',
- '怎么发起盘点,盘点任务在哪', 15, '0'),
-('wms_material',  2010,   'wms',  '物料管理',
- '物料,物料档案,物料新增,物料编码',
- '怎么新增物料,物料档案在哪维护', 15, '0'),
-('bid_notice',    905887, 'bid',  '招标公告库',
- '招标,招标公告,招标信息,投标机会',
- '招标公告在哪看,哪里能看到招标信息', 15, '0'),
-('flow_launch',   905825, 'flow', '流程发起',
- '发起流程,提流程,提审批,申请审批,审批流程,提申请,走流程',
- '怎么发起请假流程,审批怎么提交,我要提单,请假在哪申请', 20, '0'),
-('fin_partner',   905940, 'fin',  '往来单位管理',
- '往来单位,客户档案,供应商档案,往来档案',
- '往来单位在哪维护,客户档案怎么建', 12, '0'),
-('ai_nlquery',    905802, 'ai',   '智能查询',
- '智能查询,自然语言查询,问数据,AI查数',
- '怎么用AI查数据,智能查询在哪', 10, '0')
-ON DUPLICATE KEY UPDATE
-  menu_id = VALUES(menu_id),
-  module_code = VALUES(module_code),
-  title = VALUES(title),
-  aliases = VALUES(aliases),
-  examples = VALUES(examples),
-  sort_no = VALUES(sort_no),
-  status = VALUES(status);
+-- （种子数据请执行 ai_nav_intent_core.sql）
 
 -- ------------------------------------------------------------
 -- 5. 菜单与权限（P2 管理界面用；不建则为纯接口维护）
