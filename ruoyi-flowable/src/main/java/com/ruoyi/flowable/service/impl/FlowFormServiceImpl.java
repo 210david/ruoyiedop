@@ -1139,6 +1139,8 @@ public class FlowFormServiceImpl implements IFlowFormService
                 fields.add(f);
             }
         }
+        // 表单字段晚于建表新增时自动补列，避免 Unknown column 导致流程发起失败（自愈）
+        ensureFormColumns(form.getTableName(), fields);
         StringBuilder cols = new StringBuilder("`process_instance_id`");
         StringBuilder marks = new StringBuilder("?");
         List<Object> params = new ArrayList<>();
@@ -1161,15 +1163,89 @@ public class FlowFormServiceImpl implements IFlowFormService
                     v = 0;
                 }
             }
-            params.add(v == null ? null : String.valueOf(v));
+            params.add(toColumnValue(f, v));
         }
         cols.append(", `create_by`, `create_time`");
         marks.append(", ?, NOW()");
         params.add(SecurityUtils.getUsername());
         String sql = "INSERT INTO `" + form.getTableName() + "` (" + cols + ") VALUES (" + marks + ")";
-        jdbcTemplate.update(sql, params.toArray());
+        try
+        {
+            jdbcTemplate.update(sql, params.toArray());
+        }
+        catch (org.springframework.dao.DataAccessException e)
+        {
+            // 写库失败直接给业务化提示（附数据库具体原因），不再落到「系统繁忙」兜底
+            String detail = e.getMostSpecificCause() == null ? e.getMessage() : e.getMostSpecificCause().getMessage();
+            log.error("表单数据写入失败（{}）：{}", form.getTableName(), detail);
+            throw new ServiceException("表单数据保存失败：" + detail);
+        }
         Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         return String.valueOf(id);
+    }
+
+    /**
+     * 字段值 → JDBC 参数。
+     * 1. 数字/日期类字段：空值统一落 NULL（严格模式下空串写入数字/日期列报 Incorrect value）；
+     * 2. 数字类字段：非数字内容直接业务化报错，给出具体字段与非法值。
+     */
+    private Object toColumnValue(JSONObject f, Object v)
+    {
+        if (v == null)
+        {
+            return null;
+        }
+        String s = String.valueOf(v);
+        String dtype = f.getString("dtype");
+        boolean numericOrDate = "int".equals(dtype) || "float".equals(dtype)
+                || "date".equals(dtype) || "datetime".equals(dtype) || "time".equals(dtype);
+        if (s.isEmpty())
+        {
+            return numericOrDate ? null : s;
+        }
+        if ("int".equals(dtype) || "float".equals(dtype))
+        {
+            if (!s.matches("-?\\d+(\\.\\d+)?"))
+            {
+                throw new ServiceException("字段「" + f.getString("label") + "」需填写数字，当前值：" + s);
+            }
+        }
+        return s;
+    }
+
+    /**
+     * 表单字段与数据表缺列自愈：发起前按 fieldsJson 补齐数据表缺失的列（与 createTable 同一套类型映射）。
+     * 补列失败仅告警，由后续 INSERT 的业务化报错兜底。
+     */
+    private void ensureFormColumns(String tableName, List<JSONObject> fields)
+    {
+        if (StringUtils.isEmpty(tableName) || fields == null || fields.isEmpty())
+        {
+            return;
+        }
+        try
+        {
+            Set<String> existing = new LinkedHashSet<>();
+            jdbcTemplate.query(
+                    "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
+                    rs -> { existing.add(rs.getString(1)); return null; }, tableName);
+            for (JSONObject f : fields)
+            {
+                String col = f.getString("field");
+                if (!existing.contains(col))
+                {
+                    String label = StringUtils.isEmpty(f.getString("label")) ? col : f.getString("label");
+                    String type = columnType(f);
+                    jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD COLUMN `" + col + "` "
+                            + type + " COMMENT '" + label.replace("'", "''") + "'");
+                    log.info("表单数据表 {} 自动补列：{} {}", tableName, col, type);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("表单数据表自动补列失败（{}）：{}", tableName, e.getMessage());
+        }
     }
 
     /** 字段JSON解析与基础校验 */
@@ -1179,7 +1255,16 @@ public class FlowFormServiceImpl implements IFlowFormService
         {
             throw new ServiceException("表单未设计任何字段");
         }
-        JSONArray arr = JSON.parseArray(fieldsJson);
+        JSONArray arr;
+        try
+        {
+            arr = JSON.parseArray(fieldsJson);
+        }
+        catch (Exception e)
+        {
+            log.error("表单字段定义解析失败：{}", e.getMessage());
+            throw new ServiceException("表单字段定义不是合法 JSON，请在表单管理中重新保存表单");
+        }
         List<JSONObject> list = new ArrayList<>();
         for (int i = 0; i < arr.size(); i++)
         {
