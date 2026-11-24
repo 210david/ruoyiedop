@@ -22,7 +22,7 @@ UPDATE ACT_RE_PROCDEF SET CATEGORY_ = 'hr' WHERE KEY_ IN ('makeupApply', 'outing
 UPDATE flow_procdef_ext SET active_flag = '0' WHERE procdef_id LIKE 'expenseReimburse%';
 INSERT INTO flow_procdef_ext (procdef_id, remark, active_flag)
 SELECT id, '同步标准仓：v2 设为活动版本', '1'
-FROM (SELECT CONCAT('expenseReimburse:2:', ID_) AS id
+FROM (SELECT ID_ AS id
       FROM ACT_RE_PROCDEF WHERE KEY_ = 'expenseReimburse' AND VERSION_ = 2) t
 WHERE NOT EXISTS (SELECT 1 FROM flow_procdef_ext e WHERE e.procdef_id = t.id);
 UPDATE flow_procdef_ext SET active_flag = '1' WHERE procdef_id LIKE 'expenseReimburse:2:%';

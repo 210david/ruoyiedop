@@ -183,7 +183,7 @@
                 </configuration>   
            </plugin>   
         </plugins>
-        <finalName>edop-admin-v10</finalName>
+        <finalName>edop-admin-ylsp</finalName>
     </build>
 
 </project>
