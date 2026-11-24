@@ -244,9 +244,7 @@
                       </el-col>
                       <el-col :span="12">
                         <el-form-item label="工程类别" prop="engineeringCategory">
-                          <el-select v-model="form.engineeringCategory" placeholder="请先选择项目类型" style="width:100%" clearable>
-                            <el-option v-for="d in filteredEngineeringCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
-                          </el-select>
+                          <el-input v-model="form.engineeringCategory" placeholder="请输入工程类别" maxlength="100" clearable style="width:100%" />
                         </el-form-item>
                       </el-col>
                       <el-col :span="12">
@@ -776,7 +774,7 @@
               <div class="rd-item"><span class="rd-label">项目编号</span><div class="rd-value">{{ viewData.projectNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目名称</span><div class="rd-value">{{ viewData.projectName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目类型</span><div class="rd-value">{{ dictLabel(projectTypeOptions, viewData.projectType) || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, viewData.engineeringCategory) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ viewData.engineeringCategory || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, viewData.priority) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ viewData.managerName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">所属部门/团队</span><div class="rd-value">{{ viewData.deptName || '-' }}</div></div>
@@ -938,7 +936,7 @@
               <div class="rd-item"><span class="rd-label">项目编号</span><div class="rd-value">{{ auditProjectData.projectNo || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目名称</span><div class="rd-value">{{ auditProjectData.projectName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目类型</span><div class="rd-value">{{ dictLabel(projectTypeOptions, auditProjectData.projectType) || '-' }}</div></div>
-              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ dictLabel(engineeringCategoryOptions, auditProjectData.engineeringCategory) || '-' }}</div></div>
+              <div class="rd-item"><span class="rd-label">工程类别</span><div class="rd-value">{{ auditProjectData.engineeringCategory || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">优先级</span><div class="rd-value">{{ dictLabel(priorityOptions, auditProjectData.priority) || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">项目经理</span><div class="rd-value">{{ auditProjectData.managerName || '-' }}</div></div>
               <div class="rd-item"><span class="rd-label">所属部门/团队</span><div class="rd-value">{{ auditProjectData.deptName || '-' }}</div></div>
@@ -1180,27 +1178,11 @@ import { useDetailCard } from '@/composables/useDetailCard'
 
 const { proxy } = getCurrentInstance()
 
-// ★ 字典：单位 / 物料类型 / 项目类型（父级）/ 工程类别（子级，parentCode 指向项目类型）/ 采购明细类型 / 附件类型
-const { wms_unit, wms_material_type, pjm_project_type, pjm_engineering_category, pjm_purchase_detail_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_project_type', 'pjm_engineering_category', 'pjm_purchase_detail_type', 'pjm_project_attachment_type')
+// ★ 字典：单位 / 物料类型 / 项目类型 / 附件类型（工程类别已改手动输入，不再引用 pjm_engineering_category 字典）
+const { wms_unit, wms_material_type, pjm_project_type, pjm_project_attachment_type } = proxy.useDict('wms_unit', 'wms_material_type', 'pjm_project_type', 'pjm_project_attachment_type')
 // ★ 项目类型（顶级，parentCode === null）
 const projectTypeOptions = computed(() => (pjm_project_type.value || []).filter(d => d.parentCode == null))
 const projectTypeLabel = (v) => (pjm_project_type.value || []).find(x => String(x.value) === String(v))?.label || '-'
-// ★ 工程类别：按已选项目类型的 dictCode 级联过滤（parent_code 匹配）
-const allEngineeringCategoryOptions = pjm_engineering_category
-const selectedProjectTypeDictCode = computed(() => {
-  if (!form.projectType) return null
-  const item = (pjm_project_type.value || []).find(d => String(d.value) === String(form.projectType))
-  return item ? Number(item.dictCode) : null
-})
-const filteredEngineeringCategoryOptions = computed(() => {
-  const all = (allEngineeringCategoryOptions.value || []).filter(d => d.parentCode != null)
-  const parent = selectedProjectTypeDictCode.value
-  if (parent == null) return all   // 没选项目类型时显示全部子项
-  return all.filter(d => Number(d.parentCode) === parent)
-})
-// 兼容旧引用（详情/审批只读展示用全部，不影响）
-const engineeringCategoryOptions = allEngineeringCategoryOptions
-const peDetailTypeOptions = computed(() => (pjm_purchase_detail_type.value || []).map(d => ({ ...d, value: String(d.value) })))
 // ★ 采购清单页签：按物料类型（wms_material_type 字典）动态分类统计，替代写死的明细类型
 const procTypeOptions = computed(() => {
   const opts = (wms_material_type.value || []).map(d => ({ value: String(d.value), label: d.label }))
@@ -1210,7 +1192,6 @@ const procTypeOptions = computed(() => {
   return opts
 })
 const procTypeKey = (p) => (p.materialType == null || p.materialType === '') ? '' : String(p.materialType)
-const engCatLabel = (v) => engineeringCategoryOptions.find(x => String(x.value) === String(v))?.label || v || '-'
 const unitDictLabel = (v) => {
   if (v == null || v === '') return ''
   const item = wms_unit.value?.find(d => String(d.value) === String(v))
@@ -1534,14 +1515,6 @@ function ensureAttachmentGroups() {
 }
 watch(attachmentTypeOptions, ensureAttachmentGroups, { immediate: true })
 
-// ★ 级联：项目类型变化时清空已选工程类别（避免残留旧父级下的选项）
-watch(() => form.projectType, (newType, oldType) => {
-  if (newType !== oldType && form.engineeringCategory) {
-    const stillValid = filteredEngineeringCategoryOptions.value.some(d => String(d.value) === String(form.engineeringCategory))
-    if (!stillValid) form.engineeringCategory = ''
-  }
-})
-
 /** 从 attFileGroups 中抽取 url 字符串数组给 UploadFile 组件（它只认字符串/逗号串） */
 function getAttUrlList(type) {
   const arr = attFileGroups[type] || []
@@ -1632,7 +1605,8 @@ const aiProjectFieldLabels = {
   supervisorUnit: '监理单位', designUnit: '设计单位', customer: '客户/甲方',
   projectAddress: '工程地点', buildScale: '建设规模', contractAmount: '合同总额(元)',
   budgetAmount: '预算金额(元)', contractDuration: '合同工期(天)', startDate: '计划开工日期',
-  endDate: '计划竣工日期', qualityStandard: '质量标准', description: '项目描述', projectType: '项目类型'
+  endDate: '计划竣工日期', qualityStandard: '质量标准', description: '项目描述', projectType: '项目类型',
+  engineeringCategory: '工程类别'
 }
 const aiProjectFields = computed(() => {
   const p = aiParseResult.value?.project
@@ -1745,6 +1719,7 @@ function applyAiParseResult() {
     if (p.qualityStandard) form.qualityStandard = p.qualityStandard
     if (p.description) form.description = p.description
     if (p.projectType) form.projectType = String(p.projectType)
+    if (p.engineeringCategory) form.engineeringCategory = p.engineeringCategory
     appliedCount += aiProjectFields.value.length
   }
   // ② 采购清单：仅填入用户勾选的行
