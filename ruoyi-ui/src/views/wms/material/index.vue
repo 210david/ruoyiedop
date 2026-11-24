@@ -193,14 +193,14 @@
     />
 
     <!-- 添加/修改对话框 -->
-    <el-dialog v-model="open" width="780px" append-to-body draggable class="rd-dialog">
+    <el-dialog v-model="open" width="936px" append-to-body draggable class="rd-dialog">
       <template #header>
         <div class="rd-detail-header">
           <div class="rd-detail-header-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
           <span class="rd-detail-header-title">{{ title }}</span>
         </div>
       </template>
-      <el-form ref="materialRef" :model="form" :rules="rules" label-width="100px" class="material-form">
+      <el-form ref="materialRef" :model="form" :rules="rules" label-width="110px" class="material-form">
                 <!-- 分组一：基本信息 -->
         <div class="rd-page">
         <section class="rd-card">
@@ -314,9 +314,9 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="计价参考成本价" prop="costPrice">
-              <el-input-number v-model="form.costPrice" :precision="2" :min="0" controls-position="right" placeholder="不含税" style="width: 50%" />
+              <el-input-number v-model="form.costPrice" :precision="2" :min="0" controls-position="right" placeholder="不含税" style="width: 240px" />
               <div class="cost-price-tip">不含税，仅用作入库单价缺失时的财务计价兜底；采购价、销售价分别在采购与营销模块维护</div>
             </el-form-item>
           </el-col>
@@ -341,7 +341,7 @@
           </el-col>
         </el-row>
         <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+          <el-input v-model="form.remark" type="textarea" :rows="1" :autosize="{ minRows: 1, maxRows: 4 }" placeholder="请输入内容" />
         </el-form-item>
                 </div>
         </section>
@@ -890,7 +890,7 @@ loadTypeCounts()
 .wms-material-page .action-btn-row { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 .wms-material-page :deep(.col-action .el-button) { padding: 2px 4px; margin: 0 2px; white-space: nowrap; justify-content: center; }
 .wms-material-page :deep(.col-action .el-button + .el-button) { margin-left: 2px; }
-.wms-material-page .cost-price-tip { color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+.wms-material-page .cost-price-tip { color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.5; margin-top: 4px; white-space: nowrap; }
 
 @media (max-width:1100px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:720px) { .wms-material-page .filter-card .filter-bar { grid-template-columns:1fr; } .wms-material-page .toolbar { flex-wrap:wrap; gap:10px; } }
