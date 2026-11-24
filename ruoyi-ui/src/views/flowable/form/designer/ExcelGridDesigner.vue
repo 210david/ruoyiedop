@@ -220,7 +220,7 @@ import CellFormatDialog from './CellFormatDialog.vue'
 import ResizeDialog from './ResizeDialog.vue'
 import PropPanel from './PropPanel.vue'
 import FormGridRender from '@/components/FormGridRender.vue'
-import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults'
+import { applyFieldDefaults, currentUserCtx, syncPersonDerived, mainFieldsOf } from '@/views/flowable/common/field-defaults'
 import './designer.scss'
 import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
 import { stdFormGrid, expenseCardGrid } from './converters.js'
@@ -270,24 +270,25 @@ function resetPreviewValues() {
     pvCtx.userName = ctx.userName
     pvCtx.deptId = ctx.deptId
     pvCtx.deptName = ctx.deptName
+    pvCtx.postName = ctx.postName
     applyFieldDefaults(pvFields, pvValues, ctx)
-    syncPersonDept(pvFields, pvValues, ctx)
+    syncPersonDerived(pvFields, pvValues, ctx)
   })
 }
-const pvCtx = reactive({ userId: '', userName: '', deptId: '', deptName: '' })
-/** 人员→部门联动：只盯配置了「随人员带出部门」的源字段，避免预览里每次输入都计算 */
+const pvCtx = reactive({ userId: '', userName: '', deptId: '', deptName: '', postName: '' })
+/** 人员→部门/岗位联动：只盯配置了「随人员带出部门/岗位」的源字段，避免预览里每次输入都计算 */
 const pvLinkKey = computed(() =>
   mainFieldsOf(props.fields)
-    .filter((f) => f && f.defaultMode === 'fieldUserDept' && f.defaultField)
+    .filter((f) => f && ['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode) && f.defaultField)
     .map((f) => {
       const s = f.defaultField
       const extra = pvValues[s + '__extra']
-      return `${s}=${pvValues[s]}|${pvValues[s + '__id']}|${extra ? extra.deptName : ''}`
+      return `${s}=${pvValues[s]}|${pvValues[s + '__id']}|${extra ? extra.deptName : ''}|${extra ? extra.postName : ''}`
     })
     .join('~'),
 )
 watch(pvLinkKey, (v) => {
-  if (v) syncPersonDept(mainFieldsOf(props.fields), pvValues, pvCtx)
+  if (v) syncPersonDerived(mainFieldsOf(props.fields), pvValues, pvCtx)
 })
 function validatePreview() {
   if (!pvFormRef.value) return

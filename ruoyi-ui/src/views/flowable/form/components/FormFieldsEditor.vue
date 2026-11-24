@@ -746,7 +746,7 @@ const dftSrcTip = computed(() => {
   }
   return '同一张表里没有可用字段：人员带出部门需要先有一个「人员」浏览字段'
 })
-const dftNeedsSrc = computed(() => dft.mode === 'fieldValue' || dft.mode === 'fieldUserDept')
+const dftNeedsSrc = computed(() => dft.mode === 'fieldValue' || dft.mode === 'fieldUserDept' || dft.mode === 'fieldUserPost')
 /** 该字段是否支持「固定值」方式（选项类走选项配置，附件/浏览按钮不适用） */
 function canFixedForm(f) {
   return !!f && !isSelForm(f.form) && f.form !== 'attach' && f.form !== 'browse'
@@ -766,6 +766,7 @@ const dftModeTip = computed(() => {
       ? '打开表单时取同表另一个日期字段的值（如结束日期默认取开始日期）'
       : '跟着表单里另一个字段的值走，打开表单时取一次'
     case 'fieldUserDept': return '人员字段选了人，部门自动跟着变；人员清空时部门一起清空'
+    case 'fieldUserPost': return '人员字段选了人，岗位自动跟着变；人员清空时岗位一起清空'
     default: return '不设置则打开表单时留空'
   }
 })

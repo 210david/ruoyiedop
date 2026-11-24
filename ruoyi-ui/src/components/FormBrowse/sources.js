@@ -36,8 +36,8 @@ export const BROWSE_SOURCES = {
     component: defineAsyncComponent(() => import('@/components/UserPicker/index.vue')),
     buildProps: (f) => ({ title: '选择人员', multiple: !!f.browseMultiple, scope: 'all' }),
     openArgs: (ids, f) => (f.browseMultiple ? multiArg(ids) : singleArg(ids)),
-    // 人员额外带回所属部门：表单里「部门」字段配「随人员字段带出」时直接取用，不再查接口
-    pick: (u) => ({ id: u.userId, name: u.nickName || u.userName, deptId: u.deptId, deptName: u.deptName }),
+    // 人员额外带回所属部门与岗位：表单里「部门/岗位」字段配「随人员字段带出」时直接取用，不再查接口
+    pick: (u) => ({ id: u.userId, name: u.nickName || u.userName, deptId: u.deptId, deptName: u.deptName, postName: u.postName }),
   },
   dept: {
     label: '部门',
