@@ -84,9 +84,9 @@ function onConfirm(payload) {
   if (!rows.length) return;
   emit('update:modelValue', rows.map((r) => r.name).join('、'));
   emit('update:modelIds', rows.map((r) => (r.id === undefined || r.id === null ? '' : r.id)).join(','));
-  // 单选人员时带回部门：多选下一个人对应多个部门，不替用户猜
+  // 单选人员时带回部门/岗位：多选下一个人对应多个部门/岗位，不替用户猜
   const hit = rows.length === 1 ? rows[0] : null;
-  emit('update:modelExtra', hit && hit.deptName ? { deptId: hit.deptId, deptName: hit.deptName } : null);
+  emit('update:modelExtra', hit && (hit.deptName || hit.postName) ? { deptId: hit.deptId, deptName: hit.deptName, postName: hit.postName } : null);
 }
 
 /** 清除已选 */

@@ -437,7 +437,7 @@ import WmProcessDiagram from '@/components/WmProcessDiagram.vue';
 import FlowStatus from '@/components/FlowStatus/index.vue';
 import { parseLayout, isFlowSysField } from '@/views/flowable/form/designer/converters';
 import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
-import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults';
+import { applyFieldDefaults, currentUserCtx, syncPersonDerived, mainFieldsOf } from '@/views/flowable/common/field-defaults';
 import { parseExt } from '@/views/flowable/common/form-rules/constants';
 import { runRules, runFormScripts } from '@/views/flowable/common/form-rules/engine';
 import { prepareWorkdayCalendar } from '@/views/flowable/common/form-rules/workday';
@@ -1167,15 +1167,15 @@ const renderGroups = computed(() => {
 
 // ===== 明细表运行时（可编辑表格 + 添加/删除行 + 表尾合计） =====
 const detailRows = ref({});
-/** 人员→部门联动：只盯「带出部门」规则里的人员字段（主表 + 明细行），避免表单任何输入都触发 */
+/** 人员→部门/岗位联动：只盯「随人员带出部门/岗位」规则里的人员字段（主表 + 明细行），避免表单任何输入都触发 */
 const deptLinkKey = computed(() => {
   const parts = [];
   const push = (fs, vals) => {
     for (const f of fs) {
-      if (!f || f.defaultMode !== 'fieldUserDept') continue;
+      if (!f || !['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode)) continue;
       const src = f.defaultField;
       const extra = vals[src + '__extra'];
-      parts.push(`${f.field}=${vals[src]}|${vals[src + '__id']}|${extra ? extra.deptName : ''}`);
+      parts.push(`${f.field}=${vals[src]}|${vals[src + '__id']}|${extra ? extra.deptName : ''}|${extra ? extra.postName : ''}`);
     }
   };
   push(mainFieldsOf(boundForm.value && boundForm.value.fields), dynData.value);
@@ -1223,14 +1223,14 @@ function applyDefaultsAll(ctx) {
   }
   syncDeptLinks(ctx || {});
 }
-/** 人员→部门联动（主表 + 明细行）：只处理配了「随人员字段带出部门」的部门字段 */
+/** 人员→部门/岗位联动（主表 + 明细行）：只处理配了「随人员字段带出部门/岗位」的字段 */
 function syncDeptLinks(ctx) {
   const fs = mainFieldsOf(boundForm.value && boundForm.value.fields);
-  syncPersonDept(fs, dynData.value, ctx);
+  syncPersonDerived(fs, dynData.value, ctx);
   for (const t of Object.keys(detailRows.value || {})) {
     const dfs = detailTableFields(t);
-    if (!dfs.some((f) => f && f.defaultMode === 'fieldUserDept')) continue;
-    for (const row of detailRows.value[t] || []) syncPersonDept(dfs, row, ctx);
+    if (!dfs.some((f) => f && ['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode))) continue;
+    for (const row of detailRows.value[t] || []) syncPersonDerived(dfs, row, ctx);
   }
 }
 /** 明细表显示名：dt1 → 明细表1 */
@@ -1247,7 +1247,7 @@ function blankDetailRow(fs) {
   // 新增行同样享有字段默认值（固定值 / 当前用户 / 当前部门 / 当天日期），已有值不覆盖
   const ctx = userCtx.value || {};
   applyFieldDefaults(fs, row, ctx);
-  syncPersonDept(fs, row, ctx);
+  syncPersonDerived(fs, row, ctx);
   return row;
 }
 function addDetailRow(dt) {
