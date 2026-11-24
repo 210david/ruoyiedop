@@ -211,24 +211,13 @@
                 <el-button link type="primary" icon="View" @click="handleCcView(scope.row)">查看</el-button>
                 <el-button link type="primary" icon="Check" @click="handleCcRead(scope.row)">标记已读</el-button>
               </div>
-              <div class="action-btn-row" v-else>
-                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
-              </div>
+              <div class="action-btn-row" v-else></div>
             </template>
           </el-table-column>
-          <el-table-column v-else-if="activeTab === 'done'" label="操作" width="170" align="center" fixed="right" class-name="col-action">
+          <el-table-column v-else-if="activeTab === 'done'" label="操作" width="110" align="center" fixed="right" class-name="col-action">
             <template #default="scope">
               <div class="action-btn-row">
-                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
                 <el-button v-if="scope.row.canRecall" link type="primary" icon="RefreshLeft" @click="handleRecall(scope.row)">收 回</el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column v-else label="操作" width="100" align="center" fixed="right" class-name="col-action">
-            <template #default="scope">
-              <div class="action-btn-row">
-                <!-- 列表不再提供「审批」按钮：待办直接点击流程标题进入办理页，此处仅保留流程详情 -->
-                <el-button link type="primary" icon="View" @click="handleView(scope.row)">流程详情</el-button>
               </div>
             </template>
           </el-table-column>
