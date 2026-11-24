@@ -134,6 +134,18 @@ public class GlobalExceptionHandler
     }
 
     /**
+     * 数据访问异常（表结构不一致/字段值不合法等）→ 业务化提示（附数据库具体原因，便于定位）
+     */
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public AjaxResult handleDataAccessException(org.springframework.dao.DataAccessException e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',发生数据访问异常.", requestURI, e);
+        String detail = e.getMostSpecificCause() == null ? e.getMessage() : e.getMostSpecificCause().getMessage();
+        return AjaxResult.error("数据保存失败：" + detail + "。请检查表单字段与数据表是否一致，或联系管理员");
+    }
+
+    /**
      * 参数校验异常 → 业务化提示（不暴露技术细节）
      */
     @ExceptionHandler(IllegalArgumentException.class)
@@ -169,6 +181,11 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
+        // Flowable 流程引擎异常（如流程图网关表达式引用了不存在的流程变量）→ 透出具体原因，便于定位流程定义问题
+        if (e.getClass().getName().startsWith("org.flowable."))
+        {
+            return AjaxResult.error("流程流转失败：" + e.getMessage() + "。请检查该流程的表单字段与流程图条件配置是否匹配");
+        }
         return AjaxResult.error("系统繁忙，请稍后重试");
     }
 
