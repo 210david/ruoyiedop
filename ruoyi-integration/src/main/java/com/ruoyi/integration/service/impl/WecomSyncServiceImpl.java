@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.hr.domain.HrAttendanceImportDTO;
@@ -26,6 +27,7 @@ import com.ruoyi.integration.service.IWecomSyncService;
 import com.ruoyi.integration.wecom.WecomApiClient;
 import com.ruoyi.integration.wecom.WecomMockDataProvider;
 import com.ruoyi.system.service.ISysConfigService;
+import com.ruoyi.system.service.ISysUserService;
 
 /**
  * 企业微信集成同步服务实现
@@ -88,6 +90,9 @@ public class WecomSyncServiceImpl implements IWecomSyncService
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private ISysUserService userService;
 
     /**
      * 同步企业微信通讯录并自动匹配员工档案
@@ -296,7 +301,7 @@ public class WecomSyncServiceImpl implements IWecomSyncService
     }
 
     /**
-     * 按配置策略自动匹配员工档案
+     * 按配置策略自动匹配平台组织用户（sys_user）
      *
      * 策略参数 integration.wecom.matchType：
      *   mobile（默认）= 手机号优先，未命中时用工号兜底
@@ -307,7 +312,7 @@ public class WecomSyncServiceImpl implements IWecomSyncService
      * 部分企业把工号填在成员别名中，部分企业直接用工号作为 userid。
      *
      * 仅处理未匹配绑定，已匹配（含人工绑定）不重跑，防止策略切换冲掉既有绑定。
-     * 一一绑定约束：目标员工已被其他外部用户占用时跳过。
+     * 一一绑定约束：目标用户已被其他外部用户占用时跳过。
      */
     private AutoMatchStat autoMatchBindings()
     {
@@ -319,47 +324,51 @@ public class WecomSyncServiceImpl implements IWecomSyncService
         List<IntegrationUserBinding> unmatched = bindingMapper.selectIntegrationUserBindingList(query);
         for (IntegrationUserBinding binding : unmatched)
         {
-            HrEmployee employee = null;
+            SysUser user = null;
             String usedStrategy = null;
 
             if ("jobNumber".equals(strategy))
             {
                 // 工号优先
-                employee = matchByJobNo(binding);
+                user = matchByJobNo(binding);
                 usedStrategy = "jobNumber";
-                if (employee == null)
+                if (user == null)
                 {
-                    employee = matchByMobile(binding);
+                    user = matchByMobile(binding);
                     usedStrategy = "mobile";
                 }
             }
             else
             {
                 // 默认：手机号优先，工号兜底
-                employee = matchByMobile(binding);
+                user = matchByMobile(binding);
                 usedStrategy = "mobile";
-                if (employee == null)
+                if (user == null)
                 {
-                    employee = matchByJobNo(binding);
+                    user = matchByJobNo(binding);
                     usedStrategy = "jobNumber";
                 }
             }
 
-            if (employee != null)
+            if (user != null)
             {
+                // 一一绑定约束：用户已被其他企业微信用户占用则跳过，保持未匹配等待人工处理
                 IntegrationUserBinding occupied = bindingMapper.selectOccupiedBinding(CONNECTOR_WECOM,
-                        employee.getEmployeeId(), binding.getBindingId());
+                        user.getUserId(), binding.getBindingId());
                 if (occupied != null)
                 {
-                    log.info("员工 {} 已被企业微信用户 {} 绑定，跳过自动匹配（外部用户：{}）", employee.getEmployeeNo(),
-                            occupied.getExternalName(), binding.getExternalName());
+                    log.info("平台用户 {}({}) 已被企业微信用户 {} 绑定，跳过自动匹配（外部用户：{}）", user.getUserName(),
+                            user.getNickName(), occupied.getExternalName(), binding.getExternalName());
                     stat.skipped++;
                     continue;
                 }
                 IntegrationUserBinding update = new IntegrationUserBinding();
                 update.setBindingId(binding.getBindingId());
-                update.setEmployeeNo(employee.getEmployeeNo());
-                update.setEmployeeId(employee.getEmployeeId());
+                update.setUserId(user.getUserId());
+                // 用户关联了 HR 员工档案时同步回填档案工号/ID，供考勤同步按工号落库；未关联则留空
+                HrEmployee employee = selectEmployeeByUserId(user.getUserId());
+                update.setEmployeeNo(employee != null ? employee.getEmployeeNo() : null);
+                update.setEmployeeId(employee != null ? employee.getEmployeeId() : null);
                 update.setMatchType("auto_" + usedStrategy);
                 update.setSyncTime(new Date());
                 bindingMapper.updateIntegrationUserBinding(update);
@@ -370,33 +379,52 @@ public class WecomSyncServiceImpl implements IWecomSyncService
     }
 
     /**
-     * 按手机号精确匹配员工档案
+     * 按手机号匹配平台组织用户（sys_user.phonenumber）
      */
-    private HrEmployee matchByMobile(IntegrationUserBinding binding)
+    private SysUser matchByMobile(IntegrationUserBinding binding)
     {
         if (StringUtils.isEmpty(binding.getMobile()))
         {
             return null;
         }
-        return hrEmployeeMapper.selectHrEmployeeByPhone(binding.getMobile());
+        SysUser query = new SysUser();
+        query.setPhonenumber(binding.getMobile());
+        query.setStatus("0");
+        List<SysUser> users = userService.selectUserList(query);
+        return users.isEmpty() ? null : users.get(0);
     }
 
     /**
-     * 按工号匹配员工档案：先取 alias（别名），再取 userid
+     * 按工号（登录账号）匹配平台组织用户：先取 alias（别名），再取 userid
      */
-    private HrEmployee matchByJobNo(IntegrationUserBinding binding)
+    private SysUser matchByJobNo(IntegrationUserBinding binding)
     {
-        HrEmployee employee = null;
+        SysUser user = null;
         String alias = binding.getExternalJobNo();
         if (StringUtils.isNotEmpty(alias))
         {
-            employee = hrEmployeeMapper.selectHrEmployeeByEmployeeNo(alias);
+            user = userService.selectUserByUserName(alias);
         }
-        if (employee == null && StringUtils.isNotEmpty(binding.getExternalUserid()))
+        if (user == null && StringUtils.isNotEmpty(binding.getExternalUserid()))
         {
-            employee = hrEmployeeMapper.selectHrEmployeeByEmployeeNo(binding.getExternalUserid());
+            user = userService.selectUserByUserName(binding.getExternalUserid());
         }
-        return employee;
+        return (user != null && !"1".equals(user.getStatus())) ? user : null;
+    }
+
+    /**
+     * 查询系统用户关联的 HR 员工档案（biz_hr_employee.user_id），未关联返回 null
+     */
+    private HrEmployee selectEmployeeByUserId(Long userId)
+    {
+        if (userId == null)
+        {
+            return null;
+        }
+        HrEmployee query = new HrEmployee();
+        query.setUserId(userId);
+        List<HrEmployee> employees = hrEmployeeMapper.selectHrEmployeeList(query);
+        return employees.isEmpty() ? null : employees.get(0);
     }
 
     /**
