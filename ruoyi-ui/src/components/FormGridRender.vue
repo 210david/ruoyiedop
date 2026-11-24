@@ -158,7 +158,7 @@
                   <img v-if="e.cell.src" :src="e.cell.src" class="fgr-img" alt="图片" />
                   <span v-else class="fgr-text ph">图片</span>
                 </div>
-                <div v-else class="fgr-text">{{ e.cell.text || '' }}</div>
+                <div v-else class="fgr-text">{{ labelTextOf(e.cell) }}</div>
               </template>
             </td>
               </template>
@@ -183,14 +183,23 @@ import { computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import GridControl, { displayTextOf, rtypeOf } from '@/components/FormGridControl.js';
 import { isSysReadonlyField } from '@/utils/flow-system-fields.js';
-import { applyFieldDefaults, currentUserCtx, syncPersonDept } from '@/views/flowable/common/field-defaults';
+import { applyFieldDefaults, currentUserCtx, syncPersonDerived } from '@/views/flowable/common/field-defaults';
 import { buildRowsView, cellCss, colWStyle } from '@/views/flowable/form/designer/useGridMatrix.js';
 import { toRmbUpper } from '@/utils/rmb';
 // 渲染态不显示编辑网格默认线框，只显示用户绘制的边框
 const cellStyle = (st) => cellCss(st, true);
+/** 标签格显示文字：labelField 绑定且字段存在时实时取字段最新标签（字段改名后运行态同步），否则用格内文本 */
+function labelTextOf(cell) {
+  if (cell && cell.type === 'text' && cell.labelField) {
+    const f = (props.fields || []).find((x) => x && x.field === cell.labelField);
+    if (f && f.label) return f.label;
+  }
+  return (cell && cell.text) || '';
+}
 /** 标签格：设计器「插入标签」创建的文本格（labelField 标记），运行态沿用设计器的默认浅蓝底 */
 function isLabelCell(e) {
-  return !!(e && e.cell && e.cell.type === 'text' && e.cell.text && e.cell.labelField);
+  const c = e && e.cell;
+  return !!(c && c.type === 'text' && c.labelField && labelTextOf(c));
 }
 
 const props = defineProps({
@@ -413,17 +422,17 @@ function detailDefsOf(dt) {
   }
   return out;
 }
-/** 人员→部门联动（明细行）：只盯配置了「随人员带出部门」的源字段，避免每次输入都计算 */
+/** 人员→部门/岗位联动（明细行）：只盯配置了「随人员带出部门/岗位」的源字段，避免每次输入都计算 */
 const dLinkKey = computed(() => {
   const parts = [];
   for (const dt of Object.keys(detailRows.value || {})) {
     const defs = detailDefsOf(dt);
     for (const f of defs) {
-      if (!f || f.defaultMode !== 'fieldUserDept' || !f.defaultField) continue;
+      if (!f || !['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode) || !f.defaultField) continue;
       const s = f.defaultField;
       for (const row of detailRows.value[dt] || []) {
         const ex = row[s + '__extra'];
-        parts.push(`${dt}.${f.field}=${row[s]}|${row[s + '__id']}|${ex ? ex.deptName : ''}`);
+        parts.push(`${dt}.${f.field}=${row[s]}|${row[s + '__id']}|${ex ? ex.deptName : ''}|${ex ? ex.postName : ''}`);
       }
     }
   }
@@ -433,8 +442,8 @@ watch(dLinkKey, (v) => {
   if (!v) return;
   for (const dt of Object.keys(detailRows.value || {})) {
     const defs = detailDefsOf(dt);
-    if (!defs.some((f) => f && f.defaultMode === 'fieldUserDept')) continue;
-    for (const row of detailRows.value[dt] || []) syncPersonDept(defs, row, userCtx.value);
+    if (!defs.some((f) => f && ['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode))) continue;
+    for (const row of detailRows.value[dt] || []) syncPersonDerived(defs, row, userCtx.value);
   }
 });
 // 当前用户信息是异步取的：拿到后再补一次明细默认值（首次同步填充时还拿不到当前用户/部门）
@@ -445,7 +454,7 @@ currentUserCtx().then((c) => {
     if (!defs.length) continue;
     for (const row of detailRows.value[dt] || []) {
       applyFieldDefaults(defs, row, c);
-      syncPersonDept(defs, row, c);
+      syncPersonDerived(defs, row, c);
     }
   }
 });
@@ -488,7 +497,7 @@ function blankDetailRow(cols, table) {
   // 新增行同样带出字段默认值（固定值 / 当前用户 / 当天日期），已有值不覆盖
   const defs = cols.map((c) => fieldDefOfTable(c.field, table)).filter(Boolean);
   applyFieldDefaults(defs, row, userCtx.value);
-  syncPersonDept(defs, row, userCtx.value);
+  syncPersonDerived(defs, row, userCtx.value);
   return row;
 }
 /** 明细块变化时初始化默认 1 行（"新增默认明细行数"）；只读回显不预置空行 */

@@ -64,7 +64,7 @@
                         </span>
                         <span v-else-if="e.cell.type === 'detail'" class="wdm-bar" @dblclick.stop="openDtProps(e.cell)">{{ e.cell.text || '明细表' }}<em>双击进入明细编辑</em></span>
                         <span v-else-if="e.cell.type === 'group'" class="wgrp-bar">{{ e.cell.text || '分组' }}<em>分组卡片标题（运行态渲染为分组卡片）</em></span>
-                        <span v-else class="wm-t" :class="{ ph: !e.cell.text }"><template v-if="e.cell.text">{{ e.cell.text }}</template><template v-else-if="isSingleActiveCell(e.r, e.c)">双击输入文本</template></span>
+                        <span v-else class="wm-t" :class="{ ph: !cellDisplayText(e.cell) }"><template v-if="cellDisplayText(e.cell)">{{ cellDisplayText(e.cell) }}</template><template v-else-if="isSingleActiveCell(e.r, e.c)">双击输入文本</template></span>
                       </template>
                       <template v-else><span v-if="isSingleActiveCell(e.r, e.c)" class="wm-t ph wm-cell-tip">双击输入文本</span></template>
                     </td>
@@ -220,7 +220,7 @@ import CellFormatDialog from './CellFormatDialog.vue'
 import ResizeDialog from './ResizeDialog.vue'
 import PropPanel from './PropPanel.vue'
 import FormGridRender from '@/components/FormGridRender.vue'
-import { applyFieldDefaults, currentUserCtx, syncPersonDept, mainFieldsOf } from '@/views/flowable/common/field-defaults'
+import { applyFieldDefaults, currentUserCtx, syncPersonDerived, mainFieldsOf } from '@/views/flowable/common/field-defaults'
 import './designer.scss'
 import { buildMatrix, buildRowsView, cellCss, createGrid, findAnchorCell, canMergeRange, mergeRange, splitCell, insertRow, deleteRow, insertCol, deleteCol, resizeRow, resizeCol, hydrateStyle, makeCell, serializeGrid, normalizeGrid, hiddenSets, isPct, pctToPx, colWStyle } from './useGridMatrix.js'
 import { stdFormGrid, expenseCardGrid } from './converters.js'
@@ -270,24 +270,25 @@ function resetPreviewValues() {
     pvCtx.userName = ctx.userName
     pvCtx.deptId = ctx.deptId
     pvCtx.deptName = ctx.deptName
+    pvCtx.postName = ctx.postName
     applyFieldDefaults(pvFields, pvValues, ctx)
-    syncPersonDept(pvFields, pvValues, ctx)
+    syncPersonDerived(pvFields, pvValues, ctx)
   })
 }
-const pvCtx = reactive({ userId: '', userName: '', deptId: '', deptName: '' })
-/** 人员→部门联动：只盯配置了「随人员带出部门」的源字段，避免预览里每次输入都计算 */
+const pvCtx = reactive({ userId: '', userName: '', deptId: '', deptName: '', postName: '' })
+/** 人员→部门/岗位联动：只盯配置了「随人员带出部门/岗位」的源字段，避免预览里每次输入都计算 */
 const pvLinkKey = computed(() =>
   mainFieldsOf(props.fields)
-    .filter((f) => f && f.defaultMode === 'fieldUserDept' && f.defaultField)
+    .filter((f) => f && ['fieldUserDept', 'fieldUserPost'].includes(f.defaultMode) && f.defaultField)
     .map((f) => {
       const s = f.defaultField
       const extra = pvValues[s + '__extra']
-      return `${s}=${pvValues[s]}|${pvValues[s + '__id']}|${extra ? extra.deptName : ''}`
+      return `${s}=${pvValues[s]}|${pvValues[s + '__id']}|${extra ? extra.deptName : ''}|${extra ? extra.postName : ''}`
     })
     .join('~'),
 )
 watch(pvLinkKey, (v) => {
-  if (v) syncPersonDept(mainFieldsOf(props.fields), pvValues, pvCtx)
+  if (v) syncPersonDerived(mainFieldsOf(props.fields), pvValues, pvCtx)
 })
 function validatePreview() {
   if (!pvFormRef.value) return
@@ -459,6 +460,11 @@ function colName(i) { let s = '', n = i + 1; while (n > 0) { n--; s = String.fro
 /** 序号列宽（可拖拽调整，默认 34px） */
 const rhStyle = computed(() => { const w = (grid.value && grid.value.rowheadW) || 34; return { width: w + 'px', minWidth: w + 'px', maxWidth: w + 'px' } })
 function fieldLabel(f) { const d = fieldMap.value[f]; return d ? d.label : (f || '未绑定') }
+/** 文本格显示文字：labelField 绑定且字段存在时实时取字段最新标签（字段改名后画布即时跟随，泛微式），否则显示格内文本 */
+function cellDisplayText(cell) {
+  if (cell && cell.type === 'text' && cell.labelField && fieldMap.value[cell.labelField]) return fieldLabel(cell.labelField)
+  return (cell && cell.text) || ''
+}
 /** 字段格展示属性：设计器右键设置优先，字段必填定义兜底（与 FormGridRender.cellAttr 同口径） */
 function cellAttr(cell) {
   if (cell && cell.attr) return cell.attr
@@ -681,7 +687,11 @@ function commitEdit() {
   const cell = findAnchorCell(grid.value, r, c)
   const val = editText.value
   pushUndo()
-  if (cell && ['title', 'text', 'note', 'group'].includes(cell.type)) cell.text = val
+  if (cell && ['title', 'text', 'note', 'group'].includes(cell.type)) {
+    cell.text = val
+    // 绑定的标签格手动改文字 = 自定义标签：解除与字段的绑定，不再跟随字段名实时变更
+    if (cell.type === 'text' && cell.labelField && fieldMap.value[cell.labelField] && val !== fieldLabel(cell.labelField)) cell.labelField = undefined
+  }
   else if (!cell && val.trim()) grid.value.cells.push(makeCell(r, c, { type: 'text', text: val }))
   else if (cell && !['title', 'text', 'note', 'group'].includes(cell.type) && !cell.field) { cell.type = 'text'; cell.text = val }
   editing.value = null

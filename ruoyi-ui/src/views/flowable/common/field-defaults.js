@@ -4,9 +4,9 @@
  * 设计器里给字段配「默认值」方式，发起页打开表单时自动带出，用户可再改。
  * 字段定义上的三个键：
  *   defaultMode   none（默认，不配置）| fixedValue（固定值，日期/文本等直接指定）
- *                 | currentUser | currentDept | currentDate
+ *                 | currentUser | currentDept | currentPost | currentDate
  *                 | currentDatetime | fixedPick（指定人员/部门/物料…，弹框里选一条）
- *                 | fieldValue | fieldUserDept
+ *                 | fieldValue | fieldUserDept | fieldUserPost
  *   defaultField  fieldValue / fieldUserDept 时的源字段名（同一张表内的字段）
  *   defaultValue  固定值（选项字段由「配置」弹窗写入；fixedPick 时存选中项的名称）
  *   defaultValueId    fixedPick 时选中项的 ID（人员 userId / 部门 deptId）
@@ -16,6 +16,7 @@
  * 取值口径：
  *   - 人员默认值：字段值存名称，伴生键 `${field}__id` 存用户 ID
  *   - 部门默认值：字段值存部门名，伴生键 `${field}__id` 存部门 ID
+ *   - 岗位默认值：字段值存岗位名（人员选择器只带回岗位名，没有岗位 ID，不写伴生键）
  *   - 日期/时间：`YYYY-MM-DD` / `YYYY-MM-DD HH:mm:ss`，与日期控件、后端列格式一致
  *   - 只在字段当前为空时填充，草稿恢复 / 流程回显已有值不会被覆盖
  *   - 「随人员字段带出部门」依赖人员选择器确认时带回的部门信息（`${field}__extra`），
@@ -35,7 +36,8 @@ export const DEFAULT_MODE_LABELS = {
   fixedValue: '固定值',
   fixedPick: '指定值',
   fieldValue: '取表单字段',
-  fieldUserDept: '随人员字段带出部门'
+  fieldUserDept: '随人员字段带出部门',
+  fieldUserPost: '随人员字段带出岗位'
 };
 
 /** 下拉里显示的方式名：「指定值」按浏览数据源细化为「指定人员 / 指定部门 / 指定物料」 */
@@ -91,8 +93,9 @@ export function defaultModesOf(f) {
     // 浏览按钮的默认值应该“直接在组织/基础数据里指定一条”，而不是抄另一个字段的值
     if (type === 'user') return ['currentUser', 'fixedPick'];
     if (type === 'dept') return ['currentDept', 'fixedPick', 'fieldUserDept'];
-    // 岗位浏览字段支持按当前登录人岗位带出（profile 接口 postGroup 第一个岗位）
-    if (type === 'post') return ['currentPost', 'fixedPick'];
+    // 岗位浏览字段支持按当前登录人岗位带出（profile 接口 postGroup 第一个岗位），
+    // 或随表单里的人员字段带出该人员所选的岗位
+    if (type === 'post') return ['currentPost', 'fixedPick', 'fieldUserPost'];
     return ['fixedPick'];
   }
   if (f.form === 'date') return ['currentDate', 'fixedValue', 'fieldValue'];
@@ -115,7 +118,7 @@ export function sourceFieldOptions(fields, mode, selfField, selfTable) {
   const table = tableOf({ table: selfTable });
   const self = (fields || []).find((x) => x && x.field === selfField && (!selfTable || tableOf(x) === table));
   const list = (fields || []).filter((x) => x.field && x.field !== selfField && tableOf(x) === (selfTable ? table : tableOf(self)));
-  if (mode === 'fieldUserDept') {
+  if (mode === 'fieldUserDept' || mode === 'fieldUserPost') {
     return list.filter((x) => x.form === 'browse' && (x.browseType || 'user') === 'user');
   }
   const src = list.filter((x) => x.form !== 'attach' && x.form !== 'browse');
@@ -143,7 +146,7 @@ export function defaultSummary(f) {
   if (mode === 'fixedValue') {
     return isEmptyValue(f.defaultValue) ? label : `${label}：${Array.isArray(f.defaultValue) ? f.defaultValue.join('、') : f.defaultValue}`;
   }
-  if (mode === 'fieldValue' || mode === 'fieldUserDept') {
+  if (mode === 'fieldValue' || mode === 'fieldUserDept' || mode === 'fieldUserPost') {
     return `${label}（${f.defaultField || '未选字段'}）`;
   }
   return label;
@@ -187,6 +190,18 @@ export function deptOfPerson(values, srcField, ctx) {
   const pid = values[srcField + '__id'];
   if (ctx && !isEmptyValue(pid) && String(pid) === String(ctx.userId)) {
     return { deptId: ctx.deptId, deptName: ctx.deptName };
+  }
+  return null;
+}
+
+/** 从人员字段推出岗位：优先用选择器带回的岗位名，其次比对「是否当前用户」取登录人主岗位 */
+export function postOfPerson(values, srcField, ctx) {
+  if (!values || !srcField) return null;
+  const extra = values[srcField + '__extra'];
+  if (extra && extra.postName) return { postName: extra.postName };
+  const pid = values[srcField + '__id'];
+  if (ctx && !isEmptyValue(pid) && String(pid) === String(ctx.userId) && ctx.postName) {
+    return { postName: ctx.postName };
   }
   return null;
 }
@@ -248,8 +263,8 @@ export function applyFieldDefaults(fields, values, ctx) {
       }
     }
   });
-  // 第二遍：「随人员字段带出部门」要等人员字段的值（含指定人员带回的部门）都就位后再算，
-  // 否则部门字段排在人员字段前面时会取不到部门
+  // 第二遍：「随人员字段带出部门/岗位」要等人员字段的值（含指定人员带回的部门/岗位）都就位后再算，
+  // 否则部门/岗位字段排在人员字段前面时会取不到
   (fields || []).forEach((f) => {
     if (!f || !f.field) return;
     if (f.form === 'browse' && f.browseType === 'dept') {
@@ -267,35 +282,59 @@ export function applyFieldDefaults(fields, values, ctx) {
         if (dept && dept.deptName === values[f.field]) values[f.field + '__id'] = dept.deptId;
       }
     }
+    if (f.form === 'browse' && f.browseType === 'post') {
+      if (f.defaultMode === 'fieldUserPost' && isEmptyValue(values[f.field])) {
+        const post = postOfPerson(values, f.defaultField, user);
+        if (post && post.postName) values[f.field] = post.postName;
+      }
+    }
   });
 }
 
 /**
- * 人员字段变化 → 同步部门字段（「随人员字段带出部门」）
- * 人员有值且能推出部门时覆盖；人员被清空时同步清空部门（避免留下对不上的旧部门）
+ * 人员字段变化 → 同步随人员带出的字段（「随人员字段带出部门 / 随人员字段带出岗位」）
+ * 人员有值且能推出部门/岗位时覆盖；人员被清空时同步清空（避免留下对不上的旧值）
  */
-export function syncPersonDept(fields, values, ctx) {
+export function syncPersonDerived(fields, values, ctx) {
   if (!values) return false;
   let changed = false;
   (fields || []).forEach((f) => {
-    if (!f || f.form !== 'browse' || f.defaultMode !== 'fieldUserDept') return;
+    if (!f || f.form !== 'browse') return;
     const src = f.defaultField;
     if (!src) return;
-    const personEmpty = isEmptyValue(values[src]) && isEmptyValue(values[src + '__id']);
-    if (personEmpty) {
-      if (!isEmptyValue(values[f.field]) || !isEmptyValue(values[f.field + '__id'])) {
-        values[f.field] = '';
-        values[f.field + '__id'] = '';
+    if (f.browseType === 'dept' && f.defaultMode === 'fieldUserDept') {
+      const personEmpty = isEmptyValue(values[src]) && isEmptyValue(values[src + '__id']);
+      if (personEmpty) {
+        if (!isEmptyValue(values[f.field]) || !isEmptyValue(values[f.field + '__id'])) {
+          values[f.field] = '';
+          values[f.field + '__id'] = '';
+          changed = true;
+        }
+        return;
+      }
+      const dept = deptOfPerson(values, src, ctx);
+      if (!dept || !dept.deptName) return;
+      if (values[f.field] !== dept.deptName || String(values[f.field + '__id'] || '') !== String(dept.deptId || '')) {
+        values[f.field] = dept.deptName;
+        values[f.field + '__id'] = dept.deptId;
         changed = true;
       }
-      return;
     }
-    const dept = deptOfPerson(values, src, ctx);
-    if (!dept || !dept.deptName) return;
-    if (values[f.field] !== dept.deptName || String(values[f.field + '__id'] || '') !== String(dept.deptId || '')) {
-      values[f.field] = dept.deptName;
-      values[f.field + '__id'] = dept.deptId;
-      changed = true;
+    if (f.browseType === 'post' && f.defaultMode === 'fieldUserPost') {
+      const personEmpty = isEmptyValue(values[src]) && isEmptyValue(values[src + '__id']);
+      if (personEmpty) {
+        if (!isEmptyValue(values[f.field])) {
+          values[f.field] = '';
+          changed = true;
+        }
+        return;
+      }
+      const post = postOfPerson(values, src, ctx);
+      if (!post || !post.postName) return;
+      if (values[f.field] !== post.postName) {
+        values[f.field] = post.postName;
+        changed = true;
+      }
     }
   });
   return changed;
