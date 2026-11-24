@@ -182,10 +182,9 @@
               <el-table-column v-if="columns.requestId.visible" label="流程请求ID" prop="requestId" key="requestId" :width="colWidth('requestId', 110)" align="center" show-overflow-tooltip>
                 <template #default="scope"><span class="col-mono">{{ scope.row.requestId || '-' }}</span></template>
               </el-table-column>
-              <el-table-column label="操作" width="290" align="center" fixed="right" class-name="col-action">
+              <el-table-column label="操作" width="220" align="center" fixed="right" class-name="col-action">
                 <template #default="scope">
                   <div class="action-btn-row">
-                    <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
                     <el-button v-if="scope.row.status === 'running'" link type="warning" icon="Position"
                       v-hasPermi="['flowable:monitor:intervene']" @click="openIntervene(scope.row)">干预</el-button>
                     <el-button v-if="scope.row.status !== 'running'" link type="success" icon="RefreshRight"
