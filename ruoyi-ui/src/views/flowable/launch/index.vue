@@ -123,7 +123,7 @@
               <span class="lc-icon">▤</span>申请表单
             </div>
             <div class="launch-card-body">
-              <el-form ref="dynRef" :model="dynData" label-width="120px" hide-required-asterisk>
+              <el-form ref="dynRef" :model="dynData" label-width="120px">
               <FormGridRender v-if="layoutMode === 'grid' && layoutGrid" ref="gridRenderRef" :grid="layoutGrid" :fields="boundForm.fields" :values="dynData" :editable-fields="noRuleEditableFields" :overrides="ruleOverrides" :rule-errors="ruleErrors" :rule-detail-errors="ruleDetailErrors" editable @detail-change="runFormRules" />
               <template v-else>
                 <!-- 简易模式顶部流程名称：与分组标题一起构成表单层级 -->
@@ -1364,8 +1364,25 @@ function validateForm() {
       resolve(true);
       return;
     }
-    formRef.validate(async (valid) => {
+    formRef.validate(async (valid, invalidFields) => {
       if (!valid) {
+        // 校验失败不再静默：全局提示缺失项 + 滚动定位到第一个未填字段（Issue: 用户点提交"没反应"）
+        launchTab.value = 'form';
+        const errs = Object.values(invalidFields || {}).flat();
+        const names = [];
+        errs.forEach((e) => {
+          if (e && e.message) names.push(e.message.replace(/^请填写/, ''));
+        });
+        const shown = names.slice(0, 5);
+        const total = names.length;
+        proxy.$modal.msgError(
+          total
+            ? '还有 ' + total + ' 项必填内容未填写：' + shown.join('、') + (total > 5 ? ' 等' : '') + '，已在表单中标红并定位'
+            : '必填内容校验未通过，已在表单中标红并定位'
+        );
+        await nextTick();
+        const bad = document.querySelector('.el-form-item.is-error');
+        if (bad) bad.scrollIntoView({ behavior: 'smooth', block: 'center' });
         resolve(false);
         return;
       }
