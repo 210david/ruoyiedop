@@ -18,10 +18,16 @@ public class PjmWbsTask extends BaseEntity
     private Long parentTaskId;
     private String taskCode;
     private String taskName;
-    private String taskType;   // 1工作项 2里程碑 3交付物
+    private String taskType;   // 字典 pjm_wbs_task_type：1单项工程 2单位工程 3分部工程 4分项工程 5检验批 6工作项 7里程碑 9其他
     private String status;     // 0未开始 1进行中 2完成 3取消 4延期
     private String priority;
     private BigDecimal progress;
+
+    /** ★ 工程量清单字段（清单模式识别 WBS 时落库，支持产值/进度计量） */
+    private BigDecimal quantity;        // 清单工程量
+    private String unit;                // 计量单位
+    private BigDecimal unitPrice;       // 综合单价(元)
+    private BigDecimal amount;          // 清单合价(元)
 
     /** ★ 采购关联 */
     private String needPurchase;        // 0否 1是
@@ -66,6 +72,15 @@ public class PjmWbsTask extends BaseEntity
     public void setPriority(String priority) { this.priority = priority; }
     public BigDecimal getProgress() { return progress; }
     public void setProgress(BigDecimal progress) { this.progress = progress; }
+
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getNeedPurchase() { return needPurchase; }
     public void setNeedPurchase(String needPurchase) { this.needPurchase = needPurchase; }
     public Long getPurchaseRequestId() { return purchaseRequestId; }

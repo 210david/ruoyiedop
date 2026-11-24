@@ -84,6 +84,7 @@
       <div class="toolbar">
         <div class="left">
           <el-button type="primary" plain icon="Plus" @click="handleAdd(null)" v-hasPermi="['pjm:task:add']">新增顶级任务</el-button>
+          <el-button type="warning" plain icon="MagicStick" @click="openAiWbsDialog" v-hasPermi="['pjm:task:add']">AI 生成</el-button>
           <button type="button" class="btn-soft is-outline" :disabled="single" @click="handleUpdateSelected" v-hasPermi="['pjm:task:edit']">
             <el-icon><Edit /></el-icon> 修改
           </button>
@@ -307,6 +308,140 @@
       </template>
     </el-dialog>
 
+    <!-- ===== AI 生成 WBS 弹框 ===== -->
+    <el-dialog v-model="aiWbsOpen" width="920px" append-to-body draggable class="rd-dialog">
+      <template #header>
+        <div class="rd-detail-header">
+          <div class="rd-detail-header-icon"><el-icon :size="18"><MagicStick /></el-icon></div>
+          <span class="rd-detail-header-title">AI 生成 WBS 任务分解</span>
+        </div>
+      </template>
+      <div class="rd-page">
+        <!-- 第一步：选择解析来源 -->
+        <section class="rd-card" v-if="!aiWbsResult">
+          <div class="rd-card-header"><div class="rd-card-title"><span class="rd-card-icon"><el-icon><Document /></el-icon></span>解析来源</div></div>
+          <div class="rd-card-body">
+            <el-radio-group v-model="aiWbsSource" style="margin-bottom: 12px">
+              <el-radio-button value="boq">上传工程量清单（推荐）</el-radio-button>
+              <el-radio-button value="file">从项目附件解析</el-radio-button>
+              <el-radio-button value="text">粘贴文本摘要</el-radio-button>
+            </el-radio-group>
+
+            <!-- ① 工程量清单：直接上传清单文件（Excel/PDF），逐条精确识别 -->
+            <div v-if="aiWbsSource === 'boq'">
+              <el-alert type="success" :closable="false" style="margin-bottom: 12px"
+                        title="清单是最可靠的 WBS 来源：投标文件正文往往不含清单（常注明「工程量清单另册提供」），请直接上传清单文件。"
+                        description="支持 Excel(.xlsx/.xls)、PDF、CSV。Excel 版识别准确率最高（列结构清晰，工程量/单价不会错位）。" />
+              <el-upload drag :auto-upload="false" :show-file-list="false" :limit="1"
+                         accept=".xlsx,.xls,.pdf,.csv,.docx"
+                         :on-change="onBoqFileChange">
+                <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+                <div class="el-upload__text">拖拽工程量清单到此，或<em>点击选择文件</em></div>
+                <template #tip>
+                  <div class="el-upload__tip">支持 .xlsx / .xls / .pdf / .csv / .docx</div>
+                </template>
+              </el-upload>
+              <div v-if="aiWbsBoqFile" class="ai-boq-file">
+                <el-icon><Document /></el-icon>
+                <span class="ai-boq-name">{{ aiWbsBoqFile.name }}</span>
+                <span class="ai-boq-size">{{ (aiWbsBoqFile.size / 1024).toFixed(0) }} KB</span>
+                <el-button link type="danger" icon="Close" @click="clearBoqFile">移除</el-button>
+              </div>
+            </div>
+
+            <!-- ② 项目已有附件 -->
+            <div v-if="aiWbsSource === 'file'">
+              <el-alert v-if="aiWbsFiles.length === 0" type="info" :closable="false"
+                        title="当前项目暂无可解析的附件（PDF/DOCX/Excel），请先在项目立项中上传，或改用「上传工程量清单」方式" />
+              <div v-else class="ai-file-list">
+                <el-checkbox-group v-model="aiWbsSelectedUrls">
+                  <div v-for="f in aiWbsFiles" :key="f.fileUrl" class="ai-file-item">
+                    <el-checkbox :value="f.fileUrl">{{ f.fileName || f.fileUrl }}</el-checkbox>
+                  </div>
+                </el-checkbox-group>
+              </div>
+            </div>
+
+            <!-- ③ 粘贴文本 -->
+            <div v-if="aiWbsSource === 'text'">
+              <el-input v-model="aiWbsManualText" type="textarea" :rows="6"
+                        placeholder="粘贴工程量清单 / 分部分项列表（建议保留「序号 项目名称 单位 工程量 单价」列）" />
+            </div>
+
+            <div style="margin-top: 14px; text-align: right">
+              <el-button @click="aiWbsOpen = false">取 消</el-button>
+              <el-button type="primary" :loading="aiWbsLoading" @click="doAiParseWbs">
+                {{ aiWbsLoading ? 'AI 解析中…' : '开始解析' }}
+              </el-button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 第二步：确认草稿 -->
+        <section class="rd-card" v-else>
+          <div class="rd-card-header">
+            <div class="rd-card-title"><span class="rd-card-icon"><el-icon><List /></el-icon></span>解析结果确认</div>
+            <el-tag type="success" size="small">{{ aiWbsResult.summary || ('共 ' + aiWbsDraft.length + ' 条') }}</el-tag>
+          </div>
+          <div class="rd-card-body">
+            <el-alert type="warning" :closable="false" style="margin-bottom: 12px"
+                      title="以下为 AI 生成的草稿，请核对任务名称与层级后勾选导入；灰显行为阶段分组节点。" />
+            <el-table :data="aiWbsDraft" border max-height="420" class="app-table"
+                      @selection-change="aiWbsSelection = $event">
+              <el-table-column type="selection" width="45" align="center" />
+              <el-table-column label="任务名称" min-width="220">
+                <template #default="scope">
+                  <span :class="{ 'ai-stage-row': isStageRow(scope.row) }">{{ isStageRow(scope.row) ? '📁 ' : '' }}{{ scope.row.taskName }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="类型" width="80" align="center">
+                <template #default="scope">{{ scope.row.taskType === '7' ? '里程碑' : (taskTypeLabel(scope.row.taskType) || '工作项') }}</template>
+              </el-table-column>
+              <el-table-column label="工程量" width="100" align="right">
+                <template #default="scope">
+                  <span v-if="scope.row.quantity != null">{{ scope.row.quantity }}</span>
+                  <span v-else class="muted-dash">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="单位" width="60" align="center">
+                <template #default="scope">{{ scope.row.unit || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="综合单价" width="100" align="right">
+                <template #default="scope">
+                  <span v-if="scope.row.unitPrice != null">{{ scope.row.unitPrice }}</span>
+                  <span v-else class="muted-dash">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="合价" width="110" align="right">
+                <template #default="scope">
+                  <span v-if="scope.row.amount != null">{{ scope.row.amount }}</span>
+                  <span v-else class="muted-dash">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="说明" min-width="180" show-overflow-tooltip>
+                <template #default="scope">{{ scope.row.description || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="计划开始" width="105" align="center">
+                <template #default="scope">{{ scope.row.planStartDate || '—' }}</template>
+              </el-table-column>
+              <el-table-column label="计划结束" width="105" align="center">
+                <template #default="scope">{{ scope.row.planEndDate || '—' }}</template>
+              </el-table-column>
+            </el-table>
+            <div style="margin-top: 14px; display: flex; justify-content: space-between">
+              <el-button @click="aiWbsResult = null; aiWbsDraft = []">上一步</el-button>
+              <div>
+                <el-button @click="aiWbsOpen = false">取 消</el-button>
+                <el-button type="primary" :loading="aiWbsImporting" :disabled="aiWbsSelection.length === 0" @click="doImportWbs">
+                  导入选中任务（{{ aiWbsSelection.length }}）
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
+
     <!-- ===== 发起采购弹框 ===== -->
     <el-dialog v-model="purchaseOpen" width="880px" append-to-body draggable class="rd-dialog">
       <template #header>
@@ -423,10 +558,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, getCurrentInstance } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listProject, buildPurchase, getPurchaseSummary } from '@/api/pjm/project'
-import { getTaskTree, getTask, addTask, updateTask, delTask } from '@/api/pjm/task'
+import { getTaskTree, getTask, addTask, updateTask, delTask, aiParseWbs, aiBatchImportWbs } from '@/api/pjm/task'
+import { listByProject } from '@/api/pjm/attachment'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useDetailCard } from '@/composables/useDetailCard'
 import UserPicker from '@/components/UserPicker/index.vue'
@@ -436,6 +572,11 @@ import { CircleClose } from '@element-plus/icons-vue'
 
 const { collapsedCards, toggleCard } = useDetailCard(['c1', 'c2', 'c3', 'p1', 'p2'])
 const { colWidth, onHeaderDragEnd, tableRef, applySavedWidths } = useColumnResize('pjm_task_index')
+
+// ★ 任务类型统一走系统字典 pjm_wbs_task_type（原硬编码 5 项与后端「2=里程碑」语义冲突，已收敛）
+const { proxy } = getCurrentInstance()
+const { pjm_wbs_task_type } = proxy.useDict('pjm_wbs_task_type')
+const taskTypeOptions = computed(() => (pjm_wbs_task_type.value || []).map(d => ({ value: String(d.value), label: d.label })))
 
 const loading = ref(false)
 const showSearch = ref(true)
@@ -464,11 +605,7 @@ const statusOptions = [
   { value: '0', label: '未开始' }, { value: '1', label: '进行中' },
   { value: '2', label: '已完成' }, { value: '3', label: '已取消' }, { value: '4', label: '已延期' }
 ]
-const taskTypeOptions = [
-  { value: '1', label: '单项工程' }, { value: '2', label: '单位工程' },
-  { value: '3', label: '分部工程' }, { value: '4', label: '分项工程' },
-  { value: '5', label: '检验批' }
-]
+// 任务类型选项统一由字典 pjm_wbs_task_type 提供（见文件顶部 computed taskTypeOptions）
 
 // 列显隐配置
 const columns = ref({
@@ -499,7 +636,7 @@ function onProjectPickerConfirm(p) {
 }
 const activeFilterCount = computed(() => (selectedProjectId.value ? 1 : 0))
 
-const taskTypeLabel = (v) => taskTypeOptions.find(x => x.value === v)?.label || v || '-'
+const taskTypeLabel = (v) => taskTypeOptions.value.find(x => String(x.value) === String(v))?.label || v || '-'
 const statusLabel = (v) => ({ '0': '未开始', '1': '进行中', '2': '已完成', '3': '已取消', '4': '已延期' }[v] || v || '-')
 const statusBadge = (v) => ({ '0': 'gray', '1': 'blue', '2': 'green', '3': 'gray', '4': 'red' }[v] || 'gray')
 const projectStatusLabel = (v) => ({ '0': '草稿', '1': '待审批', '2': '审批通过', '3': '执行中', '4': '已完成', '5': '已关闭', '6': '暂停', '7': '驳回' }[v] || v || '-')
@@ -568,7 +705,7 @@ function handleAdd(parentRow) {
     parentTaskId: parentRow?.taskId || null,
     taskCode: parentRow ? (parentRow.taskCode ? parentRow.taskCode + '.' + (parentRow.children?.length || 0) + 1 : '') : '',
     taskName: '',
-    taskType: '1',
+    taskType: '6',
     status: '0',
     priority: '2',
     progress: 0,
@@ -679,6 +816,136 @@ function submitPurchase() {
 }
 
 onMounted(() => { loadProjectOptions() })
+
+// ============ AI 生成 WBS ============
+const aiWbsOpen = ref(false)
+const aiWbsLoading = ref(false)
+const aiWbsImporting = ref(false)
+const aiWbsSource = ref('boq')
+const aiWbsFiles = ref([])
+const aiWbsSelectedUrls = ref([])
+const aiWbsManualText = ref('')
+const aiWbsResult = ref(null)
+const aiWbsDraft = ref([])
+const aiWbsSelection = ref([])
+/** 工程量清单待上传文件 */
+const aiWbsBoqFile = ref(null)
+
+const aiParseableExts = ['pdf', 'docx', 'txt', 'md', 'csv', 'json', 'xml', 'xlsx', 'xls']
+
+/** 打开弹窗：拉取当前项目可解析附件（清单模式为默认，不受附件为空影响） */
+function openAiWbsDialog() {
+  if (!selectedProjectId.value) { ElMessage.warning('请先选择项目'); return }
+  aiWbsOpen.value = true
+  aiWbsResult.value = null
+  aiWbsDraft.value = []
+  aiWbsManualText.value = ''
+  aiWbsSelectedUrls.value = []
+  aiWbsFiles.value = []
+  aiWbsBoqFile.value = null
+  aiWbsSource.value = 'boq'
+  listByProject(selectedProjectId.value).then(res => {
+    const list = (res.data || []).filter(a => {
+      const ext = (a.fileExt || (a.fileName || '').split('.').pop() || '').toLowerCase()
+      return aiParseableExts.includes(ext)
+    })
+    aiWbsFiles.value = list
+    aiWbsSelectedUrls.value = list.map(f => f.fileUrl)
+  })
+}
+
+/** 清单文件选择（不自动上传，解析时一并提交） */
+function onBoqFileChange(uploadFile) {
+  aiWbsBoqFile.value = uploadFile?.raw || null
+}
+function clearBoqFile() {
+  aiWbsBoqFile.value = null
+}
+
+/** 取文件扩展名（用于后端在 multipart 文件名编码异常时兜底识别） */
+function extOf(name) {
+  const n = name || ''
+  const i = n.lastIndexOf('.')
+  return i >= 0 ? n.substring(i + 1).toLowerCase() : ''
+}
+
+/** 执行解析 */
+function doAiParseWbs() {
+  const formData = new FormData()
+  formData.append('source', aiWbsSource.value === 'boq' ? 'boq' : 'doc')
+  if (aiWbsSource.value === 'boq') {
+    if (!aiWbsBoqFile.value) { ElMessage.warning('请先选择工程量清单文件'); return }
+    formData.append('file', aiWbsBoqFile.value)
+    formData.append('fileExt', extOf(aiWbsBoqFile.value.name))
+  } else if (aiWbsSource.value === 'file') {
+    const urls = aiWbsSelectedUrls.value
+    if (!urls || urls.length === 0) { ElMessage.warning('请至少勾选一个附件'); return }
+    formData.append('fileUrls', urls.join(','))
+  } else {
+    if (!aiWbsManualText.value.trim()) { ElMessage.warning('请粘贴清单或关键文本'); return }
+    formData.append('manualText', aiWbsManualText.value.trim())
+  }
+  aiWbsLoading.value = true
+  aiParseWbs(formData).then(res => {
+    // request.js 只放行 code=200，此处必为成功
+    aiWbsResult.value = res.data
+    if (!res.data?.tasks || res.data.tasks.length === 0) {
+      ElMessage.warning(res.msg || '未识别出任务，请确认文件包含工程量清单表格')
+      return
+    }
+    aiWbsDraft.value = res.data.tasks.map((t, i) => ({
+      ...t,
+      // 没有父引用的即顶级/阶段节点
+      _isStage: !t.parentKey,
+      _idx: i
+    }))
+    aiWbsSelection.value = [...aiWbsDraft.value]
+    ElMessage.success(`解析完成，共识别 ${aiWbsDraft.value.length} 条，请核对勾选后导入`)
+  }).catch(err => {
+    // 错误提示由 request.js 拦截器统一弹出，此处不再重复提示
+    console.warn('[WBS解析] 请求失败:', err?.message || err)
+  }).finally(() => { aiWbsLoading.value = false })
+}
+
+/** 是否阶段分组行（被其他行引用为父的节点） */
+function isStageRow(row) {
+  if (!row._isStage) return false
+  return aiWbsDraft.value.some(t => t.parentKey && t.parentKey === row.nodeId)
+}
+
+/** 导入选中任务（保持原数组顺序，父先子后） */
+function doImportWbs() {
+  if (!aiWbsSelection.value.length) return
+  const selectedSet = new Set(aiWbsSelection.value.map(r => r._idx))
+  // 选中行中有子任务被选中时其父必须一并选中，避免悬空 parentKey
+  const tasks = aiWbsDraft.value
+    .filter(r => selectedSet.has(r._idx))
+    .map(r => ({
+      nodeId: r.nodeId || String(r._idx),
+      parentKey: r.parentKey || null,
+      taskName: r.taskName,
+      taskType: r.taskType || '6',
+      description: r.description || null,
+      quantity: r.quantity ?? null,
+      unit: r.unit || null,
+      unitPrice: r.unitPrice ?? null,
+      amount: r.amount ?? null,
+      planStartDate: r.planStartDate || null,
+      planEndDate: r.planEndDate || null
+    }))
+  const keys = new Set(tasks.map(t => t.nodeId))
+  const invalid = tasks.filter(t => t.parentKey && !keys.has(t.parentKey))
+  if (invalid.length > 0) {
+    ElMessage.warning('选中的子任务存在父任务未勾选，请一并勾选其上级任务')
+    return
+  }
+  aiWbsImporting.value = true
+  aiBatchImportWbs({ projectId: selectedProjectId.value, tasks }).then(res => {
+    ElMessage.success(res.msg || '导入成功')
+    aiWbsOpen.value = false
+    loadTree()
+  }).finally(() => { aiWbsImporting.value = false })
+}
 </script>
 
 <style scoped>
@@ -686,6 +953,20 @@ onMounted(() => { loadProjectOptions() })
 .pjm-task-page .tree-empty { padding: 48px 0; }
 .pjm-task-page .control-text { font-size: 14px; color: var(--ink-700); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pjm-task-page .muted-dash { color: var(--ink-400); }
+/* AI 生成 WBS 弹框 */
+.ai-file-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--border-light, #e4e7ed); border-radius: 6px; padding: 8px 12px; }
+.ai-file-item { padding: 4px 0; }
+.ai-stage-row { font-weight: 600; color: var(--ink-700); }
+/* 清单已选文件条 */
+.ai-boq-file {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  padding: 8px 12px; border-radius: 6px;
+  background: var(--brand-50, #eef2ff); border: 1px solid var(--brand-200, #c7d2fe);
+  font-size: 13px;
+}
+.ai-boq-name { flex: 1; color: var(--brand-700, #4338ca); word-break: break-all; }
+.ai-boq-size { color: var(--ink-500, #64748b); font-variant-numeric: tabular-nums; }
+
 /* 发起采购弹框（append-to-body，token 需带回退值） */
 .purchase-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
 .purchase-total { font-size: 13px; color: var(--ink-500, #64748b); }

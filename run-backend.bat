@@ -34,4 +34,6 @@ if not defined JAVA_EXE (
 )
 echo [INFO] java: %JAVA_EXE%
 
-"%JAVA_EXE%" -Xmx2048m -jar target\%JARFILE% 1> backend-run.log 2>&1
+rem ★ 必须指定 UTF-8：Windows 默认 GBK 会导致磁盘上的中文文件名无法被 File.exists() 命中，
+rem   进而附件解析/预览全部失效（表现为"附件不存在"或"文件无法提取文本"）
+"%JAVA_EXE%" -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8 -Xmx2048m -jar target\%JARFILE% 1> backend-run.log 2>&1
