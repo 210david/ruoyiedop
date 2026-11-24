@@ -127,12 +127,13 @@ export const BROWSE_SOURCES = {
     openArgs: singleArg,
     pick: (p) => ({ id: p.productId, name: p.productName || p.productCode }),
   },
+  // 项目：关联项目管理模块（pjm）的立项项目，而不是投标模块的项目
   project: {
     label: '项目',
-    component: defineAsyncComponent(() => import('@/components/BidProjectPicker/index.vue')),
+    component: defineAsyncComponent(() => import('@/components/ProjectPicker/index.vue')),
     buildProps: () => ({ title: '选择项目' }),
     openArgs: singleArg,
-    pick: (p) => ({ id: p.projectId, name: p.projectName || p.bidNo }),
+    pick: (p) => ({ id: p.projectId, name: p.projectName || p.projectNo }),
   },
   oaVehicle: {
     label: '车辆',
