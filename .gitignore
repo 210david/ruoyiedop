@@ -96,3 +96,10 @@ dict_data_*.xlsx
 login-snapshot.md
 sidebar-*.png
 2a4560ff6374d44329ef31d60d07ae6c.png
+
+# ===== 本地临时文件（QA 截图 / 临时数据库配置，不入库）=====
+.qa_mysql/
+nul
+login-check.png
+material-add-*.png
+wbs-upload-dialog.png
