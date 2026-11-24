@@ -19,6 +19,7 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.hr.domain.HrEmployee;
 import com.ruoyi.hr.mapper.HrEmployeeMapper;
+import com.ruoyi.hr.service.IHrEmployeeService;
 import com.ruoyi.integration.domain.IntegrationUserBinding;
 import com.ruoyi.integration.mapper.IntegrationUserBindingMapper;
 import com.ruoyi.integration.service.IDingtalkSyncService;
@@ -55,6 +56,9 @@ public class IntegrationAttendanceController extends BaseController
 
     @Autowired
     private HrEmployeeMapper hrEmployeeMapper;
+
+    @Autowired
+    private IHrEmployeeService hrEmployeeService;
 
     @Autowired
     private ISysUserService userService;
@@ -154,7 +158,7 @@ public class IntegrationAttendanceController extends BaseController
      * 与企业微信一致的绑定口径：绑定对象是系统组织用户而非 HR 员工档案。
      * 前端提交 userId（推荐）或旧版 employeeNo（兼容，按登录账号解析为用户）。
      * 所选用户若已关联 HR 员工档案，则同时回填档案工号/档案ID，供考勤同步按工号落库；
-     * 未关联档案时同样允许绑定，考勤同步时该用户打卡按「无档案映射」计入未映射。
+     * 未关联档案时自动创建最小员工档案（自动工号+挂部门+user_id 关联），绑定一次完成，打卡数据直接落库。
      */
     @PreAuthorize("@ss.hasPermi('integration:attendance:sync')")
     @PutMapping("/binding/bind")
@@ -191,17 +195,54 @@ public class IntegrationAttendanceController extends BaseController
             return error("该用户已被" + connectorLabel(connector) + "用户「" + occupied.getExternalName()
                     + "」绑定，一个用户只能绑定一个" + connectorLabel(connector) + "用户，请先解绑后再绑定");
         }
+        // 解析系统用户对应的员工档案；无档案时自动创建最小档案（自动工号+挂部门），
+        // 保证绑定后打卡数据可直接写入考勤，无需再手工建档
+        HrEmployee employee = selectEmployeeByUserId(targetUser.getUserId());
+        boolean autoCreated = false;
+        if (employee == null)
+        {
+            employee = createMinimalEmployee(targetUser, connector);
+            autoCreated = true;
+        }
         IntegrationUserBinding update = new IntegrationUserBinding();
         update.setBindingId(body.getBindingId());
         update.setUserId(targetUser.getUserId());
-        update.setEmployeeNo(resolveEmployeeNo(targetUser));
-        update.setEmployeeId(resolveEmployeeId(targetUser));
+        update.setEmployeeNo(employee.getEmployeeNo());
+        update.setEmployeeId(employee.getEmployeeId());
         update.setMatchType("manual");
         update.setSyncTime(new Date());
         update.setUpdateBy(getUsername());
         bindingMapper.updateIntegrationUserBinding(update);
-        return success("绑定成功：" + existing.getExternalName() + " → " + targetUser.getNickName()
-                + (StringUtils.isNotEmpty(update.getEmployeeNo()) ? "（档案工号 " + update.getEmployeeNo() + "）" : "（该用户未关联员工档案，打卡数据将无法写入考勤）"));
+        String bindTip;
+        if (autoCreated)
+        {
+            bindTip = "（该用户原无员工档案，已自动创建并生成工号 " + employee.getEmployeeNo() + "，打卡数据将正常写入考勤）";
+        }
+        else
+        {
+            bindTip = "（档案工号 " + employee.getEmployeeNo() + "）";
+        }
+        return success("绑定成功：" + existing.getExternalName() + " → " + targetUser.getNickName() + bindTip);
+    }
+
+    /**
+     * 为未建档的系统用户自动创建最小员工档案（考勤绑定场景）：
+     * 工号按编号规则自动生成、挂用户所属部门、状态在职，并以 user_id 关联该系统用户
+     */
+    private HrEmployee createMinimalEmployee(SysUser user, String connector)
+    {
+        HrEmployee employee = new HrEmployee();
+        employee.setEmployeeName(user.getNickName());
+        employee.setUserId(user.getUserId());
+        employee.setOrgId(user.getDeptId());
+        employee.setPhone(user.getPhonenumber());
+        employee.setEmail(user.getEmail());
+        employee.setEmployeeStatus("0");
+        employee.setStatus("0");
+        employee.setCreateBy(getUsername());
+        employee.setRemark(connectorLabel(connector) + "绑定时自动创建");
+        hrEmployeeService.insertHrEmployee(employee);
+        return employee;
     }
 
     /**
@@ -217,26 +258,6 @@ public class IntegrationAttendanceController extends BaseController
         query.setUserId(userId);
         List<HrEmployee> employees = hrEmployeeMapper.selectHrEmployeeList(query);
         return employees.isEmpty() ? null : employees.get(0);
-    }
-
-    /**
-     * 考勤落库工号：仅当系统用户关联了 HR 员工档案时返回档案工号；
-     * 未关联档案返回 null（考勤导入按工号强校验档案，回退登录账号会产生导入失败，
-     * 故无档案用户的打卡在同步时按「无档案映射」计入未映射并提示）
-     */
-    private String resolveEmployeeNo(SysUser user)
-    {
-        HrEmployee employee = selectEmployeeByUserId(user.getUserId());
-        return employee != null ? employee.getEmployeeNo() : null;
-    }
-
-    /**
-     * 考勤落库档案ID：未关联员工档案返回 null
-     */
-    private Long resolveEmployeeId(SysUser user)
-    {
-        HrEmployee employee = selectEmployeeByUserId(user.getUserId());
-        return employee != null ? employee.getEmployeeId() : null;
     }
 
     /**

@@ -215,6 +215,9 @@
         <div class="bind-tip">
           <template v-if="bindForm.originalUserId">变更后该{{ connectorLabel }}用户的打卡将改为写入新选用户的考勤记录；原用户已同步的历史记录不会删除。一个用户只能绑定一个{{ connectorLabel }}用户。</template>
           <template v-else>绑定后该{{ connectorLabel }}用户的打卡数据将写入所选用户关联的考勤记录。一个用户只能绑定一个{{ connectorLabel }}用户。</template>
+          <div v-if="bindForm.userId && bindForm.hasEmployee === false" class="bind-no-profile-tip">
+            所选用户暂无员工档案，确认绑定后将自动创建员工档案（按编号规则自动生成工号、挂所属部门），打卡数据可直接写入考勤。
+          </div>
         </div>
       </div>
       <template #footer>
@@ -599,6 +602,7 @@ function handleBind(row) {
     userId: target.userId || '',
     employeeNo: target.employeeNo || '',
     employeeName: target.employeeName || '',
+    hasEmployee: undefined,
     orgName: '',
     positionName: '',
     originalUserId: target.userId || ''
@@ -627,6 +631,7 @@ function onBindEmployeeConfirm(emp) {
   f.userId = emp.employeeId
   f.employeeNo = emp.employeeNo
   f.employeeName = emp.employeeName
+  f.hasEmployee = emp.hasEmployee
   f.orgName = emp.orgName
   f.positionName = emp.positionName
   nextTick(() => proxy.$refs.bindRef && proxy.$refs.bindRef.clearValidate('employeeNo'))
@@ -657,6 +662,7 @@ function clearBindEmployee() {
   f.userId = ''
   f.employeeNo = ''
   f.employeeName = ''
+  f.hasEmployee = undefined
   f.orgName = ''
   f.positionName = ''
   occupant.value = null
@@ -882,6 +888,7 @@ getList()
 .bind-meta { display:flex; align-items:center; gap:10px; font-size:13px; color:#64748b; }
 .bind-meta-divider { width:1px; height:12px; background:#dcdfe6; }
 .bind-tip { margin-top:2px; padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; font-size:12px; line-height:1.7; color:#1d4ed8; }
+.bind-no-profile-tip { margin-top:6px; padding-top:6px; border-top:1px dashed #bfdbfe; font-weight:600; color:#b45309; }
 .bind-occupied { padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; line-height:1.7; }
 .bind-occupied-title { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#b91c1c; }
 .bind-occupied-icon { font-size:14px; }
