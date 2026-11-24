@@ -11,39 +11,39 @@
 --       或 mysql -uroot -p --default-character-set=utf8mb4 edop_ylsp < 本文件
 -- -------------------------------------------------------------
 -- 合并段落（按序执行）:
---   1. upgrade_20261115_flow_module_sync.sql —— 流程模块同步（流程业务表/表单/菜单幂等重建）
---   2. upgrade_20261116_form_rules.sql —— 表单必填规则与配置项
---   3. upgrade_20261116_flow_config_data.sql —— 流程配置数据同步(11-16)
---   4. upgrade_20261117_expense_form_rule_fix.sql —— 报销表单规则修复
---   5. upgrade_20261118_expense_form_clear_when_no.sql —— 报销表单无条件清空规则
---   6. 06_upgrade_20261117_mms_struct.sql —— MMS 表结构调整(已含 fix_mms_route_process_params 全部列)
---   7. upgrade_20261117_qms_mk_data.sql —— QMS/MK 数据(字典/菜单/列)
---   8. upgrade_20261117_qms_report_file.sql —— QMS 检验报告附件登记
---   9. upgrade_20261118_flow_config_data.sql —— 流程配置数据同步(11-18,含请假表单定义)
---   10. home_shortcut_onboard.sql —— 首页常用功能快捷入口(含sys_role_onboard_task表,先于业务地图修复执行)
---   11. business_map_menu.sql —— 业务地图菜单
---   12. fix_business_map_route.sql —— 业务地图路由修复
---   13. module_switch_add_oa.sql —— 模块开关增加综合办公OA
---   14. home_role_kpi.sql —— 角色首页KPI配置(建sys_role_kpi表,先于默认5卡执行)
---   15. home_kpi_default5.sql —— 首页KPI默认5张核心卡
---   16. upgrade_20261118_flow_ledger.sql —— 流程台账功能(建flow_ledger表,含存储过程)
---   17. flow_ledger_menu_20261118.sql —— 流程台账菜单(menu_id列已幂等化改写)
---   18. oa_ledger.sql —— 综合办公台账基础(印章/车辆/司机/保险 字典+表+菜单,先于OA流程段执行)
---   19. upgrade_20261118_oa_resource_flow.sql —— OA资源台账与流程联动(状态字典加占用值)
---   20. upgrade_20261118_seal_external_use.sql —— 印章外借字段
---   21. upgrade_20261118_oa_attendance_flows.sql —— OA补卡/加班考勤流程
---   22. upgrade_20261119_seal_form_simplify.sql —— 用印表单精简
---   23. upgrade_20261119_flow_align_standard.sql —— 流程数据表对齐标准
---   24. edop_connector_install.sql —— 集成连接器安装
---   25. __FIX_DRIVER__ —— 司机台账去掉工号(幂等化改写)
---   26. __FIX_INSURANCE__ —— 车辆保险台账精简字段(幂等化改写)
---   27. upgrade_20261123_oa_insurance_required_rules.sql —— 车辆保险必填规则调整(保单号改可空)
---   28. __FIX_VEHICLE_DEPT__ —— 车辆台账所属部门ID(幂等化改写)
---   29. upgrade_20261123_wms_material_cost_price.sql —— 物料计价参考成本价+库存金额权限
---   30. upgrade_20261123_flow_data_leave_form.sql —— 补齐请假流程业务表
---   31. upgrade_20261123_integration_binding_to_sysuser.sql —— 集成绑定口径调整为sys_user
---   32. ai_nav_intent.sql —— AI导航意图建表+菜单字段与清洗(先于种子执行)
---   33. ai_nav_intent_core.sql —— AI导航意图核心116条种子
+--   A(1). upgrade_20261115_flow_module_sync.sql —— 流程模块同步（流程业务表/表单/菜单幂等重建）
+--   B(2). upgrade_20261116_form_rules.sql —— 表单必填规则与配置项
+--   C(3). upgrade_20261116_flow_config_data.sql —— 流程配置数据同步(11-16)
+--   D(4). upgrade_20261117_expense_form_rule_fix.sql —— 报销表单规则修复
+--   E(5). upgrade_20261118_expense_form_clear_when_no.sql —— 报销表单无条件清空规则
+--   F(6). 06_upgrade_20261117_mms_struct.sql —— MMS 表结构调整(已含 fix_mms_route_process_params 全部列)
+--   G(7). upgrade_20261117_qms_mk_data.sql —— QMS/MK 数据(字典/菜单/列)
+--   H(8). upgrade_20261117_qms_report_file.sql —— QMS 检验报告附件登记
+--   I(9). upgrade_20261118_flow_config_data.sql —— 流程配置数据同步(11-18,含请假表单定义)
+--   J(10). home_shortcut_onboard.sql —— 首页常用功能快捷入口(含sys_role_onboard_task表,先于业务地图修复执行)
+--   K(11). business_map_menu.sql —— 业务地图菜单
+--   L(12). fix_business_map_route.sql —— 业务地图路由修复
+--   M(13). module_switch_add_oa.sql —— 模块开关增加综合办公OA
+--   N(14). home_role_kpi.sql —— 角色首页KPI配置(建sys_role_kpi表,先于默认5卡执行)
+--   O(15). home_kpi_default5.sql —— 首页KPI默认5张核心卡
+--   P(16). upgrade_20261118_flow_ledger.sql —— 流程台账功能(建flow_ledger表,含存储过程)
+--   Q(17). flow_ledger_menu_20261118.sql —— 流程台账菜单(menu_id列已幂等化改写)
+--   R(18). oa_ledger.sql —— 综合办公台账基础(印章/车辆/司机/保险 字典+表+菜单,先于OA流程段执行)
+--   S(19). upgrade_20261118_oa_resource_flow.sql —— OA资源台账与流程联动(状态字典加占用值)
+--   T(20). upgrade_20261118_seal_external_use.sql —— 印章外借字段
+--   U(21). upgrade_20261118_oa_attendance_flows.sql —— OA补卡/加班考勤流程
+--   V(22). upgrade_20261119_seal_form_simplify.sql —— 用印表单精简
+--   W(23). upgrade_20261119_flow_align_standard.sql —— 流程数据表对齐标准(报销v2扩展行ID已修正)
+--   X(24). edop_connector_install.sql —— 集成连接器安装
+--   Y(25). __FIX_DRIVER__ —— 司机台账去掉工号(幂等化改写)
+--   Z(26). __FIX_INSURANCE__ —— 车辆保险台账精简字段(幂等化改写)
+--   AA(27). upgrade_20261123_oa_insurance_required_rules.sql —— 车辆保险必填规则调整(保单号改可空)
+--   AB(28). __FIX_VEHICLE_DEPT__ —— 车辆台账所属部门ID(幂等化改写)
+--   AC(29). upgrade_20261123_wms_material_cost_price.sql —— 物料计价参考成本价+库存金额权限
+--   AD(30). upgrade_20261123_flow_data_leave_form.sql —— 补齐请假流程业务表
+--   AE(31). upgrade_20261123_integration_binding_to_sysuser.sql —— 集成绑定口径调整为sys_user
+--   AF(32). ai_nav_intent.sql —— AI导航意图建表+菜单字段与清洗(先于种子执行)
+--   AG(33). ai_nav_intent_core.sql —— AI导航意图核心116条种子
 -- =============================================================
 
 
@@ -2907,7 +2907,7 @@ WHERE form_id = 17
 
 
 -- ============================================================
--- W. upgrade_20261119_flow_align_standard.sql —— 流程数据表对齐标准
+-- W. upgrade_20261119_flow_align_standard.sql —— 流程数据表对齐标准(报销v2扩展行ID已修正)
 -- ============================================================
 -- ============================================================
 -- 与「标准仓」对齐：流程发起页差异修正
@@ -3320,7 +3320,7 @@ set @col_exists := (select count(*) from information_schema.columns
 set @ddl := if(@col_exists > 0, 'alter table biz_oa_vehicle_insurance drop column insured_amount', 'select 1');
 prepare stmt from @ddl; execute stmt; deallocate prepare stmt;
 -- ============================================================
--- [. upgrade_20261123_oa_insurance_required_rules.sql —— 车辆保险必填规则调整(保单号改可空)
+-- AA. upgrade_20261123_oa_insurance_required_rules.sql —— 车辆保险必填规则调整(保单号改可空)
 -- ============================================================
 -- ============================================================
 -- 综合办公：车辆保险台账必填规则调整
@@ -3354,7 +3354,7 @@ WHERE TABLE_SCHEMA = 'ruoyi_ylsp'
 
 
 -- ============================================================
--- \. __FIX_VEHICLE_DEPT__ —— 车辆台账所属部门ID(幂等化改写)
+-- AB. __FIX_VEHICLE_DEPT__ —— 车辆台账所属部门ID(幂等化改写)
 -- ============================================================
 -- ---------- 1. 新增部门ID字段（幂等） ----------
 set @col_exists := (select count(*) from information_schema.columns
@@ -3370,7 +3370,7 @@ join sys_dept d on trim(v.owner_dept) collate utf8mb4_general_ci = d.dept_name c
 set v.owner_dept_id = d.dept_id
 where v.owner_dept is not null and v.owner_dept <> '' and v.owner_dept_id is null;
 -- ============================================================
--- ]. upgrade_20261123_wms_material_cost_price.sql —— 物料计价参考成本价+库存金额权限
+-- AC. upgrade_20261123_wms_material_cost_price.sql —— 物料计价参考成本价+库存金额权限
 -- ============================================================
 -- ============================================================
 -- 仓库管理：物料计价参考成本价 + 库存金额查看权限
@@ -3457,7 +3457,7 @@ WHERE del_flag = '0';
 
 
 -- ============================================================
--- ^. upgrade_20261123_flow_data_leave_form.sql —— 补齐请假流程业务表
+-- AD. upgrade_20261123_flow_data_leave_form.sql —— 补齐请假流程业务表
 -- ============================================================
 -- =============================================================
 -- 补齐请假流程业务表：flow_data_leave_form
@@ -3517,7 +3517,7 @@ CREATE TABLE IF NOT EXISTS `flow_data_leave_form` (
 
 
 -- ============================================================
--- _. upgrade_20261123_integration_binding_to_sysuser.sql —— 集成绑定口径调整为sys_user
+-- AE. upgrade_20261123_integration_binding_to_sysuser.sql —— 集成绑定口径调整为sys_user
 -- ============================================================
 -- =============================================================
 -- 集成模块绑定口径调整：外部平台用户绑定到平台组织用户（sys_user）
@@ -3595,7 +3595,7 @@ SHOW INDEX FROM `integration_user_binding` WHERE Key_name = 'uk_connector_user_i
 
 
 -- ============================================================
--- `. ai_nav_intent.sql —— AI导航意图建表+菜单字段与清洗(先于种子执行)
+-- AF. ai_nav_intent.sql —— AI导航意图建表+菜单字段与清洗(先于种子执行)
 -- ============================================================
 -- ============================================================
 -- AI 菜单直达：完整落地方案（P1 导航框架 + P2 文档-菜单绑定）
@@ -3778,7 +3778,7 @@ DROP PROCEDURE IF EXISTS add_nav_actions_to_nlq_history;
 
 
 -- ============================================================
--- a. ai_nav_intent_core.sql —— AI导航意图核心116条种子
+-- AG. ai_nav_intent_core.sql —— AI导航意图核心116条种子
 -- ============================================================
 -- ============================================================
 -- AI 菜单直达：预置全模块核心功能意图
