@@ -94,7 +94,13 @@
             <!-- 多选模式 -->
             <el-table-column v-if="multiple" type="selection" width="45" align="center" :selectable="canSelect" />
             <el-table-column label="账号" prop="employeeNo" width="110" show-overflow-tooltip />
-            <el-table-column label="姓名" prop="employeeName" width="100" show-overflow-tooltip />
+            <el-table-column label="姓名" min-width="130" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span>{{ row.employeeName }}</span>
+                <el-tag v-if="row.hasEmployee" type="success" effect="plain" size="small" style="margin-left: 4px">有档案</el-tag>
+                <el-tag v-else type="warning" effect="plain" size="small" style="margin-left: 4px">无档案</el-tag>
+              </template>
+            </el-table-column>
           <el-table-column label="部门" prop="orgName" min-width="120" show-overflow-tooltip />
           <el-table-column label="岗位" prop="positionName" min-width="110" show-overflow-tooltip />
           <el-table-column v-if="!multiple" label="手机号" prop="phone" width="110" show-overflow-tooltip />
@@ -289,6 +295,8 @@ function toEmployeeShape(u) {
     employeeId: u.userId,
     employeeNo: u.employeeNo || u.userName,
     employeeName: u.nickName,
+    // 是否已关联 HR 员工档案（sys_user 列表带 employee_no 子查询，有值即已建档）
+    hasEmployee: !!u.employeeNo,
     idCard: undefined,
     gender: u.sex,
     phone: u.phonenumber,
