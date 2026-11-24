@@ -28,6 +28,7 @@ import { BROWSE_TYPES } from '@/components/FormBrowse/sources.js';
 export const DEFAULT_MODE_LABELS = {
   currentUser: '当前用户',
   currentDept: '当前用户所属部门',
+  currentPost: '当前用户岗位',
   currentDate: '当天日期',
   currentDatetime: '当前时间',
   currentTime: '当前时刻',
@@ -90,6 +91,8 @@ export function defaultModesOf(f) {
     // 浏览按钮的默认值应该“直接在组织/基础数据里指定一条”，而不是抄另一个字段的值
     if (type === 'user') return ['currentUser', 'fixedPick'];
     if (type === 'dept') return ['currentDept', 'fixedPick', 'fieldUserDept'];
+    // 岗位浏览字段支持按当前登录人岗位带出（profile 接口 postGroup 第一个岗位）
+    if (type === 'post') return ['currentPost', 'fixedPick'];
     return ['fixedPick'];
   }
   if (f.form === 'date') return ['currentDate', 'fixedValue', 'fieldValue'];
@@ -153,7 +156,7 @@ let profileCache = null;
 /** 当前用户上下文：ID / 姓名 / 所属部门（部门取 /system/user/profile，普通员工也有权访问） */
 export async function currentUserCtx() {
   if (profileCache) return profileCache;
-  const ctx = { userId: '', userName: '', deptId: '', deptName: '' };
+  const ctx = { userId: '', userName: '', deptId: '', deptName: '', postName: '' };
   try {
     const res = await getUserProfile();
     const u = (res && res.data) || {};
@@ -162,6 +165,12 @@ export async function currentUserCtx() {
     if (u.dept) {
       ctx.deptId = u.dept.deptId || '';
       ctx.deptName = u.dept.deptName || '';
+    }
+    // 岗位：profile 接口顶层返回 postGroup（如「董事长,项目经理」），取第一个作为主岗位
+    const pg = res && res.postGroup;
+    if (pg) {
+      const first = String(pg).split(',').map((s) => s.trim()).find(Boolean);
+      if (first) ctx.postName = first;
     }
   } catch (e) {
     /* 取不到就留空，默认值回退为不填 */
@@ -218,6 +227,8 @@ export function applyFieldDefaults(fields, values, ctx) {
           values[f.field] = user.deptName;
           values[f.field + '__id'] = user.deptId;
         }
+      } else if (mode === 'currentPost') {
+        if (user.postName) values[f.field] = user.postName;
       } else if (mode === 'currentDate') {
         values[f.field] = dateText();
       } else if (mode === 'currentDatetime') {
