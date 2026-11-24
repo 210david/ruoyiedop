@@ -181,13 +181,7 @@
           <el-table-column v-if="columns.requestId.visible" label="流程请求ID" prop="requestId" key="requestId" :width="colWidth('requestId', 110)" align="center" show-overflow-tooltip>
             <template #default="scope"><span class="col-mono">{{ scope.row.requestId || '-' }}</span></template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right" class-name="col-action">
-            <template #default="scope">
-              <div class="action-btn-row">
-                <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-              </div>
-            </template>
-          </el-table-column>
+          <!-- 点击流程标题即可打开详情，操作列不再重复提供「详情」按钮 -->
         </el-table>
       </div>
       <div class="pagination-container">
