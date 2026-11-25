@@ -421,7 +421,7 @@
             <strong>支持多次发货：</strong>同一订单可创建多张发货单，分批次发货。每张发货单独立管理发货数量和物流信息
           </el-timeline-item>
           <el-timeline-item type="warning" :hollow="true">
-            <strong>发货数量校验：</strong>发货明细由订单自动带出，每行发货数量必须大于0且不能超过该商品的未发货数量
+            <strong>发货数量校验：</strong>发货明细由订单自动带出（已全部发货完成的商品不会带出），每行发货数量必须大于0且不能超过该商品的未发货数量
           </el-timeline-item>
           <el-timeline-item type="danger" :hollow="true">
             <strong>出库前置要求：</strong>确认发货时必须填写出库单号，确保已在仓库管理模块完成出库操作后才能发货
@@ -754,7 +754,17 @@ function onOrderPickerConfirm(order) {
     form.value.orderShippedQty = parseFloat(orderShipped.toFixed(2))
     form.value.orderUnshippedQty = parseFloat((orderTotal - orderShipped).toFixed(2))
     if (ord.itemList && ord.itemList.length > 0) {
-      form.value.detailList = ord.itemList.map(item => {
+      // 只带入未发货数量大于0的商品，已全部发货完成的商品不再带出，避免误导
+      const shippableItems = ord.itemList.filter(item => {
+        return parseFloat(((item.quantity || 0) - (item.shippedQty || 0)).toFixed(2)) > 0
+      })
+      const skippedCount = ord.itemList.length - shippableItems.length
+      if (shippableItems.length === 0) {
+        form.value.detailList = []
+        proxy.$modal.msgWarning('该订单所有商品均已发货完成，没有可发货的商品')
+        return
+      }
+      form.value.detailList = shippableItems.map(item => {
         const orderQty = parseFloat((item.quantity || 0).toFixed(2))
         const shippedQty = parseFloat((item.shippedQty || 0).toFixed(2))
         const unshippedQty = parseFloat((orderQty - shippedQty).toFixed(2))
@@ -771,6 +781,9 @@ function onOrderPickerConfirm(order) {
           amount: unshippedQty > 0 ? parseFloat((unshippedQty * (item.unitPrice || 0)).toFixed(2)) : 0
         }
       })
+      if (skippedCount > 0) {
+        proxy.$modal.msgWarning(`已自动跳过${skippedCount}项已全部发货完成的商品`)
+      }
     } else {
       form.value.detailList = []
     }
