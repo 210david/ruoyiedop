@@ -1422,7 +1422,26 @@ SELECT r.role_id, t.seq, t.title, t.description, t.menu_path, 'MENU_VISITED', NU
 -- 说明：可重复执行，已存在则跳过插入
 -- =============================================
 
--- 1. 新增业务全景图菜单（一级菜单，C 类型）
+-- 0. 清理历史重跑遗留的重复「业务全景图」顶级菜单（保留最老一条）
+SET @keepMap := (SELECT MIN(menu_id) FROM sys_menu
+                 WHERE path IN ('/business-map', 'business-map') AND parent_id = 0
+                   AND menu_type IN ('C', 'M'));
+DELETE rm FROM sys_role_menu rm
+  JOIN sys_menu m ON m.menu_id = rm.menu_id
+ WHERE m.path IN ('/business-map', 'business-map') AND m.parent_id = 0
+   AND m.menu_type IN ('C', 'M') AND m.menu_id <> @keepMap;
+DELETE c FROM sys_menu c
+  JOIN sys_menu p ON c.parent_id = p.menu_id
+ WHERE p.path IN ('/business-map', 'business-map') AND p.parent_id = 0
+   AND p.menu_type IN ('C', 'M') AND p.menu_id <> @keepMap;
+DELETE m FROM sys_menu m
+ WHERE m.path IN ('/business-map', 'business-map') AND m.parent_id = 0
+   AND m.menu_type IN ('C', 'M') AND m.menu_id <> @keepMap;
+-- 兜底：清理历史菜单删除遗留的角色授权孤儿
+DELETE rm FROM sys_role_menu rm LEFT JOIN sys_menu m ON m.menu_id = rm.menu_id
+ WHERE m.menu_id IS NULL;
+
+-- 1. 新增业务全景图菜单（一级菜单；C/M 任一形态已存在则跳过）
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name,
                       is_frame, is_cache, menu_type, visible, status, perms, icon,
                       create_by, create_time, remark)
@@ -1431,11 +1450,15 @@ SELECT '业务全景图', 0, 1, '/business-map', 'business-map/index', '', 'Busi
        'admin', sysdate(), '新手引导：业务模块全景与数据流向'
 FROM DUAL
 WHERE NOT EXISTS (
-    SELECT 1 FROM sys_menu WHERE path = '/business-map' AND menu_type = 'C'
+    SELECT 1 FROM sys_menu
+    WHERE path IN ('/business-map', 'business-map') AND parent_id = 0
+      AND menu_type IN ('C', 'M')
 );
 
--- 2. 取得菜单 ID
-SET @mapMenuId = (SELECT menu_id FROM sys_menu WHERE path = '/business-map' AND menu_type = 'C' LIMIT 1);
+-- 2. 取得菜单 ID（兼容 C / M 两种形态）
+SET @mapMenuId = (SELECT menu_id FROM sys_menu
+                  WHERE path IN ('/business-map', 'business-map') AND parent_id = 0
+                    AND menu_type IN ('C', 'M') LIMIT 1);
 
 -- 3. 授权给现有全部有效角色（可按实际需要删减）
 INSERT INTO sys_role_menu (role_id, menu_id)
