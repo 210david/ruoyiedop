@@ -519,6 +519,7 @@ public class WmsInboundOrderServiceImpl implements IWmsInboundOrderService
             case "1": return "生产入库";
             case "2": return "退货入库";
             case "3": return "调拨入库";
+            case "4": return "个人物品入库";
             default: return orderType;
         }
     }

@@ -159,7 +159,7 @@
             <div class="rd-card-body" v-show="!collapsedCards.basic">
               <el-row :gutter="16">
                 <el-col :span="8"><el-form-item label="出库单号" prop="orderNo"><el-input v-model="form.orderNo" placeholder="自动生成" disabled /></el-form-item></el-col>
-                <el-col :span="8"><el-form-item label="出库类型" prop="orderType"><el-select v-model="form.orderType" style="width:100%"><el-option v-for="d in wms_outbound_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="出库类型" prop="orderType"><el-select v-model="form.orderType" style="width:100%" @change="onOrderTypeChange"><el-option v-for="d in wms_outbound_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item></el-col>
                 <el-col :span="8"><el-form-item label="出库日期" prop="outboundDate"><el-date-picker v-model="form.outboundDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-col>
               </el-row>
             </div>
@@ -172,7 +172,7 @@
             </div>
             <div class="rd-card-body" v-show="!collapsedCards.info">
               <el-row :gutter="16">
-                <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-input v-model="form.warehouseName" readonly placeholder="请选择仓库" style="width:100%" @click="openWarehousePicker"><template v-if="form.warehouseName" #append><el-button icon="CircleClose" @click.stop="clearWarehouse" /></template><template v-else #append><el-button icon="Search" @click="openWarehousePicker" /></template></el-input></el-form-item></el-col>
+                <el-col :span="8"><el-form-item label="出库仓库" prop="warehouseId"><el-input v-model="form.warehouseName" readonly :disabled="isPersonalWarehouseLocked" :placeholder="isPersonalWarehouseLocked ? '' : '请选择仓库'" style="width:100%" @click="onWarehouseClick"><template v-if="form.warehouseName" #append><el-button icon="CircleClose" :disabled="isPersonalWarehouseLocked" @click.stop="onClearWarehouseClick" /></template><template v-else #append><el-button icon="Search" :disabled="isPersonalWarehouseLocked" @click="openWarehousePicker" /></template></el-input></el-form-item></el-col>
               </el-row>
             </div>
           </section>
@@ -390,6 +390,33 @@ function handleQuery() { showAdvanced.value = false; queryParams.value.pageNum =
 function resetQuery() { queryParams.value.orderNo = undefined; queryParams.value.orderType = undefined; queryParams.value.warehouseId = undefined; queryParams.value.status = undefined; queryParams.value.createBy = undefined; queryParams.value.params = {}; dateRange.value = []; dateRangeCreateTime.value = []; activeStatusTab.value = 'all'; handleQuery() }
 function handleSelectionChange(sel) { ids.value = sel.map(i => i.orderId); multiple.value = !sel.length }
 function reset() { form.value = { orderNo: undefined, orderType: '0', warehouseId: undefined, warehouseName: undefined, outboundDate: today(), status: '0', remark: undefined, detailList: [] }; proxy.resetForm('outboundRef') }
+
+/* ===== 个人物品出库联动：选择该类型时出库仓库锁定为个人物品仓库 ===== */
+const PERSONAL_OUTBOUND_TYPE = '4'
+const personalWarehouse = ref(null)
+const isPersonalWarehouseLocked = computed(() => form.value.orderType === PERSONAL_OUTBOUND_TYPE)
+/** 出库类型变更：个人物品出库时默认并锁定个人物品仓库；切换类型会清空与原仓库绑定的库存明细 */
+function onOrderTypeChange(val) {
+  if (val === PERSONAL_OUTBOUND_TYPE) {
+    ensurePersonalWarehouse(() => {
+      if (form.value.orderType === PERSONAL_OUTBOUND_TYPE && form.value.warehouseId !== personalWarehouse.value.warehouseId) {
+        form.value.warehouseId = personalWarehouse.value.warehouseId
+        form.value.warehouseName = personalWarehouse.value.warehouseName
+        onWarehouseChange(form.value.warehouseId)
+      }
+    })
+  }
+}
+/** 查询个人物品仓库（按编码 WH06 定位），回调返回是否找到 */
+function ensurePersonalWarehouse(callback) {
+  if (personalWarehouse.value) { callback(true); return }
+  const apply = (rows) => { const hit = (rows || []).find(w => w.warehouseCode === 'WH06'); if (hit) personalWarehouse.value = hit; callback(!!hit) }
+  listWarehouse({ pageSize: 999, status: '0' }).then(res => apply(res.rows)).catch(() => callback(false))
+}
+/** 出库仓库点击：个人物品类型下禁止修改 */
+function onWarehouseClick() { if (isPersonalWarehouseLocked.value) { proxy.$modal.msgWarning('个人物品出库只能使用个人物品仓库，不允许修改'); return } openWarehousePicker() }
+/** 出库仓库清除：个人物品类型下禁止 */
+function onClearWarehouseClick() { if (isPersonalWarehouseLocked.value) { proxy.$modal.msgWarning('个人物品出库只能使用个人物品仓库，不允许清空'); return } clearWarehouse() }
 function handleAdd() { reset(); open.value = true; title.value = '添加出库单' }
 function handleUpdate(row) { reset(); getOutbound(row.orderId).then(res => { form.value = res.data; open.value = true; title.value = '修改出库单'; onWarehouseChange(form.value.warehouseId) }) }
 function handleDetail(row) { getOutbound(row.orderId).then(res => { detailData.value = res.data; detailOpen.value = true }) }

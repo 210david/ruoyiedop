@@ -464,6 +464,7 @@ public class WmsOutboundOrderServiceImpl implements IWmsOutboundOrderService
             case "1": return "领料出库";
             case "2": return "调拨出库";
             case "3": return "退货出库";
+            case "4": return "个人物品出库";
             default: return orderType;
         }
     }
