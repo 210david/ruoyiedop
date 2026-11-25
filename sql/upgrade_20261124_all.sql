@@ -1,7 +1,8 @@
 -- =============================================================
 -- 升级脚本: upgrade_20261124_all.sql（累积合并版）
+-- 目标库: edop_ylsp（后端 82 / jar edop-ylsp-v10.jar / 前端 dist）
 -- 主题: 2026-11-14 全量基线(edop_full.sql 2026-11-14 版)之后的全部数据库变更
--- 说明: 本文件按序合并 2026-11-14 基线之后的数据库变更脚本（33 段），
+-- 说明: 本文件按序合并 2026-11-14 基线之后的数据库变更脚本（34 段），
 --       【一次升级只需执行本文件】。任何落后版本的库直接整文件执行即可。
 -- 排除段: fix_bx2026110002_total.sql（开发库单实例数据订正，生产无此实例，不纳入）;
 --         fix_mms_route_process_params_20261116.sql（裸DDL，已被 06_upgrade_20261117_mms_struct.sql 幂等版完全取代）。
@@ -44,8 +45,26 @@
 --   AE(31). upgrade_20261123_integration_binding_to_sysuser.sql —— 集成绑定口径调整为sys_user
 --   AF(32). ai_nav_intent.sql —— AI导航意图建表+菜单字段与清洗(先于种子执行)
 --   AG(33). ai_nav_intent_core.sql —— AI导航意图核心116条种子
+--   AH(34). upgrade_20261125_wms_personal_warehouse.sql —— WMS 个人物品仓库(字典+三级仓库结构)
+-- 尾部: SELF CHECK 40 项只读自检(PASS/FAIL)，FAIL 项重跑本文件即可(幂等)
 -- =============================================================
 
+-- ---------------------------------------------------------------------
+-- 全局保护（与 DWX 版规范对齐）：
+-- 1) 关闭外键检查，避免源脚本表间依赖顺序问题，结束前恢复
+-- 2) 菜单主键保护：本包保留固定菜单 ID 区间（OA 9064000~9064499、
+--    流程台账 9064600~9064699）。把 sys_menu 自增游标抬到 9065000 之上，
+--    防止「不指定 ID」的菜单 INSERT 落进保留区间造成串号/重复插入
+--    （生产曾出现两个「业务全景图」目录即此根因）。
+--    两条语句均幂等：已满足时不产生任何变更。
+-- ---------------------------------------------------------------------
+SET @OLD_FOREIGN_KEY_CHECKS = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+SET @cur_ai := (SELECT AUTO_INCREMENT FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_menu');
+SET @ddl_ai := IF(@cur_ai IS NOT NULL AND @cur_ai < 9065000,
+  'ALTER TABLE `sys_menu` AUTO_INCREMENT = 9065000', 'SELECT 1');
+PREPARE stmt_ai FROM @ddl_ai; EXECUTE stmt_ai; DEALLOCATE PREPARE stmt_ai;
 
 -- ============================================================
 -- A. upgrade_20261115_flow_module_sync.sql —— 流程模块同步（流程业务表/表单/菜单幂等重建）
@@ -3410,3 +3429,262 @@ ON DUPLICATE KEY UPDATE
   sort_no     = VALUES(sort_no),
   status      = VALUES(status);
 
+-- ============================================================
+-- AH(34). upgrade_20261125_wms_personal_warehouse.sql
+-- ============================================================-- ============================================================
+-- 2026-11-25 仓库管理：个人物品仓库支持
+-- 0) 仓库管理中增加个人物品仓库，仓区为个人物品仓区01，库位为个人物品仓位01
+-- 1) 入库类型增加「个人物品入库」（字典 wms_inbound_type，值 4）
+-- 2) 出库类型增加「个人物品出库」（字典 wms_outbound_type，值 4）
+-- ============================================================
+
+-- ---------- 1. 入库类型字典：个人物品入库 ----------
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+SELECT 5, '个人物品入库', '4', 'wms_inbound_type', '', 'danger', 'N', '0', 'admin', NOW(), '个人物品入库'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'wms_inbound_type' AND dict_value = '4');
+
+-- ---------- 2. 出库类型字典：个人物品出库 ----------
+INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+SELECT 5, '个人物品出库', '4', 'wms_outbound_type', '', 'danger', 'N', '0', 'admin', NOW(), '个人物品出库'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'wms_outbound_type' AND dict_value = '4');
+
+-- ---------- 3. 个人物品仓库（node_type=1） ----------
+INSERT INTO wms_warehouse (parent_id, ancestors, warehouse_code, warehouse_name, node_type, status, del_flag, create_by, create_time, remark)
+SELECT 0, '0', 'WH06', '个人物品仓库', '1', '0', '0', 'admin', NOW(), '个人物品专用仓库'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM wms_warehouse WHERE warehouse_code = 'WH06' AND del_flag = '0');
+
+-- ---------- 4. 个人物品仓区01（node_type=2，挂 WH06 下） ----------
+INSERT INTO wms_warehouse (parent_id, ancestors, warehouse_code, warehouse_name, node_type, status, del_flag, create_by, create_time, remark)
+SELECT w.warehouse_id, CONCAT('0,', w.warehouse_id), 'WH06A01', '个人物品仓区01', '2', '0', '0', 'admin', NOW(), '个人物品仓区'
+FROM wms_warehouse w
+WHERE w.warehouse_code = 'WH06' AND w.node_type = '1' AND w.del_flag = '0'
+  AND NOT EXISTS (SELECT 1 FROM wms_warehouse a WHERE a.warehouse_code = 'WH06A01' AND a.del_flag = '0');
+
+-- ---------- 5. 个人物品仓位01（node_type=3，挂仓区下，库位状态默认空闲） ----------
+INSERT INTO wms_warehouse (parent_id, ancestors, warehouse_code, warehouse_name, node_type, area_type, location_type, capacity, location_status, status, del_flag, create_by, create_time, remark)
+SELECT a.warehouse_id, CONCAT(a.ancestors, ',', a.warehouse_id), 'WH06A01L01', '个人物品仓位01', '3', NULL, '2', 0, '0', '0', '0', 'admin', NOW(), '个人物品仓位'
+FROM wms_warehouse a
+WHERE a.warehouse_code = 'WH06A01' AND a.node_type = '2' AND a.del_flag = '0'
+  AND NOT EXISTS (SELECT 1 FROM wms_warehouse l WHERE l.warehouse_code = 'WH06A01L01' AND l.del_flag = '0');
+
+-- =============================================================
+-- SELF CHECK (40 read-only items, same as check_upgrade_status.sql)
+-- PASS / FAIL per item; FAIL list = run this upgrade file again
+-- =============================================================-- =============================================================
+-- YLSP 生产库升级状态自检脚本（只读，不改任何数据）
+-- 日期：2026-11-24
+-- 用途：核对累积升级总入口 upgrade_20261124_all.sql（33 段）是否执行到位。
+--   A-D 段（20261114 版遗留检查项：部门/人员字段、领导、证书可空、hrStats 菜单）
+--   E-J 段（20261124 新增检查项：流程/首页/MMS/QMS/WMS/OA/集成/AI 导航）
+-- 在【生产库 edop_ylsp】上执行：
+--   mysql -uroot -p --default-character-set=utf8mb4 edop_ylsp < check_upgrade_status.sql
+-- 全部 PASS 即升级到位；MISS 的项重新执行 upgrade_20261124_all.sql 即可（幂等）。
+-- =============================================================
+
+-- ---------- A 段：sys_dept 新增字段 ----------
+select 'A1 sys_dept.dept_short_name' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'dept_short_name';
+
+select 'A2 sys_dept.dept_code' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'dept_code';
+
+select 'A3 sys_dept.charge_leader_id' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'charge_leader_id';
+
+select 'A4 sys_dept.staff_count' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'staff_count';
+
+-- ---------- A 段：sys_dept 删除联系电话/邮箱（存在即 MISS） ----------
+select 'A5 sys_dept.phone 已删除' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'phone';
+
+select 'A6 sys_dept.email 已删除' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'email';
+
+-- ---------- A 段：sys_user 新增上级领导/分管领导 ----------
+select 'A7 sys_user.superior_leader_id' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_user' and column_name = 'superior_leader_id';
+
+select 'A8 sys_user.charge_leader_id' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_user' and column_name = 'charge_leader_id';
+
+-- ---------- B 段：sys_dept.leader_id ----------
+select 'B1 sys_dept.leader_id' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'sys_dept' and column_name = 'leader_id';
+
+-- ---------- C 段：biz_hr_certificate.employee_id 可空 ----------
+select 'C1 biz_hr_certificate.employee_id 可空' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'biz_hr_certificate'
+  and column_name = 'employee_id' and is_nullable = 'YES';
+
+-- ---------- D 段：BI统计「人力资源管理」目录 path 已改 hrStats ----------
+select 'D1 BI统计人力资源目录 path=hrStats' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from sys_menu
+where menu_type = 'M' and menu_name = '人力资源管理' and path = 'hrStats' and parent_id <> 0;
+
+select 'D2 无残留冲突 path=hr 目录（顶级除外）' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from sys_menu
+where menu_type = 'M' and path = 'hr' and menu_name = '人力资源管理' and parent_id <> 0;
+
+-- ---------- E 段：流程模块（表单/流程配置/台账） ----------
+select 'E1 flow_form 报销表单存在' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from flow_form where form_key = 'expense_reimburse';
+
+select 'E2 flow_form 请假表单存在' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from flow_form where form_key = 'leave_process' or form_id = 2;
+
+select 'E3 请假流程业务表 flow_data_leave_form' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'flow_data_leave_form';
+
+select 'E4 流程台账表 flow_ledger 存在' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'flow_ledger';
+
+select 'E5 flow_ledger.menu_id 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'flow_ledger' and column_name = 'menu_id';
+
+select 'E6 报销 v2 为活动版本扩展行' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from flow_procdef_ext
+where procdef_id like 'expenseReimburse:2:%' and active_flag = '1';
+
+select 'E7 测试流程 leave_process 已删除' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from ACT_RE_PROCDEF where KEY_ = 'leave_process';
+
+select 'E8 人事流程分类 hr（3 个 key）' as item,
+       if(count(*) = 3, 'PASS', 'FAIL') as status
+from ACT_RE_PROCDEF
+where KEY_ in ('makeupApply', 'outingApply', 'travelApply') and CATEGORY_ = 'hr';
+
+-- ---------- F 段：首页/业务地图/模块开关 ----------
+select 'F1 sys_role_onboard_task 表' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'sys_role_onboard_task';
+
+select 'F2 sys_role_kpi 表' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'sys_role_kpi';
+
+select 'F3 首页KPI默认5张卡' as item,
+       if(count(*) >= 5, 'PASS', 'FAIL') as status
+from sys_role_kpi where role_key = '__default__';
+
+select 'F4 模块开关含 OA' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from sys_module where module_key = 'oa';
+
+-- ---------- G 段：MMS/QMS/WMS ----------
+select 'G1 mms_route_process.std_days 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'mms_route_process' and column_name = 'std_days';
+
+select 'G2 mms_work_report.batch_id 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'mms_work_report' and column_name = 'batch_id';
+
+select 'G3 wms_material.cost_price 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'wms_material' and column_name = 'cost_price';
+
+select 'G4 菜单 wms:inventory:amount 权限' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from sys_menu where perms = 'wms:inventory:amount';
+
+-- ---------- H 段：综合办公 OA（印章/车辆/司机/保险） ----------
+select 'H1 biz_oa_seal 表' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'biz_oa_seal';
+
+select 'H2 印章状态值3=外带使用中' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from sys_dict_data
+where dict_type = 'oa_seal_status' and dict_value = '3' and dict_label = '外带使用中';
+
+select 'H3 biz_oa_driver.driver_no 已删除' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'biz_oa_driver' and column_name = 'driver_no';
+
+select 'H4 biz_oa_vehicle.owner_dept_id 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'biz_oa_vehicle' and column_name = 'owner_dept_id';
+
+select 'H5 保险表 insurance_no 已删除' as item,
+       if(count(*) = 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'biz_oa_vehicle_insurance' and column_name = 'insurance_no';
+
+select 'H6 保险表 policy_no 可空' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'biz_oa_vehicle_insurance'
+  and column_name = 'policy_no' and is_nullable = 'YES';
+
+-- ---------- I 段：集成连接器 / 绑定口径 ----------
+select 'I1 edop_connector_grant 表' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'edop_connector_grant';
+
+select 'I2 integration_user_binding.user_id 列' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.columns
+where table_schema = database() and table_name = 'integration_user_binding' and column_name = 'user_id';
+
+select 'I3 绑定唯一索引 uk_connector_user_id' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.statistics
+where table_schema = database() and table_name = 'integration_user_binding' and index_name = 'uk_connector_user_id';
+
+-- ---------- J 段：AI 导航意图 ----------
+select 'J1 ai_nav_intent 表' as item,
+       if(count(*) > 0, 'PASS', 'FAIL') as status
+from information_schema.tables
+where table_schema = database() and table_name = 'ai_nav_intent';
+
+select 'J2 ai_nav_intent 116 条意图' as item,
+       if(count(*) = 116, 'PASS', CONCAT('MISS(实际', count(*), '条)')) as status
+from ai_nav_intent;
+
+-- 恢复外键检查
+SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
