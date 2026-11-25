@@ -2310,15 +2310,76 @@ FROM (SELECT ID_ AS id
 WHERE NOT EXISTS (SELECT 1 FROM flow_procdef_ext e WHERE e.procdef_id = t.id);
 UPDATE flow_procdef_ext SET active_flag = '1' WHERE procdef_id LIKE 'expenseReimburse:2:%';
 
--- ---------- 3. 测试审批流程物理删除 ----------
--- 注意：ACT_* 表的删除已通过 Flowable 引擎接口完成（先删实例、再删模型，
---       由引擎级联清理运行表/历史表/部署与字节阵列），纯 SQL 无法安全复现，
---       此处仅保留业务侧孤儿数据的幂等清理语句。
+-- ---------- 3. 测试审批流程物理删除（业务侧 + 引擎侧纯 SQL 级联，幂等） ----------
+-- 业务侧孤儿数据
 DELETE FROM flow_procdef_ext WHERE procdef_id LIKE 'leave_process%';
 DELETE FROM flow_leave;
 DELETE FROM flow_request  WHERE process_definition_key = 'leave_process';
 DELETE FROM flow_form     WHERE form_id = 10;                    -- 测试流程申请表单
 DROP TABLE IF EXISTS flow_data_10_dt2, flow_data_10_dt1, flow_data_10;
+
+-- 引擎侧级联删除：锚点 PROC_DEF_ID_ LIKE 'leave_process:%' / KEY_='leave_process'
+-- 收集关联流程实例 ID（历史 + 运行时）
+DROP TEMPORARY TABLE IF EXISTS tmp_lp_procinst;
+CREATE TEMPORARY TABLE tmp_lp_procinst (pid varchar(64) PRIMARY KEY) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT IGNORE INTO tmp_lp_procinst
+  SELECT ID_ FROM act_hi_procinst  WHERE PROC_DEF_ID_ LIKE 'leave_process:%';
+INSERT IGNORE INTO tmp_lp_procinst
+  SELECT ID_ FROM act_ru_execution WHERE PROC_DEF_ID_ LIKE 'leave_process:%';
+-- 收集关联部署 ID / BLOB 字节阵列 ID
+DROP TEMPORARY TABLE IF EXISTS tmp_lp_deploy;
+CREATE TEMPORARY TABLE tmp_lp_deploy (did varchar(64) PRIMARY KEY) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO tmp_lp_deploy
+  SELECT DISTINCT DEPLOYMENT_ID_ FROM act_re_procdef WHERE KEY_ = 'leave_process';
+DROP TEMPORARY TABLE IF EXISTS tmp_lp_blob;
+CREATE TEMPORARY TABLE tmp_lp_blob (bid varchar(64) PRIMARY KEY) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT v.BYTEARRAY_ID_ FROM act_ru_variable v JOIN tmp_lp_procinst p ON v.PROC_INST_ID_ = p.pid WHERE v.BYTEARRAY_ID_ IS NOT NULL;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT v.BYTEARRAY_ID_ FROM act_hi_varinst  v JOIN tmp_lp_procinst p ON v.PROC_INST_ID_ = p.pid WHERE v.BYTEARRAY_ID_ IS NOT NULL;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT d.BYTEARRAY_ID_ FROM act_hi_detail   d JOIN tmp_lp_procinst p ON d.PROC_INST_ID_ = p.pid WHERE d.BYTEARRAY_ID_ IS NOT NULL;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT a.CONTENT_ID_ FROM act_hi_attachment a JOIN tmp_lp_procinst p ON a.PROC_INST_ID_ = p.pid WHERE a.CONTENT_ID_ IS NOT NULL;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT m.EDITOR_SOURCE_VALUE_ID_ FROM act_re_model m WHERE m.KEY_ = 'leave_process' AND m.EDITOR_SOURCE_VALUE_ID_ IS NOT NULL;
+INSERT IGNORE INTO tmp_lp_blob
+  SELECT m.EDITOR_SOURCE_EXTRA_VALUE_ID_ FROM act_re_model m WHERE m.KEY_ = 'leave_process' AND m.EDITOR_SOURCE_EXTRA_VALUE_ID_ IS NOT NULL;
+-- 历史侧（顺序：日志/明细/评论/附件 → 变量 → 活动节点 → 身份链接 → 任务 → 实例）
+DELETE t FROM act_hi_tsk_log      t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_detail       t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_comment      t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_attachment   t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_varinst      t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_actinst      t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_identitylink t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_identitylink t JOIN act_hi_taskinst ht ON t.TASK_ID_ = ht.ID_ JOIN tmp_lp_procinst p ON ht.PROC_INST_ID_ = p.pid;
+DELETE t FROM act_hi_entitylink   t JOIN tmp_lp_procinst p ON t.SCOPE_ID_      = p.pid;
+DELETE t FROM act_hi_taskinst     t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_  = p.pid;
+DELETE t FROM act_hi_procinst     t JOIN tmp_lp_procinst p ON t.ID_            = p.pid;
+-- 运行时侧
+DELETE t FROM act_ru_identitylink  t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_identitylink  t JOIN act_ru_task rt ON t.TASK_ID_ = rt.ID_ JOIN tmp_lp_procinst p ON rt.PROC_INST_ID_ = p.pid;
+DELETE t FROM act_ru_variable      t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_task          t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_job           t JOIN tmp_lp_procinst p ON t.PROCESS_INSTANCE_ID_ = p.pid;
+DELETE t FROM act_ru_timer_job     t JOIN tmp_lp_procinst p ON t.PROCESS_INSTANCE_ID_ = p.pid;
+DELETE t FROM act_ru_deadletter_job t JOIN tmp_lp_procinst p ON t.PROCESS_INSTANCE_ID_ = p.pid;
+DELETE t FROM act_ru_suspended_job t JOIN tmp_lp_procinst p ON t.PROCESS_INSTANCE_ID_ = p.pid;
+DELETE t FROM act_ru_external_job  t JOIN tmp_lp_procinst p ON t.PROCESS_INSTANCE_ID_ = p.pid;
+DELETE t FROM act_ru_event_subscr  t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_actinst       t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_entitylink    t JOIN tmp_lp_procinst p ON t.SCOPE_ID_           = p.pid;
+DELETE t FROM act_evt_log          t JOIN tmp_lp_procinst p ON t.PROC_INST_ID_       = p.pid;
+DELETE t FROM act_ru_execution     t JOIN tmp_lp_procinst p ON t.ID_                 = p.pid;
+-- 部署链：动态信息 → 模型（FK 指向字节阵列，须先删） → 字节阵列 → 定义 → 部署
+DELETE t FROM act_procdef_info  t JOIN act_re_procdef pd ON t.PROC_DEF_ID_ = pd.ID_ WHERE pd.KEY_ = 'leave_process';
+DELETE FROM act_re_model      WHERE KEY_ = 'leave_process';
+DELETE b FROM act_ge_bytearray  b JOIN tmp_lp_blob   t ON b.ID_           = t.bid;
+DELETE b FROM act_ge_bytearray  b JOIN tmp_lp_deploy d ON b.DEPLOYMENT_ID_ = d.did;
+DELETE FROM act_re_procdef    WHERE KEY_ = 'leave_process';
+DELETE d FROM act_re_deployment d JOIN tmp_lp_deploy t ON d.ID_ = t.did;
+DROP TEMPORARY TABLE IF EXISTS tmp_lp_procinst, tmp_lp_deploy, tmp_lp_blob;
 
 -- ---------- 核查（预期：oa=2 / fin=1 / hr=5，共 8 条） ----------
 -- SELECT CATEGORY_, COUNT(DISTINCT KEY_) FROM ACT_RE_PROCDEF GROUP BY CATEGORY_;
