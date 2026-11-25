@@ -7,7 +7,7 @@ rem Script    : upgrade_20261124_all.sql  (single entry, all-in-one)
 rem Steps     : backup -> apply -> self check (embedded in SQL tail)
 rem
 rem This SQL is the CUMULATIVE upgrade since the 2026-11-14 baseline
-rem (34 sections + 40 self check items). No prerequisite batch is
+rem (34 sections + 39 self check items). No prerequisite batch is
 rem needed: any older state can run this single file directly.
 rem
 rem Idempotent: safe to re-run, second run inserts 0 rows.
@@ -80,7 +80,7 @@ echo.
 echo   Steps this run:
 echo     1) full backup  -^> %BAKFILE%
 echo     2) apply        -^> %SQLFILE%  (idempotent)
-echo     3) self check   -^> 40 read-only items (embedded in SQL tail)
+echo     3) self check   -^> 39 read-only items (embedded in SQL tail)
 echo.
 echo   RESTART backend after this upgrade.
 echo.

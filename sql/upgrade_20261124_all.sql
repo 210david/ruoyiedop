@@ -3471,7 +3471,7 @@ WHERE a.warehouse_code = 'WH06A01' AND a.node_type = '2' AND a.del_flag = '0'
   AND NOT EXISTS (SELECT 1 FROM wms_warehouse l WHERE l.warehouse_code = 'WH06A01L01' AND l.del_flag = '0');
 
 -- =============================================================
--- SELF CHECK (40 read-only items, same as check_upgrade_status.sql)
+-- SELF CHECK (39 read-only items, same as check_upgrade_status.sql)
 -- PASS / FAIL per item; FAIL list = run this upgrade file again
 -- =============================================================-- =============================================================
 -- YLSP 生产库升级状态自检脚本（只读，不改任何数据）
