@@ -10,60 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>活动</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.activityId" filterable clearable placeholder="全部" @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.activityId" filterable clearable placeholder="活动" @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>企业名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.companyName" placeholder="企业名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>参与状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.participateStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.participateStatus" placeholder="参与状态" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_participate_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>联系人</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="联系人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>手机号</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="手机号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>职位</label>
-          <div class="control">
-            <el-input v-model="queryParams.position" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.position" placeholder="职位" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>签到时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="签到时间起" end-placeholder="签到时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

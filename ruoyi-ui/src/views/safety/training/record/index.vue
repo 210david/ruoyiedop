@@ -10,38 +10,28 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>课程名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.courseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.courseName" placeholder="课程名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>课程类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.courseType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.courseType" placeholder="课程类别" clearable @change="handleQuery">
               <el-option v-for="dict in safety_course_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>培训日期</label>
-          <div class="control is-select">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="培训日期起" end-placeholder="培训日期止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>培训地点</label>
-          <div class="control">
-            <el-input v-model="queryParams.trainingLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.trainingLocation" placeholder="培训地点" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>培训讲师</label>
-          <div class="control">
-            <el-input v-model="queryParams.trainer" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.trainer" placeholder="培训讲师" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

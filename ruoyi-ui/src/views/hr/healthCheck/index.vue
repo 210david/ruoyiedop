@@ -10,56 +10,42 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>体检类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.checkType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.checkType" placeholder="体检类型" clearable @change="handleQuery">
               <el-option v-for="d in checkTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>体检日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="体检日期起" end-placeholder="体检日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>体检机构</label>
-          <div class="control">
-            <el-input v-model="queryParams.checkOrg" placeholder="请输入体检机构" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.checkOrg" placeholder="体检机构" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>职业危害因素</label>
-          <div class="control">
-            <el-input v-model="queryParams.hazardType" placeholder="请输入职业危害因素" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.hazardType" placeholder="职业危害因素" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>结论</label>
-          <div class="control">
-            <el-select v-model="queryParams.checkResult" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.checkResult" placeholder="结论" clearable @change="handleQuery">
               <el-option v-for="d in checkResultOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

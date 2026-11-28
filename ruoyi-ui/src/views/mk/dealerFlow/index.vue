@@ -6,43 +6,33 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>经销商</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.dealerId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.dealerId" placeholder="经销商" clearable filterable @change="handleQuery">
               <el-option v-for="c in dealerOptions" :key="c.customerId" :label="c.customerName" :value="c.customerId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>物料</label>
-          <div class="control" @click="materialFilterPickerRef.open(queryParams.materialId)">
-            <el-input :model-value="filterMaterialName" placeholder="全部" readonly>
+        <div class="field"><div class="control" @click="materialFilterPickerRef.open(queryParams.materialId)">
+            <el-input :model-value="filterMaterialName" placeholder="物料" readonly>
               <template #prefix><el-icon><Search /></el-icon></template>
               <template #suffix><el-icon @click.stop="clearMaterialFilter"><CircleClose /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.batchNo" placeholder="批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>下游类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.downstreamType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.downstreamType" placeholder="下游类型" clearable @change="handleQuery">
               <el-option v-for="d in mk_downstream_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>流向日期</label>
-          <div class="control">
-            <el-date-picker v-model="flowDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="flowDateRange" type="daterange" range-separator="-" start-placeholder="流向日期起" end-placeholder="流向日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

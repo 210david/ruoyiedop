@@ -10,44 +10,34 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>线索编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.leadNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.leadNo" placeholder="线索编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>企业名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.companyName" placeholder="企业名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>线索状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leadStatus" placeholder="请选择" clearable>
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.leadStatus" placeholder="线索状态" clearable>
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_lead_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>线索等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leadGrade" placeholder="请选择" clearable>
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.leadGrade" placeholder="线索等级" clearable>
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>线索来源</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leadSource" placeholder="请选择" clearable>
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.leadSource" placeholder="线索来源" clearable>
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>

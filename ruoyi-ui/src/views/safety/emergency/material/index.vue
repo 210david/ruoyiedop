@@ -10,44 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>物资名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物资名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>物资编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物资编码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>物资类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.materialType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.materialType" placeholder="物资类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_material_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>规格型号</label>
-          <div class="control">
-            <el-input v-model="queryParams.specModel" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.specModel" placeholder="规格型号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>存放位置</label>
-          <div class="control">
-            <el-input v-model="queryParams.storageLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.storageLocation" placeholder="存放位置" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>管理人</label>
-          <div class="control">
-            <el-input v-model="queryParams.personName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.personName" placeholder="管理人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

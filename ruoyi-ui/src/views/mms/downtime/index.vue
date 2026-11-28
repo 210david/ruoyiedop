@@ -10,37 +10,23 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>停机单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.downtimeNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.downtimeNo" placeholder="停机单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产能单元</label>
-          <div class="control"><el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.resourceName" placeholder="产能单元" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>停机类型</label>
-          <div class="control is-select"><el-select v-model="queryParams.dtType" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.dtType" placeholder="停机类型" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field">
-          <label>停机分类</label>
-          <div class="control is-select"><el-select v-model="queryParams.dtCategory" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_category" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.dtCategory" placeholder="停机分类" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_category" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>停机级别</label>
-          <div class="control is-select"><el-select v-model="queryParams.dtLevel" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.dtLevel" placeholder="停机级别" clearable @change="handleQuery"><el-option v-for="d in mms_downtime_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>上报人</label>
-          <div class="control"><el-input v-model="queryParams.reportBy" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.reportBy" placeholder="上报人" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>停机日期</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="停机日期起" end-placeholder="停机日期止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

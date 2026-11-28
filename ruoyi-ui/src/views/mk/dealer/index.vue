@@ -6,26 +6,20 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>经销商名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="经销商名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>经销层级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.dealerLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.dealerLevel" placeholder="经销层级" clearable @change="handleQuery">
               <el-option v-for="d in mk_dealer_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>档案状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="档案状态" clearable @change="handleQuery">
               <el-option v-for="d in mk_dealer_profile_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

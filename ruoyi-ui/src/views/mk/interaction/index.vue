@@ -10,51 +10,39 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>客户名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="客户名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>互动类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.interactType" placeholder="请选择" clearable>
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.interactType" placeholder="互动类型" clearable>
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_interaction_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>跟进人</label>
-          <div class="control">
-            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.userName" placeholder="跟进人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>联系人</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="联系人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>互动内容</label>
-          <div class="control">
-            <el-input v-model="queryParams.content" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.content" placeholder="互动内容" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>互动时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="互动时间起" end-placeholder="互动时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

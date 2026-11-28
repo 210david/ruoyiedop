@@ -10,32 +10,24 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>询价单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.inquiryNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.inquiryNo" placeholder="询价单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>询价标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="询价标题" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="dict in pms_inquiry_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>询价方式</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.inquiryType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.inquiryType" placeholder="询价方式" clearable @change="handleQuery">
               <el-option v-for="dict in pms_inquiry_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>

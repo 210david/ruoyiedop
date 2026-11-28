@@ -8,14 +8,14 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>投标编号</label><div class="control"><el-input v-model="queryParams.bidNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>项目名称/招标人</label><div class="control"><el-input v-model="queryParams.projectName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>投标状态</label><div class="control"><el-select v-model="queryParams.status" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_project_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>负责人</label><div class="control"><el-input v-model="queryParams.ownerName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>地区</label><div class="control"><el-input v-model="queryParams.regionCode" placeholder="如：云南" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>行业分类</label><div class="control"><el-select v-model="queryParams.industry" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>承接方式</label><div class="control"><el-select v-model="queryParams.joinType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_join_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>递交截止</label><div class="control"><el-date-picker v-model="deadlineRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.bidNo" placeholder="投标编号" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.projectName" placeholder="项目名称/招标人" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.status" placeholder="投标状态" clearable style="width:100%"><el-option v-for="d in bid_project_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.ownerName" placeholder="负责人" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.regionCode" placeholder="地区" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-select v-model="queryParams.industry" placeholder="行业分类" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-select v-model="queryParams.joinType" placeholder="承接方式" clearable style="width:100%"><el-option v-for="d in bid_join_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="deadlineRange" type="daterange" range-separator="-" start-placeholder="递交截止起" end-placeholder="递交截止止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>

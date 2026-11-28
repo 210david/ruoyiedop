@@ -6,16 +6,12 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>年月</label>
-          <div class="control">
-            <el-date-picker v-model="queryParams.yearMonth" type="month" value-format="YYYY-MM" placeholder="选择年月" :clearable="false" @change="handleQuery" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="queryParams.yearMonth" type="month" value-format="YYYY-MM" placeholder="年月" :clearable="false" @change="handleQuery" style="width: 100%" />
           </div>
         </div>
-        <div class="field">
-          <label>部门</label>
-          <div class="control">
-            <el-input :model-value="queryParams.deptName" readonly placeholder="请选择部门" @click="deptFilterRef && deptFilterRef.open()">
+        <div class="field"><div class="control">
+            <el-input :model-value="queryParams.deptName" readonly placeholder="部门" @click="deptFilterRef && deptFilterRef.open()">
               <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
               <template #append>
                 <el-button v-if="queryParams.deptId" icon="CircleClose" @click="clearDeptFilter" />
@@ -24,18 +20,14 @@
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup="e => { if (e.key === 'Enter') handleQuery() }" @change="handleQuery" @clear="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

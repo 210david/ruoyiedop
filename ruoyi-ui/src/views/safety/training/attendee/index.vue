@@ -13,39 +13,29 @@
         </div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>参训人员</label>
-          <div class="control">
-            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.userName" placeholder="参训人员" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>是否合格</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.isPass" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.isPass" placeholder="是否合格" clearable @change="handleQuery">
               <el-option label="合格" value="1" />
               <el-option label="不合格" value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>所属部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="所属部门" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>关联课程</label>
-          <div class="control">
-            <el-input v-model="queryParams.courseName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.courseName" placeholder="关联课程" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>培训日期</label>
-          <div class="control is-select">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="培训日期起" end-placeholder="培训日期止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

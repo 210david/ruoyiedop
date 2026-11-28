@@ -9,11 +9,11 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>关键词</label><div class="control"><el-input v-model="queryParams.keyword" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>匹配方式</label><div class="control"><el-select v-model="queryParams.matchType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_match_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>地区</label><div class="control"><el-input v-model="queryParams.regionCode" placeholder="如：云南" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>行业</label><div class="control"><el-select v-model="queryParams.industry" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>启用状态</label><div class="control"><el-select v-model="queryParams.enabled" placeholder="全部" clearable style="width:100%"><el-option label="启用" value="0" /><el-option label="停用" value="1" /></el-select></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.keyword" placeholder="关键词" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.matchType" placeholder="匹配方式" clearable style="width:100%"><el-option v-for="d in bid_match_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.regionCode" placeholder="地区" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.industry" placeholder="行业" clearable style="width:100%"><el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-select v-model="queryParams.enabled" placeholder="启用状态" clearable style="width:100%"><el-option label="启用" value="0" /><el-option label="停用" value="1" /></el-select></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info">

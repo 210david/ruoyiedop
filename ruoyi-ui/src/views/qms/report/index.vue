@@ -3,7 +3,7 @@
     <!-- 日期筛选 -->
     <el-card shadow="never" style="margin-bottom: 16px">
       <el-form :inline="true" :model="queryParams">
-        <el-form-item label="开始日期">
+        <el-form-item>
           <el-date-picker
             v-model="queryParams.startDate"
             type="date"
@@ -12,7 +12,7 @@
             style="width: 160px"
           />
         </el-form-item>
-        <el-form-item label="结束日期">
+        <el-form-item>
           <el-date-picker
             v-model="queryParams.endDate"
             type="date"

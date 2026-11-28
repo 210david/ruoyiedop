@@ -10,48 +10,36 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.taskNo" placeholder="任务编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>检验类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskType" placeholder="检验类型" clearable @change="handleQuery">
               <el-option v-for="d in qms_insp_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>任务状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskStatus" placeholder="任务状态" clearable @change="handleQuery">
               <el-option v-for="d in qms_task_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>检验结果</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.inspectResult" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.inspectResult" placeholder="检验结果" clearable @change="handleQuery">
               <el-option v-for="d in qms_insp_result" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.batchNo" placeholder="批次号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

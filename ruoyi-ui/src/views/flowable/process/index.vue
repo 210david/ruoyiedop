@@ -51,33 +51,25 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>流程标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="流程标题" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Document /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>流程名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.processDefinitionName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.processDefinitionName" placeholder="流程名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>创建日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期"
-              end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建日期起"
+              end-placeholder="创建日期止" value-format="YYYY-MM-DD" style="width:100%" />
           </div>
         </div>
-        <div class="field">
-          <label>当前节点</label>
-          <div class="control">
-            <el-input v-model="queryParams.currentActivityName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.currentActivityName" placeholder="当前节点" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Guide /></el-icon></template>
             </el-input>
           </div>

@@ -8,11 +8,11 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>采集源</label><div class="control"><el-select v-model="queryParams.sourceId" placeholder="全部" clearable filterable style="width:100%"><el-option v-for="s in sourceOptions" :key="s.sourceId" :label="s.sourceName" :value="s.sourceId" /></el-select></div></div>
-        <div class="field"><label>执行结果</label><div class="control"><el-select v-model="queryParams.runStatus" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>开始时间</label><div class="control"><el-date-picker v-model="startRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
-        <div class="field"><label>错误关键字</label><div class="control"><el-input v-model="queryParams.errorMsg" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>结束时间</label><div class="control"><el-date-picker v-model="endRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.sourceId" placeholder="采集源" clearable filterable style="width:100%"><el-option v-for="s in sourceOptions" :key="s.sourceId" :label="s.sourceName" :value="s.sourceId" /></el-select></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.runStatus" placeholder="执行结果" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field"><div class="control"><el-date-picker v-model="startRange" type="daterange" range-separator="-" start-placeholder="开始时间起" end-placeholder="开始时间止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.errorMsg" placeholder="错误关键字" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="endRange" type="daterange" range-separator="-" start-placeholder="结束时间起" end-placeholder="结束时间止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 只读日志，用于排查"为什么没抓到"</div>

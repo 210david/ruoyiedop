@@ -10,60 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>档位值</label>
-          <div class="control">
-            <el-input v-model="queryParams.levelValue" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.levelValue" placeholder="档位值" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><CollectionTag /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>默认名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.defaultName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.defaultName" placeholder="默认名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>自定义名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customName" placeholder="自定义名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><EditPen /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>是否封存</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.isSealed" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.isSealed" placeholder="是否封存" clearable @change="handleQuery">
               <el-option label="未封存" value="0" />
               <el-option label="已封存" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>提醒分级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.isRemind" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.isRemind" placeholder="提醒分级" clearable @change="handleQuery">
               <el-option label="触发" value="1" />
               <el-option label="不触发" value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>显示顺序</label>
-          <div class="control">
-            <el-input v-model="queryParams.showOrder" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.showOrder" placeholder="显示顺序" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Sort /></el-icon></template>
             </el-input>
           </div>

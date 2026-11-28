@@ -10,40 +10,30 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>风险点名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.riskName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.riskName" placeholder="风险点名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>风险点编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.riskCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.riskCode" placeholder="风险点编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>风险等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.riskLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.riskLevel" placeholder="风险等级" clearable @change="handleQuery">
               <el-option v-for="dict in safety_risk_level" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>管控层级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.controlLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.controlLevel" placeholder="管控层级" clearable @change="handleQuery">
               <el-option v-for="dict in safety_control_level" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>事故类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.accidentType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.accidentType" placeholder="事故类别" clearable @change="handleQuery">
               <el-option v-for="dict in safety_accident_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>

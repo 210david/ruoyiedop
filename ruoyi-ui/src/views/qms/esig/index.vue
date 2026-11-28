@@ -9,29 +9,17 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>业务类型</label>
-          <div class="control is-select"><el-select v-model="queryParams.bizType" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in bizTypeOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.bizType" placeholder="业务类型" clearable @change="handleQuery"><el-option v-for="d in bizTypeOptions" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field">
-          <label>业务编号</label>
-          <div class="control"><el-input v-model="queryParams.bizNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.bizNo" placeholder="业务编号" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>签名用户</label>
-          <div class="control"><el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.userName" placeholder="签名用户" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>签名结果</label>
-          <div class="control is-select"><el-select v-model="queryParams.sigResult" placeholder="全部" clearable @change="handleQuery"><el-option label="通过" value="pass" /><el-option label="不通过" value="fail" /><el-option label="驳回" value="reject" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.sigResult" placeholder="签名结果" clearable @change="handleQuery"><el-option label="通过" value="pass" /><el-option label="不通过" value="fail" /><el-option label="驳回" value="reject" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>备注</label>
-          <div class="control"><el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.remark" placeholder="备注" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>签名时间</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="签名时间起" end-placeholder="签名时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">
