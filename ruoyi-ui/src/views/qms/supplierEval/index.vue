@@ -10,35 +10,25 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>供应商</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>周期</label>
-          <div class="control">
-            <el-date-picker v-model="queryParams.evalPeriod" type="month" placeholder="选择周期" value-format="YYYY-MM" clearable style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="queryParams.evalPeriod" type="month" placeholder="周期" value-format="YYYY-MM" clearable style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.grade" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.grade" placeholder="等级" clearable @change="handleQuery">
               <el-option v-for="d in gradeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>备注</label>
-          <div class="control"><el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.remark" placeholder="备注" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

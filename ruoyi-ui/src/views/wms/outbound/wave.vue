@@ -1,8 +1,8 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="批次号" prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="请输入" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
-      <el-form-item label="状态" prop="status"><el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 200px"><el-option v-for="d in wms_wave_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
+      <el-form-item prop="waveNo"><el-input v-model="queryParams.waveNo" placeholder="批次号" clearable style="width: 200px" @keyup.enter="handleQuery" /></el-form-item>
+      <el-form-item prop="status"><el-select v-model="queryParams.status" placeholder="状态" clearable style="width: 200px"><el-option v-for="d in wms_wave_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item>
       <el-form-item><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button><el-button icon="Refresh" @click="resetQuery">重置</el-button></el-form-item>
     </el-form>
     <el-row :gutter="10" class="mb8">

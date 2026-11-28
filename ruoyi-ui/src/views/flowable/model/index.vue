@@ -6,38 +6,30 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>模型名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.modelName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.modelName" placeholder="模型名称" clearable @keyup.enter="handleQuery">
               <template #prefix
                 ><el-icon><Search /></el-icon
               ></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>模型Key</label>
-          <div class="control">
-            <el-input v-model="queryParams.modelKey" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.modelKey" placeholder="模型Key" clearable @keyup.enter="handleQuery">
               <template #prefix
                 ><el-icon><Document /></el-icon
               ></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>流程分类</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.category" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.category" placeholder="流程分类" clearable @change="handleQuery">
               <el-option v-for="d in flowable_category" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>部署状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.deployed" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.deployed" placeholder="部署状态" clearable @change="handleQuery">
               <el-option label="已部署" value="1" />
               <el-option label="未部署" value="0" />
             </el-select>

@@ -10,49 +10,37 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>区域名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.areaName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.areaName" placeholder="区域名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>区域编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.areaCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.areaCode" placeholder="区域编码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>节点类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.nodeType" placeholder="节点类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_area_node_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>区域类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.areaType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.areaType" placeholder="区域类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_area_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>安全责任人</label>
-          <div class="control">
-            <el-input v-model="queryParams.safetyPersonName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.safetyPersonName" placeholder="安全责任人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

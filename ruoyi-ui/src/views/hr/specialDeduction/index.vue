@@ -10,40 +10,30 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>扣除项目</label>
-          <div class="control">
-            <el-select v-model="queryParams.deductionType" placeholder="请选择扣除项目" clearable filterable @change="handleQuery" style="width: 100%">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.deductionType" placeholder="扣除项目" clearable filterable @change="handleQuery" style="width: 100%">
               <el-option v-for="d in deductionTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>生效日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="生效日期起" end-placeholder="生效日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>失效日期</label>
-          <div class="control">
-            <el-date-picker v-model="expiryDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="expiryDateRange" type="daterange" range-separator="-" start-placeholder="失效日期起" end-placeholder="失效日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

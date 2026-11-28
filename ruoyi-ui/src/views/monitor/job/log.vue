@@ -6,34 +6,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.jobName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.jobName" placeholder="任务名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>任务组名</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.jobGroup" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.jobGroup" placeholder="任务组名" clearable @change="handleQuery">
               <el-option v-for="d in sys_job_group" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>执行状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="执行状态" clearable @change="handleQuery">
               <el-option v-for="d in sys_common_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>执行时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="执行时间起" end-placeholder="执行时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

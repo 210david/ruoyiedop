@@ -1,32 +1,32 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="表名称" prop="tableName">
+      <el-form-item prop="tableName">
         <el-input
           v-model="queryParams.tableName"
-          placeholder="请输入表名称"
+          placeholder="表名称"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="表描述" prop="tableComment">
+      <el-form-item prop="tableComment">
         <el-input
           v-model="queryParams.tableComment"
-          placeholder="请输入表描述"
+          placeholder="表描述"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="创建时间" style="width: 308px">
+      <el-form-item style="width: 308px">
         <el-date-picker
           v-model="dateRange"
           value-format="YYYY-MM-DD"
           type="daterange"
           range-separator="-"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          start-placeholder="创建时间起"
+          end-placeholder="创建时间止"
         ></el-date-picker>
       </el-form-item>
       <el-form-item>

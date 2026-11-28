@@ -36,42 +36,32 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>关键字</label>
-              <div class="control">
-                <el-input v-model="query.keyword" placeholder="标题/流程编号/发起人" clearable @keyup.enter="handleQuery" @clear="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="query.keyword" placeholder="关键字" clearable @keyup.enter="handleQuery" @clear="handleQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>流程状态</label>
-              <div class="control is-select">
-                <el-select v-model="query.status" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="query.status" placeholder="流程状态" clearable @change="handleQuery">
                   <el-option label="审批中" value="running" />
                   <el-option label="已办结" value="completed" />
                   <el-option label="已撤销" value="canceled" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>发起时间</label>
-              <div class="control">
+            <div class="field"><div class="control">
                 <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD"
-                  start-placeholder="开始日期" end-placeholder="结束日期" range-separator="至"
+                  start-placeholder="发起时间起" end-placeholder="发起时间止" range-separator="至"
                   unlink-panels style="width:100%" @change="handleQuery" />
               </div>
             </div>
-            <div class="field" v-for="c in basicFilterColumns" :key="c.field">
-              <label>{{ c.label }}</label>
-              <div class="control">
+            <div class="field" v-for="c in basicFilterColumns" :key="c.field"><div class="control">
                 <el-input v-model="query.filters[c.field]" :placeholder="'筛选' + c.label" clearable
                   @keyup.enter="handleQuery" @clear="handleQuery" />
               </div>
             </div>
-            <div class="field" v-for="c in advancedFilterColumns" :key="c.field" v-show="showAdvanced">
-              <label>{{ c.label }}</label>
-              <div class="control">
+            <div class="field" v-for="c in advancedFilterColumns" :key="c.field" v-show="showAdvanced"><div class="control">
                 <el-input v-model="query.filters[c.field]" :placeholder="'筛选' + c.label" clearable
                   @keyup.enter="handleQuery" @clear="handleQuery" />
               </div>

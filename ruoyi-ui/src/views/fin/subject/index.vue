@@ -6,34 +6,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>科目编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.subjectCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.subjectCode" placeholder="科目编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>科目名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.subjectName" placeholder="请输入名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.subjectName" placeholder="科目名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>科目类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.category" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.category" placeholder="科目类别" clearable @change="handleQuery">
               <el-option v-for="d in subjectCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>

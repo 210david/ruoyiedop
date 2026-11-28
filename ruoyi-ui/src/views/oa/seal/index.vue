@@ -10,62 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>印章名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.sealName" placeholder="请输入印章名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.sealName" placeholder="印章名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>印章编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.sealCode" placeholder="请输入印章编号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.sealCode" placeholder="印章编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>印章类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.sealType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.sealType" placeholder="印章类型" clearable @change="handleQuery">
               <el-option v-for="d in sealTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>保管人</label>
-          <div class="control">
-            <el-input v-model="queryParams.keeperName" placeholder="请输入保管人" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.keeperName" placeholder="保管人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in sealStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>保管部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.keeperDept" placeholder="请输入保管部门" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.keeperDept" placeholder="保管部门" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>存放地点</label>
-          <div class="control">
-            <el-input v-model="queryParams.keepPlace" placeholder="请输入存放地点" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.keepPlace" placeholder="存放地点" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>启用日期</label>
-          <div class="control">
-            <el-date-picker v-model="enableDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="enableDateRange" type="daterange" range-separator="-" start-placeholder="启用日期起" end-placeholder="启用日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

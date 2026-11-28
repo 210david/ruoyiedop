@@ -10,44 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>操作地址</label>
-          <div class="control">
-            <el-input v-model="queryParams.operIp" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.operIp" placeholder="操作地址" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>系统模块</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="系统模块" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>操作人员</label>
-          <div class="control">
-            <el-input v-model="queryParams.operName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.operName" placeholder="操作人员" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.businessType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.businessType" placeholder="类型" clearable @change="handleQuery">
               <el-option v-for="dict in sys_oper_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="dict in sys_common_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>操作时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD HH:mm:ss" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD HH:mm:ss" type="daterange" range-separator="-" start-placeholder="操作时间起" end-placeholder="操作时间止" :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]" style="width: 100%" />
           </div>
         </div>
       </div>

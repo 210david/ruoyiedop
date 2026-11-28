@@ -10,48 +10,36 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>批次编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchNo" placeholder="请输入批次编号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.batchNo" placeholder="批次编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>薪资年月</label>
-          <div class="control">
-            <el-input v-model="queryParams.yearMonth" placeholder="如 2025-01" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.yearMonth" placeholder="薪资年月" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>批次名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchName" placeholder="请输入批次名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.batchName" placeholder="批次名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>发薪日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="发薪日期起" end-placeholder="发薪日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>发薪银行</label>
-          <div class="control">
-            <el-input v-model="queryParams.bankName" placeholder="请输入发薪银行" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.bankName" placeholder="发薪银行" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>审批状态</label>
-          <div class="control">
-            <el-input v-model="queryParams.auditStatus" placeholder="请输入审批状态" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.auditStatus" placeholder="审批状态" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

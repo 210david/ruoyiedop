@@ -6,34 +6,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>供应商</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>评价周期</label>
-          <div class="control">
-            <el-input v-model="queryParams.evalPeriod" placeholder="如2026-08" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.evalPeriod" placeholder="评价周期" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>推送状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.pushStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.pushStatus" placeholder="推送状态" clearable @change="handleQuery">
               <el-option label="待推送" value="0" />
               <el-option label="成功" value="1" />
               <el-option label="失败" value="2" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.grade" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.grade" placeholder="等级" clearable @change="handleQuery">
               <el-option label="A" value="A" />
               <el-option label="B" value="B" />
               <el-option label="C" value="C" />

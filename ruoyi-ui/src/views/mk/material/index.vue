@@ -10,48 +10,36 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="标题" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>素材类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.materialType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.materialType" placeholder="素材类型" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_material_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>关联活动</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.activityId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.activityId" placeholder="关联活动" clearable filterable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>素材编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialNo" placeholder="素材编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>标签</label>
-          <div class="control">
-            <el-input v-model="queryParams.tags" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.tags" placeholder="标签" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建人</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.userId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.userId" placeholder="创建人" clearable filterable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
             </el-select>

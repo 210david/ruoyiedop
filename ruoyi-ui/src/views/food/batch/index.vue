@@ -10,42 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.batchCode" placeholder="批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>批次状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.batchStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.batchStatus" placeholder="批次状态" clearable @change="handleQuery">
               <el-option v-for="d in food_batch_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>效期状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.expireStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.expireStatus" placeholder="效期状态" clearable @change="handleQuery">
               <el-option v-for="d in food_expire_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>到期日期</label>
-          <div class="control">
-            <el-date-picker v-model="expireDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control">
+            <el-date-picker v-model="expireDateRange" type="daterange" range-separator="-" start-placeholder="到期日期起" end-placeholder="到期日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

@@ -10,90 +10,66 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>供应商编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierCode" placeholder="供应商编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>供应商名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>供应商类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.supplierType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.supplierType" placeholder="供应商类型" clearable @change="handleQuery">
               <el-option v-for="d in wms_supplier_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>简称</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierShortName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.supplierShortName" placeholder="简称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.supplierLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.supplierLevel" placeholder="等级" clearable @change="handleQuery">
               <el-option v-for="d in wms_supplier_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>统一信用代码</label>
-          <div class="control">
-            <el-input v-model="queryParams.unifiedCreditCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.unifiedCreditCode" placeholder="统一信用代码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>联系人</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactPerson" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.contactPerson" placeholder="联系人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><User /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>联系电话</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="联系电话" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>法人代表</label>
-          <div class="control">
-            <el-input v-model="queryParams.legalPerson" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.legalPerson" placeholder="法人代表" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>企业性质</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.enterpriseNature" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.enterpriseNature" placeholder="企业性质" clearable @change="handleQuery">
               <el-option v-for="d in wms_enterprise_nature" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

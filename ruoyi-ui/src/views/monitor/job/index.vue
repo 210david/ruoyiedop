@@ -6,42 +6,32 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.jobName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.jobName" placeholder="任务名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>任务组名</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.jobGroup" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.jobGroup" placeholder="任务组名" clearable @change="handleQuery">
               <el-option v-for="d in sys_job_group" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>任务状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="任务状态" clearable @change="handleQuery">
               <el-option v-for="d in sys_job_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>所属模块</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.moduleKey" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.moduleKey" placeholder="所属模块" clearable @change="handleQuery">
               <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName" :value="m.moduleKey" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>调用目标</label>
-          <div class="control">
-            <el-input v-model="queryParams.invokeTarget" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.invokeTarget" placeholder="调用目标" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

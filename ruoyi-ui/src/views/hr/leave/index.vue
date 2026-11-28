@@ -10,58 +10,44 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>离职单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.leaveNo" placeholder="请输入离职单号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.leaveNo" placeholder="离职单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>审批状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.auditStatus" placeholder="审批状态" clearable @change="handleQuery">
               <el-option v-for="d in auditStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>离职类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leaveType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.leaveType" placeholder="离职类型" clearable @change="handleQuery">
               <el-option v-for="d in leaveEmpTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>交接状态</label>
-          <div class="control">
-            <el-input v-model="queryParams.handoverStatus" placeholder="请输入交接状态" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.handoverStatus" placeholder="交接状态" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>离职日期</label>
-          <div class="control">
-            <el-date-picker v-model="leaveDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="leaveDateRange" type="daterange" range-separator="-" start-placeholder="离职日期起" end-placeholder="离职日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

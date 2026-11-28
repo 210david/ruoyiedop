@@ -6,30 +6,22 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>投标项目名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.bidName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.bidName" placeholder="投标项目名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>招标编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.tenderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.tenderNo" placeholder="招标编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>客户名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="客户名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.bidStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.bidStatus" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in mk_bid_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

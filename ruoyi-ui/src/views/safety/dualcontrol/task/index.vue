@@ -10,46 +10,34 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.taskName" placeholder="任务名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>任务编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.taskCode" placeholder="任务编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>任务状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskStatus" placeholder="任务状态" clearable @change="handleQuery">
               <el-option v-for="dict in safety_task_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>任务类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskType" placeholder="任务类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_task_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>执行人</label>
-          <div class="control">
-            <el-input v-model="queryParams.executorName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.executorName" placeholder="执行人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>计划日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="计划日期起" end-placeholder="计划日期止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

@@ -10,33 +10,19 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>缺陷代码</label>
-          <div class="control"><el-input v-model="queryParams.defectCode" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.defectCode" placeholder="缺陷代码" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div>
         </div>
-        <div class="field">
-          <label>缺陷名称</label>
-          <div class="control"><el-input v-model="queryParams.defectName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.defectName" placeholder="缺陷名称" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>缺陷等级</label>
-          <div class="control is-select"><el-select v-model="queryParams.defectLevel" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in qms_defect_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.defectLevel" placeholder="缺陷等级" clearable @change="handleQuery"><el-option v-for="d in qms_defect_level" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field">
-          <label>缺陷分类</label>
-          <div class="control is-select"><el-select v-model="queryParams.defectCategory" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in qms_defect_category" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.defectCategory" placeholder="缺陷分类" clearable @change="handleQuery"><el-option v-for="d in qms_defect_category" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option label="正常" value="0" /><el-option label="停用" value="1" /></el-select></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery"><el-option label="正常" value="0" /><el-option label="停用" value="1" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>备注</label>
-          <div class="control"><el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.remark" placeholder="备注" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

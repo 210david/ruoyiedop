@@ -6,26 +6,20 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>台账名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.ledgerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.ledgerName" placeholder="台账名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>绑定表单</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.formId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.formId" placeholder="绑定表单" clearable filterable @change="handleQuery">
               <el-option v-for="f in forms" :key="f.formId" :label="f.formName" :value="f.formId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="启用" value="0" />
               <el-option label="停用" value="1" />
             </el-select>

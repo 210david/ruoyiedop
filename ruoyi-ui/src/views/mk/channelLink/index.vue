@@ -3,19 +3,15 @@
     <!-- ===== Activity Selector Card ===== -->
     <div class="surface selector-card" v-show="showSearch">
       <div class="selector-bar">
-        <div class="field">
-          <label>推广活动</label>
-          <div class="control is-select">
-            <el-select v-model="activityId" placeholder="请选择报名中/进行中的活动" filterable @change="handleActivityChange">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="activityId" placeholder="推广活动" filterable @change="handleActivityChange">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="a in activityOptions" :key="a.activityId" :label="a.activityName" :value="a.activityId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>渠道账号</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.channelId" placeholder="全部渠道" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.channelId" placeholder="渠道账号" clearable filterable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="c in channelOptions" :key="c.channelId" :label="c.accountName" :value="c.channelId" />
             </el-select>

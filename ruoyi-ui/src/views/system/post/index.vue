@@ -6,22 +6,16 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>岗位编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.postCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.postCode" placeholder="岗位编码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>岗位名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.postName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.postName" placeholder="岗位名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>

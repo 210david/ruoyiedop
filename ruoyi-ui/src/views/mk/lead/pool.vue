@@ -10,70 +10,54 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>企业名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.companyName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.companyName" placeholder="企业名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>线索等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leadGrade" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.leadGrade" placeholder="线索等级" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_lead_grade" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>审批状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.receiveStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.receiveStatus" placeholder="审批状态" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_lead_receive_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>线索来源</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leadSource" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.leadSource" placeholder="线索来源" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_customer_source" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>联系人</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.contactName" placeholder="联系人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>手机号</label>
-          <div class="control">
-            <el-input v-model="queryParams.contactPhone" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.contactPhone" placeholder="手机号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>所属行业</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.industry" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.industry" placeholder="所属行业" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_industry" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>申请时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="申请时间起" end-placeholder="申请时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

@@ -10,42 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.taskNo" placeholder="任务编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>任务状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskStatus" placeholder="任务状态" clearable @change="handleQuery">
               <el-option v-for="d in dms_inspection_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>路线名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.routeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.routeName" placeholder="路线名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>点检人</label>
-          <div class="control">
-            <el-input v-model="queryParams.inspectorName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.inspectorName" placeholder="点检人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>计划日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="计划日期起" end-placeholder="计划日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

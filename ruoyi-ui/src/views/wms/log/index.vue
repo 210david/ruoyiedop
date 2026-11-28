@@ -10,58 +10,44 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>变动类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.changeType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.changeType" placeholder="变动类型" clearable @change="handleQuery">
               <el-option v-for="d in wms_change_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>关联单据</label>
-          <div class="control">
-            <el-input v-model="queryParams.refOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.refOrderNo" placeholder="关联单据" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>仓库</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.warehouseId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.warehouseId" placeholder="仓库" clearable filterable @change="handleQuery">
               <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.batchNo" placeholder="批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>操作时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" style="width: 100%" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" style="width: 100%" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="操作时间起" end-placeholder="操作时间止" />
           </div>
         </div>
       </div>

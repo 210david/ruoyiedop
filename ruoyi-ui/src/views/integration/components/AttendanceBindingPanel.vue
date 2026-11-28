@@ -10,57 +10,43 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>{{ connectorLabel }}姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.externalName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.externalName" placeholder="{{ connectorLabel }}姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>手机号</label>
-          <div class="control">
-            <el-input v-model="queryParams.mobile" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.mobile" placeholder="手机号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>{{ externalNoLabel }}</label>
-          <div class="control">
-            <el-input v-model="queryParams.externalJobNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.externalJobNo" placeholder="{{ externalNoLabel }}" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>平台工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="平台工号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>匹配状态</label>
-          <div class="control is-select">
-            <el-select v-model="matchedFilter" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="matchedFilter" placeholder="匹配状态" clearable @change="handleQuery">
               <el-option label="已匹配" value="yes" />
               <el-option label="未匹配" value="no" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>匹配方式</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.matchType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.matchType" placeholder="匹配方式" clearable @change="handleQuery">
               <el-option label="自动·手机号" value="auto_mobile" />
               <el-option label="自动·工号" value="auto_jobNumber" />
               <el-option label="人工绑定" value="manual" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>最后同步时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="最后同步时间起" end-placeholder="最后同步时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

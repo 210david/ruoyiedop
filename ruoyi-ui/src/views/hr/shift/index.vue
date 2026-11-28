@@ -6,32 +6,24 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>班次编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.shiftCode" placeholder="请输入班次编码" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.shiftCode" placeholder="班次编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>班次名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.shiftName" placeholder="请输入班次名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.shiftName" placeholder="班次名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>开始时间</label>
-          <div class="control">
-            <el-time-select v-model="queryParams.startTime" start="00:00" end="24:00" step="00:30" placeholder="选择开始时间" clearable style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-time-select v-model="queryParams.startTime" start="00:00" end="24:00" step="00:30" placeholder="开始时间" clearable style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>结束时间</label>
-          <div class="control">
-            <el-time-select v-model="queryParams.endTime" start="00:00" end="24:00" step="00:30" placeholder="选择结束时间" clearable style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-time-select v-model="queryParams.endTime" start="00:00" end="24:00" step="00:30" placeholder="结束时间" clearable style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

@@ -7,31 +7,23 @@
             <div class="filter-title"><span class="glyph"></span>筛选条件</div>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>会计期间</label>
-              <div class="control">
-                <el-input v-model="closingQuery.periodName" placeholder="如 2026年09期" clearable @keyup.enter="handleClosingQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="closingQuery.periodName" placeholder="会计期间" clearable @keyup.enter="handleClosingQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>年月</label>
-              <div class="control">
-                <el-input v-model="closingQuery.yearMonth" placeholder="如 2026-09" clearable @keyup.enter="handleClosingQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="closingQuery.yearMonth" placeholder="年月" clearable @keyup.enter="handleClosingQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>结账状态</label>
-              <div class="control">
-                <el-select v-model="closingQuery.status" placeholder="全部" clearable style="width: 100%" @change="handleClosingQuery">
+            <div class="field"><div class="control">
+                <el-select v-model="closingQuery.status" placeholder="结账状态" clearable style="width: 100%" @change="handleClosingQuery">
                   <el-option label="未结账" value="OPEN" />
                   <el-option label="已结账" value="CLOSED" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>结账人</label>
-              <div class="control">
-                <el-input v-model="closingQuery.closeBy" placeholder="输入结账人" clearable @keyup.enter="handleClosingQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="closingQuery.closeBy" placeholder="结账人" clearable @keyup.enter="handleClosingQuery" />
               </div>
             </div>
           </div>
@@ -131,47 +123,35 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>规则名称</label>
-              <div class="control">
-                <el-input v-model="ruleQuery.ruleName" placeholder="如 采购发票审核-应付账款" clearable @keyup.enter="handleRuleQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="ruleQuery.ruleName" placeholder="规则名称" clearable @keyup.enter="handleRuleQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>规则键</label>
-              <div class="control">
-                <el-input v-model="ruleQuery.ruleKey" placeholder="如 pms_invoice_payable" clearable @keyup.enter="handleRuleQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="ruleQuery.ruleKey" placeholder="规则键" clearable @keyup.enter="handleRuleQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>来源</label>
-              <div class="control">
-                <el-select v-model="ruleQuery.sourceType" placeholder="全部" clearable style="width: 100%" @change="handleRuleQuery">
+            <div class="field"><div class="control">
+                <el-select v-model="ruleQuery.sourceType" placeholder="来源" clearable style="width: 100%" @change="handleRuleQuery">
                   <el-option label="采购发票" value="invoice" />
                   <el-option label="销售发货" value="shipment" />
                   <el-option label="薪酬发放" value="payroll" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>状态</label>
-              <div class="control">
-                <el-select v-model="ruleQuery.status" placeholder="全部" clearable style="width: 100%" @change="handleRuleQuery">
+            <div class="field"><div class="control">
+                <el-select v-model="ruleQuery.status" placeholder="状态" clearable style="width: 100%" @change="handleRuleQuery">
                   <el-option label="启用" value="0" />
                   <el-option label="停用" value="1" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="ruleShowAdvanced">
-              <label>科目编码</label>
-              <div class="control">
-                <el-input v-model="ruleQuery.accountCode" placeholder="如 2202" clearable @keyup.enter="handleRuleQuery" />
+            <div class="field" v-show="ruleShowAdvanced"><div class="control">
+                <el-input v-model="ruleQuery.accountCode" placeholder="科目编码" clearable @keyup.enter="handleRuleQuery" />
               </div>
             </div>
-            <div class="field" v-show="ruleShowAdvanced">
-              <label>借贷方向</label>
-              <div class="control">
-                <el-select v-model="ruleQuery.direction" placeholder="全部" clearable style="width: 100%" @change="handleRuleQuery">
+            <div class="field" v-show="ruleShowAdvanced"><div class="control">
+                <el-select v-model="ruleQuery.direction" placeholder="借贷方向" clearable style="width: 100%" @change="handleRuleQuery">
                   <el-option label="借" value="DEBIT" />
                   <el-option label="贷" value="CREDIT" />
                 </el-select>
@@ -344,50 +324,38 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>物料编码</label>
-              <div class="control">
-                <el-input v-model="methodQuery.materialCode" placeholder="输入物料编码" clearable @keyup.enter="handleMethodQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="methodQuery.materialCode" placeholder="物料编码" clearable @keyup.enter="handleMethodQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>物料名称</label>
-              <div class="control">
-                <el-input v-model="methodQuery.materialName" placeholder="输入物料名称" clearable @keyup.enter="handleMethodQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="methodQuery.materialName" placeholder="物料名称" clearable @keyup.enter="handleMethodQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>计价方法</label>
-              <div class="control">
-                <el-select v-model="methodQuery.costMethod" placeholder="全部" clearable style="width: 100%" @change="handleMethodQuery">
+            <div class="field"><div class="control">
+                <el-select v-model="methodQuery.costMethod" placeholder="计价方法" clearable style="width: 100%" @change="handleMethodQuery">
                   <el-option label="加权平均" value="WEIGHTED_AVG" />
                   <el-option label="先进先出" value="FIFO" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>状态</label>
-              <div class="control">
-                <el-select v-model="methodQuery.status" placeholder="全部" clearable style="width: 100%" @change="handleMethodQuery">
+            <div class="field"><div class="control">
+                <el-select v-model="methodQuery.status" placeholder="状态" clearable style="width: 100%" @change="handleMethodQuery">
                   <el-option label="启用" value="0" />
                   <el-option label="停用" value="1" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="methodShowAdvanced">
-              <label>入库单价含税</label>
-              <div class="control">
-                <el-select v-model="methodQuery.taxIncluded" placeholder="全部" clearable style="width: 100%" @change="handleMethodQuery">
+            <div class="field" v-show="methodShowAdvanced"><div class="control">
+                <el-select v-model="methodQuery.taxIncluded" placeholder="入库单价含税" clearable style="width: 100%" @change="handleMethodQuery">
                   <el-option label="是" value="Y" />
                   <el-option label="否" value="N" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="methodShowAdvanced">
-              <label>生效日期</label>
-              <div class="control">
+            <div class="field" v-show="methodShowAdvanced"><div class="control">
                 <el-date-picker v-model="methodDateRange" type="daterange" range-separator="-"
-                                start-placeholder="开始日期" end-placeholder="结束日期"
+                                start-placeholder="生效日期起" end-placeholder="生效日期止"
                                 value-format="YYYY-MM-DD" style="width: 100%" />
               </div>
             </div>

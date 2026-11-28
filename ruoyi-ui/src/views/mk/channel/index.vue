@@ -6,36 +6,28 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>账号名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.accountName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.accountName" placeholder="账号名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>渠道类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.channelType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.channelType" placeholder="渠道类型" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_channel_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>负责人</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.userId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.userId" placeholder="负责人" clearable filterable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.channelStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.channelStatus" placeholder="状态" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in sys_normal_disable" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>

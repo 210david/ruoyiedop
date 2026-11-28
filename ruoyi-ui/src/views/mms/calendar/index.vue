@@ -9,26 +9,20 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>日期类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.dayType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.dayType" placeholder="日期类型" clearable @change="handleQuery">
               <el-option v-for="d in mms_calendar_daytype" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in mms_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>工作日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="工作日期起" end-placeholder="工作日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

@@ -10,66 +10,50 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>NCR编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.ncrNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.ncrNo" placeholder="NCR编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>NCR状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.ncrStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.ncrStatus" placeholder="NCR状态" clearable @change="handleQuery">
               <el-option v-for="d in qms_ncr_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>来源类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.sourceType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.sourceType" placeholder="来源类型" clearable @change="handleQuery">
               <el-option v-for="d in qms_ncr_source" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>缺陷等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.defectLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.defectLevel" placeholder="缺陷等级" clearable @change="handleQuery">
               <el-option v-for="d in qms_defect_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>处置方式</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.disposition" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.disposition" placeholder="处置方式" clearable @change="handleQuery">
               <el-option v-for="d in qms_disposition" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>来源单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.sourceNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.sourceNo" placeholder="来源单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>报告人</label>
-          <div class="control">
-            <el-input v-model="queryParams.discovererName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.discovererName" placeholder="报告人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

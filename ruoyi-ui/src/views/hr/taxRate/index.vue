@@ -6,26 +6,20 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>级数</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.level" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.level" placeholder="级数" clearable @change="handleQuery">
               <el-option v-for="y in levelOptions" :key="y" :label="'第' + y + '级'" :value="y" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" /><el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>生效日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="生效日期起" end-placeholder="生效日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

@@ -28,19 +28,19 @@
 
     <!-- 查询条件 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="物料编码" prop="materialCode">
-        <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable style="width: 180px" @keyup.enter="handleQuery" />
+      <el-form-item prop="materialCode">
+        <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable style="width: 180px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="物料名称" prop="materialName">
-        <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable style="width: 200px" @keyup.enter="handleQuery" />
+      <el-form-item prop="materialName">
+        <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable style="width: 200px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="物料类型" prop="materialType">
-        <el-select v-model="queryParams.materialType" placeholder="请选择" clearable style="width: 140px">
+      <el-form-item prop="materialType">
+        <el-select v-model="queryParams.materialType" placeholder="物料类型" clearable style="width: 140px">
           <el-option v-for="dict in wms_material_type" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <el-select v-model="queryParams.warehouseId" placeholder="请选择" clearable style="width: 180px">
+      <el-form-item prop="warehouseId">
+        <el-select v-model="queryParams.warehouseId" placeholder="仓库" clearable style="width: 180px">
           <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
         </el-select>
       </el-form-item>

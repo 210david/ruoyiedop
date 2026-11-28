@@ -6,30 +6,22 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>参数名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.configName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.configName" placeholder="参数名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>参数键名</label>
-          <div class="control">
-            <el-input v-model="queryParams.configKey" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.configKey" placeholder="参数键名" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>系统内置</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.configType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.configType" placeholder="系统内置" clearable @change="handleQuery">
               <el-option v-for="dict in sys_yes_no" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" style="width: 100%" />
           </div>
         </div>
       </div>

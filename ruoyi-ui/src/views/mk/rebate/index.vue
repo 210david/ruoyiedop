@@ -13,47 +13,35 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>政策编号</label>
-              <div class="control">
-                <el-input v-model="policyQuery.policyNo" placeholder="请输入" clearable @keyup.enter="handlePolicyQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="policyQuery.policyNo" placeholder="政策编号" clearable @keyup.enter="handlePolicyQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>政策名称</label>
-              <div class="control">
-                <el-input v-model="policyQuery.policyName" placeholder="请输入" clearable @keyup.enter="handlePolicyQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="policyQuery.policyName" placeholder="政策名称" clearable @keyup.enter="handlePolicyQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>客户名称</label>
-              <div class="control">
-                <el-input v-model="policyQuery.customerName" placeholder="请输入" clearable @keyup.enter="handlePolicyQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="policyQuery.customerName" placeholder="客户名称" clearable @keyup.enter="handlePolicyQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>状态</label>
-              <div class="control is-select">
-                <el-select v-model="policyQuery.status" placeholder="全部" clearable @change="handlePolicyQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="policyQuery.status" placeholder="状态" clearable @change="handlePolicyQuery">
                   <el-option label="启用" value="0" />
                   <el-option label="停用" value="1" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showPolicyAdvanced">
-              <label>考核口径</label>
-              <div class="control is-select">
-                <el-select v-model="policyQuery.basis" placeholder="全部" clearable @change="handlePolicyQuery">
+            <div class="field" v-show="showPolicyAdvanced"><div class="control is-select">
+                <el-select v-model="policyQuery.basis" placeholder="考核口径" clearable @change="handlePolicyQuery">
                   <el-option v-for="d in mk_rebate_basis" :key="d.value" :label="d.label" :value="d.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showPolicyAdvanced">
-              <label>周期类型</label>
-              <div class="control is-select">
-                <el-select v-model="policyQuery.periodType" placeholder="全部" clearable @change="handlePolicyQuery">
+            <div class="field" v-show="showPolicyAdvanced"><div class="control is-select">
+                <el-select v-model="policyQuery.periodType" placeholder="周期类型" clearable @change="handlePolicyQuery">
                   <el-option v-for="d in mk_rebate_period" :key="d.value" :label="d.label" :value="d.value" />
                 </el-select>
               </div>
@@ -168,38 +156,28 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>结算单号</label>
-              <div class="control">
-                <el-input v-model="settleQuery.settleNo" placeholder="请输入" clearable @keyup.enter="handleSettleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="settleQuery.settleNo" placeholder="结算单号" clearable @keyup.enter="handleSettleQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>客户名称</label>
-              <div class="control">
-                <el-input v-model="settleQuery.customerName" placeholder="请输入" clearable @keyup.enter="handleSettleQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="settleQuery.customerName" placeholder="客户名称" clearable @keyup.enter="handleSettleQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>期间</label>
-              <div class="control is-date">
-                <el-date-picker v-model="settleQuery.period" type="month" value-format="YYYYMM" placeholder="选择期间" style="width: 100%" clearable @change="handleSettleQuery" />
+            <div class="field"><div class="control is-date">
+                <el-date-picker v-model="settleQuery.period" type="month" value-format="YYYYMM" placeholder="期间" style="width: 100%" clearable @change="handleSettleQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>状态</label>
-              <div class="control is-select">
-                <el-select v-model="settleQuery.status" placeholder="全部" clearable @change="handleSettleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="settleQuery.status" placeholder="状态" clearable @change="handleSettleQuery">
                   <el-option v-for="d in mk_rebate_settle_status" :key="d.value" :label="d.label" :value="d.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showSettleAdvanced">
-              <label>政策编号</label>
-              <div class="control">
-                <el-input v-model="settleQuery.policyNo" placeholder="支持模糊查询" clearable @keyup.enter="handleSettleQuery" />
+            <div class="field" v-show="showSettleAdvanced"><div class="control">
+                <el-input v-model="settleQuery.policyNo" placeholder="政策编号" clearable @keyup.enter="handleSettleQuery" />
               </div>
             </div>
           </div>

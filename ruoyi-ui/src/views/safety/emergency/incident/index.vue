@@ -10,38 +10,28 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>事故编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.incidentCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.incidentCode" placeholder="事故编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>事故等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.incidentLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.incidentLevel" placeholder="事故等级" clearable @change="handleQuery">
               <el-option v-for="dict in safety_incident_level" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>发生时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="发生时间起" end-placeholder="发生时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field">
-          <label>事故地点</label>
-          <div class="control">
-            <el-input v-model="queryParams.incidentLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.incidentLocation" placeholder="事故地点" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>报告人</label>
-          <div class="control">
-            <el-input v-model="queryParams.reportPerson" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.reportPerson" placeholder="报告人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

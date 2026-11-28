@@ -10,50 +10,38 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>变更单编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.changeNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.changeNo" placeholder="变更单编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>变更标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.changeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.changeName" placeholder="变更标题" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产品名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.productName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.productName" placeholder="产品名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产品编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.productCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.productCode" placeholder="产品编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>变更级别</label>
-          <div class="control">
-            <el-select v-model="queryParams.changeLevel" placeholder="全部" clearable style="width: 100%">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.changeLevel" placeholder="变更级别" clearable style="width: 100%">
               <el-option v-for="d in pdm_change_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

@@ -10,40 +10,30 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>政策编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.policyNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.policyNo" placeholder="政策编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>政策名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.policyName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.policyName" placeholder="政策名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>价格类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.priceType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.priceType" placeholder="价格类型" clearable @change="handleQuery">
               <el-option v-for="d in mk_price_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>客户名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="客户名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

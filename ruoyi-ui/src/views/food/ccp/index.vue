@@ -10,66 +10,48 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>控制点</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.ccpName" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.ccpName" placeholder="控制点" clearable filterable @change="handleQuery">
               <el-option v-for="name in ccpNameOptions" :key="name" :label="name" :value="name" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.batchCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.batchCode" placeholder="批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>判定结果</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.judgeResult" placeholder="全部" clearable @change="onJudgeFilterChange">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.judgeResult" placeholder="判定结果" clearable @change="onJudgeFilterChange">
               <el-option v-for="d in food_ccp_judge" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>工序名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.processName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.processName" placeholder="工序名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>垛号</label>
-          <div class="control">
-            <el-input v-model="queryParams.wipNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.wipNo" placeholder="垛号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>监控项类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.monitorType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.monitorType" placeholder="监控项类型" clearable @change="handleQuery">
               <el-option v-for="d in food_ccp_monitor_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>记录时间</label>
-          <div class="control is-date">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control is-date">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="记录时间起" end-placeholder="记录时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

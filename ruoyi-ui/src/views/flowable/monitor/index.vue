@@ -55,65 +55,49 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>流程标题</label>
-              <div class="control">
-                <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.title" placeholder="流程标题" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Document /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>流程名称</label>
-              <div class="control">
-                <el-input v-model="queryParams.processDefinitionName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.processDefinitionName" placeholder="流程名称" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>创建时间</label>
-              <div class="control">
-                <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期"
-                  end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" />
+            <div class="field"><div class="control">
+                <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起"
+                  end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width:100%" />
               </div>
             </div>
-            <div class="field">
-              <label>当前节点</label>
-              <div class="control">
-                <el-input v-model="queryParams.currentActivityName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.currentActivityName" placeholder="当前节点" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Guide /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>创建人</label>
-              <div class="control">
-                <el-input v-model="queryParams.startUserName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field" v-show="showAdvanced"><div class="control">
+                <el-input v-model="queryParams.startUserName" placeholder="创建人" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><User /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>流程编号</label>
-              <div class="control">
-                <el-input v-model="queryParams.processNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field" v-show="showAdvanced"><div class="control">
+                <el-input v-model="queryParams.processNo" placeholder="流程编号" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><CollectionTag /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>流程请求ID</label>
-              <div class="control">
-                <el-input v-model="queryParams.requestId" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field" v-show="showAdvanced"><div class="control">
+                <el-input v-model="queryParams.requestId" placeholder="流程请求ID" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Tickets /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>当前状态</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.status" placeholder="全部" clearable @change="syncStatusTab">
+            <div class="field" v-show="showAdvanced"><div class="control is-select">
+                <el-select v-model="queryParams.status" placeholder="当前状态" clearable @change="syncStatusTab">
                   <el-option label="进行中" value="running" />
                   <el-option label="已结束" value="completed" />
                   <el-option label="已撤销" value="canceled" />

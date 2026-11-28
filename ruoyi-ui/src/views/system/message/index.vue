@@ -79,28 +79,20 @@
         <transition name="filter-slide">
           <div class="filter-panel" v-show="showSearch">
             <div class="filter-row">
-              <div class="field">
-                <label>业务来源</label>
-                <el-select v-model="queryParams.bizSource" placeholder="全部" clearable @change="handleQuery">
+              <div class="field"><el-select v-model="queryParams.bizSource" placeholder="业务来源" clearable @change="handleQuery">
                   <el-option v-for="dict in sys_message_biz_source" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
-              <div class="field">
-                <label>消息类型</label>
-                <el-select v-model="queryParams.messageType" placeholder="全部" clearable @change="handleQuery">
+              <div class="field"><el-select v-model="queryParams.messageType" placeholder="消息类型" clearable @change="handleQuery">
                   <el-option v-for="dict in sys_message_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
-              <div class="field">
-                <label>消息级别</label>
-                <el-select v-model="queryParams.messageLevel" placeholder="全部" clearable @change="handleQuery">
+              <div class="field"><el-select v-model="queryParams.messageLevel" placeholder="消息级别" clearable @change="handleQuery">
                   <el-option v-for="dict in sys_message_level" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
-              <div class="field">
-                <label>通知时间</label>
-                <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange"
-                  range-separator="-" start-placeholder="开始" end-placeholder="结束" style="width: 100%" />
+              <div class="field"><el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange"
+                  range-separator="-" start-placeholder="通知时间起" end-placeholder="通知时间止" style="width: 100%" />
               </div>
             </div>
             <div class="filter-footer">

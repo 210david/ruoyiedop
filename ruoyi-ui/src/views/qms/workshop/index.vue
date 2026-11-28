@@ -50,32 +50,24 @@
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>节点编码</label>
-              <div class="control">
-                <el-input v-model="queryParams.workshopCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.workshopCode" placeholder="节点编码" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>节点名称</label>
-              <div class="control">
-                <el-input v-model="queryParams.workshopName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.workshopName" placeholder="节点名称" clearable @keyup.enter="handleQuery" />
               </div>
             </div>
-            <div class="field">
-              <label>层级类型</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.nodeType" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="queryParams.nodeType" placeholder="层级类型" clearable @change="handleQuery">
                   <el-option v-for="dict in qms_workshop_node_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>状态</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
                   <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>

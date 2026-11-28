@@ -10,62 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>合同编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.contractNo" placeholder="请输入合同编号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.contractNo" placeholder="合同编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>合同类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.contractType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.contractType" placeholder="合同类型" clearable @change="handleQuery">
               <el-option v-for="d in hr_contract_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>合同状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.contractStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.contractStatus" placeholder="合同状态" clearable @change="handleQuery">
               <el-option v-for="d in hr_contract_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>开始日期</label>
-          <div class="control">
-            <el-date-picker v-model="startDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="startDateRange" type="daterange" range-separator="-" start-placeholder="开始日期起" end-placeholder="开始日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>结束日期</label>
-          <div class="control">
-            <el-date-picker v-model="endDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="endDateRange" type="daterange" range-separator="-" start-placeholder="结束日期起" end-placeholder="结束日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>签订日期</label>
-          <div class="control">
-            <el-date-picker v-model="signDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="signDateRange" type="daterange" range-separator="-" start-placeholder="签订日期起" end-placeholder="签订日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

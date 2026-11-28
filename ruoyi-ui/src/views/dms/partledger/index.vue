@@ -54,34 +54,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>备件编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.partCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.partCode" placeholder="备件编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>备件名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.partName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.partName" placeholder="备件名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>备件类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.partType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.partType" placeholder="备件类别" clearable @change="handleQuery">
               <el-option v-for="dict in dms_part_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>库存状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.stockStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.stockStatus" placeholder="库存状态" clearable @change="handleQuery">
               <el-option label="正常" value="normal" />
               <el-option label="库存不足" value="low" />
               <el-option label="库存积压" value="over" />
