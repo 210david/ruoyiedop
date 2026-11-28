@@ -6,26 +6,20 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>WBS任务</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.taskId" placeholder="全部任务" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.taskId" placeholder="WBS任务" clearable filterable @change="handleQuery">
               <el-option v-for="t in taskOptions" :key="t.taskId" :label="buildTaskLabel(t)" :value="t.taskId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>填报人</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.userId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.userId" placeholder="填报人" clearable filterable @change="handleQuery">
               <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName" :value="u.userId" />
             </el-select>
           </div>

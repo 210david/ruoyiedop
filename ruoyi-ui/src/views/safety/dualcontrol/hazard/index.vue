@@ -10,46 +10,34 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>隐患编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.hazardCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.hazardCode" placeholder="隐患编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>隐患描述</label>
-          <div class="control">
-            <el-input v-model="queryParams.hazardDesc" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.hazardDesc" placeholder="隐患描述" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>隐患类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.hazardType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.hazardType" placeholder="隐患类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_hazard_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>隐患等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.hazardLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.hazardLevel" placeholder="隐患等级" clearable @change="handleQuery">
               <el-option v-for="dict in safety_hazard_level" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>隐患状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.hazardStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.hazardStatus" placeholder="隐患状态" clearable @change="handleQuery">
               <el-option v-for="dict in safety_hazard_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>发现时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="发现时间起" end-placeholder="发现时间止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

@@ -22,52 +22,38 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>派工单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.dispatchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.dispatchNo" placeholder="派工单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工单编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.workOrderNo" placeholder="工单编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>工序名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.processName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.processName" placeholder="工序名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>产能单元</label>
-          <div class="control">
-            <el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.resourceName" placeholder="产能单元" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in mms_dispatch_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>班组</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.teamId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.teamId" placeholder="班组" clearable filterable @change="handleQuery">
               <el-option v-for="t in teamOptions" :key="t.teamId" :label="t.teamName" :value="t.teamId" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建日期起" end-placeholder="创建日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>
@@ -678,45 +664,27 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>报工单号</label>
-          <div class="control">
-            <el-input v-model="reportQuery.reportNo" placeholder="请输入" clearable @keyup.enter="handleReportQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="reportQuery.reportNo" placeholder="报工单号" clearable @keyup.enter="handleReportQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工单号</label>
-          <div class="control"><el-input v-model="reportQuery.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="reportQuery.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleReportQuery" /></div>
         </div>
-        <div class="field">
-          <label>工序</label>
-          <div class="control"><el-input v-model="reportQuery.processName" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="reportQuery.processName" placeholder="工序" clearable @keyup.enter="handleReportQuery" /></div>
         </div>
-        <div class="field">
-          <label>产能单元</label>
-          <div class="control"><el-input v-model="reportQuery.resourceName" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="reportQuery.resourceName" placeholder="产能单元" clearable @keyup.enter="handleReportQuery" /></div>
         </div>
-        <div class="field" v-show="reportShowAdvanced">
-          <label>状态</label>
-          <div class="control is-select"><el-select v-model="reportQuery.status" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="reportShowAdvanced"><div class="control is-select"><el-select v-model="reportQuery.status" placeholder="状态" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="reportShowAdvanced">
-          <label>报工人</label>
-          <div class="control"><el-input v-model="reportQuery.reportBy" placeholder="请输入" clearable @keyup.enter="handleReportQuery" /></div>
+        <div class="field" v-show="reportShowAdvanced"><div class="control"><el-input v-model="reportQuery.reportBy" placeholder="报工人" clearable @keyup.enter="handleReportQuery" /></div>
         </div>
-        <div class="field" v-show="reportShowAdvanced">
-          <label>是否首件</label>
-          <div class="control is-select"><el-select v-model="reportQuery.isFirstPiece" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="reportShowAdvanced"><div class="control is-select"><el-select v-model="reportQuery.isFirstPiece" placeholder="是否首件" clearable @change="handleReportQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="reportShowAdvanced">
-          <label>报工来源</label>
-          <div class="control is-select"><el-select v-model="reportQuery.source" placeholder="全部" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="reportShowAdvanced"><div class="control is-select"><el-select v-model="reportQuery.source" placeholder="报工来源" clearable @change="handleReportQuery"><el-option v-for="d in mms_report_source" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="reportShowAdvanced">
-          <label>报工日期</label>
-          <div class="control"><el-date-picker v-model="reportDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="reportShowAdvanced"><div class="control"><el-date-picker v-model="reportDateRange" type="daterange" range-separator="-" start-placeholder="报工日期起" end-placeholder="报工日期止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

@@ -9,18 +9,14 @@
                   <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
                </div>
                <div class="filter-bar">
-                  <div class="field">
-                     <label>菜单名称</label>
-                     <div class="control">
-                        <el-input v-model="queryParams.menuName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <div class="field"><div class="control">
+                        <el-input v-model="queryParams.menuName" placeholder="菜单名称" clearable @keyup.enter="handleQuery">
                            <template #prefix><el-icon><Search /></el-icon></template>
                         </el-input>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>状态</label>
-                     <div class="control is-select">
-                        <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                  <div class="field"><div class="control is-select">
+                        <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
                            <el-option
                               v-for="dict in sys_normal_disable"
                               :key="dict.value"
@@ -30,10 +26,8 @@
                         </el-select>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>类型</label>
-                     <div class="control is-select">
-                        <el-select v-model="queryParams.menuType" placeholder="全部" clearable @change="handleQuery">
+                  <div class="field"><div class="control is-select">
+                        <el-select v-model="queryParams.menuType" placeholder="类型" clearable @change="handleQuery">
                            <el-option label="目录" value="M" />
                            <el-option label="菜单" value="C" />
                            <el-option label="按钮" value="F" />

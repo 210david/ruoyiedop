@@ -10,21 +10,15 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field" style="grid-column: span 2">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field" style="grid-column: span 2"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>项目编号</label>
-          <div class="control"><span class="control-text">{{ currentProject?.projectNo || '-' }}</span></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><span class="control-text">{{ currentProject?.projectNo || '-' }}</span></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>项目经理</label>
-          <div class="control"><span class="control-text">{{ currentProject?.managerName || '-' }}</span></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><span class="control-text">{{ currentProject?.managerName || '-' }}</span></div>
         </div>
       </div>
       <div class="filter-actions">

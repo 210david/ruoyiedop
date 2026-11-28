@@ -10,50 +10,38 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>项目编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.projectNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.projectNo" placeholder="项目编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>项目名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.projectName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.projectName" placeholder="项目名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>项目类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.projectType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.projectType" placeholder="项目类型" clearable @change="handleQuery">
               <el-option v-for="d in projectTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>优先级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.priority" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.priority" placeholder="优先级" clearable @change="handleQuery">
               <el-option v-for="d in priorityOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>项目经理</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.managerId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.managerId" placeholder="项目经理" clearable filterable @change="handleQuery">
               <el-option v-for="u in userOptions" :key="u.userId" :label="u.nickName + (u.dept && u.dept.deptName ? ' · ' + u.dept.deptName : '')" :value="u.userId" />
             </el-select>
           </div>

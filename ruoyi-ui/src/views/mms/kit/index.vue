@@ -42,33 +42,19 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>齐套单号</label>
-          <div class="control"><el-input v-model="queryParams.kitNo" placeholder="请输入" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.kitNo" placeholder="齐套单号" clearable @keyup.enter="handleQuery"><template #prefix><el-icon><Search /></el-icon></template></el-input></div>
         </div>
-        <div class="field">
-          <label>工单号</label>
-          <div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>主计划号</label>
-          <div class="control"><el-input v-model="queryParams.mpsNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.mpsNo" placeholder="主计划号" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>是否齐套</label>
-          <div class="control is-select"><el-select v-model="queryParams.isComplete" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.isComplete" placeholder="是否齐套" clearable @change="handleQuery"><el-option v-for="d in mms_yes_no" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_kit_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery"><el-option v-for="d in mms_kit_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>BOM编号</label>
-          <div class="control"><el-input v-model="queryParams.bomNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.bomNo" placeholder="BOM编号" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>检查日期</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="检查日期起" end-placeholder="检查日期止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

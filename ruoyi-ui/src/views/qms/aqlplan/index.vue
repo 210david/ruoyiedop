@@ -10,34 +10,26 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>AQL等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.aqlLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.aqlLevel" placeholder="AQL等级" clearable @change="handleQuery">
               <el-option v-for="v in aqlLevels" :key="v" :label="v" :value="v" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>字码</label>
-          <div class="control">
-            <el-input v-model="queryParams.codeLetter" placeholder="如G/H/J" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.codeLetter" placeholder="字码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>检验严格度</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.inspectLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.inspectLevel" placeholder="检验严格度" clearable @change="handleQuery">
               <el-option label="正常" value="1" />
               <el-option label="加严" value="2" />
               <el-option label="放宽" value="3" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>

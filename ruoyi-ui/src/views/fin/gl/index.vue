@@ -6,26 +6,20 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>凭证号</label>
-          <div class="control">
-            <el-input v-model="queryParams.voucherNo" placeholder="请输入凭证号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.voucherNo" placeholder="凭证号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>会计期间</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.period" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.period" placeholder="会计期间" clearable @change="handleQuery">
               <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="草稿" value="DRAFT" />
               <el-option label="已审核" value="AUDITED" />
               <el-option label="已记账" value="POSTED" />
@@ -33,15 +27,13 @@
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>凭证日期</label>
-          <div class="control">
+        <div class="field"><div class="control">
             <el-date-picker
               v-model="dateRange"
               type="daterange"
               range-separator="-"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              start-placeholder="凭证日期起"
+              end-placeholder="凭证日期止"
               value-format="YYYY-MM-DD" />
           </div>
         </div>
@@ -441,9 +433,7 @@
     <el-dialog v-model="showTrialBalance" title="试算平衡表" width="900px" append-to-body>
       <div class="filter-row" style="margin-bottom: 12px">
         <div class="filter-row-fields">
-          <div class="field-inline">
-            <label>会计期间</label>
-            <el-select v-model="trialPeriod" placeholder="全部" clearable style="width: 140px">
+          <div class="field-inline"><el-select v-model="trialPeriod" placeholder="会计期间" clearable style="width: 140px">
               <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
             </el-select>
           </div>

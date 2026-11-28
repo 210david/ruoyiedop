@@ -10,26 +10,20 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field" style="grid-column: span 2">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field" style="grid-column: span 2"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="getList">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="getList">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>里程碑名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.milestoneName" placeholder="请输入" clearable @keyup.enter="getList">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.milestoneName" placeholder="里程碑名称" clearable @keyup.enter="getList">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

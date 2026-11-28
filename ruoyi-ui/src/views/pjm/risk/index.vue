@@ -10,42 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.riskType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.riskType" placeholder="类型" clearable @change="handleQuery">
               <el-option v-for="d in riskTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleStatusTabClick(queryParams.status || 'all')">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleStatusTabClick(queryParams.status || 'all')">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.level" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.level" placeholder="等级" clearable @change="handleQuery">
               <el-option v-for="d in levelOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>工程类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.engineeringCategory" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.engineeringCategory" placeholder="工程类别" clearable @change="handleQuery">
               <el-option v-for="d in engineeringCategoryOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

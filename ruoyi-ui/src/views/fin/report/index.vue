@@ -28,10 +28,8 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="loadAll" />
       </div>
       <div class="filter-bar">
-        <div v-if="periodUsed" class="field">
-          <label>会计期间</label>
-          <div class="control is-select">
-            <el-select v-model="period" placeholder="请选择" style="width: 150px">
+        <div v-if="periodUsed" class="field"><div class="control is-select">
+            <el-select v-model="period" placeholder="会计期间" style="width: 150px">
               <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
             </el-select>
           </div>

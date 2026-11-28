@@ -6,10 +6,8 @@
         <div class="filter-title"><span class="glyph"></span> 项目看板</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>

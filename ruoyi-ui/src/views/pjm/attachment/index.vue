@@ -10,26 +10,20 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>所属项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="所属项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>资料类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.attachmentType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.attachmentType" placeholder="资料类型" clearable @change="handleQuery">
               <el-option v-for="d in attachmentTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>文件名</label>
-          <div class="control">
-            <el-input v-model="queryParams.fileName" placeholder="输入文件名关键字" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.fileName" placeholder="文件名" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

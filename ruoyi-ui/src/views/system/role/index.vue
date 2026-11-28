@@ -9,42 +9,32 @@
                   <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
                </div>
                <div class="filter-bar">
-                  <div class="field">
-                     <label>角色名称</label>
-                     <div class="control">
-                        <el-input v-model="queryParams.roleName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <div class="field"><div class="control">
+                        <el-input v-model="queryParams.roleName" placeholder="角色名称" clearable @keyup.enter="handleQuery">
                            <template #prefix><el-icon><Search /></el-icon></template>
                         </el-input>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>权限字符</label>
-                     <div class="control">
-                        <el-input v-model="queryParams.roleKey" placeholder="请输入" clearable @keyup.enter="handleQuery">
+                  <div class="field"><div class="control">
+                        <el-input v-model="queryParams.roleKey" placeholder="权限字符" clearable @keyup.enter="handleQuery">
                            <template #prefix><el-icon><Key /></el-icon></template>
                         </el-input>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>状态</label>
-                     <div class="control is-select">
-                        <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                  <div class="field"><div class="control is-select">
+                        <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
                            <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
                         </el-select>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>所属模块</label>
-                     <div class="control is-select">
-                        <el-select v-model="queryParams.moduleKey" placeholder="全部" clearable @change="handleQuery">
+                  <div class="field"><div class="control is-select">
+                        <el-select v-model="queryParams.moduleKey" placeholder="所属模块" clearable @change="handleQuery">
                            <el-option v-for="m in moduleOptions" :key="m.moduleKey" :label="m.moduleName" :value="m.moduleKey" />
                         </el-select>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>创建时间</label>
-                     <div class="control">
-                        <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" />
+                  <div class="field"><div class="control">
+                        <el-date-picker v-model="dateRange" value-format="YYYY-MM-DD" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" style="width: 100%" />
                      </div>
                   </div>
                </div>

@@ -2,14 +2,14 @@
   <div class="app-container">
     <!-- 搜索栏 -->
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="适配器类型" prop="adapterType">
-        <el-select v-model="queryParams.adapterType" placeholder="全部" clearable style="width: 160px">
+      <el-form-item prop="adapterType">
+        <el-select v-model="queryParams.adapterType" placeholder="适配器类型" clearable style="width: 160px">
           <el-option label="MQTT适配器" value="MQTT_ADAPTER" />
           <el-option label="Modbus适配器" value="MODBUS_ADAPTER" />
         </el-select>
       </el-form-item>
-      <el-form-item label="运行状态" prop="running">
-        <el-select v-model="queryParams.running" placeholder="全部" clearable style="width: 120px">
+      <el-form-item prop="running">
+        <el-select v-model="queryParams.running" placeholder="运行状态" clearable style="width: 120px">
           <el-option label="运行中" :value="true" />
           <el-option label="已停止" :value="false" />
         </el-select>

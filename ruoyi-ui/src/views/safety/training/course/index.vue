@@ -10,49 +10,37 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>课程名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.courseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.courseName" placeholder="课程名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>课程类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.courseType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.courseType" placeholder="课程类别" clearable @change="handleQuery">
               <el-option v-for="dict in safety_course_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>课程形式</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.courseForm" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.courseForm" placeholder="课程形式" clearable @change="handleQuery">
               <el-option v-for="dict in safety_course_form" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>课程编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.courseCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.courseCode" placeholder="课程编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>讲师</label>
-          <div class="control">
-            <el-input v-model="queryParams.instructor" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.instructor" placeholder="讲师" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

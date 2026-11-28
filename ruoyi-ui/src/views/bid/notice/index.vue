@@ -10,58 +10,42 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>标题关键词</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="标题关键词" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>信息类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.noticeType" placeholder="全部" clearable style="width: 100%">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.noticeType" placeholder="信息类型" clearable style="width: 100%">
               <el-option v-for="d in bid_notice_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>地区</label>
-          <div class="control">
-            <el-input v-model="queryParams.regionCode" placeholder="如：云南" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.regionCode" placeholder="地区" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>发布时间</label>
-          <div class="control">
+        <div class="field"><div class="control">
             <el-date-picker v-model="publishRange" type="daterange" range-separator="-"
-              start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width: 100%" />
+              start-placeholder="发布时间起" end-placeholder="发布时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>招标人</label>
-          <div class="control">
-            <el-input v-model="queryParams.tenderee" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.tenderee" placeholder="招标人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>代理机构</label>
-          <div class="control">
-            <el-input v-model="queryParams.agent" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.agent" placeholder="代理机构" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>行业分类</label>
-          <div class="control">
-            <el-select v-model="queryParams.industry" placeholder="全部" clearable style="width: 100%">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.industry" placeholder="行业分类" clearable style="width: 100%">
               <el-option v-for="d in bid_industry" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>截止时间</label>
-          <div class="control">
+        <div class="field" v-show="showAdvanced"><div class="control">
             <el-date-picker v-model="deadlineRange" type="daterange" range-separator="-"
-              start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width: 100%" />
+              start-placeholder="截止时间起" end-placeholder="截止时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

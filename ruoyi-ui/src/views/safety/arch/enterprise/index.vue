@@ -10,53 +10,39 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>企业名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.enterpriseName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.enterpriseName" placeholder="企业名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>信用代码</label>
-          <div class="control">
-            <el-input v-model="queryParams.creditCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.creditCode" placeholder="信用代码" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>行业类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.industryType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.industryType" placeholder="行业类别" clearable @change="handleQuery">
               <el-option v-for="dict in safety_industry_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>是否高危</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.isHighRisk" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.isHighRisk" placeholder="是否高危" clearable @change="handleQuery">
               <el-option label="是" value="1" />
               <el-option label="否" value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>法定代表人</label>
-          <div class="control">
-            <el-input v-model="queryParams.legalPerson" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.legalPerson" placeholder="法定代表人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>安全负责人</label>
-          <div class="control">
-            <el-input v-model="queryParams.safetyManager" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.safetyManager" placeholder="安全负责人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>安全管理机构</label>
-          <div class="control">
-            <el-input v-model="queryParams.safetyOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.safetyOrg" placeholder="安全管理机构" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

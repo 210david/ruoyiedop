@@ -6,18 +6,14 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>所属模块</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.module" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.module" placeholder="所属模块" clearable @change="handleQuery">
               <el-option v-for="(label, key) in moduleNames" :key="key" :label="label" :value="key" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>文档名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.docName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.docName" placeholder="文档名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

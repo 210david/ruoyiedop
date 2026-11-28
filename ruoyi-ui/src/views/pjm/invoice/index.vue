@@ -10,46 +10,34 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field" style="grid-column: span 2">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field" style="grid-column: span 2"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>开票单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.invoiceNo" placeholder="模糊搜索单号" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.invoiceNo" placeholder="开票单号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>发票类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.invoiceType" placeholder="全部" clearable style="width:100%">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.invoiceType" placeholder="发票类型" clearable style="width:100%">
               <el-option v-for="dict in pjm_invoice_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>发票状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.invoiceStatus" placeholder="全部" clearable style="width:100%">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.invoiceStatus" placeholder="发票状态" clearable style="width:100%">
               <el-option v-for="dict in pjm_invoice_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>发票抬头</label>
-          <div class="control">
-            <el-input v-model="queryParams.invoiceTitle" placeholder="模糊搜索发票抬头" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.invoiceTitle" placeholder="发票抬头" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>开票日期</label>
-          <div class="control">
-            <el-date-picker v-model="invoiceDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:100%" @change="onInvoiceDateRangeChange" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control">
+            <el-date-picker v-model="invoiceDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="开票日期起" end-placeholder="开票日期止" style="width:100%" @change="onInvoiceDateRangeChange" />
           </div>
         </div>
       </div>

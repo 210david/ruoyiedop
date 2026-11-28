@@ -9,44 +9,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>出入库单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.recordCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.recordCode" placeholder="出入库单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>危化品名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="危化品名称" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.recordType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.recordType" placeholder="类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_record_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>供应商/客户</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商/客户" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>领用人</label>
-          <div class="control">
-            <el-input v-model="queryParams.recipient" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.recipient" placeholder="领用人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>出入库时间</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="出入库时间起" end-placeholder="出入库时间止" value-format="YYYY-MM-DD" style="width:100%" @change="handleQuery" />
           </div>
         </div>
       </div>

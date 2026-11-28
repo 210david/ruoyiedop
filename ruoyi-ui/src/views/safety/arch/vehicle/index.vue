@@ -10,40 +10,30 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>车牌号</label>
-          <div class="control">
-            <el-input v-model="queryParams.plateNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.plateNo" placeholder="车牌号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>品牌型号</label>
-          <div class="control">
-            <el-input v-model="queryParams.vehicleModel" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.vehicleModel" placeholder="品牌型号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>所属企业</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.enterpriseId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.enterpriseId" placeholder="所属企业" clearable filterable @change="handleQuery">
               <el-option v-for="e in enterpriseOptions" :key="e.enterpriseId" :label="e.enterpriseName" :value="e.enterpriseId" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced && activeTab !== '2'">
-          <label>车辆子类</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.specialSubType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced && activeTab !== '2'"><div class="control is-select">
+            <el-select v-model="queryParams.specialSubType" placeholder="车辆子类" clearable @change="handleQuery">
               <el-option v-for="d in specialSubTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in vehicleStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

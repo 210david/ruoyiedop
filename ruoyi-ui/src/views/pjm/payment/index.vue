@@ -10,36 +10,26 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field" style="grid-column: span 2">
-          <label>选择项目</label>
-          <div class="control">
-            <el-input :model-value="selectedProjectLabel" placeholder="点击选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
+        <div class="field" style="grid-column: span 2"><div class="control">
+            <el-input :model-value="selectedProjectLabel" placeholder="选择项目" readonly style="cursor:pointer" @click="openProjectPicker">
               <template #append><el-button icon="Search" @click.stop="openProjectPicker" /></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>收款单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.paymentNo" placeholder="模糊搜索单号" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.paymentNo" placeholder="收款单号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>期次</label>
-          <div class="control">
-            <el-input v-model="queryParams.periodNo" placeholder="如：1" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.periodNo" placeholder="期次" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>付款方</label>
-          <div class="control">
-            <el-input v-model="queryParams.payer" placeholder="模糊搜索付款方" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.payer" placeholder="付款方" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>收款日期</label>
-          <div class="control">
-            <el-date-picker v-model="paymentDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width:100%" @change="onPaymentDateRangeChange" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control">
+            <el-date-picker v-model="paymentDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="收款日期起" end-placeholder="收款日期止" style="width:100%" @change="onPaymentDateRangeChange" />
           </div>
         </div>
       </div>

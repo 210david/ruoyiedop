@@ -10,34 +10,26 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>车牌号</label>
-          <div class="control">
-            <el-input v-model="queryParams.plateNo" placeholder="请输入车牌号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.plateNo" placeholder="车牌号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>车辆类型</label>
-          <div class="control">
-            <el-select v-model="queryParams.vehicleType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.vehicleType" placeholder="车辆类型" clearable @change="handleQuery">
               <el-option v-for="d in vehicleTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>使用用途</label>
-          <div class="control">
-            <el-input v-model="queryParams.vehicleUse" placeholder="请输入使用用途" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.vehicleUse" placeholder="使用用途" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>所属部门</label>
-          <div class="control">
-            <el-input :model-value="queryParams.ownerDept" readonly placeholder="请选择所属部门" @click="openDeptFilter">
+        <div class="field"><div class="control">
+            <el-input :model-value="queryParams.ownerDept" readonly placeholder="所属部门" @click="openDeptFilter">
               <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
               <template #suffix>
                 <el-icon v-if="queryParams.ownerDept" class="oa-picker-clear-icon" @click.stop="clearDeptFilter"><CircleClose /></el-icon>
@@ -45,42 +37,30 @@
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>车辆编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.vehicleCode" placeholder="请输入车辆编号" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.vehicleCode" placeholder="车辆编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>品牌型号</label>
-          <div class="control">
-            <el-input v-model="queryParams.vehicleModel" placeholder="请输入品牌型号" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.vehicleModel" placeholder="品牌型号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>默认驾驶员</label>
-          <div class="control">
-            <el-input v-model="queryParams.driverName" placeholder="请输入驾驶员姓名" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.driverName" placeholder="默认驾驶员" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in vehicleStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>年检到期</label>
-          <div class="control">
-            <el-date-picker v-model="inspectRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="inspectRange" type="daterange" range-separator="-" start-placeholder="年检到期起" end-placeholder="年检到期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>保险到期</label>
-          <div class="control">
-            <el-date-picker v-model="insuranceRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="insuranceRange" type="daterange" range-separator="-" start-placeholder="保险到期起" end-placeholder="保险到期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

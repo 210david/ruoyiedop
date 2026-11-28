@@ -10,10 +10,8 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>出库单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.orderNo" placeholder="请输入或扫描" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.orderNo" placeholder="出库单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

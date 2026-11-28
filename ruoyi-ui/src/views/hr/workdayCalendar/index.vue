@@ -6,36 +6,28 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>年份</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.year" placeholder="选择年份" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.year" placeholder="年份" clearable @change="handleQuery">
               <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>月份</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.month" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.month" placeholder="月份" clearable @change="handleQuery">
               <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>日期类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.dateType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.dateType" placeholder="日期类型" clearable @change="handleQuery">
               <el-option label="工作日" value="0" />
               <el-option label="休息日" value="1" />
               <el-option label="法定节假日" value="2" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>节假日名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.holidayName" placeholder="请输入节假日名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.holidayName" placeholder="节假日名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

@@ -10,42 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>资料编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.fileNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.fileNo" placeholder="资料编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>资料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.fileName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.fileName" placeholder="资料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产品名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.productName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.productName" placeholder="产品名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产品编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.productCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.productCode" placeholder="产品编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>资料类别</label>
-          <div class="control control--select">
-            <el-select v-model="queryParams.fileCategory" placeholder="全部" clearable style="width: 100%" @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control control--select">
+            <el-select v-model="queryParams.fileCategory" placeholder="资料类别" clearable style="width: 100%" @change="handleQuery">
               <el-option v-for="d in pdm_file_category" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

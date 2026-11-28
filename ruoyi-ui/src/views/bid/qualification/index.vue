@@ -8,12 +8,12 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>名称/证书编号</label><div class="control"><el-input v-model="queryParams.name" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>资料类型</label><div class="control"><el-select v-model="queryParams.qualType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_qual_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>到期状态</label><div class="control"><el-select v-model="queryParams.expireStatus" placeholder="全部" clearable style="width:100%"><el-option label="30天内到期" value="soon30" /><el-option label="31-60天到期" value="soon60" /><el-option label="长期有效" value="long" /></el-select></div></div>
-        <div class="field"><label>发证日期</label><div class="control"><el-date-picker v-model="issueRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>持有人</label><div class="control"><el-input v-model="queryParams.ownerName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>资质等级</label><div class="control"><el-input v-model="queryParams.qualLevel" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.name" placeholder="名称/证书编号" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.qualType" placeholder="资料类型" clearable style="width:100%"><el-option v-for="d in bid_qual_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.expireStatus" placeholder="到期状态" clearable style="width:100%"><el-option label="30天内到期" value="soon30" /><el-option label="31-60天到期" value="soon60" /><el-option label="长期有效" value="long" /></el-select></div></div>
+        <div class="field"><div class="control"><el-date-picker v-model="issueRange" type="daterange" range-separator="-" start-placeholder="发证日期起" end-placeholder="发证日期止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.ownerName" placeholder="持有人" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.qualLevel" placeholder="资质等级" clearable @keyup.enter="handleQuery" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>

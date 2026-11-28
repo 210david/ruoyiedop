@@ -26,37 +26,29 @@
         </div>
       </div>
       <div class="filter-bar">
-        <div class="field" v-if="!isIndependent || tab === 'cost'">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery">
+        <div class="field" v-if="!isIndependent || tab === 'cost'"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-if="!isIndependent || tab === 'cost'">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入名称" clearable @keyup.enter="handleQuery">
+        <div class="field" v-if="!isIndependent || tab === 'cost'"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-if="!isIndependent || tab === 'carry'">
-          <label>结转类型</label>
-          <div class="control is-select">
-            <el-select v-model="carryQuery.sourceType" placeholder="全部类型" clearable @change="getCarryList">
+        <div class="field" v-if="!isIndependent || tab === 'carry'"><div class="control is-select">
+            <el-select v-model="carryQuery.sourceType" placeholder="结转类型" clearable @change="getCarryList">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="入库" value="inbound" />
               <el-option label="出库" value="outbound" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-if="!isIndependent || tab === 'carry'">
-          <label>结转日期</label>
-          <div class="control">
+        <div class="field" v-if="!isIndependent || tab === 'carry'"><div class="control">
             <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD"
-                            range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"
+                            range-separator="-" start-placeholder="结转日期起" end-placeholder="结转日期止"
                             @change="getCarryList" style="width: 100%" />
           </div>
         </div>

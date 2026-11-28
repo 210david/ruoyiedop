@@ -49,51 +49,39 @@
             </a>
           </div>
           <div class="filter-bar">
-            <div class="field">
-              <label>题干</label>
-              <div class="control">
-                <el-input v-model="queryParams.content" placeholder="请输入关键字" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                <el-input v-model="queryParams.content" placeholder="题干" clearable @keyup.enter="handleQuery">
                   <template #prefix><el-icon><Search /></el-icon></template>
                 </el-input>
               </div>
             </div>
-            <div class="field">
-              <label>题型</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.questionType" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="queryParams.questionType" placeholder="题型" clearable @change="handleQuery">
                   <el-option v-for="dict in safety_exam_question_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>难度</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.difficulty" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="queryParams.difficulty" placeholder="难度" clearable @change="handleQuery">
                   <el-option v-for="dict in safety_exam_difficulty" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field">
-              <label>适用工种</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.jobTypes" placeholder="全部" clearable @change="handleQuery">
+            <div class="field"><div class="control is-select">
+                <el-select v-model="queryParams.jobTypes" placeholder="适用工种" clearable @change="handleQuery">
                   <el-option v-for="dict in safety_job_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>状态</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+            <div class="field" v-show="showAdvanced"><div class="control is-select">
+                <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
                   <el-option label="启用" value="0" />
                   <el-option label="停用" value="1" />
                 </el-select>
               </div>
             </div>
-            <div class="field" v-show="showAdvanced">
-              <label>题目分类</label>
-              <div class="control is-select">
-                <el-select v-model="queryParams.categoryId" placeholder="全部" clearable filterable @change="handleQuery">
+            <div class="field" v-show="showAdvanced"><div class="control is-select">
+                <el-select v-model="queryParams.categoryId" placeholder="题目分类" clearable filterable @change="handleQuery">
                   <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName" :value="item.categoryId" />
                 </el-select>
               </div>

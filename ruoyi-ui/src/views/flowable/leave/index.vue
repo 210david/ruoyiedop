@@ -6,28 +6,22 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>请假标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="请假标题" clearable @keyup.enter="handleQuery">
               <template #prefix
                 ><el-icon><Search /></el-icon
               ></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>请假类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.leaveType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.leaveType" placeholder="请假类型" clearable @change="handleQuery">
               <el-option label="事假" value="1" /><el-option label="病假" value="2" /> <el-option label="年假" value="3" /><el-option label="调休" value="4" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="草稿" value="0" /><el-option label="审批中" value="1" /> <el-option label="已通过" value="2" /><el-option label="已驳回" value="3" />
               <el-option label="已撤销" value="4" />
             </el-select>
