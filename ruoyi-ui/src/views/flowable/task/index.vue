@@ -51,33 +51,25 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>流程标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.title" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.title" placeholder="流程标题" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Document /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-if="activeTab !== 'cc'">
-          <label>创建人</label>
-          <div class="control">
-            <el-input v-model="queryParams.startUserName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-if="activeTab !== 'cc'"><div class="control">
+            <el-input v-model="queryParams.startUserName" placeholder="创建人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><User /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>{{ activeTab === 'done' ? '办理时间' : '创建时间' }}</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期"
-              end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="{{ activeTab === 'done' ? '办理时间' : '创建时间' }}起"
+              end-placeholder="{{ activeTab === 'done' ? '办理时间' : '创建时间' }}止" value-format="YYYY-MM-DD" style="width:100%" />
           </div>
         </div>
-        <div class="field" v-if="activeTab !== 'draft' && activeTab !== 'cc'">
-          <label>办理环节</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-if="activeTab !== 'draft' && activeTab !== 'cc'"><div class="control">
+            <el-input v-model="queryParams.taskName" placeholder="办理环节" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

@@ -6,35 +6,27 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>单据号</label>
-          <div class="control">
-            <el-input v-model="queryParams.documentCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.documentCode" placeholder="单据号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.moveType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.moveType" placeholder="类型" clearable @change="handleQuery">
               <el-option label="入库" value="0" />
               <el-option label="出库" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>备件编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.partCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.partCode" placeholder="备件编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>供应商/部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierOrDept" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierOrDept" placeholder="供应商/部门" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

@@ -10,42 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>任务名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.taskName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.taskName" placeholder="任务名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>流程名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.processName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.processName" placeholder="流程名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><DocumentAdd /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>流程Key</label>
-          <div class="control">
-            <el-input v-model="queryParams.processKey" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.processKey" placeholder="流程Key" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><CollectionTag /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建人</label>
-          <div class="control">
-            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="创建人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><User /></el-icon></template>
             </el-input>
           </div>

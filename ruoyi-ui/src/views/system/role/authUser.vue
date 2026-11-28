@@ -6,18 +6,14 @@
             <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
          </div>
          <div class="filter-bar">
-            <div class="field">
-               <label>用户名称</label>
-               <div class="control">
-                  <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                  <el-input v-model="queryParams.userName" placeholder="用户名称" clearable @keyup.enter="handleQuery">
                      <template #prefix><el-icon><Search /></el-icon></template>
                   </el-input>
                </div>
             </div>
-            <div class="field">
-               <label>手机号码</label>
-               <div class="control">
-                  <el-input v-model="queryParams.phonenumber" placeholder="请输入" clearable @keyup.enter="handleQuery">
+            <div class="field"><div class="control">
+                  <el-input v-model="queryParams.phonenumber" placeholder="手机号码" clearable @keyup.enter="handleQuery">
                      <template #prefix><el-icon><Iphone /></el-icon></template>
                   </el-input>
                </div>

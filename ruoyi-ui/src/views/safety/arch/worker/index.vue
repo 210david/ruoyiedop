@@ -10,50 +10,36 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.workerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.workerName" placeholder="姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>岗位</label>
-          <div class="control">
-            <el-input v-model="queryParams.position" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.position" placeholder="岗位" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>作业类别</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.jobType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.jobType" placeholder="作业类别" clearable @change="handleQuery">
               <el-option v-for="dict in safety_job_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.workerNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.workerNo" placeholder="工号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>所属部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.deptName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="所属部门" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>联系电话</label>
-          <div class="control">
-            <el-input v-model="queryParams.phone" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.phone" placeholder="联系电话" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>

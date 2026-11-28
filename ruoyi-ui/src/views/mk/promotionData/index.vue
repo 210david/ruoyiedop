@@ -6,52 +6,40 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>所属内容</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.contentId" placeholder="全部" clearable filterable @change="handleFilterContentChange">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.contentId" placeholder="所属内容" clearable filterable @change="handleFilterContentChange">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="c in contentOptions" :key="c.contentId" :label="c.title" :value="c.contentId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>内容包</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.packageId" placeholder="请先选择内容" clearable filterable :disabled="!queryParams.contentId" @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.packageId" placeholder="内容包" clearable filterable :disabled="!queryParams.contentId" @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="p in filterPackageOptions" :key="p.packageId" :label="p.packageTitle" :value="p.packageId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>渠道账号</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.channelId" placeholder="全部" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.channelId" placeholder="渠道账号" clearable filterable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="c in channelOptions" :key="c.channelId" :label="c.accountName" :value="c.channelId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>渠道类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.channelType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.channelType" placeholder="渠道类型" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="d in marketing_channel_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>录入人</label>
-          <div class="control">
-            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="录入人" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>数据日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="数据日期起" end-placeholder="数据日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

@@ -10,44 +10,32 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>演练名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.drillName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.drillName" placeholder="演练名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>演练类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.drillType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.drillType" placeholder="演练类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_drill_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>演练编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.drillCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.drillCode" placeholder="演练编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>演练日期</label>
-          <div class="control">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="演练日期起" end-placeholder="演练日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>演练地点</label>
-          <div class="control">
-            <el-input v-model="queryParams.drillLocation" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.drillLocation" placeholder="演练地点" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>演练指挥</label>
-          <div class="control">
-            <el-input v-model="queryParams.drillCommander" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.drillCommander" placeholder="演练指挥" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

@@ -10,58 +10,42 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>司机姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.driverName" placeholder="请输入司机姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.driverName" placeholder="司机姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>手机号</label>
-          <div class="control">
-            <el-input v-model="queryParams.phone" placeholder="请输入手机号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.phone" placeholder="手机号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in driverStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>准驾车型</label>
-          <div class="control">
-            <el-input v-model="queryParams.licenseType" placeholder="请输入准驾车型" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.licenseType" placeholder="准驾车型" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>驾驶证号</label>
-          <div class="control">
-            <el-input v-model="queryParams.licenseNo" placeholder="请输入驾驶证号" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.licenseNo" placeholder="驾驶证号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>所属部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.ownerDept" placeholder="请输入所属部门" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.ownerDept" placeholder="所属部门" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>驾驶证到期</label>
-          <div class="control">
-            <el-date-picker v-model="licenseRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="licenseRange" type="daterange" range-separator="-" start-placeholder="驾驶证到期起" end-placeholder="驾驶证到期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>入职日期</label>
-          <div class="control">
-            <el-date-picker v-model="entryRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="entryRange" type="daterange" range-separator="-" start-placeholder="入职日期起" end-placeholder="入职日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

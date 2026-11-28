@@ -11,15 +11,15 @@
           </button>
         </div>
       </template>
-      <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="80px">
-        <el-form-item label="追溯方向" prop="direction">
+      <el-form :model="queryParams" ref="queryRef" :inline="true">
+        <el-form-item prop="direction">
           <el-radio-group v-model="queryParams.direction">
             <el-radio-button label="backward">反向追溯（成品→原料）</el-radio-button>
             <el-radio-button label="forward">正向追溯（原料→成品）</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="批次号" prop="batchNo">
-          <el-input v-model="queryParams.batchNo" placeholder="请输入批次号" clearable style="width: 240px" @keyup.enter="handleTrace" />
+        <el-form-item prop="batchNo">
+          <el-input v-model="queryParams.batchNo" placeholder="批次号" clearable style="width: 240px" @keyup.enter="handleTrace" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleTrace" :loading="loading">开始追溯</el-button>

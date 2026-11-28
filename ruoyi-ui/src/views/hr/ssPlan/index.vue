@@ -3,18 +3,12 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div></div>
       <div class="filter-bar">
-        <div class="field">
-          <label>方案名称</label>
-          <div class="control"><el-input v-model="queryParams.planName" placeholder="请输入方案名称" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.planName" placeholder="方案名称" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>年度</label>
-          <div class="control"><el-input v-model="queryParams.year" placeholder="如 2026" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.year" placeholder="年度" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 100%">
+        <div class="field"><div class="control">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable style="width: 100%">
               <el-option label="正常" value="0" /><el-option label="停用" value="1" />
             </el-select>
           </div>

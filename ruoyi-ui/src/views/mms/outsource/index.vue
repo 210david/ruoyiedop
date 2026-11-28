@@ -6,12 +6,12 @@
         <a class="adv-link" @click.prevent="showAdvanced = !showAdvanced"><span>{{ showAdvanced ? '收起' : '高级筛选' }}</span><el-icon class="chev"><ArrowDown /></el-icon></a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>外协单号</label><div class="control"><el-input v-model="queryParams.outsourceNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>工单编号</label><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>供应商</label><div class="control"><el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>状态</label><div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_outsource_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>工单状态</label><div class="control is-select"><el-select v-model="queryParams.params.workOrderStatus" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>外协日期</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.outsourceNo" placeholder="外协单号" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="工单编号" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery"><el-option v-for="d in mms_outsource_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.params.workOrderStatus" placeholder="工单状态" clearable @change="handleQuery"><el-option v-for="d in mms_workorder_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="外协日期起" end-placeholder="外协日期止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>

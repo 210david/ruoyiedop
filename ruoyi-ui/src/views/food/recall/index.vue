@@ -10,80 +10,60 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>召回单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.recallCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.recallCode" placeholder="召回单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>触发批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.triggerBatchCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.triggerBatchCode" placeholder="触发批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>单据状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="单据状态" clearable @change="handleQuery">
               <el-option v-for="d in food_recall_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>召回范围</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.recallScope" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.recallScope" placeholder="召回范围" clearable @change="handleQuery">
               <el-option v-for="d in food_recall_scope" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>召回等级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.recallLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.recallLevel" placeholder="召回等级" clearable @change="handleQuery">
               <el-option v-for="d in food_recall_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>触发物料</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="触发物料" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>执行人</label>
-          <div class="control">
-            <el-input v-model="queryParams.executeBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.executeBy" placeholder="执行人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建人</label>
-          <div class="control">
-            <el-input v-model="queryParams.createBy" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.createBy" placeholder="创建人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>执行时间</label>
-          <div class="control">
-            <el-date-picker v-model="executeDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control">
+            <el-date-picker v-model="executeDateRange" type="daterange" range-separator="-" start-placeholder="执行时间起" end-placeholder="执行时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced" style="grid-column: span 2">
-          <label>创建时间</label>
-          <div class="control">
-            <el-date-picker v-model="createDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced" style="grid-column: span 2"><div class="control">
+            <el-date-picker v-model="createDateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

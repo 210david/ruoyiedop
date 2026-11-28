@@ -10,38 +10,28 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>计划名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.planName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.planName" placeholder="计划名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>计划编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.planCode" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.planCode" placeholder="计划编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>计划类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.planType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.planType" placeholder="计划类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_training_plan_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>培训年份</label>
-          <div class="control">
-            <el-date-picker v-model="queryParams.planYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="queryParams.planYear" type="year" placeholder="培训年份" value-format="YYYY" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>计划状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.planStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.planStatus" placeholder="计划状态" clearable @change="handleQuery">
               <el-option label="待执行" value="0" />
               <el-option label="执行中" value="1" />
               <el-option label="已完成" value="2" />
@@ -49,10 +39,8 @@
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control is-select">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

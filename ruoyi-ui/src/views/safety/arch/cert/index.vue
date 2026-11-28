@@ -10,38 +10,28 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>证照名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.certName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.certName" placeholder="证照名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>证照编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.certNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.certNo" placeholder="证照编号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>证照类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.certType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.certType" placeholder="证照类型" clearable @change="handleQuery">
               <el-option v-for="dict in safety_license_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>发证机关</label>
-          <div class="control">
-            <el-input v-model="queryParams.issueOrg" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.issueOrg" placeholder="发证机关" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="启用" value="0" />
               <el-option label="停用" value="1" />
             </el-select>

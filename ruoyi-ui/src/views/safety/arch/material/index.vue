@@ -10,50 +10,38 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>危化品编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="危化品编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>危化品名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="危化品名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>危化品分类</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.hazardClass" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.hazardClass" placeholder="危化品分类" clearable @change="handleQuery">
               <el-option v-for="dict in safety_hazard_class" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>CAS号</label>
-          <div class="control">
-            <el-input v-model="queryParams.casNo" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.casNo" placeholder="CAS号" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>剧毒/易制爆</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.toxicFlag" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.toxicFlag" placeholder="剧毒/易制爆" clearable @change="handleQuery">
               <el-option label="无" value="0" />
               <el-option label="剧毒" value="1" />
               <el-option label="易制爆" value="2" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>储存位置</label>
-          <div class="control">
-            <el-input v-model="queryParams.storageAreaName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.storageAreaName" placeholder="储存位置" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
       </div>

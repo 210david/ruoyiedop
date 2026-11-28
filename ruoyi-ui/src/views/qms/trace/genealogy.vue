@@ -38,74 +38,56 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>投入批次</label>
-          <div class="control">
-            <el-input v-model="queryParams.parentBatchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.parentBatchNo" placeholder="投入批次" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>产出批次</label>
-          <div class="control">
-            <el-input v-model="queryParams.childBatchNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.childBatchNo" placeholder="产出批次" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>来源</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.sourceType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.sourceType" placeholder="来源" clearable @change="handleQuery">
               <el-option v-for="d in qms_genealogy_source" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>断点状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.breakFlag" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.breakFlag" placeholder="断点状态" clearable @change="handleQuery">
               <el-option label="仅断点" :value="1" />
               <el-option label="仅正常" :value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>供应商</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>谱系时间</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="谱系时间起" end-placeholder="谱系时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">
@@ -366,34 +348,26 @@
         </el-alert>
         <!-- 筛选条件 -->
         <div class="break-filter-bar">
-          <div class="break-field">
-            <label>投入批次</label>
-            <div class="break-field-control">
-              <el-input v-model="breakQueryParams.parentBatchNo" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+          <div class="break-field"><div class="break-field-control">
+              <el-input v-model="breakQueryParams.parentBatchNo" placeholder="投入批次" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
                 <template #prefix><el-icon><Search /></el-icon></template>
               </el-input>
             </div>
           </div>
-          <div class="break-field">
-            <label>工单号</label>
-            <div class="break-field-control">
-              <el-input v-model="breakQueryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+          <div class="break-field"><div class="break-field-control">
+              <el-input v-model="breakQueryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
                 <template #prefix><el-icon><Search /></el-icon></template>
               </el-input>
             </div>
           </div>
-          <div class="break-field">
-            <label>物料编码</label>
-            <div class="break-field-control">
-              <el-input v-model="breakQueryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+          <div class="break-field"><div class="break-field-control">
+              <el-input v-model="breakQueryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
                 <template #prefix><el-icon><Search /></el-icon></template>
               </el-input>
             </div>
           </div>
-          <div class="break-field">
-            <label>物料名称</label>
-            <div class="break-field-control">
-              <el-input v-model="breakQueryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
+          <div class="break-field"><div class="break-field-control">
+              <el-input v-model="breakQueryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleBreakQuery" style="width: 100%">
                 <template #prefix><el-icon><Search /></el-icon></template>
               </el-input>
             </div>

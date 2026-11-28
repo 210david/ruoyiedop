@@ -10,40 +10,30 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>排班月份</label>
-          <div class="control">
-            <el-date-picker v-model="filterMonth" type="month" value-format="YYYY-MM" placeholder="选择月份" style="width: 100%" @change="handleQuery" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="filterMonth" type="month" value-format="YYYY-MM" placeholder="排班月份" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>部门</label>
-          <div class="control is-select">
-            <el-select v-model="filterOrgId" placeholder="全部部门" clearable filterable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="filterOrgId" placeholder="部门" clearable filterable @change="handleQuery">
               <el-option v-for="d in deptOptions" :key="d.deptId" :label="d.deptName" :value="d.deptId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="filterEmployeeName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="filterEmployeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>班次</label>
-          <div class="control is-select">
-            <el-select v-model="filterShiftId" placeholder="全部班次" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="filterShiftId" placeholder="班次" clearable filterable @change="handleQuery">
               <el-option v-for="s in shiftOptions" :key="s.shiftId" :label="s.shiftName" :value="s.shiftId" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>排班模板</label>
-          <div class="control is-select">
-            <el-select v-model="filterTemplateId" placeholder="全部模板" clearable filterable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="filterTemplateId" placeholder="排班模板" clearable filterable @change="handleQuery">
               <el-option v-for="t in templateOptions" :key="t.templateId" :label="t.templateName" :value="t.templateId" />
             </el-select>
           </div>

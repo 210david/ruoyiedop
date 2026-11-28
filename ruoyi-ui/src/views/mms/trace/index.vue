@@ -9,18 +9,18 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>投入批次</label><div class="control"><el-input v-model="queryParams.batchIn" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>产出批次</label><div class="control"><el-input v-model="queryParams.batchOut" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>工单号</label><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>追溯类型</label><div class="control is-select"><el-select v-model="queryParams.sourceType" placeholder="全部" clearable @change="handleQuery"><el-option v-for="t in sourceTypes" :key="t.value" :label="t.label" :value="t.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>物料编码</label><div class="control"><el-input v-model="queryParams.materialCode" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>物料名称</label><div class="control"><el-input v-model="queryParams.materialName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>工序</label><div class="control"><el-input v-model="queryParams.opName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>产线</label><div class="control"><el-input v-model="queryParams.lineName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>供应商</label><div class="control"><el-input v-model="queryParams.supplierName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>操作员</label><div class="control"><el-input v-model="queryParams.operator" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>断点状态</label><div class="control is-select"><el-select v-model="queryParams.breakFlag" placeholder="全部" clearable @change="handleQuery"><el-option label="正常" :value="0" /><el-option label="断点" :value="1" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>追溯时间</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.batchIn" placeholder="投入批次" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.batchOut" placeholder="产出批次" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.sourceType" placeholder="追溯类型" clearable @change="handleQuery"><el-option v-for="t in sourceTypes" :key="t.value" :label="t.label" :value="t.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.opName" placeholder="工序" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.lineName" placeholder="产线" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.operator" placeholder="操作员" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.breakFlag" placeholder="断点状态" clearable @change="handleQuery"><el-option label="正常" :value="0" /><el-option label="断点" :value="1" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="追溯时间起" end-placeholder="追溯时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div></div>
       </div>
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>

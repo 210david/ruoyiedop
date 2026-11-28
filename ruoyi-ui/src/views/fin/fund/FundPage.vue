@@ -8,26 +8,20 @@
               <div class="filter-title"><span class="glyph"></span>筛选条件</div>
             </div>
             <div class="filter-bar">
-              <div class="field">
-                <label>账户编码</label>
-                <div class="control">
-                  <el-input v-model="accQuery.accountCode" placeholder="请输入账户编码" clearable @keyup.enter="handleAccSearch">
+              <div class="field"><div class="control">
+                  <el-input v-model="accQuery.accountCode" placeholder="账户编码" clearable @keyup.enter="handleAccSearch">
                     <template #prefix><el-icon><Search /></el-icon></template>
                   </el-input>
                 </div>
               </div>
-              <div class="field">
-                <label>账户名称</label>
-                <div class="control">
-                  <el-input v-model="accQuery.accountName" placeholder="请输入账户名称" clearable @keyup.enter="handleAccSearch">
+              <div class="field"><div class="control">
+                  <el-input v-model="accQuery.accountName" placeholder="账户名称" clearable @keyup.enter="handleAccSearch">
                     <template #prefix><el-icon><Search /></el-icon></template>
                   </el-input>
                 </div>
               </div>
-              <div class="field">
-                <label>账户类型</label>
-                <div class="control is-select">
-                  <el-select v-model="accQuery.accountType" placeholder="全部" clearable @change="handleAccSearch">
+              <div class="field"><div class="control is-select">
+                  <el-select v-model="accQuery.accountType" placeholder="账户类型" clearable @change="handleAccSearch">
                     <template #prefix><el-icon><Filter /></el-icon></template>
                     <el-option label="银行账户" value="BANK" />
                     <el-option label="现金" value="CASH" />
@@ -128,18 +122,14 @@
         <button class="tip-pill" @click="showStatusHelp = true"><el-icon><WarningFilled /></el-icon><span>业务操作说明</span></button>
             </div>
             <div class="filter-bar">
-              <div class="field">
-                <label>流水单号</label>
-                <div class="control">
-                  <el-input v-model="flowQuery.flowNo" placeholder="请输入流水单号" clearable @keyup.enter="handleFlowSearch">
+              <div class="field"><div class="control">
+                  <el-input v-model="flowQuery.flowNo" placeholder="流水单号" clearable @keyup.enter="handleFlowSearch">
                     <template #prefix><el-icon><Search /></el-icon></template>
                   </el-input>
                 </div>
               </div>
-              <div class="field">
-                <label>资金账户</label>
-                <div class="control is-select">
-                  <el-select v-model="flowQuery.accountId" placeholder="全部账户" clearable @change="handleFlowSearch">
+              <div class="field"><div class="control is-select">
+                  <el-select v-model="flowQuery.accountId" placeholder="资金账户" clearable @change="handleFlowSearch">
                     <template #prefix><el-icon><Filter /></el-icon></template>
                     <el-option v-for="a in accountList" :key="a.accountId"
                                :label="`${a.accountName}（${formatAmount(a.currentBalance)}）`"
@@ -147,10 +137,8 @@
                   </el-select>
                 </div>
               </div>
-              <div class="field">
-                <label>业务类型</label>
-                <div class="control is-select">
-                  <el-select v-model="flowQuery.bizType" placeholder="全部" clearable @change="handleFlowSearch">
+              <div class="field"><div class="control is-select">
+                  <el-select v-model="flowQuery.bizType" placeholder="业务类型" clearable @change="handleFlowSearch">
                     <template #prefix><el-icon><Filter /></el-icon></template>
                     <el-option label="收款" value="IN" />
                     <el-option label="付款" value="OUT" />
@@ -160,11 +148,9 @@
                   </el-select>
                 </div>
               </div>
-              <div class="field">
-                <label>流水日期</label>
-                <div class="control">
+              <div class="field"><div class="control">
                   <el-date-picker v-model="flowDateRange" type="daterange" range-separator="-"
-                                  start-placeholder="开始日期" end-placeholder="结束日期"
+                                  start-placeholder="流水日期起" end-placeholder="流水日期止"
                                   value-format="YYYY-MM-DD" />
                 </div>
               </div>

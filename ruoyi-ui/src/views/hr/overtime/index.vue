@@ -10,70 +10,52 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>加班单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.overtimeNo" placeholder="请输入加班单号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.overtimeNo" placeholder="加班单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工号</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeNo" placeholder="请输入工号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeNo" placeholder="工号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>部门</label>
-          <div class="control">
-            <el-input v-model="queryParams.deptName" placeholder="请输入部门名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.deptName" placeholder="部门" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>审批状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.auditStatus" placeholder="审批状态" clearable @change="handleQuery">
               <el-option v-for="d in auditStatusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>加班类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.overtimeType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.overtimeType" placeholder="加班类型" clearable @change="handleQuery">
               <el-option v-for="d in overtimeTypeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>加班日期</label>
-          <div class="control">
-            <el-date-picker v-model="overtimeDateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="overtimeDateRange" type="daterange" range-separator="-" start-placeholder="加班日期起" end-placeholder="加班日期止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>开始时间</label>
-          <div class="control">
-            <el-date-picker v-model="startTimeRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="startTimeRange" type="daterange" range-separator="-" start-placeholder="开始时间起" end-placeholder="开始时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>结束时间</label>
-          <div class="control">
-            <el-date-picker v-model="endTimeRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-date-picker v-model="endTimeRange" type="daterange" range-separator="-" start-placeholder="结束时间起" end-placeholder="结束时间止" value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>
       </div>

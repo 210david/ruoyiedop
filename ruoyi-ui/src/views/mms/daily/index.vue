@@ -3,7 +3,7 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-head"><div class="filter-title"><span class="glyph"></span> 筛选条件</div></div>
       <div class="filter-bar">
-        <div class="field"><label>日期范围</label><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="日期范围起" end-placeholder="日期范围止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
       </div>
       <div class="filter-actions"><div class="filter-info"><el-icon><Filter /></el-icon> 支持日期范围筛选</div><div class="filter-buttons"><el-button icon="RefreshLeft" @click="resetQuery">重置</el-button><el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button></div></div>
     </div>

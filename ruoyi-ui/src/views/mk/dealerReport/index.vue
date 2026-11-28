@@ -10,60 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>经销商名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="经销商名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>客户编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerNo" placeholder="客户编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>经销层级</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.dealerLevel" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.dealerLevel" placeholder="经销层级" clearable @change="handleQuery">
               <el-option v-for="d in mk_dealer_level" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>授权区域</label>
-          <div class="control">
-            <el-input v-model="queryParams.authRegions" placeholder="如：华东 / 江苏省" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.authRegions" placeholder="授权区域" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>信用状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.creditStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.creditStatus" placeholder="信用状态" clearable @change="handleQuery">
               <el-option v-for="d in mk_credit_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>档案状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="档案状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>统计时间范围</label>
-          <div class="control">
+        <div class="field" v-show="showAdvanced"><div class="control">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="-"
-              start-placeholder="开始日期" end-placeholder="结束日期"
+              start-placeholder="统计时间范围起" end-placeholder="统计时间范围止"
               value-format="YYYY-MM-DD" style="width: 100%" />
           </div>
         </div>

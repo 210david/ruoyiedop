@@ -8,12 +8,12 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field"><label>采集源名称</label><div class="control"><el-input v-model="queryParams.sourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
-        <div class="field"><label>类型</label><div class="control"><el-select v-model="queryParams.sourceType" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_source_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field"><label>启用状态</label><div class="control"><el-select v-model="queryParams.enabled" placeholder="全部" clearable style="width:100%"><el-option label="启用" value="0" /><el-option label="停用" value="1" /></el-select></div></div>
-        <div class="field"><label>最近执行结果</label><div class="control"><el-select v-model="queryParams.lastRunStatus" placeholder="全部" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
-        <div class="field" v-show="showAdvanced"><label>最近执行时间</label><div class="control"><el-date-picker v-model="lastRunRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
-        <div class="field" v-show="showAdvanced"><label>采集地址</label><div class="control"><el-input v-model="queryParams.baseUrl" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.sourceName" placeholder="采集源名称" clearable @keyup.enter="handleQuery" /></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.sourceType" placeholder="类型" clearable style="width:100%"><el-option v-for="d in bid_source_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.enabled" placeholder="启用状态" clearable style="width:100%"><el-option label="启用" value="0" /><el-option label="停用" value="1" /></el-select></div></div>
+        <div class="field"><div class="control"><el-select v-model="queryParams.lastRunStatus" placeholder="最近执行结果" clearable style="width:100%"><el-option v-for="d in bid_crawl_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="lastRunRange" type="daterange" range-separator="-" start-placeholder="最近执行时间起" end-placeholder="最近执行时间止" value-format="YYYY-MM-DD" style="width:100%" /></div></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.baseUrl" placeholder="采集地址" clearable @keyup.enter="handleQuery" /></div></div>
       </div>
       <div class="filter-actions">
         <div class="filter-info"><el-icon><Filter /></el-icon> 已选 {{ activeFilterCount }} 个条件，支持回车快速搜索</div>

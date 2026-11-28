@@ -6,34 +6,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>计件单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.pwRecordNo" placeholder="请输入计件单号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.pwRecordNo" placeholder="计件单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>员工姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.employeeName" placeholder="请输入员工姓名" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.employeeName" placeholder="员工姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>计件项目</label>
-          <div class="control">
-            <el-input v-model="queryParams.pwName" placeholder="请输入计件项目" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.pwName" placeholder="计件项目" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>计件日期</label>
-          <div class="control">
-            <el-date-picker v-model="recordDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-date-picker v-model="recordDateRange" type="daterange" value-format="YYYY-MM-DD" range-separator="至" start-placeholder="计件日期起" end-placeholder="计件日期止" style="width: 100%" />
           </div>
         </div>
       </div>

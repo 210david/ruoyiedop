@@ -6,34 +6,26 @@
         <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>调整单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.adjustCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.adjustCode" placeholder="调整单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>批次号</label>
-          <div class="control">
-            <el-input v-model="queryParams.sourceBatchCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.sourceBatchCode" placeholder="批次号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>调整类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.adjustType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.adjustType" placeholder="调整类型" clearable @change="handleQuery">
               <el-option v-for="d in food_adjust_type" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>单据状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="单据状态" clearable @change="handleQuery">
               <el-option v-for="d in food_adjust_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

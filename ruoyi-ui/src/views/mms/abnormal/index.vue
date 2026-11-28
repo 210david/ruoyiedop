@@ -10,41 +10,25 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>异常单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.abnormalNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.abnormalNo" placeholder="异常单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>工单号</label>
-          <div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field"><div class="control"><el-input v-model="queryParams.workOrderNo" placeholder="工单号" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field">
-          <label>异常类型</label>
-          <div class="control is-select"><el-select v-model="queryParams.abnormalType" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.abnormalType" placeholder="异常类型" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_type" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field">
-          <label>严重等级</label>
-          <div class="control is-select"><el-select v-model="queryParams.severity" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_severity" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field"><div class="control is-select"><el-select v-model="queryParams.severity" placeholder="严重等级" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_severity" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>状态</label>
-          <div class="control is-select"><el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
+        <div class="field" v-show="showAdvanced"><div class="control is-select"><el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery"><el-option v-for="d in mms_abnormal_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>产能单元</label>
-          <div class="control"><el-input v-model="queryParams.resourceName" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.resourceName" placeholder="产能单元" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>上报人</label>
-          <div class="control"><el-input v-model="queryParams.reportBy" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.reportBy" placeholder="上报人" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>上报日期</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="上报日期起" end-placeholder="上报日期止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

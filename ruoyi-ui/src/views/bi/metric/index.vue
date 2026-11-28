@@ -10,60 +10,46 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>指标编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.metricCode" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.metricCode" placeholder="指标编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>指标名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.metricName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.metricName" placeholder="指标名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Document /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>所属域</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.domain" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.domain" placeholder="所属域" clearable @change="handleQuery">
               <el-option v-for="d in domainOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <el-option label="正常" value="0" />
               <el-option label="停用" value="1" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>统计频率</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.freq" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-select v-model="queryParams.freq" placeholder="统计频率" clearable @change="handleQuery">
               <el-option label="日" value="day" />
               <el-option label="月" value="month" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>责任人</label>
-          <div class="control">
-            <el-input v-model="queryParams.owner" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.owner" placeholder="责任人" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><User /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>计算实现</label>
-          <div class="control">
-            <el-input v-model="queryParams.calcRef" placeholder="如 MkStatsProvider" clearable @keyup.enter="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-input v-model="queryParams.calcRef" placeholder="计算实现" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Cpu /></el-icon></template>
             </el-input>
           </div>

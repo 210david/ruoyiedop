@@ -10,41 +10,29 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>评审编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.mrNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.mrNo" placeholder="评审编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>评审标题</label>
-          <div class="control">
-            <el-input v-model="queryParams.mrTitle" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.mrTitle" placeholder="评审标题" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>年度</label>
-          <div class="control">
-            <el-input-number v-model="queryParams.mrYear" :min="2020" :max="2099" style="width: 100%" />
+        <div class="field"><div class="control">
+            <el-input-number v-model="queryParams.mrYear" :min="2020" :max="2099" style="width: 100%"  placeholder="年度"/>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.mrStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.mrStatus" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>备注</label>
-          <div class="control"><el-input v-model="queryParams.remark" placeholder="请输入" clearable @keyup.enter="handleQuery" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-input v-model="queryParams.remark" placeholder="备注" clearable @keyup.enter="handleQuery" /></div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>创建时间</label>
-          <div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" /></div>
+        <div class="field" v-show="showAdvanced"><div class="control"><el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="创建时间起" end-placeholder="创建时间止" value-format="YYYY-MM-DD" style="width: 100%" /></div>
         </div>
       </div>
       <div class="filter-actions">

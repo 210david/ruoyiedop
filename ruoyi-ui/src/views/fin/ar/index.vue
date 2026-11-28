@@ -37,26 +37,20 @@
         </div>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>应收单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.arNo" placeholder="请输入应收单号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.arNo" placeholder="应收单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>客户</label>
-          <div class="control">
-            <el-input v-model="queryParams.partnerName" placeholder="请输入名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.partnerName" placeholder="客户" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="未核销" value="OPEN" />
               <el-option label="部分核销" value="PARTIAL" />
@@ -65,22 +59,18 @@
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>应收日期</label>
-          <div class="control">
+        <div class="field"><div class="control">
             <el-date-picker
               v-model="dateRange"
               type="daterange"
               range-separator="-"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              start-placeholder="应收日期起"
+              end-placeholder="应收日期止"
               value-format="YYYY-MM-DD" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>会计期间</label>
-          <div class="control">
-            <el-select v-model="queryParams.period" placeholder="全部" clearable class="control is-select" @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.period" placeholder="会计期间" clearable class="control is-select" @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
             </el-select>

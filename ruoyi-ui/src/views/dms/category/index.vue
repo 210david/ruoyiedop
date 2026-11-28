@@ -4,9 +4,7 @@
     <div class="surface filter-card" v-show="showSearch">
       <div class="filter-row">
         <div class="filter-row-fields">
-          <div class="field-inline">
-            <label>分类名称</label>
-            <el-input v-model="queryParams.categoryName" placeholder="请输入" clearable @keyup.enter="handleQuery" style="width: 220px">
+          <div class="field-inline"><el-input v-model="queryParams.categoryName" placeholder="分类名称" clearable @keyup.enter="handleQuery" style="width: 220px">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>

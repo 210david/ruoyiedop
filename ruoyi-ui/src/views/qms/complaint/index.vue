@@ -10,32 +10,24 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>客诉编号</label>
-          <div class="control">
-            <el-input v-model="queryParams.complaintNo" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.complaintNo" placeholder="客诉编号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>客户</label>
-          <div class="control">
-            <el-input v-model="queryParams.customerName" placeholder="请输入" clearable @keyup.enter="handleQuery" />
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.customerName" placeholder="客户" clearable @keyup.enter="handleQuery" />
           </div>
         </div>
-        <div class="field">
-          <label>类型</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.complaintType" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.complaintType" placeholder="类型" clearable @change="handleQuery">
               <el-option v-for="d in typeOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.complaintStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.complaintStatus" placeholder="状态" clearable @change="handleQuery">
               <el-option v-for="d in statusOptions" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </div>

@@ -10,34 +10,26 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>供应商</label>
-          <div class="control">
-            <el-input v-model="queryParams.supplierName" placeholder="供应商名称/编号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.supplierName" placeholder="供应商" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><OfficeBuilding /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>物料</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="物料名称/编号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>询价单号</label>
-          <div class="control">
-            <el-input v-model="queryParams.inquiryNo" placeholder="请输入询价单号" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.inquiryNo" placeholder="询价单号" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>中标状态</label>
-          <div class="control is-select">
-            <el-select v-model="awardFilter" placeholder="全部" clearable @change="onAwardFilterChange">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="awardFilter" placeholder="中标状态" clearable @change="onAwardFilterChange">
               <el-option label="已中标" value="1" />
               <el-option label="未中标" value="0" />
             </el-select>

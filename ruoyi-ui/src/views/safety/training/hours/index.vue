@@ -10,44 +10,34 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>人员姓名</label>
-          <div class="control">
-            <el-input v-model="queryParams.userName" placeholder="请输入" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.userName" placeholder="人员姓名" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>部门</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.deptId" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.deptId" placeholder="部门" clearable @change="handleQuery">
               <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>达标状态</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.complianceStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.complianceStatus" placeholder="达标状态" clearable @change="handleQuery">
               <el-option label="达标" value="1" />
               <el-option label="未达标" value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>是否合格</label>
-          <div class="control is-select">
-            <el-select v-model="queryParams.isPass" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control is-select">
+            <el-select v-model="queryParams.isPass" placeholder="是否合格" clearable @change="handleQuery">
               <el-option label="合格" value="1" />
               <el-option label="不合格" value="0" />
             </el-select>
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>培训时间</label>
-          <div class="control is-select">
-            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
+        <div class="field" v-show="showAdvanced"><div class="control is-select">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="培训时间起" end-placeholder="培训时间止" value-format="YYYY-MM-DD" style="width: 100%" @change="handleQuery" />
           </div>
         </div>
       </div>

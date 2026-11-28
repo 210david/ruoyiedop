@@ -23,12 +23,10 @@
                   <div class="filter-title"><span class="glyph"></span> 筛选条件</div>
                </div>
                <div class="filter-bar">
-                  <div class="field">
-                     <label>部门名称</label>
-                     <div class="control">
+                  <div class="field"><div class="control">
                         <el-input
                            v-model="queryParams.deptName"
-                           placeholder="请输入"
+                           placeholder="部门名称"
                            clearable
                            @keyup.enter="handleQuery"
                         >
@@ -36,10 +34,8 @@
                         </el-input>
                      </div>
                   </div>
-                  <div class="field">
-                     <label>状态</label>
-                     <div class="control is-select">
-                        <el-select v-model="queryParams.status" placeholder="全部" clearable @change="handleQuery">
+                  <div class="field"><div class="control is-select">
+                        <el-select v-model="queryParams.status" placeholder="状态" clearable @change="handleQuery">
                            <el-option
                               v-for="dict in sys_normal_disable"
                               :key="dict.value"

@@ -38,47 +38,37 @@
         </a>
       </div>
       <div class="filter-bar">
-        <div class="field">
-          <label>会计期间</label>
-          <div class="control">
-            <el-select v-model="period" placeholder="全部" clearable @change="handleQuery">
+        <div class="field"><div class="control">
+            <el-select v-model="period" placeholder="会计期间" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option v-for="p in periodOptions" :key="p" :label="formatPeriod(p)" :value="p" />
             </el-select>
           </div>
         </div>
-        <div class="field">
-          <label>物料编码</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialCode" placeholder="物料编码" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>物料名称</label>
-          <div class="control">
-            <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery">
+        <div class="field"><div class="control">
+            <el-input v-model="queryParams.materialName" placeholder="物料名称" clearable @keyup.enter="handleQuery">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
           </div>
         </div>
-        <div class="field">
-          <label>计提日期</label>
-          <div class="control">
+        <div class="field"><div class="control">
             <el-date-picker
               v-model="dateRange"
               type="daterange"
               range-separator="-"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              start-placeholder="计提日期起"
+              end-placeholder="计提日期止"
               value-format="YYYY-MM-DD" />
           </div>
         </div>
-        <div class="field" v-show="showAdvanced">
-          <label>计提状态</label>
-          <div class="control">
-            <el-select v-model="queryParams.provisionStatus" placeholder="全部" clearable @change="handleQuery">
+        <div class="field" v-show="showAdvanced"><div class="control">
+            <el-select v-model="queryParams.provisionStatus" placeholder="计提状态" clearable @change="handleQuery">
               <template #prefix><el-icon><Filter /></el-icon></template>
               <el-option label="已计提" value="PROVISIONED" />
               <el-option label="已冲回" value="REVERSED" />
