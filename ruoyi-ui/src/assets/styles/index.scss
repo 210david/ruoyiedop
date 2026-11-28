@@ -129,7 +129,7 @@ aside {
 
 //main-container全局样式
 .app-container {
-  padding: 20px;
+  padding: 3px !important;
 }
 
 .components-container {
@@ -183,4 +183,76 @@ aside {
     vertical-align: middle;
     margin-bottom: 10px;
   }
+}
+
+/* ===== 全站统一：内容卡片与页面边距、卡片之间间距均为 3px ===== */
+.surface,
+.card-box,
+.rd-card,
+.detail-card,
+.el-card,
+.chart-card,
+.chart-panel,
+.kpi-card,
+.kpi-tile,
+.amount-card,
+.kanban-card,
+.stat-card,
+.stat-cards,
+.stat-row,
+.completeness-row,
+.highlight-card,
+.sync-card,
+.status-bar-card,
+.launch-card,
+.reject-history-card,
+.ai-test-card,
+.ops-card,
+.section-card,
+.module-card,
+.tree-card,
+.tree-panel,
+.input-card,
+.bind-source-card,
+.wo-card,
+.fgr-card,
+.adapter-cards,
+.tips-card,
+.result-card,
+.rd-card-tip,
+.stat-grid,
+.kpi-grid,
+.chart-grid,
+.card-grid,
+.metric-grid,
+.dash-grid,
+.overview-grid {
+  margin-bottom: 3px !important;
+}
+
+/* 页面主布局行（卡片并排）列间距统一为 3px（仅处理带 gutter 的行） */
+.app-container > .el-row[style*="margin-left"] {
+  margin-left: -1.5px !important;
+  margin-right: -1.5px !important;
+}
+
+.app-container > .el-row[style*="margin-left"] > .el-col {
+  padding-left: 1.5px !important;
+  padding-right: 1.5px !important;
+}
+
+/* 卡片行（网格 / 弹性排布）内卡片间距统一为 3px */
+.app-container .stat-row,
+.app-container .stat-cards,
+.app-container .completeness-row,
+.app-container .card-row,
+.app-container .cards-row,
+.app-container .stat-grid,
+.app-container .kpi-grid,
+.app-container .chart-grid,
+.app-container .card-grid,
+.app-container .metric-grid,
+.app-container .dash-grid,
+.app-container .overview-grid {
+  gap: 3px !important;
 }
